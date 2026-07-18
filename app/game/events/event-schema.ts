@@ -1,0 +1,85 @@
+/**
+ * Event type system and contracts.
+ *
+ * This file defines the structure shared by every game event:
+ * participant roles, eligibility, weighting, resolution context,
+ * and the explicit changes an event may produce.
+ *
+ * It does not contain any playable event content.
+ * Actual events such as knife ambushes, temporary truces, and
+ * resource discoveries are defined in `event-catalogue.ts`.
+ */
+
+import type { RandomSource } from "~/game/engine/random";
+import type { GameChange, GameState, GameTribute, RoundReference } from "~/game/types/game-state";
+
+export type EventCategory = "fatal" | "survival";
+
+export interface EventSelectionContext {
+  state: GameState;
+  round: RoundReference;
+  livingTributes: readonly GameTribute[];
+}
+
+export interface ParticipantRoleDefinition {
+  id: string;
+  count: number;
+
+  isEligible?: (tribute: GameTribute, context: EventSelectionContext) => boolean;
+
+  getWeight?: (tribute: GameTribute, context: EventSelectionContext) => number;
+}
+
+export type ParticipantsByRole = Readonly<Record<string, readonly GameTribute[]>>;
+
+export interface EventResolutionContext extends EventSelectionContext {
+  eventId: string;
+  random: RandomSource;
+  participantsByRole: ParticipantsByRole;
+}
+
+export interface EventResolution {
+  text: string;
+  changes: GameChange[];
+}
+
+export interface EventDefinition {
+  id: string;
+  category: EventCategory;
+  periods: readonly RoundReference["period"][];
+  baseWeight: number;
+
+  roles: readonly ParticipantRoleDefinition[];
+
+  isEligible?: (context: EventSelectionContext) => boolean;
+
+  getWeightMultiplier?: (context: EventSelectionContext) => number;
+
+  resolve: (context: EventResolutionContext) => EventResolution;
+}
+
+export function requireSingleParticipant(
+  participantsByRole: ParticipantsByRole,
+  roleId: string,
+): GameTribute {
+  const participant = participantsByRole[roleId]?.[0];
+
+  if (!participant) {
+    throw new Error(`Event resolution is missing participant role "${roleId}".`);
+  }
+
+  return participant;
+}
+
+export function requireParticipants(
+  participantsByRole: ParticipantsByRole,
+  roleId: string,
+): readonly GameTribute[] {
+  const participants = participantsByRole[roleId];
+
+  if (!participants) {
+    throw new Error(`Event resolution is missing participant role "${roleId}".`);
+  }
+
+  return participants;
+}

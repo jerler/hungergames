@@ -39,6 +39,8 @@ export interface TributeStatistics {
   eventsSurvived: number;
 }
 
+export type TributeStatisticKey = keyof TributeStatistics;
+
 export interface GameTribute {
   id: string;
   sourceDefinitionId: string | null;
@@ -69,15 +71,62 @@ export interface EliminateTributeChange {
   killerTributeIds: string[];
 }
 
-export type GameChange = EliminateTributeChange;
+export interface IncrementStatisticChange {
+  type: "increment-statistic";
+  tributeId: string;
+  statistic: TributeStatisticKey;
+  amount: number;
+}
+
+export interface AddStatusChange {
+  type: "add-status";
+  tributeId: string;
+  status: StatusEffect;
+}
+
+export interface RemoveStatusChange {
+  type: "remove-status";
+  tributeId: string;
+  statusId: string;
+}
+
+export interface AddInventoryItemChange {
+  type: "add-inventory-item";
+  tributeId: string;
+  item: InventoryItem;
+}
+
+export interface RemoveInventoryItemChange {
+  type: "remove-inventory-item";
+  tributeId: string;
+  itemId: string;
+}
+
+export type GameChange =
+  | EliminateTributeChange
+  | IncrementStatisticChange
+  | AddStatusChange
+  | RemoveStatusChange
+  | AddInventoryItemChange
+  | RemoveInventoryItemChange;
+
+export type EventResolutionMode = "standard" | "safety";
 
 export interface ResolvedEvent {
   id: string;
   definitionId: string;
+  resolutionMode: EventResolutionMode;
+
   round: RoundReference;
   participantTributeIds: string[];
+
   text: string;
   changes: GameChange[];
+}
+
+export interface EngineState {
+  consecutiveNonEliminationRounds: number;
+  forcedResolutionCount: number;
 }
 
 export interface GameState {
@@ -97,6 +146,7 @@ export interface GameState {
   eventHistory: ResolvedEvent[];
 
   victorTributeId: string | null;
+  engine: EngineState;
 
   createdAt: string;
   updatedAt: string;

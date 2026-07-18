@@ -76,8 +76,6 @@ test("configures tributes and creates an initial Game", async ({ page }) => {
   ).toBeVisible();
 
   await expect(
-    page.getByText(
-      "12 tributes from 6 districts are waiting for the signal.",
-    ),
+    page.getByText("12 tributes from 6 districts are waiting for the signal."),
   ).toBeVisible();
 });

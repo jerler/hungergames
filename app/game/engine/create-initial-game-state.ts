@@ -85,6 +85,11 @@ export function createInitialGameState(
 
     victorTributeId: null,
 
+    engine: {
+      consecutiveNonEliminationRounds: 0,
+      forcedResolutionCount: 0,
+    },
+
     createdAt: timestamp,
     updatedAt: timestamp,
   };

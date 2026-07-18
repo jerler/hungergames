@@ -51,7 +51,7 @@ test("runs a local Game until one victor remains", async ({ page }) => {
     })
     .click();
 
-  for (let roundIndex = 0; roundIndex < 12; roundIndex += 1) {
+  for (let roundIndex = 0; roundIndex < 50; roundIndex += 1) {
     const victoryHeading = page.getByRole("heading", {
       name: "We have a victor",
     });

@@ -50,3 +50,36 @@ export function selectRandomItem<T>(items: readonly T[], random: RandomSource): 
 
   return items[Math.floor(random() * items.length)];
 }
+
+export function selectWeightedItem<T>(
+  items: readonly T[],
+  getWeight: (item: T) => number,
+  random: RandomSource,
+): T {
+  if (items.length === 0) {
+    throw new Error("Cannot select a weighted item from an empty collection.");
+  }
+
+  const weightedItems = items.map((item) => ({
+    item,
+    weight: Math.max(0, getWeight(item)),
+  }));
+
+  const totalWeight = weightedItems.reduce((total, entry) => total + entry.weight, 0);
+
+  if (totalWeight <= 0) {
+    return selectRandomItem(items, random);
+  }
+
+  let threshold = random() * totalWeight;
+
+  for (const entry of weightedItems) {
+    threshold -= entry.weight;
+
+    if (threshold <= 0) {
+      return entry.item;
+    }
+  }
+
+  return weightedItems[weightedItems.length - 1].item;
+}

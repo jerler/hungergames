@@ -1,113 +1,81 @@
+import { applyResolvedEvent } from "~/game/engine/apply-game-change";
+import { assertGameStateInvariantsInDevelopment } from "~/game/engine/game-invariants";
 import { resolveRound } from "~/game/engine/resolve-round";
 import { getNextRound } from "~/game/engine/rounds";
 import { selectLivingTributes } from "~/game/selectors/game-selectors";
-import type { GameState, ResolvedEvent } from "~/game/types/game-state";
+import type { GameState } from "~/game/types/game-state";
 import type { GameAction } from "~/state/game-actions";
 
 export type GameReducerState = GameState | null;
+
+function finalizeState(state: GameState): GameState {
+  assertGameStateInvariantsInDevelopment(state);
+
+  return state;
+}
 
 function beginNextRound(state: GameState, now: string): GameState {
   const livingTributes = selectLivingTributes(state);
 
   if (livingTributes.length <= 1) {
-    return {
+    return finalizeState({
       ...state,
       phase: "victory",
+
       victorTributeId: livingTributes[0]?.id ?? null,
+
       updatedAt: now,
-    };
+    });
   }
 
   const nextRound = getNextRound(state.currentRound);
 
-  return {
+  return finalizeState({
     ...state,
     phase: "round-events",
     currentRound: nextRound,
+
     roundEvents: resolveRound(state, nextRound),
+
     revealedEventCount: 0,
     updatedAt: now,
-  };
-}
-
-function applyResolvedEvent(state: GameState, event: ResolvedEvent): GameState {
-  let updatedTributes = state.tributes;
-
-  for (const change of event.changes) {
-    if (change.type === "eliminate-tribute") {
-      const victim = updatedTributes.find((tribute) => tribute.id === change.tributeId);
-
-      if (!victim || !victim.isAlive) {
-        continue;
-      }
-
-      updatedTributes = updatedTributes.map((tribute) => {
-        if (tribute.id === change.tributeId) {
-          return {
-            ...tribute,
-            isAlive: false,
-            death: {
-              round: event.round,
-              causeId: change.causeId,
-              causeLabel: change.causeLabel,
-              summary: change.summary,
-              killerTributeIds: change.killerTributeIds,
-              resolvedEventId: event.id,
-            },
-          };
-        }
-
-        if (change.killerTributeIds.includes(tribute.id)) {
-          return {
-            ...tribute,
-            statistics: {
-              ...tribute.statistics,
-              kills: tribute.statistics.kills + 1,
-            },
-          };
-        }
-
-        return tribute;
-      });
-    }
-  }
-
-  return {
-    ...state,
-    tributes: updatedTributes,
-    eventHistory: [...state.eventHistory, event],
-  };
+  });
 }
 
 function completeRound(state: GameState, now: string): GameState {
-  const tributesWithSurvivalCredit = state.tributes.map((tribute) => {
-    if (!tribute.isAlive) {
-      return tribute;
-    }
+  const livingTributes = selectLivingTributes(state);
 
-    return {
-      ...tribute,
-      statistics: {
-        ...tribute.statistics,
-        eventsSurvived: tribute.statistics.eventsSurvived + 1,
-      },
-    };
-  });
+  const containedElimination = state.roundEvents.some((event) =>
+    event.changes.some((change) => change.type === "eliminate-tribute"),
+  );
 
-  const livingTributes = tributesWithSurvivalCredit.filter((tribute) => tribute.isAlive);
+  const containedSafetyResolution = state.roundEvents.some(
+    (event) => event.resolutionMode === "safety",
+  );
 
-  return {
+  return finalizeState({
     ...state,
-    tributes: tributesWithSurvivalCredit,
+
     phase: livingTributes.length === 1 ? "victory" : "round-complete",
+
     victorTributeId: livingTributes.length === 1 ? livingTributes[0].id : null,
+
+    engine: {
+      consecutiveNonEliminationRounds: containedElimination
+        ? 0
+        : state.engine.consecutiveNonEliminationRounds + 1,
+
+      forcedResolutionCount:
+        state.engine.forcedResolutionCount + (containedSafetyResolution ? 1 : 0),
+    },
+
     updatedAt: now,
-  };
+  });
 }
 
 function revealNextEvent(state: GameState, now: string): GameState {
   if (state.phase !== "round-events") {
-    return state;
+    return finalizeState(state);
   }
 
   const event = state.roundEvents[state.revealedEventCount];
@@ -120,38 +88,38 @@ function revealNextEvent(state: GameState, now: string): GameState {
 
   const revealedEventCount = state.revealedEventCount + 1;
 
-  const stateWithRevealCount = {
+  const stateWithReveal = {
     ...stateAfterEvent,
     revealedEventCount,
     updatedAt: now,
   };
 
   if (revealedEventCount === state.roundEvents.length) {
-    return completeRound(stateWithRevealCount, now);
+    return completeRound(stateWithReveal, now);
   }
 
-  return stateWithRevealCount;
+  return finalizeState(stateWithReveal);
 }
 
 function revealEntireRound(state: GameState, now: string): GameState {
   let nextState = state;
 
   while (nextState.phase === "round-events") {
-    const previousRevealedEventCount = nextState.revealedEventCount;
+    const previousRevealCount = nextState.revealedEventCount;
 
     nextState = revealNextEvent(nextState, now);
 
-    if (nextState.revealedEventCount === previousRevealedEventCount) {
+    if (nextState.revealedEventCount === previousRevealCount) {
       break;
     }
   }
 
-  return nextState;
+  return finalizeState(nextState);
 }
 
 export function gameReducer(state: GameReducerState, action: GameAction): GameReducerState {
   if (action.type === "game/loaded") {
-    return action.game;
+    return finalizeState(action.game);
   }
 
   if (action.type === "game/reset") {
@@ -174,16 +142,16 @@ export function gameReducer(state: GameReducerState, action: GameAction): GameRe
 
     case "statistics/opened":
       if (state.phase !== "victory") {
-        return state;
+        return finalizeState(state);
       }
 
-      return {
+      return finalizeState({
         ...state,
         phase: "statistics",
         updatedAt: action.now,
-      };
+      });
 
     default:
-      return state;
+      return finalizeState(state);
   }
 }

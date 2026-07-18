@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("configures a Game and continues to the Reaping", async ({ page }) => {
+test("configures tributes and creates an initial Game", async ({ page }) => {
   await page.goto("/");
 
   await page
@@ -37,7 +37,45 @@ test("configures a Game and continues to the Reaping", async ({ page }) => {
 
   await expect(
     page.getByRole("heading", {
-      name: "The Reaping",
+      name: "Choose your tributes",
     }),
+  ).toBeVisible();
+
+  await page
+    .getByRole("button", {
+      name: /Random Reaping/i,
+    })
+    .click();
+
+  const portraitInput = page.locator('input[type="file"]').first();
+
+  await portraitInput.setInputFiles({
+    name: "portrait.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("temporary portrait"),
+  });
+
+  await expect(
+    page
+      .getByRole("button", {
+        name: "Remove",
+      })
+      .first(),
+  ).toBeVisible();
+
+  await page
+    .getByRole("button", {
+      name: /Start the Games/i,
+    })
+    .click();
+
+  await expect(
+    page.getByRole("heading", {
+      name: "The arena is ready.",
+    }),
+  ).toBeVisible();
+
+  await expect(
+    page.getByText("12 tributes from 6 districts are prepared to enter the Games."),
   ).toBeVisible();
 });

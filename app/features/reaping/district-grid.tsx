@@ -1,3 +1,4 @@
+import type { ReapingValidationResult } from "~/features/reaping/reaping-validation";
 import type { DistrictCount } from "~/game/types/game-config";
 import type { TributeDraft } from "~/game/types/tribute";
 
@@ -6,6 +7,7 @@ import { DistrictRow } from "./district-row";
 interface DistrictGridProps {
   districtCount: DistrictCount;
   tributes: readonly TributeDraft[];
+  tributeErrors: ReapingValidationResult["tributeErrors"];
   onTributeChange: (tribute: TributeDraft) => void;
   onTributeRandomize: (tributeId: string) => void;
 }
@@ -13,15 +15,11 @@ interface DistrictGridProps {
 export function DistrictGrid({
   districtCount,
   tributes,
+  tributeErrors,
   onTributeChange,
   onTributeRandomize,
 }: DistrictGridProps) {
-  const districts = Array.from(
-    {
-      length: districtCount,
-    },
-    (_, index) => index + 1,
-  );
+  const districts = Array.from({ length: districtCount }, (_, index) => index + 1);
 
   return (
     <div className="district-grid">
@@ -38,6 +36,7 @@ export function DistrictGrid({
             key={district}
             district={district}
             tributes={districtTributes}
+            tributeErrors={tributeErrors}
             onTributeChange={onTributeChange}
             onTributeRandomize={onTributeRandomize}
           />

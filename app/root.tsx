@@ -9,6 +9,7 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { GameSessionProvider } from "./state/game-session-context";
 
 import "./app.css";
 
@@ -42,7 +43,11 @@ export function Layout({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <GameSessionProvider>
+      <Outlet />
+    </GameSessionProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

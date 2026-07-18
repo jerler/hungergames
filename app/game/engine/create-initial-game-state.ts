@@ -79,7 +79,10 @@ export function createInitialGameState(
 
     tributes: tributes.map((tribute) => createGameTribute(tribute, createId)),
 
-    recentEvents: [],
+    roundEvents: [],
+    revealedEventCount: 0,
+    eventHistory: [],
+
     victorTributeId: null,
 
     createdAt: timestamp,

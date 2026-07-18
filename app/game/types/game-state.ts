@@ -2,16 +2,7 @@ import type { TributeAssignmentMode } from "~/game/tributes/tribute-drafts";
 import type { GameConfig } from "~/game/types/game-config";
 import type { TributeStats } from "~/game/types/tribute";
 
-export type GamePhase =
-  | "opening"
-  | "round-intro"
-  | "round-events"
-  | "gift-selection"
-  | "gift-voting"
-  | "recipient-voting"
-  | "gift-result"
-  | "victory"
-  | "statistics";
+export type GamePhase = "opening" | "round-events" | "round-complete" | "victory" | "statistics";
 
 export interface RoundReference {
   day: number;
@@ -69,6 +60,26 @@ export interface GameTribute {
   statistics: TributeStatistics;
 }
 
+export interface EliminateTributeChange {
+  type: "eliminate-tribute";
+  tributeId: string;
+  causeId: string;
+  causeLabel: string;
+  summary: string;
+  killerTributeIds: string[];
+}
+
+export type GameChange = EliminateTributeChange;
+
+export interface ResolvedEvent {
+  id: string;
+  definitionId: string;
+  round: RoundReference;
+  participantTributeIds: string[];
+  text: string;
+  changes: GameChange[];
+}
+
 export interface GameState {
   schemaVersion: 1;
 
@@ -81,7 +92,10 @@ export interface GameState {
   currentRound: RoundReference | null;
   tributes: GameTribute[];
 
-  recentEvents: [];
+  roundEvents: ResolvedEvent[];
+  revealedEventCount: number;
+  eventHistory: ResolvedEvent[];
+
   victorTributeId: string | null;
 
   createdAt: string;

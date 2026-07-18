@@ -1,18 +1,14 @@
-import {
-  createContext,
-  type ReactNode,
-  type SetStateAction,
-  type Dispatch,
-  useContext,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useReducer } from "react";
 
 import type { GameState } from "~/game/types/game-state";
+import type { GameAction } from "~/state/game-actions";
+import { gameReducer, type GameReducerState } from "~/state/game-reducer";
 
 interface GameSessionContextValue {
-  activeGame: GameState | null;
-  setActiveGame: Dispatch<SetStateAction<GameState | null>>;
+  activeGame: GameReducerState;
+  dispatch: React.Dispatch<GameAction>;
+  loadGame: (game: GameState) => void;
+  resetGame: () => void;
 }
 
 const GameSessionContext = createContext<GameSessionContextValue | null>(null);
@@ -22,14 +18,29 @@ interface GameSessionProviderProps {
 }
 
 export function GameSessionProvider({ children }: GameSessionProviderProps) {
-  const [activeGame, setActiveGame] = useState<GameState | null>(null);
+  const [activeGame, dispatch] = useReducer(gameReducer, null);
+
+  const loadGame = useCallback((game: GameState) => {
+    dispatch({
+      type: "game/loaded",
+      game,
+    });
+  }, []);
+
+  const resetGame = useCallback(() => {
+    dispatch({
+      type: "game/reset",
+    });
+  }, []);
 
   const contextValue = useMemo(
     () => ({
       activeGame,
-      setActiveGame,
+      dispatch,
+      loadGame,
+      resetGame,
     }),
-    [activeGame],
+    [activeGame, loadGame, resetGame],
   );
 
   return <GameSessionContext.Provider value={contextValue}>{children}</GameSessionContext.Provider>;

@@ -34,7 +34,7 @@ export function meta() {
 export default function ReapingPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { setActiveGame } = useGameSession();
+  const { loadGame } = useGameSession();
 
   const navigationConfig = (location.state as ReapingLocationState | null)?.config;
 
@@ -114,7 +114,7 @@ export default function ReapingPage() {
 
     const initialGameState = createInitialGameState(config, tributes, assignmentMode);
 
-    setActiveGame(initialGameState);
+    loadGame(initialGameState);
 
     void navigate(`/games/${initialGameState.id}/play`);
   };

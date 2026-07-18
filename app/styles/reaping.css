@@ -1,11 +1,7 @@
 .reaping-page {
   min-height: 100vh;
   background:
-    radial-gradient(
-      circle at 50% 0%,
-      rgb(227 182 91 / 9%),
-      transparent 28rem
-    ),
+    radial-gradient(circle at 50% 0%, rgb(227 182 91 / 9%), transparent 28rem),
     var(--color-background);
 }
 
@@ -252,12 +248,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background:
-    radial-gradient(
-      circle,
-      rgb(227 182 91 / 14%),
-      transparent 65%
-    ),
-    var(--color-surface-raised);
+    radial-gradient(circle, rgb(227 182 91 / 14%), transparent 65%), var(--color-surface-raised);
   color: var(--color-accent);
   font-size: clamp(2rem, 6vw, 4rem);
   font-weight: 800;
@@ -348,8 +339,7 @@
   transform: scale(1.15);
 }
 
-.star-rating__input:focus-visible
-  + .star-rating__star {
+.star-rating__input:focus-visible + .star-rating__star {
   border-radius: 0.2rem;
   outline: 0.18rem solid var(--color-accent);
   outline-offset: 0.15rem;
@@ -481,11 +471,7 @@
   min-height: 100vh;
   padding: clamp(var(--space-5), 5vw, var(--space-8));
   background:
-    radial-gradient(
-      circle at 50% 0%,
-      rgb(227 182 91 / 14%),
-      transparent 32rem
-    ),
+    radial-gradient(circle at 50% 0%, rgb(227 182 91 / 14%), transparent 32rem),
     var(--color-background);
 }
 
@@ -512,8 +498,7 @@
 
 .game-ready-grid {
   display: grid;
-  grid-template-columns:
-    repeat(auto-fill, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
   gap: var(--space-4);
 }
 

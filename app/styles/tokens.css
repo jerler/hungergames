@@ -1,0 +1,47 @@
+:root {
+  /* Typography */
+  --font-family-body:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: clamp(2rem, 5vw, 4rem);
+
+  --line-height-body: 1.6;
+  --line-height-heading: 1.1;
+
+  /* Colours */
+  --color-background: #0d0c11;
+  --color-surface: #18161e;
+  --color-surface-raised: #211e29;
+  --color-border: #3c3745;
+  --color-text: #f7f3e9;
+  --color-text-muted: #bdb5a6;
+  --color-accent: #e3b65b;
+  --color-accent-hover: #f1ca76;
+  --color-danger: #db6262;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* Layout */
+  --page-width: 72rem;
+  --content-width: 48rem;
+
+  /* Shape */
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+
+  /* Effects */
+  --shadow-raised: 0 1.5rem 4rem rgb(0 0 0 / 30%);
+  --transition-fast: 150ms ease;
+}

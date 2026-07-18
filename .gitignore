@@ -1,7 +1,16 @@
 .DS_Store
 .env
+.env.*
+!.env.example
 /node_modules/
 
 # React Router
 /.react-router/
 /build/
+implementation_plan.md
+
+
+coverage
+playwright-report
+test-results
+

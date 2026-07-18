@@ -43,7 +43,13 @@ export default function CreatePage() {
     <div className="configuration-page">
       <header className="configuration-header">
         <Link className="configuration-header__brand" to="/">
-          <span aria-hidden="true">XII</span>
+          <span aria-hidden="true">
+              <img
+                className="app-brand__emblem-image"
+                src="/images/capitol-emblem.webp"
+                alt=""
+              />
+            </span>
           <span>Hunger Games Simulator</span>
         </Link>
 

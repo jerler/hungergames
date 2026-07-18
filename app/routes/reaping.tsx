@@ -124,7 +124,13 @@ export default function ReapingPage() {
       <div className="reaping-page">
         <header className="reaping-header">
           <Link className="reaping-header__brand" to="/">
-            <span aria-hidden="true">XII</span>
+            <span aria-hidden="true">
+              <img
+                className="app-brand__emblem-image"
+                src="/images/capitol-emblem.webp"
+                alt=""
+              />
+            </span>
             <span>Hunger Games Simulator</span>
           </Link>
 
@@ -142,7 +148,13 @@ export default function ReapingPage() {
     <div className="reaping-page">
       <header className="reaping-header">
         <Link className="reaping-header__brand" to="/">
-          <span aria-hidden="true">XII</span>
+          <span aria-hidden="true">
+            <img
+              className="app-brand__emblem-image"
+              src="/images/capitol-emblem.webp"
+              alt=""
+            />
+          </span>
           <span>Hunger Games Simulator</span>
         </Link>
 

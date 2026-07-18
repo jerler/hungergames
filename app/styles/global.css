@@ -121,6 +121,13 @@ h3 {
     transform var(--transition-fast);
 }
 
+.app-brand__emblem-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .route-link:hover {
   border-color: var(--color-accent);
   transform: translateY(-0.1rem);

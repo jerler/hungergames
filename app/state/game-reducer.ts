@@ -47,15 +47,15 @@ function beginNextRound(state: GameState, now: string): GameState {
 }
 
 function completeRound(state: GameState, now: string): GameState {
-  const containedElimination = state.roundEvents.some((event) =>
+  const stateWithAdvancedStatuses = advanceStatusDurations(state);
+
+  const containedElimination = stateWithAdvancedStatuses.roundEvents.some((event) =>
     event.changes.some((change) => change.type === "eliminate-tribute"),
   );
 
-  const containedSafetyResolution = state.roundEvents.some(
+  const containedSafetyResolution = stateWithAdvancedStatuses.roundEvents.some(
     (event) => event.resolutionMode === "safety",
   );
-
-  const stateWithAdvancedStatuses = advanceStatusDurations(state);
 
   const livingTributes = selectLivingTributes(stateWithAdvancedStatuses);
 

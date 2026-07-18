@@ -89,7 +89,7 @@ describe("status and inventory interactions", () => {
     ]);
   });
 
-  it("expires statuses after affecting their full duration", () => {
+  it("kills tributes whose untreated status reaches zero", () => {
     const state = createGame();
     const tribute = state.tributes[0];
 
@@ -148,7 +148,24 @@ describe("status and inventory interactions", () => {
       },
     });
 
-    expect(afterSecondActiveRound.tributes[0].statuses).toEqual([]);
+    const affectedTribute = afterSecondActiveRound.tributes.find(
+      (candidate) => candidate.id === tribute.id,
+    );
+
+    expect(affectedTribute).toMatchObject({
+      isAlive: false,
+      statuses: [],
+      death: {
+        causeId: "status:injured",
+        causeLabel: "Untreated injuries",
+        summary: `${tribute.snapshot.name} ` + "succumbs to untreated injuries.",
+        killerTributeIds: [],
+      },
+    });
+
+    expect(afterSecondActiveRound.eventHistory.at(-1)?.definitionId).toBe(
+      "status-fatality:injured",
+    );
   });
 
   it("weapons improve combat while injuries reduce it", () => {

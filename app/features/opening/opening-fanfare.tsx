@@ -26,8 +26,11 @@ export function OpeningFanfare({ onComplete, durationMs = 2600 }: OpeningFanfare
 
       <div className="opening-fanfare__content">
         <div className="opening-fanfare__seal" aria-hidden="true">
-          <span className="opening-fanfare__seal-ring" />
-          <span className="opening-fanfare__seal-mark">XII</span>
+          <img
+            className="opening-fanfare__seal-image"
+            src="/images/capitol-emblem.webp"
+            alt=""
+          />
         </div>
 
         <p className="opening-fanfare__eyebrow">Citizens, welcome</p>

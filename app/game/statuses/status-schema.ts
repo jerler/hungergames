@@ -12,6 +12,9 @@ export interface StatusDefinition {
   label: string;
   description: string;
 
+  fatalCauseLabel: string;
+  fatalSummary: string;
+
   maxSeverity: 3;
   defaultDurationRounds: number;
 

@@ -5,6 +5,8 @@ export const STATUS_CATALOGUE = [
     id: "injured",
     label: "Injured",
     description: "Physical injuries make combat and survival more difficult.",
+    fatalCauseLabel: "Untreated injuries",
+    fatalSummary: "succumbs to untreated injuries.",
     maxSeverity: 3,
     defaultDurationRounds: 3,
     penalties: {
@@ -18,6 +20,8 @@ export const STATUS_CATALOGUE = [
     id: "bleeding",
     label: "Bleeding",
     description: "An untreated wound steadily weakens the tribute.",
+    fatalCauseLabel: "Bled out",
+    fatalSummary: "bleeds out from an untreated wound.",
     maxSeverity: 3,
     defaultDurationRounds: 2,
     penalties: {
@@ -31,6 +35,8 @@ export const STATUS_CATALOGUE = [
     id: "dehydrated",
     label: "Dehydrated",
     description: "A lack of water reduces concentration and endurance.",
+    fatalCauseLabel: "Dehydration",
+    fatalSummary: "succumbs to severe dehydration.",
     maxSeverity: 3,
     defaultDurationRounds: 3,
     penalties: {
@@ -44,6 +50,8 @@ export const STATUS_CATALOGUE = [
     id: "exposed",
     label: "Exposed",
     description: "The tribute lacks adequate shelter from the elements.",
+    fatalCauseLabel: "Exposure",
+    fatalSummary: "succumbs to prolonged exposure.",
     maxSeverity: 3,
     defaultDurationRounds: 2,
     penalties: {

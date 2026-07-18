@@ -18,7 +18,11 @@ export default function HomePage() {
       <header className="landing-header">
         <Link className="landing-brand" to="/" aria-label="Hunger Games Simulator home">
           <span className="landing-brand__mark" aria-hidden="true">
-            XII
+            <img
+              className="app-brand__emblem-image"
+              src="/images/capitol-emblem.webp"
+              alt=""
+            />
           </span>
 
           <span>Hunger Games Simulator</span>
@@ -34,12 +38,12 @@ export default function HomePage() {
           <p className="landing-hero__eyebrow">The arena is waiting</p>
 
           <h1 className="landing-hero__title">
-            <span>Create your tributes.</span>
+            <span>Choose your tributes.</span>
             <strong>Let the Games begin.</strong>
           </h1>
 
           <p className="landing-hero__description">
-            Assemble the districts, shape each tribute, and discover who survives your arena.
+            Who will survive your arena?
           </p>
 
           <div className="landing-hero__actions">
@@ -57,7 +61,11 @@ export default function HomePage() {
         <div className="landing-emblem" aria-hidden="true">
           <div className="landing-emblem__outer">
             <div className="landing-emblem__inner">
-              <span>XII</span>
+              <img
+                className="landing-emblem__image"
+                src="/images/capitol-emblem.webp"
+                alt=""
+              />
             </div>
           </div>
         </div>

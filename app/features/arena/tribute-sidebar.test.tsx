@@ -93,8 +93,93 @@ describe("TributeSidebar", () => {
       />,
     );
 
-    expect(screen.getByText("Night 2")).toBeInTheDocument();
+    const deathBar = screen.getByRole("button", {
+      name: "Froze. Avery froze.",
+    });
 
-    expect(screen.getByText("Froze")).toBeInTheDocument();
+    expect(deathBar).toHaveTextContent("Night 2");
+
+    expect(deathBar).toHaveTextContent("Froze");
+  });
+
+  it("shows status urgency and fatality details", () => {
+    render(
+      <TributeSidebar
+        tributes={[
+          createTribute({
+            statuses: [
+              {
+                id: "status-1",
+                definitionId: "bleeding",
+                severity: 2,
+                remainingRounds: 1,
+                sourceEventId: "deep-cut",
+                appliedRound: {
+                  day: 2,
+                  period: "day",
+                },
+              },
+            ],
+          }),
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", {
+        name: "Bleeding. Fatal at the end " + "of the next round if untreated.",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("An untreated wound steadily weakens the tribute."),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("Received during Day 2.")).toBeInTheDocument();
+  });
+
+  it("shows the death summary and killer", () => {
+    const killer = createTribute({
+      id: "tribute-2",
+      districtPosition: 2,
+      snapshot: {
+        name: "The Babadook",
+        pronouns: "they",
+        portraitUrl: null,
+        stats: {
+          brains: 4,
+          brawn: 3,
+          luck: 4,
+        },
+      },
+    });
+
+    render(
+      <TributeSidebar
+        tributes={[
+          createTribute({
+            isAlive: false,
+            death: {
+              round: {
+                day: 2,
+                period: "night",
+              },
+              causeId: "knife-ambush",
+              causeLabel: "Knifed",
+              summary: "The Babadook stabs Avery Chen at the Cornucopia.",
+              killerTributeIds: [killer.id],
+              resolvedEventId: "event-1",
+            },
+          }),
+          killer,
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Knifed by The Babadook")).toBeInTheDocument();
+
+    expect(
+      screen.getByText("The Babadook stabs Avery Chen at the Cornucopia."),
+    ).toBeInTheDocument();
   });
 });

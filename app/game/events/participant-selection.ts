@@ -5,6 +5,7 @@ import type {
 } from "~/game/events/event-schema";
 import { selectWeightedItem, type RandomSource } from "~/game/engine/random";
 import type { GameTribute } from "~/game/types/game-state";
+import { tributeHasUsableItem } from "~/game/items/inventory-engine";
 
 export interface ParticipantSelection {
   participantsByRole: ParticipantsByRole;
@@ -28,6 +29,10 @@ export function selectEventParticipants(
       const candidates = context.livingTributes.filter(
         (tribute) =>
           !selectedTributeIds.has(tribute.id) &&
+          tributeHasUsableItem(tribute, {
+            requiredTags: role.requiredItemTags,
+            definitionIds: role.requiredItemDefinitionIds,
+          }) &&
           (role.isEligible ? role.isEligible(tribute, context) : true),
       );
 

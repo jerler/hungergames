@@ -82,6 +82,7 @@ export function createInitialGameState(
     roundEvents: [],
     revealedEventCount: 0,
     eventHistory: [],
+    itemTransactions: [],
 
     victorTributeId: null,
 

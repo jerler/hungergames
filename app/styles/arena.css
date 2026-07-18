@@ -125,6 +125,72 @@
   color: var(--color-accent);
 }
 
+.arena-rail {
+  position: sticky;
+  top: var(--space-4);
+  display: grid;
+  max-height: calc(100vh - var(--space-8));
+  overflow-y: auto;
+  gap: var(--space-4);
+}
+
+.arena-rail .tribute-sidebar {
+  position: static;
+  max-height: none;
+  overflow: visible;
+}
+
+.inventory-summary {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.inventory-summary header {
+  margin-bottom: var(--space-4);
+}
+
+.inventory-summary h2 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.inventory-summary__empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.inventory-summary__tributes,
+.inventory-summary__tributes ul {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.inventory-summary__tributes > li {
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+}
+
+.inventory-summary__tributes > li > strong {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.inventory-summary__tributes ul li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
 .event-feed {
   padding: clamp(var(--space-5), 5vw, var(--space-7));
   border: 1px solid var(--color-border);
@@ -340,6 +406,18 @@
   background: var(--color-surface-raised);
   color: var(--color-text-muted);
   font-size: 0.65rem;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.sidebar-tribute__statuses strong {
+  font-size: 0.65rem;
+}
+
+.sidebar-tribute__statuses span {
+  color: var(--color-danger);
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
 }
 
 @keyframes event-reveal {
@@ -357,6 +435,13 @@
 @media (max-width: 70rem) {
   .arena-layout {
     grid-template-columns: 1fr;
+  }
+
+  .arena-rail {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    grid-row: 1;
   }
 
   .tribute-sidebar {

@@ -5,6 +5,8 @@ import { getNextRound } from "~/game/engine/rounds";
 import { selectLivingTributes } from "~/game/selectors/game-selectors";
 import type { GameState } from "~/game/types/game-state";
 import type { GameAction } from "~/state/game-actions";
+import { prepareTributesForRound } from "~/game/items/inventory-engine";
+import { advanceStatusDurations } from "~/game/statuses/status-engine";
 
 export type GameReducerState = GameState | null;
 
@@ -30,12 +32,14 @@ function beginNextRound(state: GameState, now: string): GameState {
 
   const nextRound = getNextRound(state.currentRound);
 
+  const preparedState = prepareTributesForRound(state, nextRound);
+
   return finalizeState({
-    ...state,
+    ...preparedState,
     phase: "round-events",
     currentRound: nextRound,
 
-    roundEvents: resolveRound(state, nextRound),
+    roundEvents: resolveRound(preparedState, nextRound),
 
     revealedEventCount: 0,
     updatedAt: now,
@@ -43,8 +47,6 @@ function beginNextRound(state: GameState, now: string): GameState {
 }
 
 function completeRound(state: GameState, now: string): GameState {
-  const livingTributes = selectLivingTributes(state);
-
   const containedElimination = state.roundEvents.some((event) =>
     event.changes.some((change) => change.type === "eliminate-tribute"),
   );
@@ -53,8 +55,12 @@ function completeRound(state: GameState, now: string): GameState {
     (event) => event.resolutionMode === "safety",
   );
 
+  const stateWithAdvancedStatuses = advanceStatusDurations(state);
+
+  const livingTributes = selectLivingTributes(stateWithAdvancedStatuses);
+
   return finalizeState({
-    ...state,
+    ...stateWithAdvancedStatuses,
 
     phase: livingTributes.length === 1 ? "victory" : "round-complete",
 

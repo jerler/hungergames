@@ -1,6 +1,8 @@
 import type { TributeAssignmentMode } from "~/game/tributes/tribute-drafts";
 import type { GameConfig } from "~/game/types/game-config";
 import type { TributeStats } from "~/game/types/tribute";
+import type { ItemDefinitionId } from "~/game/items/item-schema";
+import type { StatusEffectId } from "~/game/statuses/status-schema";
 
 export type GamePhase = "opening" | "round-events" | "round-complete" | "victory" | "statistics";
 
@@ -20,16 +22,22 @@ export interface TributeDeath {
 
 export interface StatusEffect {
   id: string;
-  type: string;
+  definitionId: StatusEffectId;
+
   severity: 1 | 2 | 3;
-  remainingRounds: number | null;
+  remainingRounds: number;
+
+  sourceEventId: string;
+  appliedRound: RoundReference;
 }
 
 export interface InventoryItem {
   id: string;
-  definitionId: string;
-  quantity: number;
-  usesRemaining: number | null;
+  definitionId: ItemDefinitionId;
+  usesRemaining: number;
+
+  sourceEventId: string;
+  acquiredRound: RoundReference;
 }
 
 export interface TributeStatistics {
@@ -78,8 +86,8 @@ export interface IncrementStatisticChange {
   amount: number;
 }
 
-export interface AddStatusChange {
-  type: "add-status";
+export interface ApplyStatusChange {
+  type: "apply-status";
   tributeId: string;
   status: StatusEffect;
 }
@@ -90,25 +98,42 @@ export interface RemoveStatusChange {
   statusId: string;
 }
 
-export interface AddInventoryItemChange {
-  type: "add-inventory-item";
+export interface AcquireInventoryItemChange {
+  type: "acquire-item";
   tributeId: string;
   item: InventoryItem;
 }
 
-export interface RemoveInventoryItemChange {
-  type: "remove-inventory-item";
+export interface ConsumeInventoryItemChange {
+  type: "consume-item";
   tributeId: string;
-  itemId: string;
+  itemInstanceId: string;
+  uses: number;
+  reason: string;
+}
+
+export type InventoryTransactionType = "acquired" | "consumed";
+
+export interface InventoryTransaction {
+  id: string;
+  type: InventoryTransactionType;
+
+  tributeId: string;
+  itemInstanceId: string;
+  definitionId: ItemDefinitionId;
+
+  uses: number;
+  round: RoundReference;
+  sourceId: string;
 }
 
 export type GameChange =
   | EliminateTributeChange
   | IncrementStatisticChange
-  | AddStatusChange
+  | ApplyStatusChange
   | RemoveStatusChange
-  | AddInventoryItemChange
-  | RemoveInventoryItemChange;
+  | AcquireInventoryItemChange
+  | ConsumeInventoryItemChange;
 
 export type EventResolutionMode = "standard" | "safety";
 
@@ -144,6 +169,8 @@ export interface GameState {
   roundEvents: ResolvedEvent[];
   revealedEventCount: number;
   eventHistory: ResolvedEvent[];
+
+  itemTransactions: InventoryTransaction[];
 
   victorTributeId: string | null;
   engine: EngineState;

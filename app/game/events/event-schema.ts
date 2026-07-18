@@ -12,8 +12,21 @@
 
 import type { RandomSource } from "~/game/engine/random";
 import type { GameChange, GameState, GameTribute, RoundReference } from "~/game/types/game-state";
+import type { ItemDefinitionId, ItemTag } from "~/game/items/item-schema";
 
-export type EventCategory = "fatal" | "survival";
+export type EventCategory = "fatal" | "survival" | "hazard";
+
+export type EventTag =
+  | "fatal"
+  | "survival"
+  | "hazard"
+  | "combat"
+  | "environment"
+  | "weapon"
+  | "tool"
+  | "item"
+  | "status"
+  | "resource";
 
 export interface EventSelectionContext {
   state: GameState;
@@ -28,6 +41,10 @@ export interface ParticipantRoleDefinition {
   isEligible?: (tribute: GameTribute, context: EventSelectionContext) => boolean;
 
   getWeight?: (tribute: GameTribute, context: EventSelectionContext) => number;
+
+  requiredItemTags?: readonly ItemTag[];
+
+  requiredItemDefinitionIds?: readonly ItemDefinitionId[];
 }
 
 export type ParticipantsByRole = Readonly<Record<string, readonly GameTribute[]>>;
@@ -48,6 +65,7 @@ export interface EventDefinition {
   category: EventCategory;
   periods: readonly RoundReference["period"][];
   baseWeight: number;
+  tags: readonly EventTag[];
 
   roles: readonly ParticipantRoleDefinition[];
 

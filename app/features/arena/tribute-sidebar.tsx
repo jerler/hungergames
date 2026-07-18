@@ -1,5 +1,6 @@
 import { formatRoundLabel } from "~/game/engine/rounds";
 import type { GameTribute } from "~/game/types/game-state";
+import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 
 interface TributeSidebarProps {
   tributes: readonly GameTribute[];
@@ -76,9 +77,17 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
 
               {tribute.isAlive && tribute.statuses.length > 0 ? (
                 <ul className="sidebar-tribute__statuses">
-                  {tribute.statuses.map((status) => (
-                    <li key={status.id}>{status.type}</li>
-                  ))}
+                  {tribute.statuses.map((status) => {
+                    const definition = getStatusDefinition(status.definitionId);
+
+                    return (
+                      <li key={status.id} title={definition.description}>
+                        <strong>{definition.label}</strong>
+
+                        <span>{"●".repeat(status.severity)}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : null}
             </article>

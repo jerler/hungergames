@@ -1,28 +1,52 @@
 import type { EventCategory, EventSelectionContext } from "~/game/events/event-schema";
+import { getInventoryBonus } from "~/game/items/inventory-engine";
+import { getStatusPenalty } from "~/game/statuses/status-engine";
 import type { GameTribute } from "~/game/types/game-state";
 
 export function getCombatScore(tribute: GameTribute): number {
   const { brains, brawn, luck } = tribute.snapshot.stats;
 
-  return brawn * 0.55 + brains * 0.25 + luck * 0.2;
+  const baseScore = brawn * 0.55 + brains * 0.25 + luck * 0.2;
+
+  return Math.max(
+    0.25,
+    baseScore + getInventoryBonus(tribute, "combatBonus") - getStatusPenalty(tribute, "combat"),
+  );
 }
 
 export function getSurvivalScore(tribute: GameTribute): number {
   const { brains, brawn, luck } = tribute.snapshot.stats;
 
-  return brains * 0.4 + brawn * 0.25 + luck * 0.35;
+  const baseScore = brains * 0.4 + brawn * 0.25 + luck * 0.35;
+
+  return Math.max(
+    0.25,
+    baseScore + getInventoryBonus(tribute, "survivalBonus") - getStatusPenalty(tribute, "survival"),
+  );
 }
 
 export function getAwarenessScore(tribute: GameTribute): number {
   const { brains, luck } = tribute.snapshot.stats;
 
-  return brains * 0.65 + luck * 0.35;
+  const baseScore = brains * 0.65 + luck * 0.35;
+
+  return Math.max(
+    0.25,
+    baseScore +
+      getInventoryBonus(tribute, "awarenessBonus") -
+      getStatusPenalty(tribute, "awareness"),
+  );
 }
 
 export function getForagingScore(tribute: GameTribute): number {
   const { brains, brawn, luck } = tribute.snapshot.stats;
 
-  return brains * 0.45 + luck * 0.4 + brawn * 0.15;
+  const baseScore = brains * 0.45 + luck * 0.4 + brawn * 0.15;
+
+  return Math.max(
+    0.25,
+    baseScore + getInventoryBonus(tribute, "foragingBonus") - getStatusPenalty(tribute, "foraging"),
+  );
 }
 
 export function getVulnerabilityWeight(tribute: GameTribute): number {
@@ -30,11 +54,11 @@ export function getVulnerabilityWeight(tribute: GameTribute): number {
 }
 
 export function getCombatSelectionWeight(tribute: GameTribute): number {
-  return Math.max(0.25, getCombatScore(tribute));
+  return getCombatScore(tribute);
 }
 
 export function getSurvivalSelectionWeight(tribute: GameTribute): number {
-  return Math.max(0.25, getSurvivalScore(tribute));
+  return getSurvivalScore(tribute);
 }
 
 export function getEventCategoryMultiplier(
@@ -43,6 +67,10 @@ export function getEventCategoryMultiplier(
 ): number {
   if (category === "survival") {
     return 1;
+  }
+
+  if (category === "hazard") {
+    return livingTributeCount <= 6 ? 1.2 : 1;
   }
 
   if (livingTributeCount <= 2) {

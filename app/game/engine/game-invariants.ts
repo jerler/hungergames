@@ -1,4 +1,6 @@
 import type { GameState } from "~/game/types/game-state";
+import { getItemDefinition } from "~/game/items/item-catalogue";
+import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
@@ -56,10 +58,90 @@ export function assertGameStateInvariants(state: GameState): void {
       `Inventory IDs for tribute "${tribute.id}"`,
     );
 
+    for (const status of tribute.statuses) {
+      const definition = getStatusDefinition(status.definitionId);
+
+      assert(
+        status.severity >= 1 && status.severity <= definition.maxSeverity,
+        `status "${status.id}" has invalid severity.`,
+      );
+
+      assert(
+        Number.isInteger(status.remainingRounds) && status.remainingRounds > 0,
+        `status "${status.id}" has invalid duration.`,
+      );
+    }
+
+    for (const item of tribute.inventory) {
+      const definition = getItemDefinition(item.definitionId);
+
+      assert(
+        Number.isInteger(item.usesRemaining) &&
+          item.usesRemaining > 0 &&
+          item.usesRemaining <= definition.maxUses,
+        `item "${item.id}" has invalid remaining uses.`,
+      );
+    }
+
     for (const statistic of Object.values(tribute.statistics)) {
       assert(
         Number.isFinite(statistic) && statistic >= 0,
         `tribute "${tribute.id}" has an invalid statistic.`,
+      );
+    }
+  }
+
+  assertUniqueValues(
+    state.itemTransactions.map((transaction) => transaction.id),
+    "Inventory transaction IDs",
+  );
+
+  const itemUseLedger = new Map<string, number>();
+
+  for (const transaction of state.itemTransactions) {
+    assert(
+      tributeIds.has(transaction.tributeId),
+      `inventory transaction "${transaction.id}" references a missing tribute.`,
+    );
+
+    getItemDefinition(transaction.definitionId);
+
+    assert(
+      Number.isInteger(transaction.uses) && transaction.uses > 0,
+      `inventory transaction "${transaction.id}" has invalid uses.`,
+    );
+
+    if (transaction.type === "acquired") {
+      assert(
+        !itemUseLedger.has(transaction.itemInstanceId),
+        `item "${transaction.itemInstanceId}" was acquired more than once.`,
+      );
+
+      itemUseLedger.set(transaction.itemInstanceId, transaction.uses);
+
+      continue;
+    }
+
+    const remainingUses = itemUseLedger.get(transaction.itemInstanceId);
+
+    assert(
+      remainingUses !== undefined,
+      `item "${transaction.itemInstanceId}" was consumed before acquisition.`,
+    );
+
+    assert(
+      remainingUses >= transaction.uses,
+      `item "${transaction.itemInstanceId}" was over-consumed.`,
+    );
+
+    itemUseLedger.set(transaction.itemInstanceId, remainingUses - transaction.uses);
+  }
+
+  for (const tribute of state.tributes) {
+    for (const item of tribute.inventory) {
+      assert(
+        itemUseLedger.get(item.id) === item.usesRemaining,
+        `item "${item.id}" does not match its transaction history.`,
       );
     }
   }

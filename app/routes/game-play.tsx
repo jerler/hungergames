@@ -5,6 +5,7 @@ import { RoundEventFeed } from "~/features/arena/round-event-feed";
 import { TributeSidebar } from "~/features/arena/tribute-sidebar";
 import { VictoryFanfare } from "~/features/victory/victory-fanfare";
 import { VictorySummary } from "~/features/victory/victory-summary";
+import { InventorySummary } from "~/features/arena/inventory-summary";
 import { formatRoundLabel } from "~/game/engine/rounds";
 import {
   selectHiddenEventCount,
@@ -182,7 +183,11 @@ export default function GamePlayPage() {
           ) : null}
         </main>
 
-        <TributeSidebar tributes={activeGame.tributes} />
+        <div className="arena-rail">
+          <TributeSidebar tributes={activeGame.tributes} />
+
+          <InventorySummary tributes={activeGame.tributes} />
+        </div>
       </div>
     </div>
   );

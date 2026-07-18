@@ -1,7 +1,10 @@
 import { useCallback, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 
+import { GameConfigurationForm } from "~/features/configuration/game-configuration-form";
+import { saveGameConfigDraft } from "~/features/configuration/game-config-storage";
 import { OpeningFanfare } from "~/features/opening/opening-fanfare";
+import type { GameConfig } from "~/game/types/game-config";
 
 export function meta() {
   return [
@@ -12,32 +15,40 @@ export function meta() {
 }
 
 export default function CreatePage() {
+  const navigate = useNavigate();
+
   const [isOpeningVisible, setIsOpeningVisible] = useState(true);
 
   const completeOpening = useCallback(() => {
     setIsOpeningVisible(false);
   }, []);
 
+  const handleConfigurationSubmit = useCallback(
+    (config: GameConfig) => {
+      saveGameConfigDraft(config);
+      void navigate("/create/reaping");
+    },
+    [navigate],
+  );
+
   if (isOpeningVisible) {
     return <OpeningFanfare onComplete={completeOpening} />;
   }
 
   return (
-    <main className="page-shell">
-      <section className="content-card">
-        <p className="eyebrow">Create the Games</p>
+    <div className="configuration-page">
+      <header className="configuration-header">
+        <Link className="configuration-header__brand" to="/">
+          <span aria-hidden="true">XII</span>
+          <span>Hunger Games Simulator</span>
+        </Link>
 
-        <h1 className="page-title">Configure your arena</h1>
+        <p>Step 1 of 2</p>
+      </header>
 
-        <p className="page-description">
-          Game size, gifts, audience participation, and gift frequency settings will be configured
-          here next.
-        </p>
-
-        <p>
-          <Link to="/">Return home</Link>
-        </p>
-      </section>
-    </main>
+      <main className="configuration-main">
+        <GameConfigurationForm onSubmit={handleConfigurationSubmit} />
+      </main>
+    </div>
   );
 }

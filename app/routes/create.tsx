@@ -26,7 +26,11 @@ export default function CreatePage() {
   const handleConfigurationSubmit = useCallback(
     (config: GameConfig) => {
       saveGameConfigDraft(config);
-      void navigate("/create/reaping");
+      void navigate("/create/reaping", {
+        state: {
+          config,
+        },
+      });
     },
     [navigate],
   );

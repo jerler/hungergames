@@ -34,6 +34,8 @@ describe("createInitialGameState", () => {
       true,
     );
 
+    expect(gameState.tributes[0].snapshot.pronouns).toBe(drafts[0].pronouns);
+
     expect(gameState.tributes[0]).toMatchObject({
       id: "id-2",
       district: 1,

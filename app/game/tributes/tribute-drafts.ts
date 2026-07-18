@@ -1,4 +1,5 @@
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
+import { DEFAULT_PRONOUN_SET_ID } from "./pronouns";
 import type { DistrictCount } from "~/game/types/game-config";
 import type { TributeDefinition, TributeDraft } from "~/game/types/tribute";
 
@@ -53,6 +54,7 @@ function createBlankDraft(slot: TributeSlot): TributeDraft {
     ...slot,
     sourceDefinitionId: null,
     name: "",
+    pronouns: DEFAULT_PRONOUN_SET_ID,
     portraitPreviewUrl: null,
     stats: {
       brains: 3,
@@ -67,6 +69,7 @@ function createDraftFromDefinition(slot: TributeSlot, definition: TributeDefinit
     ...slot,
     sourceDefinitionId: definition.id,
     name: definition.name,
+    pronouns: definition.pronouns ?? DEFAULT_PRONOUN_SET_ID,
     portraitPreviewUrl: definition.portraitUrl,
     stats: {
       ...definition.stats,

@@ -14,6 +14,7 @@ function createTribute(overrides: Partial<GameTribute>): GameTribute {
 
     snapshot: {
       name: "Avery Chen",
+      pronouns: "she",
       portraitUrl: null,
       stats: {
         brains: 3,
@@ -50,6 +51,7 @@ describe("TributeSidebar", () => {
             districtPosition: 2,
             snapshot: {
               name: "Blair Okafor",
+              pronouns: "she",
               portraitUrl: null,
               stats: {
                 brains: 3,

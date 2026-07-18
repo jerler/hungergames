@@ -4,6 +4,8 @@ import type { TributeDraftValidationErrors } from "~/features/reaping/reaping-va
 import { PORTRAIT_ACCEPT_ATTRIBUTE, readPortraitFile } from "~/features/reaping/portrait-file";
 import type { TributeDraft, TributeStats, TributeStatValue } from "~/game/types/tribute";
 
+import { PRONOUN_GRAMMAR, PRONOUN_SET_IDS, type PronounSetId } from "~/game/tributes/pronouns";
+
 import { StarRating } from "./star-rating";
 
 interface TributeCardEditorProps {
@@ -176,6 +178,28 @@ export function TributeCardEditor({
             {validationErrors.name}
           </p>
         ) : null}
+
+        <label className="tribute-card__pronouns-label" htmlFor={`${tribute.id}-pronouns`}>
+          Pronouns
+        </label>
+
+        <select
+          id={`${tribute.id}-pronouns`}
+          className="tribute-card__pronouns"
+          value={tribute.pronouns}
+          onChange={(event) => {
+            onChange({
+              ...tribute,
+              pronouns: event.currentTarget.value as PronounSetId,
+            });
+          }}
+        >
+          {PRONOUN_SET_IDS.map((pronounSetId) => (
+            <option key={pronounSetId} value={pronounSetId}>
+              {PRONOUN_GRAMMAR[pronounSetId].label}
+            </option>
+          ))}
+        </select>
 
         <div className="tribute-card__stats">
           <StarRating

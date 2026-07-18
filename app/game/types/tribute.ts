@@ -1,3 +1,5 @@
+import type { PronounSetId } from "~/game/tributes/pronouns";
+
 export type TributeStatValue = 1 | 2 | 3 | 4 | 5;
 
 export interface TributeStats {
@@ -10,6 +12,7 @@ export interface TributeStats {
 export interface TributeDefinition {
   id: string;
   name: string;
+  pronouns: PronounSetId;
   portraitUrl: string | null;
   stats: TributeStats;
 }
@@ -23,6 +26,7 @@ export interface TributeDraft {
   sourceDefinitionId: string | null;
 
   name: string;
+  pronouns: PronounSetId;
   portraitPreviewUrl: string | null;
   stats: TributeStats;
 }

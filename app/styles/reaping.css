@@ -283,6 +283,25 @@
   font-weight: 750;
 }
 
+.tribute-card__pronouns-label {
+  display: block;
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.tribute-card__pronouns {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
 .tribute-card__stats {
   display: grid;
   gap: var(--space-3);

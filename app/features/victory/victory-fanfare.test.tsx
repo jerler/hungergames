@@ -13,6 +13,7 @@ const victor: GameTribute = {
 
   snapshot: {
     name: "Julie",
+    pronouns: "she",
     portraitUrl: null,
     stats: {
       brains: 5,

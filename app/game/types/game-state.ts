@@ -1,4 +1,5 @@
 import type { TributeAssignmentMode } from "~/game/tributes/tribute-drafts";
+import type { PronounSetId } from "~/game/tributes/pronouns";
 import type { GameConfig } from "~/game/types/game-config";
 import type { TributeStats } from "~/game/types/tribute";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
@@ -58,6 +59,7 @@ export interface GameTribute {
 
   snapshot: {
     name: string;
+    pronouns: PronounSetId;
     portraitUrl: string | null;
     stats: TributeStats;
   };

@@ -17,6 +17,7 @@ describe("tribute draft utilities", () => {
       district: 1,
       districtPosition: 1,
       name: "",
+      pronouns: "they",
       sourceDefinitionId: null,
     });
 
@@ -24,6 +25,21 @@ describe("tribute draft utilities", () => {
       district: 6,
       districtPosition: 2,
     });
+  });
+
+  it("preserves pronouns when rerolling a tribute", () => {
+    const originalTributes = createRandomTributeDrafts(6, DEFAULT_TRIBUTES, () => 0.5);
+
+    const tributeToReplace = originalTributes[0];
+
+    const updatedTributes = randomizeTributeDraft(
+      originalTributes,
+      tributeToReplace.id,
+      DEFAULT_TRIBUTES,
+      () => 0,
+    );
+
+    expect(updatedTributes[0].pronouns).toBeDefined();
   });
 
   it("randomly assigns unique predefined tributes", () => {

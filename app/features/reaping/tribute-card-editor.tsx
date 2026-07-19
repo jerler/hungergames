@@ -1,4 +1,9 @@
-import { type ChangeEvent, useState } from "react";
+import {
+  type ChangeEvent,
+  type PointerEvent as ReactPointerEvent,
+  useRef,
+  useState,
+} from "react";
 
 import type { TributeDraftValidationErrors } from "~/features/reaping/reaping-validation";
 import { PORTRAIT_ACCEPT_ATTRIBUTE, readPortraitFile } from "~/features/reaping/portrait-file";
@@ -27,6 +32,10 @@ function getInitials(name: string): string {
   return initials || "?";
 }
 
+function clampPercentage(value: number): number {
+  return Math.min(100, Math.max(0, value));
+}
+
 export function TributeCardEditor({
   tribute,
   validationErrors,
@@ -52,6 +61,102 @@ export function TributeCardEditor({
     });
   };
 
+  const portraitDragRef = useRef<{
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    positionX: number;
+    positionY: number;
+  } | null>(null);
+
+  const portraitPosition = tribute.portraitPosition ?? {
+    x: 50,
+    y: 50,
+  };
+
+  const handlePortraitPointerDown = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    if (!tribute.portraitPreviewUrl) {
+      return;
+    }
+
+    event.preventDefault();
+
+    event.currentTarget.setPointerCapture(
+      event.pointerId,
+    );
+
+    portraitDragRef.current = {
+      pointerId: event.pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      positionX: portraitPosition.x,
+      positionY: portraitPosition.y,
+    };
+  };
+
+  const handlePortraitPointerMove = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    const drag = portraitDragRef.current;
+
+    if (
+      !drag ||
+      drag.pointerId !== event.pointerId
+    ) {
+      return;
+    }
+
+    const bounds =
+      event.currentTarget.getBoundingClientRect();
+
+    const horizontalChange =
+      ((event.clientX - drag.clientX) /
+        bounds.width) *
+      100;
+
+    const verticalChange =
+      ((event.clientY - drag.clientY) /
+        bounds.height) *
+      100;
+
+    onChange({
+      ...tribute,
+      portraitPosition: {
+        x: clampPercentage(
+          drag.positionX -
+            horizontalChange,
+        ),
+        y: clampPercentage(
+          drag.positionY -
+            verticalChange,
+        ),
+      },
+    });
+  };
+
+  const stopPortraitDrag = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    if (
+      portraitDragRef.current?.pointerId ===
+      event.pointerId
+    ) {
+      portraitDragRef.current = null;
+    }
+
+    if (
+      event.currentTarget.hasPointerCapture(
+        event.pointerId,
+      )
+    ) {
+      event.currentTarget.releasePointerCapture(
+        event.pointerId,
+      );
+    }
+  };
+
   const handlePortraitSelection = async (event: ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     const file = input.files?.[0];
@@ -70,6 +175,10 @@ export function TributeCardEditor({
       onChange({
         ...tribute,
         portraitPreviewUrl,
+        portraitPosition: {
+          x: 50,
+          y: 50,
+        },
       });
     } catch (error) {
       setPortraitError(
@@ -101,11 +210,42 @@ export function TributeCardEditor({
         </button>
       </header>
 
-      <div className="tribute-card__portrait">
+      <div
+        className={[
+          "tribute-card__portrait",
+          tribute.portraitPreviewUrl
+            ? "tribute-card__portrait--adjustable"
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        onPointerDown={handlePortraitPointerDown}
+        onPointerMove={handlePortraitPointerMove}
+        onPointerUp={stopPortraitDrag}
+        onPointerCancel={stopPortraitDrag}
+        onLostPointerCapture={() => {
+          portraitDragRef.current = null;
+        }}
+        onDragStart={(event) => {
+          event.preventDefault();
+        }}
+      >
         {tribute.portraitPreviewUrl ? (
-          <img src={tribute.portraitPreviewUrl} alt="" />
+          <img
+            src={tribute.portraitPreviewUrl}
+            alt=""
+            draggable={false}
+            onDragStart={(event) => {
+              event.preventDefault();
+            }}
+            style={{
+              objectPosition: `${portraitPosition.x}% ${portraitPosition.y}%`,
+            }}
+          />
         ) : (
-          <span aria-hidden="true">{getInitials(tribute.name)}</span>
+          <span aria-hidden="true">
+            {getInitials(tribute.name)}
+          </span>
         )}
       </div>
 
@@ -143,7 +283,7 @@ export function TributeCardEditor({
         ) : null}
       </div>
 
-      <p className="portrait-help">JPEG, PNG, or WebP. Maximum 5 MB.</p>
+      <p className="portrait-help">JPEG, PNG, or WebP. Maximum 5 MB. Drag the portrait to reposition it.</p>
 
       {portraitError ? (
         <p className="tribute-card__field-error" id={portraitErrorId} role="alert">

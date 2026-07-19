@@ -24,7 +24,10 @@ function createGameTribute(tribute: TributeDraft, createId: () => string): GameT
 
     snapshot: {
       name: tribute.name.trim(),
-      portraitUrl: tribute.portraitPreviewUrl,
+      portraitUrl:
+        tribute.portraitPreviewUrl,
+      portraitPosition:
+        tribute.portraitPosition,
       pronouns: tribute.pronouns,
       stats: {
         ...tribute.stats,

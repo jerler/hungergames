@@ -29,4 +29,11 @@ export interface TributeDraft {
   pronouns: PronounSetId;
   portraitPreviewUrl: string | null;
   stats: TributeStats;
+
+  portraitPosition?: PortraitPosition;
+}
+
+export interface PortraitPosition {
+  x: number;
+  y: number;
 }

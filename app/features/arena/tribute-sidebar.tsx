@@ -128,7 +128,19 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
               <div className="sidebar-tribute__portrait">
                 <div className="sidebar-tribute__portrait-media">
                   {tribute.snapshot.portraitUrl ? (
-                    <img src={tribute.snapshot.portraitUrl} alt="" />
+                    <img
+                      src={tribute.snapshot.portraitUrl}
+                      alt=""
+                      style={{
+                        objectPosition: `${
+                          tribute.snapshot
+                            .portraitPosition?.x ?? 50
+                        }% ${
+                          tribute.snapshot
+                            .portraitPosition?.y ?? 50
+                        }%`,
+                      }}
+                    />
                   ) : (
                     <span aria-hidden="true">{getInitials(tribute.snapshot.name)}</span>
                   )}

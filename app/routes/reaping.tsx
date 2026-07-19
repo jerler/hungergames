@@ -1,9 +1,13 @@
-import { type FormEvent, useState } from "react";
+import {
+  type FormEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 
 import { loadGameConfigDraft } from "~/features/configuration/game-config-storage";
 import { DistrictGrid } from "~/features/reaping/district-grid";
-import { ReapingModePicker } from "~/features/reaping/reaping-mode-picker";
 import {
   type ReapingValidationResult,
   validateTributeDrafts,
@@ -12,8 +16,8 @@ import { createInitialGameState } from "~/game/engine/create-initial-game-state"
 import {
   createBlankTributeDrafts,
   createRandomTributeDrafts,
+  haveTributeDraftsBeenEdited,
   randomizeTributeDraft,
-  type TributeAssignmentMode,
 } from "~/game/tributes/tribute-drafts";
 import type { GameConfig } from "~/game/types/game-config";
 import type { TributeDraft } from "~/game/types/tribute";
@@ -40,11 +44,48 @@ export default function ReapingPage() {
 
   const [config] = useState<GameConfig | null>(() => navigationConfig ?? loadGameConfigDraft());
 
-  const [assignmentMode, setAssignmentMode] = useState<TributeAssignmentMode | null>(null);
+  const [tributes, setTributes] = useState<
+    TributeDraft[]
+  >(() =>
+    config
+      ? createBlankTributeDrafts(
+          config.districtCount,
+        )
+      : [],
+  );
 
-  const [tributes, setTributes] = useState<TributeDraft[]>([]);
+  const [
+    isRandomizeDialogOpen,
+    setIsRandomizeDialogOpen,
+  ] = useState(false);
+
+  const randomizeDialogRef =
+    useRef<HTMLDialogElement>(null);
 
   const [validationResult, setValidationResult] = useState<ReapingValidationResult | null>(null);
+  
+  useEffect(() => {
+    const dialog = randomizeDialogRef.current;
+
+    if (!dialog) {
+      return;
+    }
+
+    if (
+      isRandomizeDialogOpen &&
+      !dialog.open
+    ) {
+      dialog.showModal();
+      return;
+    }
+
+    if (
+      !isRandomizeDialogOpen &&
+      dialog.open
+    ) {
+      dialog.close();
+    }
+  }, [isRandomizeDialogOpen]);
 
   if (!config) {
     return (
@@ -62,15 +103,26 @@ export default function ReapingPage() {
     );
   }
 
-  const selectAssignmentMode = (mode: TributeAssignmentMode) => {
-    setAssignmentMode(mode);
-    setValidationResult(null);
-
+  const randomizeAllTributes = () => {
     setTributes(
-      mode === "random"
-        ? createRandomTributeDrafts(config.districtCount)
-        : createBlankTributeDrafts(config.districtCount),
+      createRandomTributeDrafts(
+        config.districtCount,
+      ),
     );
+
+    setValidationResult(null);
+    setIsRandomizeDialogOpen(false);
+  };
+
+  const requestRandomizeAllTributes = () => {
+    if (
+      haveTributeDraftsBeenEdited(tributes)
+    ) {
+      setIsRandomizeDialogOpen(true);
+      return;
+    }
+
+    randomizeAllTributes();
   };
 
   const updateTribute = (updatedTribute: TributeDraft) => {
@@ -92,10 +144,6 @@ export default function ReapingPage() {
   const startGames = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!assignmentMode) {
-      return;
-    }
-
     const nextValidationResult = validateTributeDrafts(tributes, config.districtCount);
 
     setValidationResult(nextValidationResult);
@@ -112,37 +160,17 @@ export default function ReapingPage() {
       return;
     }
 
-    const initialGameState = createInitialGameState(config, tributes, assignmentMode);
+    const initialGameState =
+      createInitialGameState(
+        config,
+        tributes,
+        "manual",
+      );
 
     loadGame(initialGameState);
 
     void navigate(`/games/${initialGameState.id}/play`);
   };
-
-  if (!assignmentMode) {
-    return (
-      <div className="reaping-page">
-        <header className="reaping-header">
-          <Link className="reaping-header__brand" to="/">
-            <span aria-hidden="true">
-              <img
-                className="app-brand__emblem-image"
-                src="/images/capitol-emblem.webp"
-                alt=""
-              />
-            </span>
-            <span>Hunger Games Simulator</span>
-          </Link>
-
-          <p>Step 2 of 2</p>
-        </header>
-
-        <main className="reaping-main reaping-main--mode">
-          <ReapingModePicker districtCount={config.districtCount} onSelect={selectAssignmentMode} />
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="reaping-page">
@@ -172,20 +200,20 @@ export default function ReapingPage() {
               <h1>Prepare the tributes</h1>
 
               <p>
-                Edit every tribute, add portraits, or use the dice to replace individual characters.
+                Create each tribute yourself, randomize
+                the full roster, or use the dice to
+                replace individual characters.
               </p>
             </div>
 
             <button
-              className="reaping-change-mode"
+              className="reaping-randomize-all"
               type="button"
-              onClick={() => {
-                setAssignmentMode(null);
-                setTributes([]);
-                setValidationResult(null);
-              }}
+              onClick={
+                requestRandomizeAllTributes
+              }
             >
-              Change assignment method
+              Randomize
             </button>
           </header>
 
@@ -219,6 +247,57 @@ export default function ReapingPage() {
           </footer>
         </form>
       </main>
+      <dialog
+        ref={randomizeDialogRef}
+        className="reaping-randomize-dialog"
+        aria-labelledby="randomize-dialog-title"
+        aria-describedby="randomize-dialog-description"
+        onCancel={(event) => {
+          event.preventDefault();
+          setIsRandomizeDialogOpen(false);
+        }}
+        onClose={() => {
+          setIsRandomizeDialogOpen(false);
+        }}
+      >
+        <div className="reaping-randomize-dialog__content">
+          <p className="eyebrow">
+            Replace the roster
+          </p>
+
+          <h2 id="randomize-dialog-title">
+            Randomize all tributes?
+          </h2>
+
+          <p id="randomize-dialog-description">
+            This will replace every tribute
+            with a random predefined character.
+            Names, portraits, pronouns, and
+            stats you have changed will be
+            lost.
+          </p>
+
+          <div className="reaping-randomize-dialog__actions">
+            <button
+              className="reaping-dialog-button reaping-dialog-button--secondary"
+              type="button"
+              onClick={() => {
+                setIsRandomizeDialogOpen(false);
+              }}
+            >
+              Keep my changes
+            </button>
+
+            <button
+              className="reaping-dialog-button reaping-dialog-button--primary"
+              type="button"
+              onClick={randomizeAllTributes}
+            >
+              Randomize all tributes
+            </button>
+          </div>
+        </div>
+      </dialog>
     </div>
   );
 }

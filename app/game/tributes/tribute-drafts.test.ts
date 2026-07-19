@@ -4,6 +4,7 @@ import { DEFAULT_TRIBUTES } from "./default-tributes";
 import {
   createBlankTributeDrafts,
   createRandomTributeDrafts,
+  haveTributeDraftsBeenEdited,
   randomizeTributeDraft,
 } from "./tribute-drafts";
 
@@ -71,5 +72,33 @@ describe("tribute draft utilities", () => {
     expect(updatedTributes.slice(1).map((tribute) => tribute.id)).toEqual(
       originalTributes.slice(1).map((tribute) => tribute.id),
     );
+  });
+
+  it("detects edits to blank tribute drafts", () => {
+    const blankTributes =
+      createBlankTributeDrafts(6);
+
+    expect(
+      haveTributeDraftsBeenEdited(
+        blankTributes,
+      ),
+    ).toBe(false);
+
+    const editedTributes =
+      blankTributes.map(
+        (tribute, index) =>
+          index === 0
+            ? {
+                ...tribute,
+                name: "Katniss",
+              }
+            : tribute,
+      );
+
+    expect(
+      haveTributeDraftsBeenEdited(
+        editedTributes,
+      ),
+    ).toBe(true);
   });
 });

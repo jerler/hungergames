@@ -1,7 +1,7 @@
 import type { TributeAssignmentMode } from "~/game/tributes/tribute-drafts";
 import type { PronounSetId } from "~/game/tributes/pronouns";
 import type { GameConfig } from "~/game/types/game-config";
-import type { TributeStats } from "~/game/types/tribute";
+import type { PortraitPosition, TributeStats } from "~/game/types/tribute";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
 
@@ -61,9 +61,10 @@ export interface GameTribute {
     name: string;
     pronouns: PronounSetId;
     portraitUrl: string | null;
+    portraitPosition?: PortraitPosition;
     stats: TributeStats;
   };
-
+  
   isAlive: boolean;
   death: TributeDeath | null;
   statuses: StatusEffect[];

@@ -56,6 +56,10 @@ function createBlankDraft(slot: TributeSlot): TributeDraft {
     name: "",
     pronouns: DEFAULT_PRONOUN_SET_ID,
     portraitPreviewUrl: null,
+    portraitPosition: {
+      x: 50,
+      y: 50,
+    },
     stats: {
       brains: 3,
       brawn: 3,
@@ -79,6 +83,22 @@ function createDraftFromDefinition(slot: TributeSlot, definition: TributeDefinit
 
 export function createBlankTributeDrafts(districtCount: DistrictCount): TributeDraft[] {
   return createTributeSlots(districtCount).map(createBlankDraft);
+}
+
+export function haveTributeDraftsBeenEdited(
+  tributeDrafts: readonly TributeDraft[],
+): boolean {
+  return tributeDrafts.some(
+    (tribute) =>
+      tribute.sourceDefinitionId !== null ||
+      tribute.name !== "" ||
+      tribute.pronouns !==
+        DEFAULT_PRONOUN_SET_ID ||
+      tribute.portraitPreviewUrl !== null ||
+      tribute.stats.brains !== 3 ||
+      tribute.stats.brawn !== 3 ||
+      tribute.stats.luck !== 3,
+  );
 }
 
 export function createRandomTributeDrafts(

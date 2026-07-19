@@ -85,6 +85,21 @@ export function createBlankTributeDrafts(districtCount: DistrictCount): TributeD
   return createTributeSlots(districtCount).map(createBlankDraft);
 }
 
+export function isTributeDraftBlank(
+  tribute: TributeDraft,
+): boolean {
+  return (
+    tribute.sourceDefinitionId === null &&
+    tribute.name.trim() === "" &&
+    tribute.pronouns ===
+      DEFAULT_PRONOUN_SET_ID &&
+    tribute.portraitPreviewUrl === null &&
+    tribute.stats.brains === 3 &&
+    tribute.stats.brawn === 3 &&
+    tribute.stats.luck === 3
+  );
+}
+
 export function haveTributeDraftsBeenEdited(
   tributeDrafts: readonly TributeDraft[],
 ): boolean {

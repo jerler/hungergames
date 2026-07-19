@@ -210,86 +210,96 @@ export function TributeCardEditor({
         </button>
       </header>
 
-      <div
-        className={[
-          "tribute-card__portrait",
-          tribute.portraitPreviewUrl
-            ? "tribute-card__portrait--adjustable"
-            : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        onPointerDown={handlePortraitPointerDown}
-        onPointerMove={handlePortraitPointerMove}
-        onPointerUp={stopPortraitDrag}
-        onPointerCancel={stopPortraitDrag}
-        onLostPointerCapture={() => {
-          portraitDragRef.current = null;
-        }}
-        onDragStart={(event) => {
-          event.preventDefault();
-        }}
-      >
-        {tribute.portraitPreviewUrl ? (
-          <img
-            src={tribute.portraitPreviewUrl}
-            alt=""
-            draggable={false}
-            onDragStart={(event) => {
-              event.preventDefault();
-            }}
-            style={{
-              objectPosition: `${portraitPosition.x}% ${portraitPosition.y}%`,
-            }}
-          />
-        ) : (
-          <span aria-hidden="true">
-            {getInitials(tribute.name)}
-          </span>
-        )}
-      </div>
+      <div className="tribute-card__profile">
+        <div
+          className={[
+            "tribute-card__portrait",
+            tribute.portraitPreviewUrl
+              ? "tribute-card__portrait--adjustable"
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          onPointerDown={handlePortraitPointerDown}
+          onPointerMove={handlePortraitPointerMove}
+          onPointerUp={stopPortraitDrag}
+          onPointerCancel={stopPortraitDrag}
+          onLostPointerCapture={() => {
+            portraitDragRef.current = null;
+          }}
+          onDragStart={(event) => {
+            event.preventDefault();
+          }}
+        >
+          {tribute.portraitPreviewUrl ? (
+            <img
+              src={tribute.portraitPreviewUrl}
+              alt=""
+              draggable={false}
+              onDragStart={(event) => {
+                event.preventDefault();
+              }}
+              style={{
+                objectPosition: `${portraitPosition.x}% ${portraitPosition.y}%`,
+              }}
+            />
+          ) : (
+            <span aria-hidden="true">
+              {getInitials(tribute.name)}
+            </span>
+          )}
+        </div>
 
-      <div className="tribute-card__portrait-controls">
-        <label className="portrait-upload">
-          <input
-            className="visually-hidden"
-            type="file"
-            accept={PORTRAIT_ACCEPT_ATTRIBUTE}
-            aria-label={`Upload portrait for ${tributeLabel}`}
-            aria-describedby={portraitError ? portraitErrorId : undefined}
-            onChange={(event) => {
-              void handlePortraitSelection(event);
-            }}
-          />
+        <div className="tribute-card__portrait-controls">
+          {tribute.portraitPreviewUrl ? (
+            <button
+              className="portrait-remove"
+              type="button"
+              onClick={() => {
+                setPortraitError(null);
 
-          <span>{tribute.portraitPreviewUrl ? "Replace portrait" : "Add portrait"}</span>
-        </label>
+                onChange({
+                  ...tribute,
+                  portraitPreviewUrl: null,
+                  portraitPosition: {
+                    x: 50,
+                    y: 50,
+                  },
+                });
+              }}
+            >
+              Remove portrait
+            </button>
+          ) : (
+            <label className="portrait-upload">
+              <input
+                className="visually-hidden"
+                type="file"
+                accept={PORTRAIT_ACCEPT_ATTRIBUTE}
+                aria-label={`Upload portrait for ${tributeLabel}`}
+                aria-describedby={
+                  portraitError
+                    ? portraitErrorId
+                    : undefined
+                }
+                onChange={(event) => {
+                  void handlePortraitSelection(event);
+                }}
+              />
 
-        {tribute.portraitPreviewUrl ? (
-          <button
-            className="portrait-remove"
-            type="button"
-            onClick={() => {
-              setPortraitError(null);
+              <span>Add portrait</span>
+            </label>
+          )}
+        </div>
 
-              onChange({
-                ...tribute,
-                portraitPreviewUrl: null,
-              });
-            }}
-          >
-            Remove
-          </button>
+        <p className="portrait-help">JPEG, PNG, or WebP · 5 MB max · Drag to reposition</p>
+
+        {portraitError ? (
+          <p className="tribute-card__field-error" id={portraitErrorId} role="alert">
+            {portraitError}
+          </p>
         ) : null}
       </div>
-
-      <p className="portrait-help">JPEG, PNG, or WebP. Maximum 5 MB. Drag the portrait to reposition it.</p>
-
-      {portraitError ? (
-        <p className="tribute-card__field-error" id={portraitErrorId} role="alert">
-          {portraitError}
-        </p>
-      ) : null}
 
       <div className="tribute-card__details">
         <label className="tribute-card__name-label" htmlFor={`${tribute.id}-name`}>

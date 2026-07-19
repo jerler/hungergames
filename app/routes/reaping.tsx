@@ -17,6 +17,7 @@ import {
   createBlankTributeDrafts,
   createRandomTributeDrafts,
   haveTributeDraftsBeenEdited,
+  isTributeDraftBlank,
   randomizeTributeDraft,
 } from "~/game/tributes/tribute-drafts";
 import type { GameConfig } from "~/game/types/game-config";
@@ -63,6 +64,30 @@ export default function ReapingPage() {
     useRef<HTMLDialogElement>(null);
 
   const [validationResult, setValidationResult] = useState<ReapingValidationResult | null>(null);
+
+  const randomizeBlankTributes = () => {
+    setValidationResult(null);
+
+    setTributes((currentTributes) => {
+      let updatedTributes = [
+        ...currentTributes,
+      ];
+
+      for (const tribute of currentTributes) {
+        if (
+          isTributeDraftBlank(tribute)
+        ) {
+          updatedTributes =
+            randomizeTributeDraft(
+              updatedTributes,
+              tribute.id,
+            );
+        }
+      }
+
+      return updatedTributes;
+    });
+  };
   
   useEffect(() => {
     const dialog = randomizeDialogRef.current;
@@ -102,6 +127,10 @@ export default function ReapingPage() {
       </main>
     );
   }
+
+  const blankTributeCount = tributes.filter(
+    isTributeDraftBlank,
+  ).length;
 
   const randomizeAllTributes = () => {
     setTributes(
@@ -205,17 +234,51 @@ export default function ReapingPage() {
                 replace individual characters.
               </p>
             </div>
-
-            <button
-              className="reaping-randomize-all"
-              type="button"
-              onClick={
-                requestRandomizeAllTributes
-              }
-            >
-              Randomize
-            </button>
           </header>
+
+          <div
+            className="reaping-action-bar"
+            aria-label="Tribute roster actions"
+          >
+            <div className="reaping-action-bar__secondary">
+              <button
+                className="reaping-action-button"
+                type="button"
+                onClick={
+                  requestRandomizeAllTributes
+                }
+              >
+                Randomize all
+              </button>
+
+              <button
+                className="reaping-action-button"
+                type="button"
+                disabled={
+                  blankTributeCount === 0
+                }
+                onClick={randomizeBlankTributes}
+              >
+                Randomize blanks
+                {blankTributeCount > 0
+                  ? ` (${blankTributeCount})`
+                  : ""}
+              </button>
+            </div>
+
+            <div className="reaping-action-bar__primary">
+              <button
+                className="start-games-button"
+                type="submit"
+              >
+                Start the Games
+
+                <span aria-hidden="true">
+                  →
+                </span>
+              </button>
+            </div>
+          </div>
 
           {validationResult && !validationResult.isValid ? (
             <section className="reaping-errors" aria-labelledby="reaping-errors-title" role="alert">
@@ -238,8 +301,6 @@ export default function ReapingPage() {
           />
 
           <footer className="reaping-editor-footer">
-            <p>Portraits are optional. Every tribute must have a name and three completed stats.</p>
-
             <button className="start-games-button" type="submit">
               Start the Games
               <span aria-hidden="true">→</span>

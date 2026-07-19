@@ -12,7 +12,16 @@ interface StarRatingProps {
 export function StarRating({ id, label, value, onChange }: StarRatingProps) {
   return (
     <fieldset className="star-rating">
-      <legend className="star-rating__label">{label}</legend>
+      <legend className="visually-hidden">
+        {label}
+      </legend>
+
+      <span
+        className="star-rating__label"
+        aria-hidden="true"
+      >
+        {label}
+      </span>
 
       <div className="star-rating__options">
         {STAR_VALUES.map((starValue) => {

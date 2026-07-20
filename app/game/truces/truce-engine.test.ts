@@ -119,6 +119,136 @@ describe("truce engine", () => {
     expect(brokenState.truces).toEqual([]);
   });
 
+  it("rejects a standard truce without an expiry round", () => {
+    const game = createGame();
+
+    expect(() =>
+      createTruceInstance(
+        "permanent-standard-truce",
+        [game.tributes[0].id, game.tributes[1].id],
+        DAY_ONE,
+        null,
+        "standard",
+      ),
+    ).toThrow(/standard truce requires an expiry round/i);
+  });
+
+  it("rejects loaded state containing a permanent standard truce", () => {
+    const game = createGame();
+
+    const validTruce = createTruceInstance(
+      "valid-standard-truce",
+      [game.tributes[0].id, game.tributes[1].id],
+      DAY_ONE,
+      NIGHT_ONE,
+      "standard",
+    );
+
+    const invalidTruce = {
+      ...validTruce,
+      expiresAfterRound: null,
+    };
+
+    expect(() =>
+      assertGameStateInvariants({
+        ...game,
+        truces: [invalidTruce],
+      }),
+    ).toThrow(/standard truce.*expiry round/i);
+  });
+
+  it("prevents ordinary breakup changes from ending a romantic truce", () => {
+    const game = createGame();
+
+    const romanticTruce = createTruceInstance(
+      "romantic-formation",
+      [game.tributes[0].id, game.tributes[1].id],
+      DAY_ONE,
+      null,
+      "romantic",
+    );
+
+    const formedState = applyResolvedEvent(
+      game,
+      createEvent(
+        "romantic-formation",
+        [
+          {
+            type: "form-truce",
+            truce: romanticTruce,
+          },
+        ],
+        romanticTruce.tributeIds,
+      ),
+    );
+
+    const forbiddenReasons = ["expired", "amicable", "betrayal"] as const;
+
+    for (const reason of forbiddenReasons) {
+      expect(() =>
+        applyResolvedEvent(
+          formedState,
+          createEvent(
+            `invalid-romantic-break-${reason}`,
+            [
+              {
+                type: "break-truce",
+                truceId: romanticTruce.id,
+                reason,
+              },
+            ],
+            romanticTruce.tributeIds,
+          ),
+        ),
+      ).toThrow(/romantic truce.*accidental separation/i);
+    }
+
+    expect(formedState.truces).toEqual([romanticTruce]);
+  });
+
+  it("allows accidental separation to end a romantic truce", () => {
+    const game = createGame();
+
+    const romanticTruce = createTruceInstance(
+      "romantic-formation",
+      [game.tributes[0].id, game.tributes[1].id],
+      DAY_ONE,
+      null,
+      "romantic",
+    );
+
+    const formedState = applyResolvedEvent(
+      game,
+      createEvent(
+        "romantic-formation",
+        [
+          {
+            type: "form-truce",
+            truce: romanticTruce,
+          },
+        ],
+        romanticTruce.tributeIds,
+      ),
+    );
+
+    const separatedState = applyResolvedEvent(
+      formedState,
+      createEvent(
+        "accidental-romantic-separation",
+        [
+          {
+            type: "break-truce",
+            truceId: romanticTruce.id,
+            reason: "accidental",
+          },
+        ],
+        romanticTruce.tributeIds,
+      ),
+    );
+
+    expect(separatedState.truces).toEqual([]);
+  });
+
   it("prevents a tribute from joining two active truces", () => {
     const game = createGame();
 

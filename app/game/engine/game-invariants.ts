@@ -57,6 +57,13 @@ export function assertGameStateInvariants(state: GameState): void {
       );
     }
 
+    if (truce.kind === "standard") {
+      assert(
+        truce.expiresAfterRound !== null,
+        `standard truce "${truce.id}" must have an expiry round.`,
+      );
+    }
+
     if (truce.expiresAfterRound) {
       assert(
         getRoundSequence(truce.expiresAfterRound) >= getRoundSequence(truce.createdRound),

@@ -51,6 +51,10 @@ function validateTruceFormation(state: GameState, truce: Truce): void {
     throw new Error("A romantic truce cannot expire automatically.");
   }
 
+  if (truce.kind === "standard" && !truce.expiresAfterRound) {
+    throw new Error("A standard truce requires an expiry round.");
+  }
+
   if (
     truce.expiresAfterRound &&
     getRoundSequence(truce.expiresAfterRound) < getRoundSequence(truce.createdRound)
@@ -359,16 +363,20 @@ export function applyGameChange(
     }
 
     case "break-truce": {
-      const truceExists = state.truces.some((truce) => truce.id === change.truceId);
+      const truce = state.truces.find((candidate) => candidate.id === change.truceId);
 
-      if (!truceExists) {
+      if (!truce) {
         throw new Error(`Cannot break missing truce "${change.truceId}".`);
+      }
+
+      if (truce.kind === "romantic" && change.reason !== "accidental") {
+        throw new Error(`Romantic truce "${truce.id}" can only end through accidental separation.`);
       }
 
       return {
         ...state,
 
-        truces: state.truces.filter((truce) => truce.id !== change.truceId),
+        truces: state.truces.filter((candidate) => candidate.id !== truce.id),
       };
     }
 

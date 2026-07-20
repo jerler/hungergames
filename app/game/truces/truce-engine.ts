@@ -35,6 +35,10 @@ export function createTruceInstance(
     throw new Error("A romantic truce cannot have an automatic expiry.");
   }
 
+  if (kind === "standard" && expiresAfterRound === null) {
+    throw new Error("A standard truce requires an expiry round.");
+  }
+
   return {
     id: `${eventId}:truce`,
     kind,

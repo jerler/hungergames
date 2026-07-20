@@ -1,10 +1,13 @@
 import type { TributeDefinition, TributeStatValue } from "~/game/types/tribute";
 import { DEFAULT_PRONOUN_SET_ID, type PronounSetId } from "~/game/tributes/pronouns";
+const DEFAULT_TRIBUTE_PORTRAIT_DIRECTORY =
+  "/images/tributes";
 
 function createTributeDefinition(
   id: string,
   name: string,
-  pronouns: PronounSetId = DEFAULT_PRONOUN_SET_ID,
+  pronouns: PronounSetId =
+    DEFAULT_PRONOUN_SET_ID,
   brains: TributeStatValue,
   brawn: TributeStatValue,
   luck: TributeStatValue,
@@ -13,7 +16,8 @@ function createTributeDefinition(
     id,
     name,
     pronouns,
-    portraitUrl: null,
+    portraitUrl:
+      `${DEFAULT_TRIBUTE_PORTRAIT_DIRECTORY}/${id}.jpg`,
     stats: {
       brains,
       brawn,
@@ -43,9 +47,7 @@ export const DEFAULT_TRIBUTES = [
   createTributeDefinition("harley-quinn", "Harley Quinn", "she", 2, 4, 4),
   createTributeDefinition("spider-man", "Spider-Man", "he", 4, 4, 4),
   createTributeDefinition("deadpool", "Deadpool", "he", 2, 4, 3),
-  createTributeDefinition("loki", "Loki", "he", 5, 2, 3),
   createTributeDefinition("wonder-woman", "Wonder Woman", "she", 2, 5, 2),
-  createTributeDefinition("poison-ivy", "Poison Ivy", "she", 5, 2, 3),
   createTributeDefinition("mario", "Mario", "he", 2, 4, 5),
   createTributeDefinition("luigi", "Luigi", "he", 3, 3, 5),
   createTributeDefinition("princess-peach", "Princess Peach", "she", 2, 1, 4),
@@ -67,8 +69,8 @@ export const DEFAULT_TRIBUTES = [
   createTributeDefinition("ron-swanson", "Ron Swanson", "he", 4, 4, 2),
   createTributeDefinition("darth-vader", "Darth Vader", "he", 4, 3, 1),
   createTributeDefinition("captain-jack-sparrow", "Captain Jack Sparrow", "he", 4, 3, 5),
-  createTributeDefinition("bear-obsession", "Bear from Obsession", "he", 3, 2, 1),
-  createTributeDefinition("bluey", "Bluey", "he", 4, 1, 5),
+  createTributeDefinition("bear-obsession", "Bear from Obsession", "he", 1, 2, 1),
+  createTributeDefinition("bluey", "Bluey", "he", 3, 1, 4),
   createTributeDefinition("totoro", "Totoro", "they", 3, 4, 5),
   createTributeDefinition("wall-e", "WALL-E", "he", 2, 2, 2),
   createTributeDefinition("pikachu", "Pikachu", "they", 2, 4, 2),
@@ -94,7 +96,7 @@ export const DEFAULT_TRIBUTES = [
   createTributeDefinition("jason-voorhees", "Jason Voorhees", "he", 1, 5, 4),
   createTributeDefinition("carrie-white", "Carrie White", "she", 4, 4, 1),
   createTributeDefinition("beetlejuice", "Beetlejuice", "he", 4, 2, 3),
-  createTributeDefinition("jack-skellington", "Jack Skellington", "he", 4, 3, 4),
+  createTributeDefinition("jack-skellington", "Jack Skellington", "he", 2, 3, 3),
   createTributeDefinition("buffy-summers", "Buffy Summers", "she", 4, 5, 2),
   createTributeDefinition("velma-dinkley", "Velma Dinkley", "she", 5, 1, 3),
   createTributeDefinition("dwight-schrute", "Dwight Schrute", "he", 4, 2, 3),

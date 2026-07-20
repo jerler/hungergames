@@ -75,6 +75,10 @@ function createDraftFromDefinition(slot: TributeSlot, definition: TributeDefinit
     name: definition.name,
     pronouns: definition.pronouns ?? DEFAULT_PRONOUN_SET_ID,
     portraitPreviewUrl: definition.portraitUrl,
+    portraitPosition: definition.portraitPosition ?? {
+      x: 50,
+      y: 50,
+    },
     stats: {
       ...definition.stats,
     },

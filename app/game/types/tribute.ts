@@ -14,6 +14,7 @@ export interface TributeDefinition {
   name: string;
   pronouns: PronounSetId;
   portraitUrl: string | null;
+  portraitPosition?: PortraitPosition;
   stats: TributeStats;
 }
 

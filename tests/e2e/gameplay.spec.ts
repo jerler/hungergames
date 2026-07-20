@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("runs a local Game until one victor remains", async ({ page }) => {
+test("runs a local Game through its victory sequence", async ({ page }) => {
   await page.goto("/");
 
   await page
@@ -60,7 +60,7 @@ test("runs a local Game until one victor remains", async ({ page }) => {
 
   for (let roundIndex = 0; roundIndex < 50; roundIndex += 1) {
     const victoryHeading = page.getByRole("heading", {
-      name: "We have a victor",
+      name: /We have (?:a victor|victors)/i,
     });
 
     if (await victoryHeading.isVisible()) {
@@ -73,6 +73,16 @@ test("runs a local Game until one victor remains", async ({ page }) => {
 
     if (await revealAllButton.isVisible()) {
       await revealAllButton.click();
+    }
+
+    const revealVictorButton = page.getByRole("button", {
+      name: "Reveal the victor",
+    });
+
+    if (await revealVictorButton.isVisible()) {
+      await expect(revealVictorButton).toBeVisible();
+
+      await revealVictorButton.click();
     }
 
     if (await victoryHeading.isVisible()) {
@@ -90,7 +100,7 @@ test("runs a local Game until one victor remains", async ({ page }) => {
 
   await expect(
     page.getByRole("heading", {
-      name: "We have a victor",
+      name: /We have (?:a victor|victors)/i,
     }),
   ).toBeVisible();
 
@@ -102,7 +112,7 @@ test("runs a local Game until one victor remains", async ({ page }) => {
 
   await expect(
     page.getByRole("heading", {
-      name: "The victor is...",
+      name: /The victor is\.\.\.|The victors are\.\.\./i,
     }),
   ).toBeVisible();
 

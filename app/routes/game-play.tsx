@@ -30,7 +30,13 @@ export default function GamePlayPage() {
 
   const { activeGame, dispatch } = useGameSession();
 
+  const [hasAcknowledgedFinalEvent, setHasAcknowledgedFinalEvent] = useState(false);
+
   const [hasCompletedVictoryFanfare, setHasCompletedVictoryFanfare] = useState(false);
+
+  const acknowledgeFinalEvent = useCallback(() => {
+    setHasAcknowledgedFinalEvent(true);
+  }, []);
 
   const completeVictoryFanfare = useCallback(() => {
     setHasCompletedVictoryFanfare(true);
@@ -92,11 +98,16 @@ export default function GamePlayPage() {
     void navigate(`/games/${activeGame.id}/results`);
   };
 
-  if (activeGame.phase === "victory" && victors.length > 0 && !hasCompletedVictoryFanfare) {
+  if (
+    activeGame.phase === "victory" &&
+    victors.length > 0 &&
+    hasAcknowledgedFinalEvent &&
+    !hasCompletedVictoryFanfare
+  ) {
     return <VictoryFanfare victors={victors} onComplete={completeVictoryFanfare} />;
   }
 
-  if (activeGame.phase === "victory" && victors.length > 0) {
+  if (activeGame.phase === "victory" && victors.length > 0 && hasAcknowledgedFinalEvent) {
     return <VictorySummary game={activeGame} victors={victors} onViewStatistics={openStatistics} />;
   }
 
@@ -145,7 +156,9 @@ export default function GamePlayPage() {
           ) : null}
 
           {activeGame.currentRound &&
-          (activeGame.phase === "round-events" || activeGame.phase === "round-complete") ? (
+          (activeGame.phase === "round-events" ||
+            activeGame.phase === "round-complete" ||
+            activeGame.phase === "victory") ? (
             <>
               <RoundEventFeed
                 events={revealedEvents}
@@ -177,6 +190,16 @@ export default function GamePlayPage() {
                 {activeGame.phase === "round-complete" ? (
                   <button className="arena-primary-button" type="button" onClick={beginRound}>
                     Continue to {selectNextRoundLabel(activeGame)}
+                    <span aria-hidden="true">→</span>
+                  </button>
+                ) : null}
+                {activeGame.phase === "victory" && !hasAcknowledgedFinalEvent ? (
+                  <button
+                    className="arena-primary-button"
+                    type="button"
+                    onClick={acknowledgeFinalEvent}
+                  >
+                    Reveal the victor
                     <span aria-hidden="true">→</span>
                   </button>
                 ) : null}

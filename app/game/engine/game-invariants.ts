@@ -1,6 +1,7 @@
 import type { GameState } from "~/game/types/game-state";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
+import { getRoundSequence } from "~/game/engine/rounds";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
@@ -32,6 +33,54 @@ export function assertGameStateInvariants(state: GameState): void {
 
   const tributeIds = new Set(state.tributes.map((tribute) => tribute.id));
 
+  assertUniqueValues(
+    state.tributes.flatMap((tribute) => tribute.inventory.map((item) => item.id)),
+    "Inventory item IDs across all tributes",
+  );
+
+  const truceIdByTributeId = new Map<string, string>();
+
+  for (const truce of state.truces) {
+    assert(truce.tributeIds.length >= 2, `truce "${truce.id}" must contain at least two tributes.`);
+
+    assertUniqueValues(truce.tributeIds, `Member IDs for truce "${truce.id}"`);
+
+    if (truce.kind === "romantic") {
+      assert(
+        truce.tributeIds.length === 2,
+        `romantic truce "${truce.id}" must contain exactly two tributes.`,
+      );
+
+      assert(
+        truce.expiresAfterRound === null,
+        `romantic truce "${truce.id}" cannot expire automatically.`,
+      );
+    }
+
+    if (truce.expiresAfterRound) {
+      assert(
+        getRoundSequence(truce.expiresAfterRound) >= getRoundSequence(truce.createdRound),
+        `truce "${truce.id}" expires before it was created.`,
+      );
+    }
+
+    for (const tributeId of truce.tributeIds) {
+      const tribute = state.tributes.find((candidate) => candidate.id === tributeId);
+
+      assert(tribute, `truce "${truce.id}" references missing tribute "${tributeId}".`);
+
+      assert(tribute.isAlive, `truce "${truce.id}" contains dead tribute "${tributeId}".`);
+
+      const existingTruceId = truceIdByTributeId.get(tributeId);
+
+      assert(
+        !existingTruceId,
+        `tribute "${tributeId}" belongs to both "${existingTruceId}" and "${truce.id}".`,
+      );
+
+      truceIdByTributeId.set(tributeId, truce.id);
+    }
+  }
   for (const tribute of state.tributes) {
     assert(
       tribute.district >= 1 && tribute.district <= state.config.districtCount,
@@ -98,26 +147,30 @@ export function assertGameStateInvariants(state: GameState): void {
 
   const itemUseLedger = new Map<string, number>();
 
+  const itemOwnerLedger = new Map<string, string>();
+
   for (const transaction of state.itemTransactions) {
     assert(
       tributeIds.has(transaction.tributeId),
-      `inventory transaction "${transaction.id}" references a missing tribute.`,
+      `inventory transaction "${transaction.id}" ` + "references a missing tribute.",
     );
 
     getItemDefinition(transaction.definitionId);
 
     assert(
       Number.isInteger(transaction.uses) && transaction.uses > 0,
-      `inventory transaction "${transaction.id}" has invalid uses.`,
+      `inventory transaction "${transaction.id}" ` + "has invalid uses.",
     );
 
     if (transaction.type === "acquired") {
       assert(
         !itemUseLedger.has(transaction.itemInstanceId),
-        `item "${transaction.itemInstanceId}" was acquired more than once.`,
+        `item "${transaction.itemInstanceId}" ` + "was acquired more than once.",
       );
 
       itemUseLedger.set(transaction.itemInstanceId, transaction.uses);
+
+      itemOwnerLedger.set(transaction.itemInstanceId, transaction.tributeId);
 
       continue;
     }
@@ -126,12 +179,59 @@ export function assertGameStateInvariants(state: GameState): void {
 
     assert(
       remainingUses !== undefined,
-      `item "${transaction.itemInstanceId}" was consumed before acquisition.`,
+      `item "${transaction.itemInstanceId}" ` + `was ${transaction.type} before acquisition.`,
+    );
+
+    const currentOwnerId = itemOwnerLedger.get(transaction.itemInstanceId);
+
+    assert(
+      currentOwnerId !== undefined,
+      `item "${transaction.itemInstanceId}" ` + "does not have an owner.",
+    );
+
+    if (transaction.type === "transferred") {
+      assert(
+        tributeIds.has(transaction.fromTributeId),
+        `transfer "${transaction.id}" references ` + "a missing source tribute.",
+      );
+
+      assert(
+        tributeIds.has(transaction.toTributeId),
+        `transfer "${transaction.id}" references ` + "a missing target tribute.",
+      );
+
+      assert(
+        transaction.tributeId === transaction.toTributeId,
+        `transfer "${transaction.id}" has an ` + "inconsistent resulting owner.",
+      );
+
+      assert(
+        currentOwnerId === transaction.fromTributeId,
+        `item "${transaction.itemInstanceId}" was ` +
+          `transferred by "${transaction.fromTributeId}" ` +
+          `but is owned by "${currentOwnerId}".`,
+      );
+
+      assert(
+        transaction.uses === remainingUses,
+        `transfer "${transaction.id}" changed the ` + "recorded remaining uses.",
+      );
+
+      itemOwnerLedger.set(transaction.itemInstanceId, transaction.toTributeId);
+
+      continue;
+    }
+
+    assert(
+      currentOwnerId === transaction.tributeId,
+      `item "${transaction.itemInstanceId}" was ` +
+        `consumed by "${transaction.tributeId}" ` +
+        `but is owned by "${currentOwnerId}".`,
     );
 
     assert(
       remainingUses >= transaction.uses,
-      `item "${transaction.itemInstanceId}" was over-consumed.`,
+      `item "${transaction.itemInstanceId}" ` + "was over-consumed.",
     );
 
     itemUseLedger.set(transaction.itemInstanceId, remainingUses - transaction.uses);
@@ -141,7 +241,14 @@ export function assertGameStateInvariants(state: GameState): void {
     for (const item of tribute.inventory) {
       assert(
         itemUseLedger.get(item.id) === item.usesRemaining,
-        `item "${item.id}" does not match its transaction history.`,
+        `item "${item.id}" does not match ` + "its transaction history.",
+      );
+
+      assert(
+        itemOwnerLedger.get(item.id) === tribute.id,
+        `item "${item.id}" is held by ` +
+          `"${tribute.id}" but its transaction ` +
+          "history records another owner.",
       );
     }
   }
@@ -208,15 +315,78 @@ export function assertGameStateInvariants(state: GameState): void {
 
   const livingTributes = state.tributes.filter((tribute) => tribute.isAlive);
 
+  const livingTributeIds = new Set(livingTributes.map((tribute) => tribute.id));
+
   if (state.phase === "victory" || state.phase === "statistics") {
-    assert(livingTributes.length === 1, `${state.phase} requires exactly one living tribute.`);
+    assert(state.victoryOutcome !== null, `${state.phase} requires a victory outcome.`);
+  }
+
+  if (state.phase === "opening" || state.phase === "round-complete") {
+    assert(state.victoryOutcome === null, `phase "${state.phase}" cannot have a victory outcome.`);
+  }
+
+  if (state.victoryOutcome) {
+    const victoryOutcome = state.victoryOutcome;
+
+    assertUniqueValues(victoryOutcome.victorTributeIds, "Victor tribute IDs");
+
+    for (const tributeId of victoryOutcome.victorTributeIds) {
+      assert(tributeIds.has(tributeId), `victory references missing tribute "${tributeId}".`);
+
+      assert(livingTributeIds.has(tributeId), `victor "${tributeId}" must still be alive.`);
+    }
 
     assert(
-      state.victorTributeId === livingTributes[0].id,
-      "Victor ID must identify the sole living tribute.",
+      victoryOutcome.victorTributeIds.length === livingTributes.length,
+      "Every living tribute must be included in the victory outcome.",
     );
-  } else {
-    assert(state.victorTributeId === null, `phase "${state.phase}" cannot have a victor.`);
+
+    if (victoryOutcome.kind === "sole") {
+      assert(
+        victoryOutcome.victorTributeIds.length === 1,
+        "A sole victory requires exactly one victor.",
+      );
+
+      assert(livingTributes.length === 1, "A sole victory requires exactly one living tribute.");
+
+      assert(
+        victoryOutcome.sourceEventId === null,
+        "A sole victory must not reference a joint-victory event.",
+      );
+    } else {
+      assert(
+        victoryOutcome.victorTributeIds.length === 2,
+        "A joint victory requires exactly two victors.",
+      );
+
+      assert(livingTributes.length === 2, "A joint victory requires exactly two living tributes.");
+
+      assert(
+        victoryOutcome.reason === "poisonous-berries",
+        "Joint victory currently requires the poisonous-berries finale.",
+      );
+
+      const sourceEvent = state.eventHistory.find(
+        (event) => event.id === victoryOutcome.sourceEventId,
+      );
+
+      assert(sourceEvent !== undefined, "Joint victory must reference an event in event history.");
+
+      assert(
+        sourceEvent?.definitionId === "poisonous-berries-joint-victory",
+        "Joint victory must reference its poisonous-berries event.",
+      );
+
+      const romanticTruce = state.truces.find(
+        (truce) =>
+          truce.kind === "romantic" &&
+          victoryOutcome.victorTributeIds.every((tributeId) =>
+            truce.tributeIds.includes(tributeId),
+          ),
+      );
+
+      assert(romanticTruce !== undefined, "Joint victors must belong to the same romantic truce.");
+    }
   }
 
   if (state.phase === "opening") {

@@ -12,6 +12,10 @@ import type {
   ResolvedEvent,
   RoundReference,
 } from "~/game/types/game-state";
+import {
+  POISONOUS_BERRIES_JOINT_VICTORY_EVENT,
+  isPoisonousBerriesFinaleEligible,
+} from "~/game/events/poisonous-berries-event";
 
 export const MAX_CONSECUTIVE_NON_ELIMINATION_ROUNDS = 2;
 
@@ -69,6 +73,46 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
     round,
     livingTributes,
   };
+
+  if (isPoisonousBerriesFinaleEligible(state)) {
+    const definition = POISONOUS_BERRIES_JOINT_VICTORY_EVENT;
+
+    const selection = selectEventParticipants(definition, context, random, new Set());
+
+    if (!selection) {
+      throw new Error(
+        "The poisonous-berries finale was eligible but its participants could not be selected.",
+      );
+    }
+
+    const eventId = createEventId(round, 0, definition.id);
+
+    const resolution = definition.resolve({
+      ...context,
+      eventId,
+      random,
+
+      participantsByRole: selection.participantsByRole,
+    });
+
+    return [
+      {
+        id: eventId,
+
+        definitionId: definition.id,
+
+        resolutionMode: "standard",
+
+        round,
+
+        participantTributeIds: selection.participantTributeIds,
+
+        text: resolution.text,
+
+        changes: resolution.changes,
+      },
+    ];
+  }
 
   const eligibleDefinitions = EVENT_CATALOGUE.filter((definition) =>
     isEventDefinitionEligible(definition, context),

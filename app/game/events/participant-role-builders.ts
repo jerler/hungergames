@@ -7,12 +7,14 @@ interface CombatantRoleOptions {
   id?: string;
   requiredItemDefinitionIds?: readonly ItemDefinitionId[];
   requiredItemTags?: readonly ItemTag[];
+  opposesRoleIds?: readonly string[];
 }
 
 export function createCombatantRole({
   id = "killer",
   requiredItemDefinitionIds,
   requiredItemTags,
+  opposesRoleIds = ["victim"],
 }: CombatantRoleOptions = {}): ParticipantRoleDefinition {
   return {
     id,
@@ -20,5 +22,6 @@ export function createCombatantRole({
     getWeight: getCombatSelectionWeight,
     requiredItemDefinitionIds,
     requiredItemTags,
+    opposesRoleIds,
   };
 }

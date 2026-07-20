@@ -6,6 +6,9 @@ import type {
   InventoryTransaction,
   ResolvedEvent,
 } from "~/game/types/game-state";
+import { getRoundSequence } from "~/game/engine/rounds";
+import type { Truce } from "~/game/types/game-state";
+import { createAccidentalTruceDissolutionEvents } from "~/game/truces/truce-aftermath";
 
 function updateTribute(
   state: GameState,
@@ -25,6 +28,55 @@ function updateTribute(
       tribute.id === tributeId ? update(tribute) : tribute,
     ),
   };
+}
+
+function validateTruceFormation(state: GameState, truce: Truce): void {
+  if (state.truces.some((candidate) => candidate.id === truce.id)) {
+    throw new Error(`Truce "${truce.id}" already exists.`);
+  }
+
+  if (truce.tributeIds.length < 2) {
+    throw new Error("A truce requires at least two tributes.");
+  }
+
+  if (new Set(truce.tributeIds).size !== truce.tributeIds.length) {
+    throw new Error(`Truce "${truce.id}" contains duplicate members.`);
+  }
+
+  if (truce.kind === "romantic" && truce.tributeIds.length !== 2) {
+    throw new Error("A romantic truce must contain exactly two tributes.");
+  }
+
+  if (truce.kind === "romantic" && truce.expiresAfterRound) {
+    throw new Error("A romantic truce cannot expire automatically.");
+  }
+
+  if (
+    truce.expiresAfterRound &&
+    getRoundSequence(truce.expiresAfterRound) < getRoundSequence(truce.createdRound)
+  ) {
+    throw new Error(`Truce "${truce.id}" expires before it is created.`);
+  }
+
+  for (const tributeId of truce.tributeIds) {
+    const tribute = state.tributes.find((candidate) => candidate.id === tributeId);
+
+    if (!tribute) {
+      throw new Error(`Truce "${truce.id}" references missing tribute "${tributeId}".`);
+    }
+
+    if (!tribute.isAlive) {
+      throw new Error(`Dead tribute "${tributeId}" cannot join a truce.`);
+    }
+
+    const existingTruce = state.truces.find((candidate) =>
+      candidate.tributeIds.includes(tributeId),
+    );
+
+    if (existingTruce) {
+      throw new Error(`Tribute "${tributeId}" already belongs to truce "${existingTruce.id}".`);
+    }
+  }
 }
 
 export function applyGameChange(
@@ -53,7 +105,6 @@ export function applyGameChange(
           },
         };
       });
-
     case "increment-statistic":
       return updateTribute(state, change.tributeId, (tribute) => ({
         ...tribute,
@@ -189,6 +240,177 @@ export function applyGameChange(
       };
     }
 
+    case "transfer-item": {
+      if (change.fromTributeId === change.toTributeId) {
+        throw new Error(
+          `Cannot transfer item "${change.itemInstanceId}" ` + "to its current owner.",
+        );
+      }
+
+      const sourceTribute = state.tributes.find((tribute) => tribute.id === change.fromTributeId);
+
+      if (!sourceTribute) {
+        throw new Error(`Cannot transfer from missing tribute ` + `"${change.fromTributeId}".`);
+      }
+
+      const targetTribute = state.tributes.find((tribute) => tribute.id === change.toTributeId);
+
+      if (!targetTribute) {
+        throw new Error(`Cannot transfer to missing tribute ` + `"${change.toTributeId}".`);
+      }
+
+      if (!sourceTribute.isAlive) {
+        throw new Error(`Dead tribute "${sourceTribute.id}" ` + "cannot transfer an item.");
+      }
+
+      if (!targetTribute.isAlive) {
+        throw new Error(`Dead tribute "${targetTribute.id}" ` + "cannot receive an item.");
+      }
+
+      const item = sourceTribute.inventory.find(
+        (candidate) => candidate.id === change.itemInstanceId,
+      );
+
+      if (!item) {
+        throw new Error(
+          `Tribute "${sourceTribute.id}" does not own ` + `item "${change.itemInstanceId}".`,
+        );
+      }
+
+      if (targetTribute.inventory.some((candidate) => candidate.id === item.id)) {
+        throw new Error(`Tribute "${targetTribute.id}" already owns ` + `item "${item.id}".`);
+      }
+
+      const stateWithTransfer: GameState = {
+        ...state,
+
+        tributes: state.tributes.map((tribute) => {
+          if (tribute.id === sourceTribute.id) {
+            return {
+              ...tribute,
+
+              inventory: tribute.inventory.filter((candidate) => candidate.id !== item.id),
+            };
+          }
+
+          if (tribute.id === targetTribute.id) {
+            return {
+              ...tribute,
+
+              /*
+               * Move the original item
+               * instance without changing
+               * its ID, source, acquisition
+               * round, or remaining uses.
+               */
+              inventory: [...tribute.inventory, item],
+            };
+          }
+
+          return tribute;
+        }),
+      };
+
+      const transaction: InventoryTransaction = {
+        id:
+          `transfer:${event.id}:` + `${item.id}:` + `${sourceTribute.id}:` + `${targetTribute.id}`,
+
+        type: "transferred",
+
+        /*
+         * Preserve the old transaction
+         * convention by treating tributeId
+         * as the resulting owner.
+         */
+        tributeId: targetTribute.id,
+
+        fromTributeId: sourceTribute.id,
+
+        toTributeId: targetTribute.id,
+
+        itemInstanceId: item.id,
+
+        definitionId: item.definitionId,
+
+        uses: item.usesRemaining,
+
+        round: {
+          ...event.round,
+        },
+
+        sourceId: change.reason,
+      };
+
+      return {
+        ...stateWithTransfer,
+
+        itemTransactions: [...stateWithTransfer.itemTransactions, transaction],
+      };
+    }
+
+    case "form-truce": {
+      validateTruceFormation(state, change.truce);
+
+      return {
+        ...state,
+
+        truces: [...state.truces, change.truce],
+      };
+    }
+
+    case "break-truce": {
+      const truceExists = state.truces.some((truce) => truce.id === change.truceId);
+
+      if (!truceExists) {
+        throw new Error(`Cannot break missing truce "${change.truceId}".`);
+      }
+
+      return {
+        ...state,
+
+        truces: state.truces.filter((truce) => truce.id !== change.truceId),
+      };
+    }
+
+    case "declare-victory": {
+      if (state.victoryOutcome) {
+        throw new Error("A victory outcome has already been declared.");
+      }
+
+      const { outcome } = change;
+
+      const uniqueVictorIds = new Set(outcome.victorTributeIds);
+
+      if (uniqueVictorIds.size !== outcome.victorTributeIds.length) {
+        throw new Error("A victory outcome cannot contain duplicate tributes.");
+      }
+
+      if (outcome.kind === "sole" && outcome.victorTributeIds.length !== 1) {
+        throw new Error("A sole victory requires exactly one victor.");
+      }
+
+      if (outcome.kind === "joint" && outcome.victorTributeIds.length !== 2) {
+        throw new Error("A joint victory requires exactly two victors.");
+      }
+
+      for (const tributeId of outcome.victorTributeIds) {
+        const tribute = state.tributes.find((candidate) => candidate.id === tributeId);
+
+        if (!tribute) {
+          throw new Error(`Victory references missing tribute "${tributeId}".`);
+        }
+
+        if (!tribute.isAlive) {
+          throw new Error(`Dead tribute "${tributeId}" cannot be declared a victor.`);
+        }
+      }
+
+      return {
+        ...state,
+        victoryOutcome: outcome,
+      };
+    }
+
     default: {
       const exhaustiveCheck: never = change;
 
@@ -197,19 +419,76 @@ export function applyGameChange(
   }
 }
 
+function applyEventChanges(state: GameState, event: ResolvedEvent): GameState {
+  return event.changes.reduce(
+    (currentState, change) => applyGameChange(currentState, change, event),
+    state,
+  );
+}
+
+function appendEventHistory(state: GameState, event: ResolvedEvent): GameState {
+  return {
+    ...state,
+
+    eventHistory: [...state.eventHistory, event],
+  };
+}
+
+function insertEventsAfterRoundEvent(
+  state: GameState,
+  sourceEventId: string,
+  insertedEvents: readonly ResolvedEvent[],
+): GameState {
+  if (insertedEvents.length === 0) {
+    return state;
+  }
+
+  const sourceIndex = state.roundEvents.findIndex((event) => event.id === sourceEventId);
+
+  /*
+   * Unit tests sometimes apply events
+   * that were not sequenced into the
+   * current round. Their aftermath still
+   * enters history, but there is no round
+   * feed position to insert it into.
+   */
+  if (sourceIndex < 0) {
+    return state;
+  }
+
+  return {
+    ...state,
+
+    roundEvents: [
+      ...state.roundEvents.slice(0, sourceIndex + 1),
+
+      ...insertedEvents,
+
+      ...state.roundEvents.slice(sourceIndex + 1),
+    ],
+  };
+}
+
 export function applyResolvedEvent(state: GameState, event: ResolvedEvent): GameState {
   if (state.eventHistory.some((historyEvent) => historyEvent.id === event.id)) {
     throw new Error(`Event "${event.id}" cannot be applied twice.`);
   }
 
-  const stateAfterChanges = event.changes.reduce(
-    (currentState, change) => applyGameChange(currentState, change, event),
-    state,
-  );
+  const stateAfterPrimaryChanges = applyEventChanges(state, event);
 
-  return {
-    ...stateAfterChanges,
+  let nextState = appendEventHistory(stateAfterPrimaryChanges, event);
 
-    eventHistory: [...stateAfterChanges.eventHistory, event],
-  };
+  const aftermathEvents = createAccidentalTruceDissolutionEvents(state, nextState, event);
+
+  for (const aftermathEvent of aftermathEvents) {
+    if (nextState.eventHistory.some((historyEvent) => historyEvent.id === aftermathEvent.id)) {
+      throw new Error(`Automatic event "${aftermathEvent.id}" ` + "cannot be applied twice.");
+    }
+
+    nextState = applyEventChanges(nextState, aftermathEvent);
+
+    nextState = appendEventHistory(nextState, aftermathEvent);
+  }
+
+  return insertEventsAfterRoundEvent(nextState, event.id, aftermathEvents);
 }

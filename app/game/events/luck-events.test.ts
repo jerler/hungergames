@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type {
   EventDefinition,
   EventResolution,
-  EventSelectionContext,
+  ParticipantSelectionContext,
   ParticipantsByRole,
 } from "~/game/events/event-schema";
 import { EVENT_CATALOGUE } from "~/game/events/event-catalogue";
@@ -120,10 +120,17 @@ describe("Luck events", () => {
 
     const unluckyTribute = withLuck(game.tributes[2], 1, "Murphy");
 
-    const context: EventSelectionContext = {
+    const context: ParticipantSelectionContext = {
       state: game,
-      round: ROUND,
-      livingTributes: [luckyTribute, averageTribute, unluckyTribute],
+
+      round: {
+        day: 1,
+        period: "day",
+      },
+
+      livingTributes: game.tributes,
+
+      participantsByRole: {},
     };
 
     const sponsorRole = requireLuckEvent("sponsor-drone-malfunction").roles[0];

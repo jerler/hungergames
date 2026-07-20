@@ -70,14 +70,32 @@ function simulateGame(seed: string, districtCount: DistrictCount): GameState {
   throw new Error(`Simulation "${seed}" failed to produce a victor.`);
 }
 
+function expectValidVictoryOutcome(result: GameState): void {
+  const victoryOutcome = result.victoryOutcome;
+
+  expect(victoryOutcome).not.toBeNull();
+
+  if (!victoryOutcome) {
+    throw new Error("The completed simulation has no victory outcome.");
+  }
+
+  const livingTributes = selectLivingTributes(result);
+
+  expect([1, 2]).toContain(livingTributes.length);
+
+  expect(livingTributes).toHaveLength(victoryOutcome.victorTributeIds.length);
+
+  expect(new Set(victoryOutcome.victorTributeIds)).toEqual(
+    new Set(livingTributes.map((tribute) => tribute.id)),
+  );
+}
+
 describe("simulation stress tests", () => {
   it("completes 200 Half Games without violating invariants", () => {
     for (let index = 0; index < 200; index += 1) {
       const result = simulateGame(`half-game-${index}`, 6);
 
-      expect(selectLivingTributes(result)).toHaveLength(1);
-
-      expect(result.victorTributeId).toBe(selectLivingTributes(result)[0].id);
+      expectValidVictoryOutcome(result);
     }
   });
 
@@ -85,7 +103,7 @@ describe("simulation stress tests", () => {
     for (let index = 0; index < 100; index += 1) {
       const result = simulateGame(`full-game-${index}`, 12);
 
-      expect(selectLivingTributes(result)).toHaveLength(1);
+      expectValidVictoryOutcome(result);
     }
   });
 
@@ -96,6 +114,6 @@ describe("simulation stress tests", () => {
 
     expect(firstResult.eventHistory).toEqual(secondResult.eventHistory);
 
-    expect(firstResult.victorTributeId).toBe(secondResult.victorTributeId);
+    expect(firstResult.victoryOutcome).toEqual(secondResult.victoryOutcome);
   });
 });

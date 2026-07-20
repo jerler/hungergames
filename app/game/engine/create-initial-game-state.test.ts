@@ -28,6 +28,7 @@ describe("createInitialGameState", () => {
     expect(gameState.id).toBe("id-1");
     expect(gameState.seed).toBe("test-seed");
     expect(gameState.phase).toBe("opening");
+    expect(gameState.truces).toEqual([]);
     expect(gameState.tributes).toHaveLength(12);
 
     expect(gameState.tributes.every((tribute) => tribute.isAlive && tribute.death === null)).toBe(

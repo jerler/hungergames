@@ -7,6 +7,8 @@ import type { GameState } from "~/game/types/game-state";
 import type { GameAction } from "~/state/game-actions";
 import { prepareTributesForRound } from "~/game/items/inventory-engine";
 import { advanceStatusDurations } from "~/game/statuses/status-engine";
+import { expireTrucesAfterRound } from "~/game/truces/truce-engine";
+import { createSoleVictoryOutcome } from "~/game/victory/victory-outcome";
 
 export type GameReducerState = GameState | null;
 
@@ -16,15 +18,29 @@ function finalizeState(state: GameState): GameState {
   return state;
 }
 
-function beginNextRound(state: GameState, now: string): GameState {
+function deriveVictoryOutcome(state: GameState): GameState["victoryOutcome"] {
+  if (state.victoryOutcome) {
+    return state.victoryOutcome;
+  }
+
   const livingTributes = selectLivingTributes(state);
 
-  if (livingTributes.length <= 1) {
+  if (livingTributes.length !== 1) {
+    return null;
+  }
+
+  return createSoleVictoryOutcome(livingTributes[0]);
+}
+
+function beginNextRound(state: GameState, now: string): GameState {
+  const victoryOutcome = deriveVictoryOutcome(state);
+
+  if (victoryOutcome) {
     return finalizeState({
       ...state,
-      phase: "victory",
 
-      victorTributeId: livingTributes[0]?.id ?? null,
+      phase: "victory",
+      victoryOutcome,
 
       updatedAt: now,
     });
@@ -36,6 +52,7 @@ function beginNextRound(state: GameState, now: string): GameState {
 
   return finalizeState({
     ...preparedState,
+
     phase: "round-events",
     currentRound: nextRound,
 
@@ -49,22 +66,24 @@ function beginNextRound(state: GameState, now: string): GameState {
 function completeRound(state: GameState, now: string): GameState {
   const stateWithAdvancedStatuses = advanceStatusDurations(state);
 
-  const containedElimination = stateWithAdvancedStatuses.roundEvents.some((event) =>
+  const stateAfterRoundProcessing = expireTrucesAfterRound(stateWithAdvancedStatuses);
+
+  const containedElimination = stateAfterRoundProcessing.roundEvents.some((event) =>
     event.changes.some((change) => change.type === "eliminate-tribute"),
   );
 
-  const containedSafetyResolution = stateWithAdvancedStatuses.roundEvents.some(
+  const containedSafetyResolution = stateAfterRoundProcessing.roundEvents.some(
     (event) => event.resolutionMode === "safety",
   );
 
-  const livingTributes = selectLivingTributes(stateWithAdvancedStatuses);
+  const victoryOutcome = deriveVictoryOutcome(stateAfterRoundProcessing);
 
   return finalizeState({
-    ...stateWithAdvancedStatuses,
+    ...stateAfterRoundProcessing,
 
-    phase: livingTributes.length === 1 ? "victory" : "round-complete",
+    phase: victoryOutcome ? "victory" : "round-complete",
 
-    victorTributeId: livingTributes.length === 1 ? livingTributes[0].id : null,
+    victoryOutcome,
 
     engine: {
       consecutiveNonEliminationRounds: containedElimination
@@ -90,9 +109,17 @@ function revealNextEvent(state: GameState, now: string): GameState {
     return completeRound(state, now);
   }
 
+  const historyCountBefore = state.eventHistory.length;
+
   const stateAfterEvent = applyResolvedEvent(state, event);
 
-  const revealedEventCount = state.revealedEventCount + 1;
+  const appliedEventCount = stateAfterEvent.eventHistory.length - historyCountBefore;
+
+  const revealedEventCount = Math.min(
+    stateAfterEvent.roundEvents.length,
+
+    state.revealedEventCount + appliedEventCount,
+  );
 
   const stateWithReveal = {
     ...stateAfterEvent,
@@ -100,7 +127,7 @@ function revealNextEvent(state: GameState, now: string): GameState {
     updatedAt: now,
   };
 
-  if (revealedEventCount === state.roundEvents.length) {
+  if (revealedEventCount === stateAfterEvent.roundEvents.length) {
     return completeRound(stateWithReveal, now);
   }
 

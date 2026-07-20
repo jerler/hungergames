@@ -9,12 +9,24 @@ export function selectDeadTributes(state: GameState): GameTribute[] {
   return state.tributes.filter((tribute) => !tribute.isAlive);
 }
 
-export function selectVictor(state: GameState): GameTribute | null {
-  if (!state.victorTributeId) {
-    return null;
+export function selectVictors(state: GameState): GameTribute[] {
+  if (!state.victoryOutcome) {
+    return [];
   }
 
-  return state.tributes.find((tribute) => tribute.id === state.victorTributeId) ?? null;
+  return state.victoryOutcome.victorTributeIds
+    .map((tributeId) => state.tributes.find((tribute) => tribute.id === tributeId))
+    .filter((tribute): tribute is GameTribute => tribute !== undefined);
+}
+
+/**
+ * Retained temporarily for older callers
+ * that specifically require a sole victor.
+ */
+export function selectVictor(state: GameState): GameTribute | null {
+  const victors = selectVictors(state);
+
+  return victors.length === 1 ? victors[0] : null;
 }
 
 export function selectRevealedRoundEvents(state: GameState): ResolvedEvent[] {

@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
-
+import { ActiveTruceSummary } from "~/features/arena/active-truce-summary";
 import { RoundEventFeed } from "~/features/arena/round-event-feed";
 import { TributeSidebar } from "~/features/arena/tribute-sidebar";
 import { VictoryFanfare } from "~/features/victory/victory-fanfare";
@@ -12,7 +12,7 @@ import {
   selectLivingTributes,
   selectNextRoundLabel,
   selectRevealedRoundEvents,
-  selectVictor,
+  selectVictors,
 } from "~/game/selectors/game-selectors";
 import { useGameSession } from "~/state/game-session-context";
 
@@ -60,7 +60,7 @@ export default function GamePlayPage() {
 
   const livingTributes = selectLivingTributes(activeGame);
 
-  const victor = selectVictor(activeGame);
+  const victors = selectVictors(activeGame);
 
   const beginRound = () => {
     dispatch({
@@ -92,12 +92,12 @@ export default function GamePlayPage() {
     void navigate(`/games/${activeGame.id}/results`);
   };
 
-  if (activeGame.phase === "victory" && victor && !hasCompletedVictoryFanfare) {
-    return <VictoryFanfare victor={victor} onComplete={completeVictoryFanfare} />;
+  if (activeGame.phase === "victory" && victors.length > 0 && !hasCompletedVictoryFanfare) {
+    return <VictoryFanfare victors={victors} onComplete={completeVictoryFanfare} />;
   }
 
-  if (activeGame.phase === "victory" && victor) {
-    return <VictorySummary game={activeGame} victor={victor} onViewStatistics={openStatistics} />;
+  if (activeGame.phase === "victory" && victors.length > 0) {
+    return <VictorySummary game={activeGame} victors={victors} onViewStatistics={openStatistics} />;
   }
 
   const revealedEvents = selectRevealedRoundEvents(activeGame);
@@ -187,6 +187,8 @@ export default function GamePlayPage() {
 
         <div className="arena-rail">
           <TributeSidebar tributes={activeGame.tributes} />
+
+          <ActiveTruceSummary truces={activeGame.truces} tributes={activeGame.tributes} />
 
           <InventorySummary tributes={activeGame.tributes} />
         </div>

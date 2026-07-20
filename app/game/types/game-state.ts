@@ -12,6 +12,19 @@ export interface RoundReference {
   period: "day" | "night";
 }
 
+export type TruceKind = "standard" | "romantic";
+
+export type TruceBreakReason = "expired" | "amicable" | "accidental" | "betrayal";
+
+export interface Truce {
+  id: string;
+  kind: TruceKind;
+  tributeIds: string[];
+
+  createdRound: RoundReference;
+  expiresAfterRound: RoundReference | null;
+}
+
 export interface TributeDeath {
   round: RoundReference;
   causeId: string;
@@ -115,13 +128,64 @@ export interface ConsumeInventoryItemChange {
   reason: string;
 }
 
-export type InventoryTransactionType = "acquired" | "consumed";
+export interface TransferInventoryItemChange {
+  type: "transfer-item";
 
-export interface InventoryTransaction {
+  itemInstanceId: string;
+  fromTributeId: string;
+  toTributeId: string;
+
+  reason: string;
+}
+
+export interface SoleVictoryOutcome {
+  kind: "sole";
+  victorTributeIds: [string];
+  sourceEventId: string | null;
+}
+
+export interface JointVictoryOutcome {
+  kind: "joint";
+  victorTributeIds: [string, string];
+  sourceEventId: string;
+  reason: "poisonous-berries";
+}
+
+export type VictoryOutcome = SoleVictoryOutcome | JointVictoryOutcome;
+
+export interface FormTruceChange {
+  type: "form-truce";
+  truce: Truce;
+}
+
+export interface BreakTruceChange {
+  type: "break-truce";
+  truceId: string;
+  reason: TruceBreakReason;
+}
+
+export interface DeclareVictoryChange {
+  type: "declare-victory";
+  outcome: VictoryOutcome;
+}
+
+export type InventoryTransactionType = "acquired" | "consumed" | "transferred";
+
+interface InventoryTransactionBase {
   id: string;
   type: InventoryTransactionType;
 
+  /**
+   * For acquisitions and consumption,
+   * this is the tribute performing the
+   * transaction.
+   *
+   * For transfers, this remains the new
+   * owner for compatibility with existing
+   * transaction consumers.
+   */
   tributeId: string;
+
   itemInstanceId: string;
   definitionId: ItemDefinitionId;
 
@@ -130,13 +194,35 @@ export interface InventoryTransaction {
   sourceId: string;
 }
 
+export interface AcquiredInventoryTransaction extends InventoryTransactionBase {
+  type: "acquired";
+}
+
+export interface ConsumedInventoryTransaction extends InventoryTransactionBase {
+  type: "consumed";
+}
+
+export interface TransferredInventoryTransaction extends InventoryTransactionBase {
+  type: "transferred";
+
+  fromTributeId: string;
+  toTributeId: string;
+}
+
+export type InventoryTransaction =
+  AcquiredInventoryTransaction | ConsumedInventoryTransaction | TransferredInventoryTransaction;
+
 export type GameChange =
   | EliminateTributeChange
   | IncrementStatisticChange
   | ApplyStatusChange
   | RemoveStatusChange
   | AcquireInventoryItemChange
-  | ConsumeInventoryItemChange;
+  | ConsumeInventoryItemChange
+  | TransferInventoryItemChange
+  | FormTruceChange
+  | BreakTruceChange
+  | DeclareVictoryChange;
 
 export type EventResolutionMode = "standard" | "safety";
 
@@ -167,15 +253,16 @@ export interface GameState {
 
   config: GameConfig;
   currentRound: RoundReference | null;
+
   tributes: GameTribute[];
+  truces: Truce[];
 
   roundEvents: ResolvedEvent[];
   revealedEventCount: number;
   eventHistory: ResolvedEvent[];
-
   itemTransactions: InventoryTransaction[];
 
-  victorTributeId: string | null;
+  victoryOutcome: VictoryOutcome | null;
   engine: EngineState;
 
   createdAt: string;

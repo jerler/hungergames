@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { applyResolvedEvent } from "~/game/engine/apply-game-change";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 import { createSeededRandom } from "~/game/engine/random";
@@ -10,6 +11,11 @@ import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState } from "~/game/types/game-state";
 
 import { gameReducer } from "./game-reducer";
+
+const DAY_ONE = {
+  day: 1,
+  period: "day",
+} as const;
 
 function createTestGame(seed = "complete-game-seed"): GameState {
   const config = {
@@ -63,6 +69,72 @@ function completeGame(initialState: GameState): GameState {
   throw new Error("The Game did not produce a victor within 80 rounds.");
 }
 
+function createOneSurvivorState(): GameState {
+  let state = createTestGame("sole-victory-test");
+
+  const soleSurvivor = state.tributes[0];
+
+  if (!soleSurvivor) {
+    throw new Error("The test Game contains no tributes.");
+  }
+
+  for (const [index, tribute] of state.tributes.entries()) {
+    if (tribute.id === soleSurvivor.id) {
+      continue;
+    }
+
+    const eventId = `sole-victory-setup-${index}`;
+
+    const summary = `${tribute.snapshot.name} was eliminated during test setup.`;
+
+    state = applyResolvedEvent(state, {
+      id: eventId,
+
+      definitionId: "test-elimination",
+
+      resolutionMode: "standard",
+
+      round: DAY_ONE,
+
+      participantTributeIds: [tribute.id],
+
+      text: summary,
+
+      changes: [
+        {
+          type: "eliminate-tribute",
+
+          tributeId: tribute.id,
+
+          causeId: "test-elimination",
+
+          causeLabel: "Test elimination",
+
+          summary,
+
+          killerTributeIds: [],
+        },
+      ],
+    });
+  }
+
+  return {
+    ...state,
+
+    phase: "round-complete",
+
+    currentRound: DAY_ONE,
+
+    truces: [],
+
+    roundEvents: [],
+
+    revealedEventCount: 0,
+
+    victoryOutcome: null,
+  };
+}
+
 describe("gameReducer", () => {
   it("reveals and records resolved events", () => {
     const initialState = createTestGame();
@@ -82,18 +154,70 @@ describe("gameReducer", () => {
     expect(revealedState?.eventHistory.length).toBeGreaterThan(0);
   });
 
-  it("runs deterministically until one victor remains", () => {
+  it("runs deterministically until a victory outcome is reached", () => {
     const firstResult = completeGame(createTestGame());
 
     const secondResult = completeGame(createTestGame());
 
     expect(firstResult.phase).toBe("victory");
 
-    expect(selectLivingTributes(firstResult)).toHaveLength(1);
+    expect(firstResult.victoryOutcome).not.toBeNull();
+
+    if (!firstResult.victoryOutcome) {
+      throw new Error("The completed Game has no victory outcome.");
+    }
+
+    const livingTributes = selectLivingTributes(firstResult);
+
+    expect([1, 2]).toContain(livingTributes.length);
+
+    expect(livingTributes).toHaveLength(firstResult.victoryOutcome.victorTributeIds.length);
+
+    expect(new Set(firstResult.victoryOutcome.victorTributeIds)).toEqual(
+      new Set(livingTributes.map((tribute) => tribute.id)),
+    );
 
     expect(firstResult.eventHistory).toEqual(secondResult.eventHistory);
 
-    expect(firstResult.victorTributeId).toBe(secondResult.victorTributeId);
+    expect(firstResult.victoryOutcome).toEqual(secondResult.victoryOutcome);
+  });
+
+  it("creates a sole victory when one tribute remains", () => {
+    const state = createOneSurvivorState();
+
+    const soleSurvivor = selectLivingTributes(state)[0];
+
+    if (!soleSurvivor) {
+      throw new Error("The sole-victory state has no living tribute.");
+    }
+
+    const nextState = gameReducer(
+      state,
+
+      {
+        type: "round/began",
+
+        now: "2026-07-20T12:00:00.000Z",
+      },
+    );
+
+    if (!nextState) {
+      throw new Error("The Game unexpectedly disappeared.");
+    }
+
+    expect(nextState.phase).toBe("victory");
+
+    expect(nextState.victoryOutcome).toEqual({
+      kind: "sole",
+
+      victorTributeIds: [soleSurvivor.id],
+
+      sourceEventId: null,
+    });
+
+    expect(selectLivingTributes(nextState)).toEqual([soleSurvivor]);
+
+    expect(() => assertGameStateInvariants(nextState)).not.toThrow();
   });
 
   it("never eliminates a tribute twice", () => {

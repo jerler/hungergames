@@ -81,12 +81,14 @@ export function createInitialGameState(
 
     tributes: tributes.map((tribute) => createGameTribute(tribute, createId)),
 
+    truces: [],
+
     roundEvents: [],
     revealedEventCount: 0,
     eventHistory: [],
     itemTransactions: [],
 
-    victorTributeId: null,
+    victoryOutcome: null,
 
     engine: {
       consecutiveNonEliminationRounds: 0,

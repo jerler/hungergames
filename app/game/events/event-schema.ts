@@ -26,7 +26,11 @@ export type EventTag =
   | "tool"
   | "item"
   | "status"
-  | "resource";
+  | "resource"
+  | "truce"
+  | "cooperative"
+  | "romantic"
+  | "victory";
 
 export interface EventSelectionContext {
   state: GameState;
@@ -34,20 +38,31 @@ export interface EventSelectionContext {
   livingTributes: readonly GameTribute[];
 }
 
+export type ParticipantsByRole = Readonly<Record<string, readonly GameTribute[]>>;
+
+export interface ParticipantSelectionContext extends EventSelectionContext {
+  /**
+   * Participants already selected for
+   * earlier roles and earlier positions
+   * within the current role.
+   */
+  participantsByRole: ParticipantsByRole;
+}
+
 export interface ParticipantRoleDefinition {
   id: string;
   count: number;
 
-  isEligible?: (tribute: GameTribute, context: EventSelectionContext) => boolean;
+  isEligible?: (tribute: GameTribute, context: ParticipantSelectionContext) => boolean;
 
-  getWeight?: (tribute: GameTribute, context: EventSelectionContext) => number;
+  getWeight?: (tribute: GameTribute, context: ParticipantSelectionContext) => number;
 
   requiredItemTags?: readonly ItemTag[];
 
   requiredItemDefinitionIds?: readonly ItemDefinitionId[];
-}
 
-export type ParticipantsByRole = Readonly<Record<string, readonly GameTribute[]>>;
+  opposesRoleIds?: readonly string[];
+}
 
 export interface EventResolutionContext extends EventSelectionContext {
   eventId: string;

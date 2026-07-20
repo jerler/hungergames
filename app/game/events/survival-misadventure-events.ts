@@ -27,6 +27,7 @@ import { createStatusEffectInstance } from "~/game/statuses/status-engine";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
 import type { GameChange, GameTribute, InventoryItem } from "~/game/types/game-state";
 import type { TributeStatValue } from "~/game/types/tribute";
+import { getCooperativeTruceWeight } from "~/game/truces/truce-selection";
 
 const CACHE_ITEM_IDS = ["water", "food", "medicine"] satisfies readonly ItemDefinitionId[];
 
@@ -297,6 +298,9 @@ export const SURVIVAL_MISADVENTURE_EVENTS = [
       {
         id: "tributes",
         count: 2,
+
+        getWeight: (tribute, { state, participantsByRole }) =>
+          getCooperativeTruceWeight(state, tribute, participantsByRole.tributes ?? []),
       },
     ],
 

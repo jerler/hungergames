@@ -1,8 +1,7 @@
 import type { EventDefinition, EventResolution } from "./event-schema";
-import { requireParticipants, requireSingleParticipant } from "./event-schema";
+import { requireSingleParticipant } from "./event-schema";
 import {
   getAwarenessScore,
-  getDefinitionPopulationMultiplier,
   getForagingScore,
   getSurvivalSelectionWeight,
   getVulnerabilityWeight,
@@ -17,6 +16,12 @@ import { createCombatantRole } from "./participant-role-builders";
 import { LUCK_EVENTS } from "./luck-events";
 import { SURVIVAL_MISADVENTURE_EVENTS } from "./survival-misadventure-events";
 import { TOOL_AND_WEAPON_EVENTS } from "./tool-and-weapon-events";
+
+import { TRUCE_FORMATION_EVENTS } from "~/game/events/truce-formation-events";
+import { TRUCE_DISSOLUTION_EVENTS } from "~/game/events/truce-dissolution-events";
+import { TRUCE_CONFLICT_EVENTS } from "~/game/events/truce-conflict-events";
+import { ROMANTIC_TRUCE_EVENTS } from "~/game/events/romantic-truce-events";
+import { POISONOUS_BERRIES_JOINT_VICTORY_EVENT } from "~/game/events/poisonous-berries-event";
 
 function createFatalChanges(
   victim: GameTribute,
@@ -578,37 +583,11 @@ export const EVENT_CATALOGUE = [
       };
     },
   },
-
-  {
-    id: "temporary-truce",
-    category: "survival",
-    tags: ["survival"],
-    periods: ["day", "night"],
-    baseWeight: 7,
-    roles: [
-      {
-        id: "tributes",
-        count: 2,
-      },
-    ],
-
-    isEligible: ({ livingTributes }) => livingTributes.length >= 2,
-
-    getWeightMultiplier: getDefinitionPopulationMultiplier,
-
-    resolve({ participantsByRole }): EventResolution {
-      const [firstTribute, secondTribute] = requireParticipants(participantsByRole, "tributes");
-
-      return {
-        text:
-          `${firstTribute.snapshot.name} and ` +
-          `${secondTribute.snapshot.name} agree ` +
-          "to a temporary truce.",
-
-        changes: createSurvivalChanges([firstTribute, secondTribute]),
-      };
-    },
-  },
+  ...TRUCE_FORMATION_EVENTS,
+  ...TRUCE_DISSOLUTION_EVENTS,
+  ...TRUCE_CONFLICT_EVENTS,
+  ...ROMANTIC_TRUCE_EVENTS,
+  POISONOUS_BERRIES_JOINT_VICTORY_EVENT,
   ...LUCK_EVENTS,
   ...SURVIVAL_MISADVENTURE_EVENTS,
   ...TOOL_AND_WEAPON_EVENTS,

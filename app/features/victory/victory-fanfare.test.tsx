@@ -36,11 +36,23 @@ const victor: GameTribute = {
   },
 };
 
+const secondVictor: GameTribute = {
+  ...victor,
+
+  id: "second-victor",
+  district: 7,
+
+  snapshot: {
+    ...victor.snapshot,
+    name: "Nikita",
+  },
+};
+
 describe("VictoryFanfare", () => {
   it("allows the reveal to be skipped", () => {
     const handleComplete = vi.fn();
 
-    render(<VictoryFanfare victor={victor} onComplete={handleComplete} />);
+    render(<VictoryFanfare victors={[victor]} onComplete={handleComplete} />);
 
     fireEvent.click(
       screen.getByRole("button", {
@@ -48,6 +60,25 @@ describe("VictoryFanfare", () => {
       }),
     );
 
+    expect(
+      screen.getByRole("heading", {
+        name: "We have a victor",
+      }),
+    ).toBeInTheDocument();
     expect(handleComplete).toHaveBeenCalledOnce();
+  });
+
+  it("announces two joint victors", () => {
+    render(<VictoryFanfare victors={[victor, secondVictor]} onComplete={vi.fn()} />);
+
+    expect(
+      screen.getByRole("heading", {
+        name: "We have victors",
+      }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("Julie and Nikita")).toBeInTheDocument();
+
+    expect(screen.getByText("District 4 • District 7")).toBeInTheDocument();
   });
 });

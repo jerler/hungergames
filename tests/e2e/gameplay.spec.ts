@@ -27,9 +27,15 @@ test("runs a local Game until one victor remains", async ({ page }) => {
     })
     .click();
 
+  await expect(
+    page.getByRole("heading", {
+      name: "Prepare the tributes",
+    }),
+  ).toBeVisible();
+
   await page
     .getByRole("button", {
-      name: /Random Reaping/i,
+      name: /Randomize all/i,
     })
     .click();
 
@@ -37,6 +43,7 @@ test("runs a local Game until one victor remains", async ({ page }) => {
     .getByRole("button", {
       name: /Start the Games/i,
     })
+    .first()
     .click();
 
   await expect(

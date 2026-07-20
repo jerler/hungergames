@@ -64,7 +64,7 @@ export interface GameTribute {
     portraitPosition?: PortraitPosition;
     stats: TributeStats;
   };
-  
+
   isAlive: boolean;
   death: TributeDeath | null;
   statuses: StatusEffect[];

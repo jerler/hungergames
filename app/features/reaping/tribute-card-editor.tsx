@@ -1,9 +1,4 @@
-import {
-  type ChangeEvent,
-  type PointerEvent as ReactPointerEvent,
-  useRef,
-  useState,
-} from "react";
+import { type ChangeEvent, type PointerEvent as ReactPointerEvent, useRef, useState } from "react";
 
 import type { TributeDraftValidationErrors } from "~/features/reaping/reaping-validation";
 import { PORTRAIT_ACCEPT_ATTRIBUTE, readPortraitFile } from "~/features/reaping/portrait-file";
@@ -74,18 +69,14 @@ export function TributeCardEditor({
     y: 50,
   };
 
-  const handlePortraitPointerDown = (
-    event: ReactPointerEvent<HTMLDivElement>,
-  ) => {
+  const handlePortraitPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!tribute.portraitPreviewUrl) {
       return;
     }
 
     event.preventDefault();
 
-    event.currentTarget.setPointerCapture(
-      event.pointerId,
-    );
+    event.currentTarget.setPointerCapture(event.pointerId);
 
     portraitDragRef.current = {
       pointerId: event.pointerId,
@@ -96,64 +87,35 @@ export function TributeCardEditor({
     };
   };
 
-  const handlePortraitPointerMove = (
-    event: ReactPointerEvent<HTMLDivElement>,
-  ) => {
+  const handlePortraitPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const drag = portraitDragRef.current;
 
-    if (
-      !drag ||
-      drag.pointerId !== event.pointerId
-    ) {
+    if (!drag || drag.pointerId !== event.pointerId) {
       return;
     }
 
-    const bounds =
-      event.currentTarget.getBoundingClientRect();
+    const bounds = event.currentTarget.getBoundingClientRect();
 
-    const horizontalChange =
-      ((event.clientX - drag.clientX) /
-        bounds.width) *
-      100;
+    const horizontalChange = ((event.clientX - drag.clientX) / bounds.width) * 100;
 
-    const verticalChange =
-      ((event.clientY - drag.clientY) /
-        bounds.height) *
-      100;
+    const verticalChange = ((event.clientY - drag.clientY) / bounds.height) * 100;
 
     onChange({
       ...tribute,
       portraitPosition: {
-        x: clampPercentage(
-          drag.positionX -
-            horizontalChange,
-        ),
-        y: clampPercentage(
-          drag.positionY -
-            verticalChange,
-        ),
+        x: clampPercentage(drag.positionX - horizontalChange),
+        y: clampPercentage(drag.positionY - verticalChange),
       },
     });
   };
 
-  const stopPortraitDrag = (
-    event: ReactPointerEvent<HTMLDivElement>,
-  ) => {
-    if (
-      portraitDragRef.current?.pointerId ===
-      event.pointerId
-    ) {
+  const stopPortraitDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (portraitDragRef.current?.pointerId === event.pointerId) {
       portraitDragRef.current = null;
     }
 
-    if (
-      event.currentTarget.hasPointerCapture(
-        event.pointerId,
-      )
-    ) {
-      event.currentTarget.releasePointerCapture(
-        event.pointerId,
-      );
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
     }
   };
 
@@ -214,9 +176,7 @@ export function TributeCardEditor({
         <div
           className={[
             "tribute-card__portrait",
-            tribute.portraitPreviewUrl
-              ? "tribute-card__portrait--adjustable"
-              : "",
+            tribute.portraitPreviewUrl ? "tribute-card__portrait--adjustable" : "",
           ]
             .filter(Boolean)
             .join(" ")}
@@ -244,9 +204,7 @@ export function TributeCardEditor({
               }}
             />
           ) : (
-            <span aria-hidden="true">
-              {getInitials(tribute.name)}
-            </span>
+            <span aria-hidden="true">{getInitials(tribute.name)}</span>
           )}
         </div>
 
@@ -277,11 +235,7 @@ export function TributeCardEditor({
                 type="file"
                 accept={PORTRAIT_ACCEPT_ATTRIBUTE}
                 aria-label={`Upload portrait for ${tributeLabel}`}
-                aria-describedby={
-                  portraitError
-                    ? portraitErrorId
-                    : undefined
-                }
+                aria-describedby={portraitError ? portraitErrorId : undefined}
                 onChange={(event) => {
                   void handlePortraitSelection(event);
                 }}

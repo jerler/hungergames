@@ -1,9 +1,4 @@
-import {
-  type FormEvent,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 
 import { loadGameConfigDraft } from "~/features/configuration/game-config-storage";
@@ -45,23 +40,13 @@ export default function ReapingPage() {
 
   const [config] = useState<GameConfig | null>(() => navigationConfig ?? loadGameConfigDraft());
 
-  const [tributes, setTributes] = useState<
-    TributeDraft[]
-  >(() =>
-    config
-      ? createBlankTributeDrafts(
-          config.districtCount,
-        )
-      : [],
+  const [tributes, setTributes] = useState<TributeDraft[]>(() =>
+    config ? createBlankTributeDrafts(config.districtCount) : [],
   );
 
-  const [
-    isRandomizeDialogOpen,
-    setIsRandomizeDialogOpen,
-  ] = useState(false);
+  const [isRandomizeDialogOpen, setIsRandomizeDialogOpen] = useState(false);
 
-  const randomizeDialogRef =
-    useRef<HTMLDialogElement>(null);
+  const randomizeDialogRef = useRef<HTMLDialogElement>(null);
 
   const [validationResult, setValidationResult] = useState<ReapingValidationResult | null>(null);
 
@@ -69,26 +54,18 @@ export default function ReapingPage() {
     setValidationResult(null);
 
     setTributes((currentTributes) => {
-      let updatedTributes = [
-        ...currentTributes,
-      ];
+      let updatedTributes = [...currentTributes];
 
       for (const tribute of currentTributes) {
-        if (
-          isTributeDraftBlank(tribute)
-        ) {
-          updatedTributes =
-            randomizeTributeDraft(
-              updatedTributes,
-              tribute.id,
-            );
+        if (isTributeDraftBlank(tribute)) {
+          updatedTributes = randomizeTributeDraft(updatedTributes, tribute.id);
         }
       }
 
       return updatedTributes;
     });
   };
-  
+
   useEffect(() => {
     const dialog = randomizeDialogRef.current;
 
@@ -96,18 +73,12 @@ export default function ReapingPage() {
       return;
     }
 
-    if (
-      isRandomizeDialogOpen &&
-      !dialog.open
-    ) {
+    if (isRandomizeDialogOpen && !dialog.open) {
       dialog.showModal();
       return;
     }
 
-    if (
-      !isRandomizeDialogOpen &&
-      dialog.open
-    ) {
+    if (!isRandomizeDialogOpen && dialog.open) {
       dialog.close();
     }
   }, [isRandomizeDialogOpen]);
@@ -128,25 +99,17 @@ export default function ReapingPage() {
     );
   }
 
-  const blankTributeCount = tributes.filter(
-    isTributeDraftBlank,
-  ).length;
+  const blankTributeCount = tributes.filter(isTributeDraftBlank).length;
 
   const randomizeAllTributes = () => {
-    setTributes(
-      createRandomTributeDrafts(
-        config.districtCount,
-      ),
-    );
+    setTributes(createRandomTributeDrafts(config.districtCount));
 
     setValidationResult(null);
     setIsRandomizeDialogOpen(false);
   };
 
   const requestRandomizeAllTributes = () => {
-    if (
-      haveTributeDraftsBeenEdited(tributes)
-    ) {
+    if (haveTributeDraftsBeenEdited(tributes)) {
       setIsRandomizeDialogOpen(true);
       return;
     }
@@ -189,12 +152,7 @@ export default function ReapingPage() {
       return;
     }
 
-    const initialGameState =
-      createInitialGameState(
-        config,
-        tributes,
-        "manual",
-      );
+    const initialGameState = createInitialGameState(config, tributes, "manual");
 
     loadGame(initialGameState);
 
@@ -206,11 +164,7 @@ export default function ReapingPage() {
       <header className="reaping-header">
         <Link className="reaping-header__brand" to="/">
           <span aria-hidden="true">
-            <img
-              className="app-brand__emblem-image"
-              src="/images/capitol-emblem.webp"
-              alt=""
-            />
+            <img className="app-brand__emblem-image" src="/images/capitol-emblem.webp" alt="" />
           </span>
           <span>Hunger Games Simulator</span>
         </Link>
@@ -229,24 +183,18 @@ export default function ReapingPage() {
               <h1>Prepare the tributes</h1>
 
               <p>
-                Create each tribute yourself, randomize
-                the full roster, or use the dice to
-                replace individual characters.
+                Create each tribute yourself, randomize the full roster, or use the dice to replace
+                individual characters.
               </p>
             </div>
           </header>
 
-          <div
-            className="reaping-action-bar"
-            aria-label="Tribute roster actions"
-          >
+          <div className="reaping-action-bar" aria-label="Tribute roster actions">
             <div className="reaping-action-bar__secondary">
               <button
                 className="reaping-action-button"
                 type="button"
-                onClick={
-                  requestRandomizeAllTributes
-                }
+                onClick={requestRandomizeAllTributes}
               >
                 Randomize all
               </button>
@@ -254,28 +202,18 @@ export default function ReapingPage() {
               <button
                 className="reaping-action-button"
                 type="button"
-                disabled={
-                  blankTributeCount === 0
-                }
+                disabled={blankTributeCount === 0}
                 onClick={randomizeBlankTributes}
               >
                 Randomize blanks
-                {blankTributeCount > 0
-                  ? ` (${blankTributeCount})`
-                  : ""}
+                {blankTributeCount > 0 ? ` (${blankTributeCount})` : ""}
               </button>
             </div>
 
             <div className="reaping-action-bar__primary">
-              <button
-                className="start-games-button"
-                type="submit"
-              >
+              <button className="start-games-button" type="submit">
                 Start the Games
-
-                <span aria-hidden="true">
-                  →
-                </span>
+                <span aria-hidden="true">→</span>
               </button>
             </div>
           </div>
@@ -322,20 +260,13 @@ export default function ReapingPage() {
         }}
       >
         <div className="reaping-randomize-dialog__content">
-          <p className="eyebrow">
-            Replace the roster
-          </p>
+          <p className="eyebrow">Replace the roster</p>
 
-          <h2 id="randomize-dialog-title">
-            Randomize all tributes?
-          </h2>
+          <h2 id="randomize-dialog-title">Randomize all tributes?</h2>
 
           <p id="randomize-dialog-description">
-            This will replace every tribute
-            with a random predefined character.
-            Names, portraits, pronouns, and
-            stats you have changed will be
-            lost.
+            This will replace every tribute with a random predefined character. Names, portraits,
+            pronouns, and stats you have changed will be lost.
           </p>
 
           <div className="reaping-randomize-dialog__actions">

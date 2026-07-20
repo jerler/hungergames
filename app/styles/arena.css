@@ -425,6 +425,14 @@
   background: rgb(39 111 66 / 96%);
 }
 
+.sidebar-tribute__status--temporary {
+  background: rgb(65 82 113 / 96%);
+}
+
+.sidebar-tribute__status--beneficial {
+  background: rgb(91 76 166 / 96%);
+}
+
 .sidebar-tribute__tooltip {
   position: absolute;
   left: 50%;

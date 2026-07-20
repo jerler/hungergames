@@ -1,12 +1,13 @@
 import { formatRoundLabel } from "~/game/engine/rounds";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import type { GameTribute, StatusEffect, TributeDeath } from "~/game/types/game-state";
+import type { StatusDefinition } from "~/game/statuses/status-schema";
 
 interface TributeSidebarProps {
   tributes: readonly GameTribute[];
 }
 
-type StatusUrgency = "critical" | "warning" | "stable";
+type StatusPresentation = "critical" | "warning" | "stable" | "temporary" | "beneficial";
 
 function getInitials(name: string): string {
   return name
@@ -18,7 +19,7 @@ function getInitials(name: string): string {
     .join("");
 }
 
-function getStatusUrgency(remainingRounds: number): StatusUrgency {
+function getFatalUrgency(remainingRounds: number): StatusPresentation {
   if (remainingRounds <= 1) {
     return "critical";
   }
@@ -30,24 +31,72 @@ function getStatusUrgency(remainingRounds: number): StatusUrgency {
   return "stable";
 }
 
+function getStatusPresentation(
+  definition: StatusDefinition,
+  remainingRounds: number,
+): StatusPresentation {
+  if (definition.expiration === "fatal") {
+    return getFatalUrgency(remainingRounds);
+  }
+
+  if (definition.kind === "beneficial") {
+    return "beneficial";
+  }
+
+  return "temporary";
+}
+
+function getStatusSortGroup(definition: StatusDefinition): number {
+  if (definition.expiration === "fatal") {
+    return 0;
+  }
+
+  if (definition.kind === "harmful") {
+    return 1;
+  }
+
+  return 2;
+}
+
 function compareStatusesByUrgency(firstStatus: StatusEffect, secondStatus: StatusEffect): number {
+  const firstDefinition = getStatusDefinition(firstStatus.definitionId);
+
+  const secondDefinition = getStatusDefinition(secondStatus.definitionId);
+
   return (
+    getStatusSortGroup(firstDefinition) - getStatusSortGroup(secondDefinition) ||
     firstStatus.remainingRounds - secondStatus.remainingRounds ||
     secondStatus.severity - firstStatus.severity ||
     firstStatus.definitionId.localeCompare(secondStatus.definitionId)
   );
 }
 
-function formatRoundCount(roundCount: number): string {
-  return `${roundCount} ${roundCount === 1 ? "round" : "rounds"}`;
-}
+function formatStatusCountdown(definition: StatusDefinition, remainingRounds: number): string {
+  if (definition.expiration === "fatal") {
+    if (remainingRounds <= 1) {
+      return "Fatal at the end of the " + "next round if untreated.";
+    }
 
-function formatFatalCountdown(remainingRounds: number): string {
-  if (remainingRounds <= 1) {
-    return "Fatal at the end of the next " + "round if untreated.";
+    return `Fatal in ${remainingRounds} ` + "rounds if untreated.";
   }
 
-  return `Fatal in ${remainingRounds} rounds ` + "if untreated.";
+  if (definition.kind === "beneficial") {
+    if (remainingRounds <= 1) {
+      return "Wears off at the end of " + "the next round.";
+    }
+
+    return `Wears off in ` + `${remainingRounds} rounds.`;
+  }
+
+  if (remainingRounds <= 1) {
+    return "Recovers at the end of the " + "next round.";
+  }
+
+  return `Recovers in ` + `${remainingRounds} rounds.`;
+}
+
+function formatRoundCount(roundCount: number): string {
+  return `${roundCount} ${roundCount === 1 ? "round" : "rounds"}`;
 }
 
 function formatNameList(names: readonly string[]): string {
@@ -101,9 +150,10 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
             ? getStatusDefinition(primaryStatus.definitionId)
             : null;
 
-          const statusUrgency = primaryStatus
-            ? getStatusUrgency(primaryStatus.remainingRounds)
-            : null;
+          const statusPresentation =
+            primaryStatus && primaryDefinition
+              ? getStatusPresentation(primaryDefinition, primaryStatus.remainingRounds)
+              : null;
 
           const additionalStatusCount = Math.max(0, statuses.length - 1);
 
@@ -132,12 +182,8 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
                       src={tribute.snapshot.portraitUrl}
                       alt=""
                       style={{
-                        objectPosition: `${
-                          tribute.snapshot
-                            .portraitPosition?.x ?? 50
-                        }% ${
-                          tribute.snapshot
-                            .portraitPosition?.y ?? 50
+                        objectPosition: `${tribute.snapshot.portraitPosition?.x ?? 50}% ${
+                          tribute.snapshot.portraitPosition?.y ?? 50
                         }%`,
                       }}
                     />
@@ -173,16 +219,17 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
                   </div>
                 ) : null}
 
-                {tribute.isAlive && primaryStatus && primaryDefinition && statusUrgency ? (
+                {tribute.isAlive && primaryStatus && primaryDefinition && statusPresentation ? (
                   <div className="sidebar-tribute__indicator sidebar-tribute__indicator--bottom">
                     <button
                       className={[
                         "sidebar-tribute__bar",
                         "sidebar-tribute__status",
-                        `sidebar-tribute__status--${statusUrgency}`,
+                        `sidebar-tribute__status--${statusPresentation}`,
                       ].join(" ")}
                       type="button"
-                      aria-label={`${primaryDefinition.label}. ${formatFatalCountdown(
+                      aria-label={`${primaryDefinition.label}. ${formatStatusCountdown(
+                        primaryDefinition,
                         primaryStatus.remainingRounds,
                       )}`}
                       aria-describedby={statusTooltipId}
@@ -213,7 +260,9 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
 
                               <span>Received during {formatRoundLabel(status.appliedRound)}.</span>
 
-                              <span>{formatFatalCountdown(status.remainingRounds)}</span>
+                              <span>
+                                {formatStatusCountdown(definition, status.remainingRounds)}
+                              </span>
                             </li>
                           );
                         })}

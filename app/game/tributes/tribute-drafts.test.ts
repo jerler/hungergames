@@ -75,30 +75,19 @@ describe("tribute draft utilities", () => {
   });
 
   it("detects edits to blank tribute drafts", () => {
-    const blankTributes =
-      createBlankTributeDrafts(6);
+    const blankTributes = createBlankTributeDrafts(6);
 
-    expect(
-      haveTributeDraftsBeenEdited(
-        blankTributes,
-      ),
-    ).toBe(false);
+    expect(haveTributeDraftsBeenEdited(blankTributes)).toBe(false);
 
-    const editedTributes =
-      blankTributes.map(
-        (tribute, index) =>
-          index === 0
-            ? {
-                ...tribute,
-                name: "Katniss",
-              }
-            : tribute,
-      );
+    const editedTributes = blankTributes.map((tribute, index) =>
+      index === 0
+        ? {
+            ...tribute,
+            name: "Katniss",
+          }
+        : tribute,
+    );
 
-    expect(
-      haveTributeDraftsBeenEdited(
-        editedTributes,
-      ),
-    ).toBe(true);
+    expect(haveTributeDraftsBeenEdited(editedTributes)).toBe(true);
   });
 });

@@ -1,13 +1,11 @@
 import type { TributeDefinition, TributeStatValue } from "~/game/types/tribute";
 import { DEFAULT_PRONOUN_SET_ID, type PronounSetId } from "~/game/tributes/pronouns";
-const DEFAULT_TRIBUTE_PORTRAIT_DIRECTORY =
-  "/images/tributes";
+const DEFAULT_TRIBUTE_PORTRAIT_DIRECTORY = "/images/tributes";
 
 function createTributeDefinition(
   id: string,
   name: string,
-  pronouns: PronounSetId =
-    DEFAULT_PRONOUN_SET_ID,
+  pronouns: PronounSetId = DEFAULT_PRONOUN_SET_ID,
   brains: TributeStatValue,
   brawn: TributeStatValue,
   luck: TributeStatValue,
@@ -16,8 +14,7 @@ function createTributeDefinition(
     id,
     name,
     pronouns,
-    portraitUrl:
-      `${DEFAULT_TRIBUTE_PORTRAIT_DIRECTORY}/${id}.jpg`,
+    portraitUrl: `${DEFAULT_TRIBUTE_PORTRAIT_DIRECTORY}/${id}.jpg`,
     stats: {
       brains,
       brawn,
@@ -119,7 +116,6 @@ export const DEFAULT_TRIBUTES = [
   createTributeDefinition("bugs-bunny", "Bugs Bunny", "he", 4, 3, 5),
   createTributeDefinition("daffy-duck", "Daffy Duck", "he", 3, 3, 4),
   createTributeDefinition("johnny-bravo", "Johnny Bravo", "he", 1, 4, 3),
-  createTributeDefinition("dexter", "Dexter", "he", 5, 2, 3),
   createTributeDefinition("perry-the-platypus", "Perry the Platypus", "he", 4, 4, 3),
   createTributeDefinition("dr-doofenshmirtz", "Dr. Doofenshmirtz", "he", 5, 1, 2),
   createTributeDefinition("kim-possible", "Kim Possible", "she", 4, 4, 3),

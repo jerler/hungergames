@@ -1,19 +1,22 @@
-import type { EventDefinition, EventResolution } from "~/game/events/event-schema";
-import { requireParticipants, requireSingleParticipant } from "~/game/events/event-schema";
+import type { EventDefinition, EventResolution } from "./event-schema";
+import { requireParticipants, requireSingleParticipant } from "./event-schema";
 import {
   getAwarenessScore,
   getDefinitionPopulationMultiplier,
   getForagingScore,
   getSurvivalSelectionWeight,
   getVulnerabilityWeight,
-} from "~/game/engine/stat-formulas";
-import type { GameChange, GameTribute } from "~/game/types/game-state";
-import { createInventoryItemInstance } from "~/game/items/inventory-engine";
-import type { ItemDefinitionId } from "~/game/items/item-schema";
-import type { EventResolutionContext } from "~/game/events/event-schema";
-import { selectRandomItem } from "~/game/engine/random";
-import { createStatusEffectInstance } from "~/game/statuses/status-engine";
-import { createCombatantRole } from "~/game/events/participant-role-builders";
+} from "./../engine/stat-formulas";
+import type { GameChange, GameTribute } from "./../types/game-state";
+import { createInventoryItemInstance } from "./../items/inventory-engine";
+import type { ItemDefinitionId } from "./../items/item-schema";
+import type { EventResolutionContext } from "./event-schema";
+import { selectRandomItem } from "./../engine/random";
+import { createStatusEffectInstance } from "./../statuses/status-engine";
+import { createCombatantRole } from "./participant-role-builders";
+import { LUCK_EVENTS } from "./luck-events";
+import { SURVIVAL_MISADVENTURE_EVENTS } from "./survival-misadventure-events";
+import { TOOL_AND_WEAPON_EVENTS } from "./tool-and-weapon-events";
 
 function createFatalChanges(
   victim: GameTribute,
@@ -71,13 +74,26 @@ const victimRole = {
 } as const;
 
 const SUPPLY_ITEM_IDS = [
+  "water",
+  "food",
   "medicine",
   "blanket",
   "matches",
   "rope",
+  "map",
+  "trap-kit",
+  "camouflage-net",
+  "fishing-gear",
+  "shield",
 ] satisfies readonly ItemDefinitionId[];
 
-const WEAPON_ITEM_IDS = ["knife", "spear", "bow"] satisfies readonly ItemDefinitionId[];
+const WEAPON_ITEM_IDS = [
+  "knife",
+  "slingshot",
+  "spear",
+  "axe",
+  "bow",
+] satisfies readonly ItemDefinitionId[];
 
 function createItemAcquisitionChanges(
   eventId: string,
@@ -593,4 +609,7 @@ export const EVENT_CATALOGUE = [
       };
     },
   },
+  ...LUCK_EVENTS,
+  ...SURVIVAL_MISADVENTURE_EVENTS,
+  ...TOOL_AND_WEAPON_EVENTS,
 ] satisfies readonly EventDefinition[];

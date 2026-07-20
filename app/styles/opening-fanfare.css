@@ -74,9 +74,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(
-    0 0 2rem rgb(227 182 91 / 22%)
-  );
+  filter: drop-shadow(0 0 2rem rgb(227 182 91 / 22%));
 }
 
 .opening-fanfare__seal-ring {

@@ -1,6 +1,6 @@
 import type { EventCategory, EventSelectionContext } from "~/game/events/event-schema";
 import { getInventoryBonus } from "~/game/items/inventory-engine";
-import { getStatusPenalty } from "~/game/statuses/status-engine";
+import { getStatusModifier } from "~/game/statuses/status-engine";
 import type { GameTribute } from "~/game/types/game-state";
 
 export function getCombatScore(tribute: GameTribute): number {
@@ -10,7 +10,7 @@ export function getCombatScore(tribute: GameTribute): number {
 
   return Math.max(
     0.25,
-    baseScore + getInventoryBonus(tribute, "combatBonus") - getStatusPenalty(tribute, "combat"),
+    baseScore + getInventoryBonus(tribute, "combatBonus") + getStatusModifier(tribute, "combat"),
   );
 }
 
@@ -21,7 +21,9 @@ export function getSurvivalScore(tribute: GameTribute): number {
 
   return Math.max(
     0.25,
-    baseScore + getInventoryBonus(tribute, "survivalBonus") - getStatusPenalty(tribute, "survival"),
+    baseScore +
+      getInventoryBonus(tribute, "survivalBonus") +
+      getStatusModifier(tribute, "survival"),
   );
 }
 
@@ -33,8 +35,8 @@ export function getAwarenessScore(tribute: GameTribute): number {
   return Math.max(
     0.25,
     baseScore +
-      getInventoryBonus(tribute, "awarenessBonus") -
-      getStatusPenalty(tribute, "awareness"),
+      getInventoryBonus(tribute, "awarenessBonus") +
+      getStatusModifier(tribute, "awareness"),
   );
 }
 
@@ -45,7 +47,9 @@ export function getForagingScore(tribute: GameTribute): number {
 
   return Math.max(
     0.25,
-    baseScore + getInventoryBonus(tribute, "foragingBonus") - getStatusPenalty(tribute, "foraging"),
+    baseScore +
+      getInventoryBonus(tribute, "foragingBonus") +
+      getStatusModifier(tribute, "foraging"),
   );
 }
 

@@ -1,22 +1,61 @@
-export type StatusEffectId = "injured" | "bleeding" | "dehydrated" | "exposed";
+export type StatusEffectId =
+  | "injured"
+  | "bleeding"
+  | "dehydrated"
+  | "exposed"
+  | "exhausted"
+  | "disoriented"
+  | "sick"
+  | "poisoned"
+  | "burned"
+  | "concealed"
+  | "hunted"
+  | "inspired";
 
-export interface StatusPenalties {
+export type StatusKind = "harmful" | "beneficial";
+
+export type StatusExpiration = "fatal" | "recover";
+
+export interface StatusModifiers {
   combatPerSeverity: number;
   survivalPerSeverity: number;
   awarenessPerSeverity: number;
   foragingPerSeverity: number;
 }
 
-export interface StatusDefinition {
+interface StatusDefinitionBase {
   id: StatusEffectId;
   label: string;
   description: string;
 
-  fatalCauseLabel: string;
-  fatalSummary: string;
+  kind: StatusKind;
+  expiration: StatusExpiration;
 
   maxSeverity: 3;
   defaultDurationRounds: number;
 
-  penalties: StatusPenalties;
+  /**
+   * Signed score adjustments.
+   *
+   * Negative values reduce a score.
+   * Positive values improve a score.
+   */
+  modifiers: StatusModifiers;
 }
+
+export interface FatalStatusDefinition extends StatusDefinitionBase {
+  kind: "harmful";
+  expiration: "fatal";
+
+  fatalCauseLabel: string;
+  fatalSummary: string;
+}
+
+export interface RecoveringStatusDefinition extends StatusDefinitionBase {
+  expiration: "recover";
+
+  fatalCauseLabel?: never;
+  fatalSummary?: never;
+}
+
+export type StatusDefinition = FatalStatusDefinition | RecoveringStatusDefinition;

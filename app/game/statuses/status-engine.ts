@@ -1,6 +1,6 @@
 import { applyResolvedEvent } from "~/game/engine/apply-game-change";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
-import type { StatusEffectId } from "~/game/statuses/status-schema";
+import type { StatusEffectId, StatusModifiers } from "~/game/statuses/status-schema";
 import type {
   GameChange,
   GameState,
@@ -10,7 +10,14 @@ import type {
   StatusEffect,
 } from "~/game/types/game-state";
 
-export type StatusPenaltyKey = "combat" | "survival" | "awareness" | "foraging";
+export type StatusScoreKey = "combat" | "survival" | "awareness" | "foraging";
+
+const STATUS_MODIFIER_KEYS = {
+  combat: "combatPerSeverity",
+  survival: "survivalPerSeverity",
+  awareness: "awarenessPerSeverity",
+  foraging: "foragingPerSeverity",
+} satisfies Record<StatusScoreKey, keyof StatusModifiers>;
 
 export function createStatusEffectInstance(
   eventId: string,
@@ -23,24 +30,28 @@ export function createStatusEffectInstance(
   const definition = getStatusDefinition(definitionId);
 
   return {
-    id: `${eventId}:${tributeId}:${definitionId}`,
+    id: `${eventId}:` + `${tributeId}:` + definitionId,
+
     definitionId,
     severity,
+
     remainingRounds: durationRounds ?? definition.defaultDurationRounds,
+
     sourceEventId: eventId,
+
     appliedRound: {
       ...round,
     },
   };
 }
 
-export function getStatusPenalty(tribute: GameTribute, penaltyKey: StatusPenaltyKey): number {
+export function getStatusModifier(tribute: GameTribute, scoreKey: StatusScoreKey): number {
+  const modifierKey = STATUS_MODIFIER_KEYS[scoreKey];
+
   return tribute.statuses.reduce((total, status) => {
     const definition = getStatusDefinition(status.definitionId);
 
-    const penaltyPerSeverity = definition.penalties[`${penaltyKey}PerSeverity`];
-
-    return total + penaltyPerSeverity * status.severity;
+    return total + definition.modifiers[modifierKey] * status.severity;
   }, 0);
 }
 
@@ -51,13 +62,33 @@ function isSameRound(firstRound: RoundReference, secondRound: RoundReference): b
 function getFatalStatus(tribute: GameTribute): StatusEffect | null {
   return (
     [...tribute.statuses]
-      .filter((status) => status.remainingRounds <= 0)
+      .filter((status) => {
+        if (status.remainingRounds > 0) {
+          return false;
+        }
+
+        return getStatusDefinition(status.definitionId).expiration === "fatal";
+      })
       .sort(
         (firstStatus, secondStatus) =>
           secondStatus.severity - firstStatus.severity ||
           firstStatus.definitionId.localeCompare(secondStatus.definitionId),
       )[0] ?? null
   );
+}
+
+function removeExpiredRecoveringStatuses(tribute: GameTribute): GameTribute {
+  return {
+    ...tribute,
+
+    statuses: tribute.statuses.filter((status) => {
+      if (status.remainingRounds > 0) {
+        return true;
+      }
+
+      return getStatusDefinition(status.definitionId).expiration === "fatal";
+    }),
+  };
 }
 
 function createFatalStatusEvent(
@@ -67,8 +98,12 @@ function createFatalStatusEvent(
 ): ResolvedEvent {
   const definition = getStatusDefinition(status.definitionId);
 
+  if (definition.expiration !== "fatal") {
+    throw new Error(`Recovering status "${definition.id}" cannot create a fatal event.`);
+  }
+
   const eventId =
-    `status-fatality:${round.day}:` + `${round.period}:${tribute.id}:` + `${status.id}`;
+    `status-fatality:${round.day}:` + `${round.period}:` + `${tribute.id}:` + status.id;
 
   const text = `${tribute.snapshot.name} ` + definition.fatalSummary;
 
@@ -80,7 +115,9 @@ function createFatalStatusEvent(
 
   return {
     id: eventId,
-    definitionId: `status-fatality:${definition.id}`,
+
+    definitionId: `status-fatality:` + definition.id,
+
     resolutionMode: "standard",
 
     round: {
@@ -95,11 +132,15 @@ function createFatalStatusEvent(
       {
         type: "eliminate-tribute",
         tributeId: tribute.id,
-        causeId: `status:${definition.id}`,
+
+        causeId: `status:` + definition.id,
+
         causeLabel: definition.fatalCauseLabel,
+
         summary: text,
         killerTributeIds: [],
       },
+
       ...removeStatusChanges,
     ],
   };
@@ -114,9 +155,11 @@ function chooseSimultaneousFatalitySurvivor(
   }
 
   /*
-   * If every remaining tribute would die at the
-   * same instant, the highest-Luck tribute narrowly
-   * survives so the Games still have one victor.
+   * If every remaining tribute would
+   * die at the same instant, the
+   * highest-Luck tribute narrowly
+   * survives so the Games still have
+   * one victor.
    */
   return (
     [...fatalCandidates].sort(
@@ -144,9 +187,10 @@ export function advanceStatusDurations(state: GameState): GameState {
 
       statuses: tribute.statuses.map((status) => {
         /*
-         * A status does not consume one of its
-         * active rounds during the round in
-         * which it was first applied.
+         * A status does not consume
+         * one of its active rounds
+         * during the round in which
+         * it was first applied.
          */
         if (isSameRound(status.appliedRound, completedRound)) {
           return status;
@@ -154,13 +198,18 @@ export function advanceStatusDurations(state: GameState): GameState {
 
         return {
           ...status,
+
           remainingRounds: status.remainingRounds - 1,
         };
       }),
     };
   });
 
-  const livingTributes = tributesWithAdvancedStatuses.filter((tribute) => tribute.isAlive);
+  const tributesWithResolvedRecoveries = tributesWithAdvancedStatuses.map(
+    removeExpiredRecoveringStatuses,
+  );
+
+  const livingTributes = tributesWithResolvedRecoveries.filter((tribute) => tribute.isAlive);
 
   const fatalCandidates = livingTributes.filter((tribute) => getFatalStatus(tribute) !== null);
 
@@ -169,7 +218,7 @@ export function advanceStatusDurations(state: GameState): GameState {
   let nextState: GameState = {
     ...state,
 
-    tributes: tributesWithAdvancedStatuses.map((tribute) => {
+    tributes: tributesWithResolvedRecoveries.map((tribute) => {
       if (tribute.id !== sparedTributeId) {
         return tribute;
       }
@@ -202,9 +251,14 @@ export function advanceStatusDurations(state: GameState): GameState {
     ...nextState,
 
     /*
-     * These deaths happen automatically at the end
-     * of the round, so they are immediately revealed
-     * and displayed in the round event feed.
+     * Fatal status deaths happen
+     * automatically at the end of the
+     * round, so they are immediately
+     * revealed in the event feed.
+     *
+     * Recovering effects simply
+     * disappear and do not create a
+     * separate event.
      */
     roundEvents: [...nextState.roundEvents, ...fatalEvents],
 

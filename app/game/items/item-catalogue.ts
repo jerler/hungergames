@@ -1,6 +1,7 @@
 import type { ItemDefinition, ItemDefinitionId } from "./item-schema";
 
 export const ITEM_CATALOGUE = [
+  // Consumable resources
   {
     id: "water",
     label: "Water bottle",
@@ -17,26 +18,64 @@ export const ITEM_CATALOGUE = [
     ],
   },
   {
+    id: "food",
+    label: "Food",
+    description: "A supply of food that restores energy and automatically treats exhaustion.",
+    tags: ["consumable", "food"],
+    maxUses: 2,
+    survivalBonus: 0.15,
+
+    treatments: [
+      {
+        statusId: "exhausted",
+        severityReduction: 2,
+        durationReduction: 2,
+        priority: 8,
+      },
+    ],
+  },
+  {
     id: "medicine",
     label: "Medicine",
-    description: "Medical supplies for bleeding and physical injuries.",
+    description: "Medical supplies that automatically treat wounds, illness, poison, and burns.",
     tags: ["consumable", "medicine"],
     maxUses: 1,
+
     treatments: [
       {
         statusId: "bleeding",
         severityReduction: 3,
         durationReduction: 3,
+        priority: 15,
+      },
+      {
+        statusId: "poisoned",
+        severityReduction: 3,
+        durationReduction: 3,
+        priority: 14,
+      },
+      {
+        statusId: "burned",
+        severityReduction: 2,
+        durationReduction: 2,
         priority: 12,
+      },
+      {
+        statusId: "sick",
+        severityReduction: 2,
+        durationReduction: 2,
+        priority: 11,
       },
       {
         statusId: "injured",
         severityReduction: 2,
         durationReduction: 2,
-        priority: 9,
+        priority: 10,
       },
     ],
   },
+
+  // Shelter and utility
   {
     id: "blanket",
     label: "Blanket",
@@ -79,6 +118,80 @@ export const ITEM_CATALOGUE = [
     foragingBonus: 0.2,
   },
   {
+    id: "map",
+    label: "Arena map",
+    description:
+      "A partial map of the arena that improves navigation and helps a disoriented tribute recover.",
+    tags: ["tool", "navigation"],
+    maxUses: 4,
+    awarenessBonus: 0.45,
+    foragingBonus: 0.35,
+
+    treatments: [
+      {
+        statusId: "disoriented",
+        severityReduction: 3,
+        durationReduction: 3,
+        priority: 10,
+      },
+    ],
+  },
+  {
+    id: "camouflage-net",
+    label: "Camouflage net",
+    description:
+      "A portable camouflage net that improves concealment and helps a hunted tribute lose their pursuer.",
+    tags: ["tool", "shelter", "camouflage"],
+    maxUses: 3,
+    survivalBonus: 0.5,
+    awarenessBonus: 0.1,
+
+    treatments: [
+      {
+        statusId: "hunted",
+        severityReduction: 3,
+        durationReduction: 3,
+        priority: 11,
+      },
+    ],
+  },
+  {
+    id: "trap-kit",
+    label: "Trap kit",
+    description:
+      "Wire, hooks, triggers, and other components for hunting or constructing arena traps.",
+    tags: ["tool", "trap", "hunting"],
+    maxUses: 3,
+
+    awarenessBonus: 0.2,
+    foragingBonus: 0.55,
+  },
+  {
+    id: "fishing-gear",
+    label: "Fishing gear",
+    description:
+      "A compact fishing kit that greatly improves the tribute's ability to gather food near water.",
+    tags: ["tool", "fishing", "hunting"],
+    maxUses: 4,
+
+    survivalBonus: 0.15,
+    foragingBonus: 0.7,
+  },
+
+  // Defensive and offensive gear
+  {
+    id: "slingshot",
+    label: "Slingshot",
+    description:
+      "A light ranged weapon useful for hunting small animals and creating distractions.",
+    tags: ["weapon", "hunting"],
+    maxUses: 6,
+
+    combatBonus: 0.65,
+    awarenessBonus: 0.1,
+    foragingBonus: 0.25,
+  },
+  {
     id: "knife",
     label: "Knife",
     description: "A compact weapon that is also useful as a tool.",
@@ -103,6 +216,28 @@ export const ITEM_CATALOGUE = [
     maxUses: 2,
     combatBonus: 1.6,
     awarenessBonus: 0.2,
+  },
+  {
+    id: "axe",
+    label: "Axe",
+    description:
+      "A heavy weapon that is also useful for chopping wood, clearing paths, and building shelter.",
+    tags: ["weapon", "tool", "hunting"],
+    maxUses: 4,
+
+    combatBonus: 1.45,
+    survivalBonus: 0.2,
+    foragingBonus: 0.3,
+  },
+  {
+    id: "shield",
+    label: "Shield",
+    description: "A sturdy shield that improves combat survivability and protection from hazards.",
+    tags: ["tool", "defense"],
+    maxUses: 4,
+
+    combatBonus: 0.45,
+    survivalBonus: 0.55,
   },
 ] satisfies readonly ItemDefinition[];
 

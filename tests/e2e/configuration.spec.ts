@@ -37,28 +37,45 @@ test("configures tributes and creates an initial Game", async ({ page }) => {
 
   await expect(
     page.getByRole("heading", {
-      name: "Choose your tributes",
+      name: "Prepare the tributes",
     }),
   ).toBeVisible();
 
-  await page
-    .getByRole("button", {
-      name: /Random Reaping/i,
-    })
-    .click();
+  const firstNameInput = page.getByLabel("Tribute name").first();
 
-  const portraitInput = page.locator('input[type="file"]').first();
+  await firstNameInput.fill("Test Tribute");
 
-  await portraitInput.setInputFiles({
+  const firstPortraitInput = page.getByLabel(/Upload portrait for/i).first();
+
+  await firstPortraitInput.setInputFiles({
     name: "portrait.png",
     mimeType: "image/png",
-    buffer: Buffer.from("temporary portrait"),
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nWQAAAAASUVORK5CYII=",
+      "base64",
+    ),
   });
 
   await expect(
     page
       .getByRole("button", {
-        name: "Remove",
+        name: "Remove portrait",
+      })
+      .first(),
+  ).toBeVisible();
+
+  await page
+    .getByRole("button", {
+      name: /Randomize blanks/i,
+    })
+    .click();
+
+  await expect(firstNameInput).toHaveValue("Test Tribute");
+
+  await expect(
+    page
+      .getByRole("button", {
+        name: "Remove portrait",
       })
       .first(),
   ).toBeVisible();
@@ -67,6 +84,7 @@ test("configures tributes and creates an initial Game", async ({ page }) => {
     .getByRole("button", {
       name: /Start the Games/i,
     })
+    .first()
     .click();
 
   await expect(

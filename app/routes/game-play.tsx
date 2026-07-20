@@ -109,11 +109,7 @@ export default function GamePlayPage() {
       <header className="arena-header">
         <Link className="arena-header__brand" to="/">
           <span aria-hidden="true">
-            <img
-              className="app-brand__emblem-image"
-              src="/images/capitol-emblem.webp"
-              alt=""
-            />
+            <img className="app-brand__emblem-image" src="/images/capitol-emblem.webp" alt="" />
           </span>
           <span>Hunger Games Simulator</span>
         </Link>

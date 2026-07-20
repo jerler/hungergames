@@ -1,9 +1,38 @@
 import type { StatusEffectId } from "~/game/statuses/status-schema";
 
 export type ItemDefinitionId =
-  "water" | "medicine" | "blanket" | "matches" | "rope" | "knife" | "spear" | "bow";
+  | "water"
+  | "medicine"
+  | "blanket"
+  | "matches"
+  | "rope"
+  | "knife"
+  | "spear"
+  | "bow"
+  | "food"
+  | "shield"
+  | "axe"
+  | "map"
+  | "trap-kit"
+  | "camouflage-net"
+  | "fishing-gear"
+  | "slingshot";
 
-export type ItemTag = "consumable" | "water" | "medicine" | "shelter" | "fire" | "tool" | "weapon";
+export type ItemTag =
+  | "consumable"
+  | "water"
+  | "food"
+  | "medicine"
+  | "shelter"
+  | "fire"
+  | "tool"
+  | "weapon"
+  | "defense"
+  | "navigation"
+  | "trap"
+  | "camouflage"
+  | "hunting"
+  | "fishing";
 
 export interface ItemTreatment {
   statusId: StatusEffectId;

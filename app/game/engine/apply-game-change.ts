@@ -5,9 +5,10 @@ import type {
   GameTribute,
   InventoryTransaction,
   ResolvedEvent,
+  VictoryOutcome,
+  Truce,
 } from "~/game/types/game-state";
 import { getRoundSequence } from "~/game/engine/rounds";
-import type { Truce } from "~/game/types/game-state";
 import { createAccidentalTruceDissolutionEvents } from "~/game/truces/truce-aftermath";
 
 function updateTribute(
@@ -80,6 +81,83 @@ function validateTruceFormation(state: GameState, truce: Truce): void {
     if (existingTruce) {
       throw new Error(`Tribute "${tributeId}" already belongs to truce "${existingTruce.id}".`);
     }
+  }
+}
+
+function validateVictoryDeclaration(
+  state: GameState,
+  outcome: VictoryOutcome,
+  event: ResolvedEvent,
+): void {
+  if (state.victoryOutcome) {
+    throw new Error("A victory outcome has already been declared.");
+  }
+
+  const uniqueVictorIds = new Set(outcome.victorTributeIds);
+
+  if (uniqueVictorIds.size !== outcome.victorTributeIds.length) {
+    throw new Error("A victory outcome cannot contain duplicate tributes.");
+  }
+
+  const livingTributes = state.tributes.filter((tribute) => tribute.isAlive);
+
+  for (const tributeId of outcome.victorTributeIds) {
+    const tribute = state.tributes.find((candidate) => candidate.id === tributeId);
+
+    if (!tribute) {
+      throw new Error(`Victory references missing tribute "${tributeId}".`);
+    }
+
+    if (!tribute.isAlive) {
+      throw new Error(`Dead tribute "${tributeId}" cannot be declared a victor.`);
+    }
+  }
+
+  const includesEveryLivingTribute =
+    outcome.victorTributeIds.length === livingTributes.length &&
+    livingTributes.every((tribute) => uniqueVictorIds.has(tribute.id));
+
+  if (!includesEveryLivingTribute) {
+    throw new Error("Every living tribute must be included in the victory outcome.");
+  }
+
+  if (outcome.kind === "sole") {
+    if (outcome.victorTributeIds.length !== 1) {
+      throw new Error("A sole victory requires exactly one victor.");
+    }
+
+    if (outcome.sourceEventId !== null) {
+      throw new Error("A sole victory cannot reference a joint-victory event.");
+    }
+
+    return;
+  }
+
+  if (outcome.victorTributeIds.length !== 2) {
+    throw new Error("A joint victory requires exactly two victors.");
+  }
+
+  if (outcome.reason !== "poisonous-berries") {
+    throw new Error("A joint victory currently requires the poisonous-berries ending.");
+  }
+
+  if (event.definitionId !== "poisonous-berries-joint-victory") {
+    throw new Error("A joint victory can only be declared by the poisonous-berries finale.");
+  }
+
+  if (outcome.sourceEventId !== event.id) {
+    throw new Error("A joint victory must reference the event that declared it.");
+  }
+
+  const romanticTruce = state.truces.find(
+    (truce) =>
+      truce.kind === "romantic" &&
+      truce.tributeIds.length === 2 &&
+      outcome.victorTributeIds.every((tributeId) => truce.tributeIds.includes(tributeId)),
+  );
+
+  if (!romanticTruce) {
+    throw new Error("Joint victors must belong to the same active romantic truce.");
   }
 }
 
@@ -381,41 +459,11 @@ export function applyGameChange(
     }
 
     case "declare-victory": {
-      if (state.victoryOutcome) {
-        throw new Error("A victory outcome has already been declared.");
-      }
-
-      const { outcome } = change;
-
-      const uniqueVictorIds = new Set(outcome.victorTributeIds);
-
-      if (uniqueVictorIds.size !== outcome.victorTributeIds.length) {
-        throw new Error("A victory outcome cannot contain duplicate tributes.");
-      }
-
-      if (outcome.kind === "sole" && outcome.victorTributeIds.length !== 1) {
-        throw new Error("A sole victory requires exactly one victor.");
-      }
-
-      if (outcome.kind === "joint" && outcome.victorTributeIds.length !== 2) {
-        throw new Error("A joint victory requires exactly two victors.");
-      }
-
-      for (const tributeId of outcome.victorTributeIds) {
-        const tribute = state.tributes.find((candidate) => candidate.id === tributeId);
-
-        if (!tribute) {
-          throw new Error(`Victory references missing tribute "${tributeId}".`);
-        }
-
-        if (!tribute.isAlive) {
-          throw new Error(`Dead tribute "${tributeId}" cannot be declared a victor.`);
-        }
-      }
+      validateVictoryDeclaration(state, change.outcome, event);
 
       return {
         ...state,
-        victoryOutcome: outcome,
+        victoryOutcome: change.outcome,
       };
     }
 

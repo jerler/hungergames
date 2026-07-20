@@ -10,7 +10,7 @@ import { createTruceInstance } from "~/game/truces/truce-engine";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
-import type { GameState } from "~/game/types/game-state";
+import type { GameState, ResolvedEvent } from "~/game/types/game-state";
 import { gameReducer } from "~/state/game-reducer";
 
 import {
@@ -141,6 +141,46 @@ function createFinalPairState(kind: "standard" | "romantic", livingTributeCount 
   };
 }
 
+function createJointVictoryEvent(
+  state: GameState,
+  options: {
+    id?: string;
+    definitionId?: string;
+    sourceEventId?: string;
+  } = {},
+): ResolvedEvent {
+  const partners = selectLivingTributes(state).slice(0, 2);
+
+  const firstPartner = partners[0];
+  const secondPartner = partners[1];
+
+  if (!firstPartner || !secondPartner) {
+    throw new Error("The joint-victory test requires two living tributes.");
+  }
+
+  const eventId = options.id ?? "test-berries-finale";
+
+  return {
+    id: eventId,
+    definitionId: options.definitionId ?? "poisonous-berries-joint-victory",
+    resolutionMode: "standard",
+    round: NIGHT_ONE,
+    participantTributeIds: [firstPartner.id, secondPartner.id],
+    text: "The finalists threaten to eat poisonous berries.",
+    changes: [
+      {
+        type: "declare-victory",
+        outcome: {
+          kind: "joint",
+          victorTributeIds: [firstPartner.id, secondPartner.id],
+          sourceEventId: options.sourceEventId ?? eventId,
+          reason: "poisonous-berries",
+        },
+      },
+    ],
+  };
+}
+
 describe("poisonous berries joint victory", () => {
   it("is eligible for the final two tributes when they share a romantic truce", () => {
     const state = createFinalPairState("romantic");
@@ -206,6 +246,49 @@ describe("poisonous berries joint victory", () => {
         reason: "poisonous-berries",
       },
     });
+  });
+
+  it("rejects joint victory while another tribute remains alive", () => {
+    const state = createFinalPairState("romantic", 3);
+
+    expect(() => applyResolvedEvent(state, createJointVictoryEvent(state))).toThrow(
+      /every living tribute must be included/i,
+    );
+  });
+
+  it("rejects joint victory from an event other than the berries finale", () => {
+    const state = createFinalPairState("romantic");
+
+    expect(() =>
+      applyResolvedEvent(
+        state,
+        createJointVictoryEvent(state, {
+          definitionId: "ordinary-survival-event",
+        }),
+      ),
+    ).toThrow(/only be declared by the poisonous-berries finale/i);
+  });
+
+  it("rejects joint victory that references a different source event", () => {
+    const state = createFinalPairState("romantic");
+
+    expect(() =>
+      applyResolvedEvent(
+        state,
+        createJointVictoryEvent(state, {
+          id: "actual-berries-event",
+          sourceEventId: "different-event",
+        }),
+      ),
+    ).toThrow(/must reference the event that declared it/i);
+  });
+
+  it("rejects joint victory for finalists outside a romantic truce", () => {
+    const state = createFinalPairState("standard");
+
+    expect(() => applyResolvedEvent(state, createJointVictoryEvent(state))).toThrow(
+      /same active romantic truce/i,
+    );
   });
 
   it("sequences only the poisonous berries event for the final romantic pair", () => {

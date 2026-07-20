@@ -6,8 +6,8 @@ import type {
   ParticipantSelectionContext,
   ParticipantsByRole,
 } from "~/game/events/event-schema";
-import { EVENT_CATALOGUE } from "~/game/events/event-catalogue";
-import { LUCK_EVENTS } from "~/game/events/luck-events";
+import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
+import { LUCK_EVENTS } from "~/game/events/catalogue/luck-events";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import type { RandomSource } from "~/game/engine/random";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";

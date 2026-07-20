@@ -13,15 +13,6 @@ import type { EventResolutionContext } from "./event-schema";
 import { selectRandomItem } from "./../engine/random";
 import { createStatusEffectInstance } from "./../statuses/status-engine";
 import { createCombatantRole } from "./participant-role-builders";
-import { LUCK_EVENTS } from "./luck-events";
-import { SURVIVAL_MISADVENTURE_EVENTS } from "./survival-misadventure-events";
-import { TOOL_AND_WEAPON_EVENTS } from "./tool-and-weapon-events";
-
-import { TRUCE_FORMATION_EVENTS } from "~/game/events/truce-formation-events";
-import { TRUCE_DISSOLUTION_EVENTS } from "~/game/events/truce-dissolution-events";
-import { TRUCE_CONFLICT_EVENTS } from "~/game/events/truce-conflict-events";
-import { ROMANTIC_TRUCE_EVENTS } from "~/game/events/romantic-truce-events";
-import { POISONOUS_BERRIES_JOINT_VICTORY_EVENT } from "~/game/events/poisonous-berries-event";
 
 function createFatalChanges(
   victim: GameTribute,
@@ -122,7 +113,7 @@ function createItemAcquisitionChanges(
   ];
 }
 
-export const EVENT_CATALOGUE = [
+export const CORE_EVENTS = [
   {
     id: "knife-ambush",
     category: "fatal",
@@ -583,12 +574,4 @@ export const EVENT_CATALOGUE = [
       };
     },
   },
-  ...TRUCE_FORMATION_EVENTS,
-  ...TRUCE_DISSOLUTION_EVENTS,
-  ...TRUCE_CONFLICT_EVENTS,
-  ...ROMANTIC_TRUCE_EVENTS,
-  POISONOUS_BERRIES_JOINT_VICTORY_EVENT,
-  ...LUCK_EVENTS,
-  ...SURVIVAL_MISADVENTURE_EVENTS,
-  ...TOOL_AND_WEAPON_EVENTS,
 ] satisfies readonly EventDefinition[];

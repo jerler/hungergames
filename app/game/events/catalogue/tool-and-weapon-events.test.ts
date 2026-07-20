@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { applyResolvedEvent } from "~/game/engine/apply-game-change";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import type { RandomSource } from "~/game/engine/random";
-import { EVENT_CATALOGUE } from "~/game/events/event-catalogue";
+import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
 import { selectEventParticipants } from "~/game/events/participant-selection";
-import { TOOL_AND_WEAPON_EVENTS } from "~/game/events/tool-and-weapon-events";
+import { TOOL_AND_WEAPON_EVENTS } from "~/game/events/catalogue/tool-and-weapon-events";
 import type {
   EventDefinition,
   EventResolution,

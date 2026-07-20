@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import { createSeededRandom, selectWeightedItem } from "~/game/engine/random";
+import { TRUCE_FORMATION_EVENTS } from "~/game/events/catalogue/truce-formation-events";
+import { getEventDefinitionWeight } from "~/game/events/event-weighting";
 import { getTruceFormationPopulationMultiplier } from "~/game/truces/truce-engine";
 import {
   getAverageDistrictAffinityWeight,
@@ -231,6 +233,57 @@ describe("truce balance", () => {
       const expectedRate = multiplier / (multiplier + 1);
 
       expect(Math.abs(observedRates[index] - expectedRate)).toBeLessThan(0.01);
+    }
+  });
+
+  it("applies the population multiplier to every playable truce formation event", () => {
+    const game = createGame("formation-event-weighting");
+
+    const populationCases = [
+      {
+        livingCount: 24,
+        multiplier: 1,
+      },
+      {
+        livingCount: 16,
+        multiplier: 0.65,
+      },
+      {
+        livingCount: 8,
+        multiplier: 0.25,
+      },
+      {
+        livingCount: 4,
+        multiplier: 0.05,
+      },
+      {
+        livingCount: 3,
+        multiplier: 0,
+      },
+    ] as const;
+
+    for (const { livingCount, multiplier } of populationCases) {
+      const state = withLivingTributeCount(game, livingCount);
+
+      const context = {
+        state,
+
+        round: {
+          day: 1,
+          period: "day",
+        } as const,
+
+        livingTributes: state.tributes.filter((tribute) => tribute.isAlive),
+      };
+
+      expect(getTruceFormationPopulationMultiplier(state)).toBe(multiplier);
+
+      for (const definition of TRUCE_FORMATION_EVENTS) {
+        expect(getEventDefinitionWeight(definition, context)).toBeCloseTo(
+          definition.baseWeight * multiplier,
+          10,
+        );
+      }
     }
   });
 });

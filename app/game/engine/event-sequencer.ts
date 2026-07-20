@@ -1,4 +1,4 @@
-import { EVENT_CATALOGUE } from "~/game/events/event-catalogue";
+import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
 import type { EventDefinition, EventSelectionContext } from "~/game/events/event-schema";
 import { isEventDefinitionEligible } from "~/game/events/event-eligibility";
 import { selectEventParticipants } from "~/game/events/participant-selection";
@@ -15,7 +15,7 @@ import type {
 import {
   POISONOUS_BERRIES_JOINT_VICTORY_EVENT,
   isPoisonousBerriesFinaleEligible,
-} from "~/game/events/poisonous-berries-event";
+} from "~/game/events/catalogue/poisonous-berries-event";
 
 export const MAX_CONSECUTIVE_NON_ELIMINATION_ROUNDS = 2;
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { EVENT_CATALOGUE } from "~/game/events/event-catalogue";
-import { SURVIVAL_MISADVENTURE_EVENTS } from "~/game/events/survival-misadventure-events";
+import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
+import { SURVIVAL_MISADVENTURE_EVENTS } from "~/game/events/catalogue/survival-misadventure-events";
 import type {
   EventDefinition,
   EventResolution,

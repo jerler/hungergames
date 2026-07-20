@@ -4,9 +4,9 @@ import { applyResolvedEvent } from "~/game/engine/apply-game-change";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 import type { RandomSource } from "~/game/engine/random";
-import { EVENT_CATALOGUE } from "~/game/events/event-catalogue";
+import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
 import { selectEventParticipants } from "~/game/events/participant-selection";
-import { TRUCE_CONFLICT_EVENTS } from "~/game/events/truce-conflict-events";
+import { TRUCE_CONFLICT_EVENTS } from "~/game/events/catalogue/truce-conflict-events";
 import type {
   EventDefinition,
   EventResolution,

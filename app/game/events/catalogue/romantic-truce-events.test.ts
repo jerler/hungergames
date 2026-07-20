@@ -4,17 +4,17 @@ import { applyResolvedEvent } from "~/game/engine/apply-game-change";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 import type { RandomSource } from "~/game/engine/random";
-import { EVENT_CATALOGUE } from "~/game/events/event-catalogue";
+import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
 import type {
   EventDefinition,
   EventResolution,
   ParticipantsByRole,
 } from "~/game/events/event-schema";
 import { selectEventParticipants } from "~/game/events/participant-selection";
-import { ROMANTIC_TRUCE_EVENTS } from "~/game/events/romantic-truce-events";
-import { TRUCE_CONFLICT_EVENTS } from "~/game/events/truce-conflict-events";
-import { TRUCE_DISSOLUTION_EVENTS } from "~/game/events/truce-dissolution-events";
-import { TRUCE_FORMATION_EVENTS } from "~/game/events/truce-formation-events";
+import { ROMANTIC_TRUCE_EVENTS } from "~/game/events/catalogue/romantic-truce-events";
+import { TRUCE_CONFLICT_EVENTS } from "~/game/events/catalogue/truce-conflict-events";
+import { TRUCE_DISSOLUTION_EVENTS } from "~/game/events/catalogue/truce-dissolution-events";
+import { TRUCE_FORMATION_EVENTS } from "~/game/events/catalogue/truce-formation-events";
 import { createTruceInstance, expireTrucesAfterRound } from "~/game/truces/truce-engine";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";

@@ -1,4 +1,3 @@
-import { CORE_EVENTS } from "~/game/events/event-catalogue";
 import type { EventDefinition } from "~/game/events/event-schema";
 import { POISONOUS_BERRIES_JOINT_VICTORY_EVENT } from "~/game/events/catalogue/poisonous-berries-event";
 import { ROMANTIC_TRUCE_EVENTS } from "~/game/events/catalogue/romantic-truce-events";
@@ -15,7 +14,6 @@ import { LUCK_EVENTS } from "./luck-events";
 
 export const EVENT_CATALOGUE = [
   POISONOUS_BERRIES_JOINT_VICTORY_EVENT,
-  ...CORE_EVENTS,
   ...COMBAT_EVENTS,
   ...ARENA_HAZARD_EVENTS,
   ...SURVIVAL_EVENTS,

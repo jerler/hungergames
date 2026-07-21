@@ -98,30 +98,60 @@ export function createFatalChanges(
   const changes: GameChange[] = [
     {
       type: "eliminate-tribute",
+
       tributeId: victim.id,
+
       causeId,
       causeLabel,
       summary,
+
       killerTributeIds: killer ? [killer.id] : [],
     },
   ];
 
-  if (killer) {
-    changes.push(
-      {
-        type: "increment-statistic",
-        tributeId: killer.id,
-        statistic: "attemptedKills",
-        amount: 1,
-      },
-      {
-        type: "increment-statistic",
-        tributeId: killer.id,
-        statistic: "kills",
-        amount: 1,
-      },
-    );
+  if (!killer) {
+    return changes;
   }
+
+  changes.push(
+    {
+      type: "increment-statistic",
+
+      tributeId: killer.id,
+
+      statistic: "attemptedKills",
+      amount: 1,
+    },
+    {
+      type: "increment-statistic",
+
+      tributeId: killer.id,
+
+      statistic: "kills",
+      amount: 1,
+    },
+  );
+
+  /*
+   * A killer claims the victim's complete
+   * inventory after the elimination.
+   *
+   * The original item instances are moved,
+   * preserving their IDs, acquisition data,
+   * and remaining uses.
+   */
+  changes.push(
+    ...victim.inventory.map((item): GameChange => ({
+      type: "transfer-item",
+
+      itemInstanceId: item.id,
+
+      fromTributeId: victim.id,
+      toTributeId: killer.id,
+
+      reason: "death-loot",
+    })),
+  );
 
   return changes;
 }

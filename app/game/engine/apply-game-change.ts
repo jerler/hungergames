@@ -430,7 +430,13 @@ export function applyGameChange(
         throw new Error(`Cannot transfer to missing tribute ` + `"${change.toTributeId}".`);
       }
 
-      if (!sourceTribute.isAlive) {
+      const isVerifiedDeathLoot =
+        change.reason === "death-loot" &&
+        !sourceTribute.isAlive &&
+        sourceTribute.death?.resolvedEventId === event.id &&
+        sourceTribute.death.killerTributeIds.includes(targetTribute.id);
+
+      if (!sourceTribute.isAlive && !isVerifiedDeathLoot) {
         throw new Error(`Dead tribute "${sourceTribute.id}" ` + "cannot transfer an item.");
       }
 

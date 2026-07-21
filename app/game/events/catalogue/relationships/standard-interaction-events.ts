@@ -325,7 +325,14 @@ function createBetrayalEvent(groupSize: TruceGroupSize, groupSizeWeight: number)
         }
 
         case "exceptional-success": {
-          const theftChanges = createBetrayalTheftChanges(partners, betrayer, random, true);
+          const survivingPartners = partners.filter((partner) => partner.id !== defender.id);
+
+          const theftChanges = createBetrayalTheftChanges(
+            survivingPartners,
+            betrayer,
+            random,
+            true,
+          );
 
           const text =
             `${betrayer.snapshot.name} launches a devastating ` +
@@ -337,10 +344,9 @@ function createBetrayalEvent(groupSize: TruceGroupSize, groupSizeWeight: number)
             text,
 
             /*
-             * Transfers must happen before
-             * the defender dies because dead
-             * tributes cannot initiate item
-             * transfers.
+             * The surviving partners' items are stolen
+             * directly. createFatalChanges() handles
+             * the killed defender's inventory as loot.
              */
             changes: [
               ...theftChanges,

@@ -3,18 +3,25 @@ import { describe, expect, it } from "vitest";
 import { applyResolvedEvent } from "~/game/engine/apply-game-change";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import { getCombatScore, getForagingScore, getSurvivalScore } from "~/game/engine/stat-formulas";
+import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 import {
   createInventoryItemInstance,
   prepareTributesForRound,
 } from "~/game/items/inventory-engine";
+import { createFatalChanges } from "~/game/events/event-change-builders";
 import { createStatusEffectInstance } from "~/game/statuses/status-engine";
 import { advanceStatusDurations } from "~/game/statuses/status-engine";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
-import type { GameState, ResolvedEvent } from "~/game/types/game-state";
+import type { GameChange, GameState, ResolvedEvent } from "~/game/types/game-state";
 import { createTruceInstance } from "~/game/truces/truce-engine";
 import { getItemDefinition } from "~/game/items/item-catalogue";
+
+const DAY_ONE = {
+  day: 1,
+  period: "day",
+} as const;
 
 function createGame(): GameState {
   const config = {
@@ -37,6 +44,26 @@ function createGame(): GameState {
       now: "2026-07-18T12:00:00.000Z",
     },
   );
+}
+
+function createEvent(
+  id: string,
+  changes: GameChange[],
+  participantTributeIds: string[],
+): ResolvedEvent {
+  return {
+    id,
+    definitionId: id,
+    resolutionMode: "standard",
+
+    round: DAY_ONE,
+
+    participantTributeIds,
+
+    text: "Test event.",
+
+    changes,
+  };
 }
 
 const AUTOMATIC_TREATMENT_CASES = [
@@ -614,4 +641,122 @@ describe("status and inventory interactions", () => {
       }
     },
   );
+});
+
+describe("death loot", () => {
+  it("transfers the victim's complete inventory to their killer", () => {
+    const game = createGame();
+
+    const originalVictim = game.tributes[0];
+
+    const originalKiller = game.tributes[1];
+
+    const knife = createInventoryItemInstance(
+      "death-loot-setup",
+      originalVictim.id,
+      "knife",
+      DAY_ONE,
+    );
+
+    const medicine = createInventoryItemInstance(
+      "death-loot-setup",
+      originalVictim.id,
+      "medicine",
+      DAY_ONE,
+    );
+
+    const stateWithInventory = applyResolvedEvent(
+      game,
+      createEvent(
+        "death-loot-setup",
+        [
+          {
+            type: "acquire-item",
+
+            tributeId: originalVictim.id,
+
+            item: knife,
+          },
+          {
+            type: "acquire-item",
+
+            tributeId: originalVictim.id,
+
+            item: medicine,
+          },
+        ],
+        [originalVictim.id],
+      ),
+    );
+
+    const victim = stateWithInventory.tributes.find((tribute) => tribute.id === originalVictim.id);
+
+    const killer = stateWithInventory.tributes.find((tribute) => tribute.id === originalKiller.id);
+
+    if (!victim || !killer) {
+      throw new Error("Death-loot test tributes are missing.");
+    }
+
+    const text = `${killer.snapshot.name} kills ` + `${victim.snapshot.name}.`;
+
+    const stateAfterDeath = applyResolvedEvent(
+      stateWithInventory,
+      createEvent(
+        "death-loot-kill",
+        createFatalChanges(victim, "death-loot-test", "Killed", text, killer),
+        [victim.id, killer.id],
+      ),
+    );
+
+    const deadVictim = stateAfterDeath.tributes.find((tribute) => tribute.id === victim.id);
+
+    const survivingKiller = stateAfterDeath.tributes.find((tribute) => tribute.id === killer.id);
+
+    expect(deadVictim?.isAlive).toBe(false);
+
+    expect(deadVictim?.inventory).toEqual([]);
+
+    expect(survivingKiller?.inventory).toEqual(expect.arrayContaining([knife, medicine]));
+
+    /*
+     * Reusable and limited-use items both
+     * retain their original use values.
+     */
+    expect(survivingKiller?.inventory.find((item) => item.id === knife.id)?.usesRemaining).toBe(
+      knife.usesRemaining,
+    );
+
+    expect(survivingKiller?.inventory.find((item) => item.id === medicine.id)?.usesRemaining).toBe(
+      medicine.usesRemaining,
+    );
+
+    const lootTransactions = stateAfterDeath.itemTransactions.filter(
+      (transaction) => transaction.type === "transferred" && transaction.sourceId === "death-loot",
+    );
+
+    expect(lootTransactions).toHaveLength(2);
+
+    expect(lootTransactions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fromTributeId: victim.id,
+          toTributeId: killer.id,
+
+          itemInstanceId: knife.id,
+
+          uses: knife.usesRemaining,
+        }),
+        expect.objectContaining({
+          fromTributeId: victim.id,
+          toTributeId: killer.id,
+
+          itemInstanceId: medicine.id,
+
+          uses: medicine.usesRemaining,
+        }),
+      ]),
+    );
+
+    expect(() => assertGameStateInvariants(stateAfterDeath)).not.toThrow();
+  });
 });

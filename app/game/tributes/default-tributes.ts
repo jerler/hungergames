@@ -178,7 +178,7 @@ export const DEFAULT_TRIBUTES = [
   createTributeDefinition("clippy", "Clippy", "it", 4, 1, 5),
   createTributeDefinition("bob-belcher", "Bob Belcher", "he", 4, 2, 2),
   createTributeDefinition("louise-belcher", "Louise Belcher", "she", 5, 1, 5),
-  createTributeDefinition("rick-sanchez", "Rick Sanchez", "he", 5, 3, 1),
+  createTributeDefinition("rick-sanchez", "Rick Sanchez", "he", 5, 2, 1),
   createTributeDefinition("morty-smith", "Morty Smith", "he", 3, 1, 5),
   createTributeDefinition("homer-simpson", "Homer Simpson", "he", 1, 1, 5),
 ] satisfies readonly TributeDefinition[];

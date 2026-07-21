@@ -13,6 +13,7 @@ import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState, ResolvedEvent } from "~/game/types/game-state";
+import { createTruceInstance } from "~/game/truces/truce-engine";
 
 function createGame(): GameState {
   const config = {
@@ -441,6 +442,92 @@ describe("status and inventory interactions", () => {
     expect(preparedTribute.statuses.map((status) => status.definitionId)).toEqual(["injured"]);
 
     expect(preparedTribute.inventory).toEqual([]);
+  });
+
+  it("uses a truce partner's medicine for automatic treatment", () => {
+    const originalState = createGame();
+
+    const patient = originalState.tributes[0];
+
+    const itemOwner = originalState.tributes[1];
+
+    const round = {
+      day: 1,
+      period: "day" as const,
+    };
+
+    const bleeding = createStatusEffectInstance(
+      "shared-treatment-status",
+      patient.id,
+      "bleeding",
+      2,
+      round,
+    );
+
+    const medicine = createInventoryItemInstance(
+      "shared-treatment-item",
+      itemOwner.id,
+      "medicine",
+      round,
+    );
+
+    const truce = createTruceInstance("shared-treatment-truce", [patient.id, itemOwner.id], round, {
+      day: 1,
+      period: "night",
+    });
+
+    const state: GameState = {
+      ...originalState,
+
+      tributes: originalState.tributes.map((tribute) => {
+        if (tribute.id === patient.id) {
+          return {
+            ...tribute,
+            statuses: [bleeding],
+          };
+        }
+
+        if (tribute.id === itemOwner.id) {
+          return {
+            ...tribute,
+            inventory: [medicine],
+          };
+        }
+
+        return tribute;
+      }),
+
+      truces: [truce],
+    };
+
+    const preparedState = prepareTributesForRound(state, {
+      day: 1,
+      period: "night",
+    });
+
+    const preparedPatient = preparedState.tributes.find((tribute) => tribute.id === patient.id);
+
+    const preparedOwner = preparedState.tributes.find((tribute) => tribute.id === itemOwner.id);
+
+    expect(preparedPatient?.statuses).toEqual([]);
+
+    expect(preparedOwner?.inventory).toEqual([]);
+
+    expect(preparedState.itemTransactions).toContainEqual(
+      expect.objectContaining({
+        type: "consumed",
+
+        /*
+         * The transaction belongs to
+         * the physical item owner.
+         */
+        tributeId: itemOwner.id,
+
+        itemInstanceId: medicine.id,
+        definitionId: "medicine",
+        uses: 1,
+      }),
+    );
   });
 
   it.each(AUTOMATIC_TREATMENT_CASES)(

@@ -1,13 +1,15 @@
+import { selectWeightedItem, type RandomSource } from "~/game/engine/random";
 import type {
   EventDefinition,
+  EventItemSelection,
+  EventItemsByRole,
   EventSelectionContext,
   ParticipantRoleDefinition,
   ParticipantsByRole,
 } from "~/game/events/event-schema";
+import { findAccessibleInventoryItem } from "~/game/items/inventory-engine";
 import { areTributesInSameTruce } from "~/game/truces/truce-engine";
-import { selectWeightedItem, type RandomSource } from "~/game/engine/random";
 import type { GameTribute } from "~/game/types/game-state";
-import { tributeHasUsableItem } from "~/game/items/inventory-engine";
 
 function isProtectedFromRoleByTruce(
   candidate: GameTribute,
@@ -24,9 +26,18 @@ function isProtectedFromRoleByTruce(
   );
 }
 
+function roleRequiresItem(role: ParticipantRoleDefinition): boolean {
+  return (
+    (role.requiredItemTags?.length ?? 0) > 0 || (role.requiredItemDefinitionIds?.length ?? 0) > 0
+  );
+}
+
 export interface ParticipantSelection {
   participantsByRole: ParticipantsByRole;
   participantTributeIds: string[];
+
+  itemsByRole: EventItemsByRole;
+  selectedItemInstanceIds: string[];
 }
 
 export function selectEventParticipants(
@@ -34,20 +45,34 @@ export function selectEventParticipants(
   context: EventSelectionContext,
   random: RandomSource,
   unavailableTributeIds: ReadonlySet<string>,
+  unavailableItemInstanceIds: ReadonlySet<string> = new Set<string>(),
 ): ParticipantSelection | null {
   const selectedTributeIds = new Set(unavailableTributeIds);
 
+  /*
+   * Include items claimed by earlier events,
+   * then add items selected within this event.
+   */
+  const reservedItemInstanceIds = new Set(unavailableItemInstanceIds);
+
   const participantsByRole: Record<string, GameTribute[]> = {};
+
+  const itemsByRole: Record<string, EventItemSelection[]> = {};
+
+  const selectedItemInstanceIds: string[] = [];
 
   for (const role of definition.roles) {
     const roleParticipants: GameTribute[] = [];
+    const roleItems: EventItemSelection[] = [];
 
     /*
-     * Assign this before selection so
-     * callbacks can inspect participants
-     * already chosen for this same role.
+     * Assign these before selection so callbacks
+     * may inspect participants already chosen for
+     * this same role.
      */
     participantsByRole[role.id] = roleParticipants;
+
+    itemsByRole[role.id] = roleItems;
 
     const roleContext = {
       ...context,
@@ -59,11 +84,16 @@ export function selectEventParticipants(
         (tribute) =>
           !selectedTributeIds.has(tribute.id) &&
           !isProtectedFromRoleByTruce(tribute, role, participantsByRole, context) &&
-          tributeHasUsableItem(tribute, {
-            requiredTags: role.requiredItemTags,
+          (!roleRequiresItem(role) ||
+            Boolean(
+              findAccessibleInventoryItem(context.state, tribute, {
+                definitionIds: role.requiredItemDefinitionIds,
 
-            definitionIds: role.requiredItemDefinitionIds,
-          }) &&
+                requiredTags: role.requiredItemTags,
+
+                unavailableItemInstanceIds: reservedItemInstanceIds,
+              }),
+            )) &&
           (role.isEligible ? role.isEligible(tribute, roleContext) : true),
       );
 
@@ -82,6 +112,36 @@ export function selectEventParticipants(
       selectedTributeIds.add(selectedTribute.id);
 
       roleParticipants.push(selectedTribute);
+
+      if (roleRequiresItem(role)) {
+        const accessibleItem = findAccessibleInventoryItem(context.state, selectedTribute, {
+          definitionIds: role.requiredItemDefinitionIds,
+
+          requiredTags: role.requiredItemTags,
+
+          unavailableItemInstanceIds: reservedItemInstanceIds,
+        });
+
+        if (!accessibleItem) {
+          /*
+           * This should be impossible because the
+           * same requirement was checked while
+           * building the candidate list.
+           */
+          return null;
+        }
+
+        roleItems.push({
+          userTributeId: selectedTribute.id,
+
+          owner: accessibleItem.owner,
+          item: accessibleItem.item,
+        });
+
+        reservedItemInstanceIds.add(accessibleItem.item.id);
+
+        selectedItemInstanceIds.push(accessibleItem.item.id);
+      }
     }
   }
 
@@ -92,5 +152,7 @@ export function selectEventParticipants(
   return {
     participantsByRole,
     participantTributeIds,
+    itemsByRole,
+    selectedItemInstanceIds,
   };
 }

@@ -1,5 +1,9 @@
 import { getVulnerabilityWeight } from "~/game/engine/stat-formulas";
-import { createFatalChanges } from "~/game/events/event-change-builders";
+import {
+  createFatalChanges,
+  createItemConsumptionChange,
+} from "~/game/events/event-change-builders";
+import { requireEventItem } from "~/game/events/event-resolution-helpers";
 import {
   requireSingleParticipant,
   type EventDefinition,
@@ -31,18 +35,14 @@ export const COMBAT_EVENTS = [
 
     isEligible: ({ livingTributes }) => livingTributes.length >= 2,
 
-    resolve({ participantsByRole }): EventResolution {
+    resolve(context): EventResolution {
+      const { participantsByRole } = context;
+
       const victim = requireSingleParticipant(participantsByRole, "victim");
 
       const killer = requireSingleParticipant(participantsByRole, "killer");
 
-      const spear = killer.inventory.find(
-        (item) => item.definitionId === "spear" && item.usesRemaining > 0,
-      );
-
-      if (!spear) {
-        throw new Error("Spear attack selected a killer without a spear.");
-      }
+      const spear = requireEventItem(context, killer, "spear", "spear-attack");
 
       const text =
         `${killer.snapshot.name} strikes ` + `${victim.snapshot.name} down with a spear.`;
@@ -52,13 +52,8 @@ export const COMBAT_EVENTS = [
 
         changes: [
           ...createFatalChanges(victim, "spear-attack", "Speared", text, killer),
-          {
-            type: "consume-item",
-            tributeId: killer.id,
-            itemInstanceId: spear.id,
-            uses: 1,
-            reason: "spear-attack",
-          },
+
+          createItemConsumptionChange(spear.owner, spear.item, "spear-attack"),
         ],
       };
     },
@@ -83,18 +78,14 @@ export const COMBAT_EVENTS = [
 
     isEligible: ({ livingTributes }) => livingTributes.length >= 2,
 
-    resolve({ participantsByRole }): EventResolution {
+    resolve(context): EventResolution {
+      const { participantsByRole } = context;
+
       const victim = requireSingleParticipant(participantsByRole, "victim");
 
       const killer = requireSingleParticipant(participantsByRole, "killer");
 
-      const knife = killer.inventory.find(
-        (item) => item.definitionId === "knife" && item.usesRemaining > 0,
-      );
-
-      if (!knife) {
-        throw new Error("Knife ambush selected a killer without a knife.");
-      }
+      const knife = requireEventItem(context, killer, "knife", "knife-ambush");
 
       const text =
         `${killer.snapshot.name} catches ` +
@@ -106,13 +97,8 @@ export const COMBAT_EVENTS = [
 
         changes: [
           ...createFatalChanges(victim, "knife-ambush", "Knifed", text, killer),
-          {
-            type: "consume-item",
-            tributeId: killer.id,
-            itemInstanceId: knife.id,
-            uses: 1,
-            reason: "knife-ambush",
-          },
+
+          createItemConsumptionChange(knife.owner, knife.item, "knife-ambush"),
         ],
       };
     },

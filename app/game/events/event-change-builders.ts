@@ -64,13 +64,19 @@ export function createItemAcquisitionAndSurvivalChanges(
 }
 
 export function createItemConsumptionChange(
-  tribute: GameTribute,
+  itemOwner: GameTribute,
   item: InventoryItem,
   reason: string,
 ): GameChange {
   return {
     type: "consume-item",
-    tributeId: tribute.id,
+
+    /*
+     * consume-item targets the physical owner,
+     * even when another truce member used it.
+     */
+    tributeId: itemOwner.id,
+
     itemInstanceId: item.id,
     uses: 1,
     reason,

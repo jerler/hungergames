@@ -225,4 +225,131 @@ describe("item-based participant selection", () => {
 
     expect(validSelection?.participantsByRole.killer[0].id).toBe(outsider.id);
   });
+
+  it("does not let two selections reserve the same shared item", () => {
+    const config = {
+      ...createDefaultGameConfig(),
+      districtCount: 6 as const,
+    };
+
+    let nextId = 0;
+
+    const originalGame = createInitialGameState(
+      config,
+      createRandomTributeDrafts(6, DEFAULT_TRIBUTES, () => 0.5),
+      "random",
+      {
+        createId: () => {
+          nextId += 1;
+
+          return `shared-id-${nextId}`;
+        },
+
+        seed: "shared-item-reservation",
+
+        now: "2026-07-21T12:00:00.000Z",
+      },
+    );
+
+    const firstUser = originalGame.tributes[0];
+
+    const secondUser = originalGame.tributes[1];
+
+    const itemOwner = {
+      ...originalGame.tributes[2],
+
+      inventory: [
+        createInventoryItemInstance("shared-knife", originalGame.tributes[2].id, "knife", {
+          day: 1,
+          period: "day",
+        }),
+      ],
+    };
+
+    const knife = itemOwner.inventory[0];
+
+    const truce = createTruceInstance(
+      "shared-item-truce",
+      [firstUser.id, secondUser.id, itemOwner.id],
+      {
+        day: 1,
+        period: "day",
+      },
+      {
+        day: 1,
+        period: "night",
+      },
+    );
+
+    const state = {
+      ...originalGame,
+
+      tributes: originalGame.tributes.map((tribute) =>
+        tribute.id === itemOwner.id ? itemOwner : tribute,
+      ),
+
+      truces: [truce],
+    };
+
+    const definition: EventDefinition = {
+      id: "shared-knife-test",
+      category: "hazard",
+      tags: ["hazard", "weapon"],
+      periods: ["day"],
+      baseWeight: 1,
+
+      roles: [
+        {
+          id: "tribute",
+          count: 1,
+
+          requiredItemDefinitionIds: ["knife"],
+        },
+      ],
+
+      resolve: () => ({
+        text: "Test event.",
+        changes: [],
+      }),
+    };
+
+    const firstSelection = selectEventParticipants(
+      definition,
+      {
+        state,
+
+        round: {
+          day: 1,
+          period: "day",
+        },
+
+        livingTributes: [firstUser],
+      },
+      () => 0,
+      new Set(),
+      new Set(),
+    );
+
+    expect(firstSelection?.selectedItemInstanceIds).toEqual([knife.id]);
+
+    const secondSelection = selectEventParticipants(
+      definition,
+      {
+        state,
+
+        round: {
+          day: 1,
+          period: "day",
+        },
+
+        livingTributes: [secondUser],
+      },
+      () => 0,
+      new Set(),
+
+      new Set(firstSelection?.selectedItemInstanceIds ?? []),
+    );
+
+    expect(secondSelection).toBeNull();
+  });
 });

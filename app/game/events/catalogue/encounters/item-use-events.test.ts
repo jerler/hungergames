@@ -20,6 +20,7 @@ import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState, GameTribute, ResolvedEvent } from "~/game/types/game-state";
 import type { TributeStats } from "~/game/types/tribute";
+import { createTruceInstance } from "~/game/truces/truce-engine";
 
 const ROUND = {
   day: 1,
@@ -507,5 +508,111 @@ describe("item use events", () => {
       "acquired",
       "consumed",
     ]);
+  });
+
+  it("lets a tribute use an item owned by a truce partner", () => {
+    const originalGame = createTestGame();
+
+    const itemUser = withStats(originalGame.tributes[0], BALANCED_STATS);
+
+    const itemOwner = withItem(withStats(originalGame.tributes[1], BALANCED_STATS), "slingshot");
+
+    const slingshot = itemOwner.inventory.find((item) => item.definitionId === "slingshot");
+
+    if (!slingshot) {
+      throw new Error("Test truce partner has no slingshot.");
+    }
+
+    const truce = createTruceInstance("shared-item-test", [itemUser.id, itemOwner.id], ROUND, {
+      day: 1,
+      period: "night",
+    });
+
+    const game: GameState = {
+      ...originalGame,
+
+      tributes: originalGame.tributes.map((tribute) => {
+        if (tribute.id === itemUser.id) {
+          return itemUser;
+        }
+
+        if (tribute.id === itemOwner.id) {
+          return itemOwner;
+        }
+
+        return tribute;
+      }),
+
+      truces: [truce],
+    };
+
+    const definition = requireEvent("slingshot-trick-shot");
+
+    const selection = selectEventParticipants(
+      definition,
+      {
+        state: game,
+        round: ROUND,
+
+        /*
+         * Restrict the test to the
+         * intended user. The item owner
+         * remains alive in game state.
+         */
+        livingTributes: [itemUser],
+      },
+      () => 0.5,
+      new Set(),
+      new Set(),
+    );
+
+    expect(selection).not.toBeNull();
+
+    expect(selection?.itemsByRole.tribute?.[0]).toMatchObject({
+      userTributeId: itemUser.id,
+
+      owner: {
+        id: itemOwner.id,
+      },
+
+      item: {
+        id: slingshot.id,
+        definitionId: "slingshot",
+      },
+    });
+
+    if (!selection) {
+      throw new Error("Shared item selection failed.");
+    }
+
+    const resolution = definition.resolve({
+      state: game,
+      round: ROUND,
+      livingTributes: [itemUser],
+
+      eventId: `test:${definition.id}`,
+
+      random: createSequenceRandom([0.6]),
+
+      participantsByRole: selection.participantsByRole,
+
+      itemsByRole: selection.itemsByRole,
+
+      unavailableItemInstanceIds: new Set(),
+    });
+
+    expect(resolution.changes).toContainEqual({
+      type: "consume-item",
+
+      /*
+       * The event participant used it,
+       * but the partner owns it.
+       */
+      tributeId: itemOwner.id,
+
+      itemInstanceId: slingshot.id,
+      uses: 1,
+      reason: "slingshot-trick-shot",
+    });
   });
 });

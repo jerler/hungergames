@@ -31,6 +31,7 @@ function selectDefinitionAndParticipants(
   definitions: readonly EventDefinition[],
   context: EventSelectionContext,
   unavailableTributeIds: ReadonlySet<string>,
+  unavailableItemInstanceIds: ReadonlySet<string>,
   random: () => number,
 ) {
   let remainingDefinitions = [...definitions];
@@ -38,11 +39,19 @@ function selectDefinitionAndParticipants(
   while (remainingDefinitions.length > 0) {
     const definition = selectWeightedItem(
       remainingDefinitions,
+
       (candidate) => getEventDefinitionWeight(candidate, context),
+
       random,
     );
 
-    const selection = selectEventParticipants(definition, context, random, unavailableTributeIds);
+    const selection = selectEventParticipants(
+      definition,
+      context,
+      random,
+      unavailableTributeIds,
+      unavailableItemInstanceIds,
+    );
 
     if (selection) {
       return {
@@ -122,6 +131,8 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
 
   const unavailableTributeIds = new Set<string>();
 
+  const unavailableItemInstanceIds = new Set<string>();
+
   const events: ResolvedEvent[] = [];
 
   for (let eventIndex = 0; eventIndex < targetEventCount; eventIndex += 1) {
@@ -135,6 +146,7 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
       candidateDefinitions,
       context,
       unavailableTributeIds,
+      unavailableItemInstanceIds,
       random,
     );
 
@@ -148,9 +160,15 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
 
     const resolution = selected.definition.resolve({
       ...context,
+
       eventId,
       random,
+
       participantsByRole: selected.selection.participantsByRole,
+
+      itemsByRole: selected.selection.itemsByRole,
+
+      unavailableItemInstanceIds,
     });
 
     events.push({
@@ -165,6 +183,25 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
 
     for (const tributeId of selected.selection.participantTributeIds) {
       unavailableTributeIds.add(tributeId);
+    }
+
+    for (const tributeId of selected.selection.participantTributeIds) {
+      unavailableTributeIds.add(tributeId);
+    }
+
+    for (const itemInstanceId of selected.selection.selectedItemInstanceIds) {
+      unavailableItemInstanceIds.add(itemInstanceId);
+    }
+
+    /*
+     * Also reserve opportunistically consumed items,
+     * such as food stolen by the goose or water used
+     * as brushfire protection.
+     */
+    for (const change of resolution.changes) {
+      if (change.type === "consume-item") {
+        unavailableItemInstanceIds.add(change.itemInstanceId);
+      }
     }
   }
 

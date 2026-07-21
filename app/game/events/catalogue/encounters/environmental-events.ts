@@ -12,19 +12,26 @@ import {
   requireSingleParticipant,
   type EventDefinition,
   type EventResolution,
+  type EventResolutionContext,
 } from "~/game/events/event-schema";
-import { findUsableInventoryItem } from "~/game/items/inventory-engine";
+import {
+  findAccessibleInventoryItem,
+  type AccessibleInventoryItem,
+} from "~/game/items/inventory-engine";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { GameChange, GameTribute, InventoryItem } from "~/game/types/game-state";
 
 const CACHE_ITEM_IDS = ["water", "food", "medicine"] satisfies readonly ItemDefinitionId[];
 
 interface BrushfireProtection {
-  item: InventoryItem;
+  accessibleItem: AccessibleInventoryItem;
   difficultyReduction: number;
 }
 
-function findBrushfireProtection(tribute: GameTribute): BrushfireProtection | null {
+function findBrushfireProtection(
+  context: EventResolutionContext,
+  tribute: GameTribute,
+): BrushfireProtection | null {
   const candidates = [
     {
       itemId: "water",
@@ -44,13 +51,15 @@ function findBrushfireProtection(tribute: GameTribute): BrushfireProtection | nu
   }[];
 
   for (const candidate of candidates) {
-    const item = findUsableInventoryItem(tribute, {
+    const accessibleItem = findAccessibleInventoryItem(context.state, tribute, {
       definitionIds: [candidate.itemId],
+
+      unavailableItemInstanceIds: context.unavailableItemInstanceIds,
     });
 
-    if (item) {
+    if (accessibleItem) {
       return {
-        item,
+        accessibleItem,
         difficultyReduction: candidate.difficultyReduction,
       };
     }
@@ -62,13 +71,13 @@ function findBrushfireProtection(tribute: GameTribute): BrushfireProtection | nu
 function describeBrushfireProtection(item: InventoryItem): string {
   switch (item.definitionId) {
     case "water":
-      return "uses their water to clear a path through the flames";
+      return "uses their water to clear a path " + "through the flames";
 
     case "blanket":
-      return "wraps themselves in a blanket and smothers the embers";
+      return "wraps themselves in a blanket " + "and smothers the embers";
 
     case "shield":
-      return "uses their shield against the sparks and falling debris";
+      return "uses their shield against the " + "sparks and falling debris";
 
     default:
       throw new Error(`Unsupported brushfire protection ` + `"${item.definitionId}".`);
@@ -113,6 +122,7 @@ export const ENVIRONMENTAL_EVENTS = [
       };
     },
   },
+
   {
     id: "river-current",
     category: "fatal",
@@ -143,6 +153,7 @@ export const ENVIRONMENTAL_EVENTS = [
       };
     },
   },
+
   {
     id: "rough-terrain",
     category: "hazard",
@@ -162,12 +173,13 @@ export const ENVIRONMENTAL_EVENTS = [
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
       return {
-        text: `${tribute.snapshot.name} is injured while ` + "crossing rough terrain.",
+        text: `${tribute.snapshot.name} is injured ` + "while crossing rough terrain.",
 
         changes: [createStatusChange(eventId, tribute, "injured", 1, round)],
       };
     },
   },
+
   {
     id: "contaminated-water",
     category: "hazard",
@@ -187,12 +199,13 @@ export const ENVIRONMENTAL_EVENTS = [
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
       return {
-        text: `${tribute.snapshot.name} drinks contaminated ` + "water and becomes dehydrated.",
+        text: `${tribute.snapshot.name} drinks ` + "contaminated water and becomes dehydrated.",
 
         changes: [createStatusChange(eventId, tribute, "dehydrated", 2, round)],
       };
     },
   },
+
   {
     id: "arena-goose",
     category: "hazard",
@@ -208,11 +221,15 @@ export const ENVIRONMENTAL_EVENTS = [
       },
     ],
 
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+    resolve(context): EventResolution {
+      const { eventId, round, random, participantsByRole } = context;
+
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const food = findUsableInventoryItem(tribute, {
+      const food = findAccessibleInventoryItem(context.state, tribute, {
         definitionIds: ["food"],
+
+        unavailableItemInstanceIds: context.unavailableItemInstanceIds,
       });
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, random);
@@ -222,14 +239,16 @@ export const ENVIRONMENTAL_EVENTS = [
           const changes: GameChange[] = [createStatusChange(eventId, tribute, "hunted", 2, round)];
 
           if (food) {
-            changes.push(createItemConsumptionChange(tribute, food, "arena-goose-theft"));
+            changes.push(createItemConsumptionChange(food.owner, food.item, "arena-goose-theft"));
           }
 
           return {
             text: food
-              ? `${tribute.snapshot.name} loses some food to an arena goose, ` +
-                "which then decides to pursue them across the arena."
-              : `An arena goose decides ${tribute.snapshot.name} owes it food ` +
+              ? `${tribute.snapshot.name} loses some ` +
+                "food to an arena goose, which then " +
+                "decides to pursue them across the arena."
+              : `An arena goose decides ` +
+                `${tribute.snapshot.name} owes it food ` +
                 "and begins relentlessly tracking them.",
 
             changes,
@@ -239,8 +258,9 @@ export const ENVIRONMENTAL_EVENTS = [
         case "failure":
           return {
             text:
-              `${tribute.snapshot.name} spends hours fleeing an arena goose ` +
-              "and collapses from exhaustion.",
+              `${tribute.snapshot.name} spends hours ` +
+              "fleeing an arena goose and collapses " +
+              "from exhaustion.",
 
             changes: [createStatusChange(eventId, tribute, "exhausted", 1, round)],
           };
@@ -248,8 +268,9 @@ export const ENVIRONMENTAL_EVENTS = [
         case "success":
           return {
             text:
-              `${tribute.snapshot.name} stands their ground against an arena goose. ` +
-              "After a tense silence, both parties retreat.",
+              `${tribute.snapshot.name} stands their ` +
+              "ground against an arena goose. After a " +
+              "tense silence, both parties retreat.",
 
             changes: createSurvivalChanges([tribute]),
           };
@@ -257,14 +278,16 @@ export const ENVIRONMENTAL_EVENTS = [
         case "exceptional-success":
           return {
             text:
-              `${tribute.snapshot.name} befriends an arena goose, ` +
-              "which leads them to an abandoned package of food.",
+              `${tribute.snapshot.name} befriends an ` +
+              "arena goose, which leads them to an " +
+              "abandoned package of food.",
 
             changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
           };
       }
     },
   },
+
   {
     id: "brushfire-supply-run",
     category: "hazard",
@@ -280,10 +303,12 @@ export const ENVIRONMENTAL_EVENTS = [
       },
     ],
 
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+    resolve(context): EventResolution {
+      const { eventId, round, random, participantsByRole } = context;
+
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const protection = findBrushfireProtection(tribute);
+      const protection = findBrushfireProtection(context, tribute);
 
       const outcome = resolveLuckAdjustedStatCheck(
         tribute,
@@ -294,37 +319,45 @@ export const ENVIRONMENTAL_EVENTS = [
       );
 
       const protectionChanges = protection
-        ? [createItemConsumptionChange(tribute, protection.item, "brushfire-protection")]
+        ? [
+            createItemConsumptionChange(
+              protection.accessibleItem.owner,
+              protection.accessibleItem.item,
+              "brushfire-protection",
+            ),
+          ]
         : [];
 
       const protectionText = protection
-        ? `${tribute.snapshot.name} ${describeBrushfireProtection(protection.item)}`
-        : `${tribute.snapshot.name} runs through the brushfire without protection`;
+        ? `${tribute.snapshot.name} ` + describeBrushfireProtection(protection.accessibleItem.item)
+        : `${tribute.snapshot.name} runs ` + "through the brushfire without protection";
 
       switch (outcome) {
         case "critical-failure":
           return {
-            text: `${protectionText}, but is badly burned before reaching safety.`,
+            text: `${protectionText}, but is badly ` + "burned before reaching safety.",
 
             changes: [
               createStatusChange(eventId, tribute, "burned", 2, round),
+
               ...protectionChanges,
             ],
           };
 
         case "failure":
           return {
-            text: `${protectionText} and escapes with painful burns.`,
+            text: `${protectionText} and escapes with ` + "painful burns.",
 
             changes: [
               createStatusChange(eventId, tribute, "burned", 1, round),
+
               ...protectionChanges,
             ],
           };
 
         case "success":
           return {
-            text: `${protectionText} and successfully reaches the far side.`,
+            text: `${protectionText} and successfully ` + "reaches the far side.",
 
             changes: [...createSurvivalChanges([tribute]), ...protectionChanges],
           };
@@ -334,11 +367,14 @@ export const ENVIRONMENTAL_EVENTS = [
 
           return {
             text:
-              `${protectionText}, reaches an abandoned supply cache, ` +
-              `and retrieves ${getItemLabel(itemId)} before the fire closes in.`,
+              `${protectionText}, reaches an abandoned ` +
+              "supply cache, and retrieves " +
+              `${getItemLabel(itemId)} before the fire ` +
+              "closes in.",
 
             changes: [
               ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, [itemId], round),
+
               ...protectionChanges,
             ],
           };
@@ -376,6 +412,7 @@ export const ENVIRONMENTAL_EVENTS = [
       };
     },
   },
+
   {
     id: "cold-rain",
     category: "hazard",
@@ -395,7 +432,7 @@ export const ENVIRONMENTAL_EVENTS = [
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
       return {
-        text: `${tribute.snapshot.name} is caught without ` + "shelter in freezing rain.",
+        text: `${tribute.snapshot.name} is caught ` + "without shelter in freezing rain.",
 
         changes: [createStatusChange(eventId, tribute, "exposed", 2, round)],
       };
@@ -422,7 +459,7 @@ export const ENVIRONMENTAL_EVENTS = [
       const victim = requireSingleParticipant(participantsByRole, "victim");
 
       const text =
-        `${victim.snapshot.name} loses their footing ` + "near a cliff and falls to their death.";
+        `${victim.snapshot.name} loses their ` + "footing near a cliff and falls to their death.";
 
       return {
         text,
@@ -431,6 +468,7 @@ export const ENVIRONMENTAL_EVENTS = [
       };
     },
   },
+
   {
     id: "deep-cut",
     category: "hazard",
@@ -450,7 +488,7 @@ export const ENVIRONMENTAL_EVENTS = [
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
       return {
-        text: `${tribute.snapshot.name} suffers ` + "a deep cut and begins bleeding.",
+        text: `${tribute.snapshot.name} suffers a deep ` + "cut and begins bleeding.",
 
         changes: [createStatusChange(eventId, tribute, "bleeding", 2, round)],
       };

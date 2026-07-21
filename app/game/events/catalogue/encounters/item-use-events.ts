@@ -35,16 +35,22 @@ export const ITEM_USE_EVENTS = [
       },
     ],
 
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+    resolve(context): EventResolution {
+      const { eventId, round, random, participantsByRole } = context;
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const fishingGear = requireEventItem(tribute, "fishing-gear", "fishing-gear-enormous-fish");
+      const fishingGear = requireEventItem(
+        context,
+        tribute,
+        "fishing-gear",
+        "fishing-gear-enormous-fish",
+      );
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, random);
 
       const consumeFishingGear = createItemConsumptionChange(
-        tribute,
-        fishingGear,
+        fishingGear.owner,
+        fishingGear.item,
         "fishing-gear-enormous-fish",
       );
 
@@ -117,14 +123,19 @@ export const ITEM_USE_EVENTS = [
       },
     ],
 
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+    resolve(context): EventResolution {
+      const { eventId, round, random, participantsByRole } = context;
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const axe = requireEventItem(tribute, "axe", "axe-based-shelter-renovation");
+      const axe = requireEventItem(context, tribute, "axe", "axe-based-shelter-renovation");
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
-      const consumeAxe = createItemConsumptionChange(tribute, axe, "axe-based-shelter-renovation");
+      const consumeAxe = createItemConsumptionChange(
+        axe.owner,
+        axe.item,
+        "axe-based-shelter-renovation",
+      );
 
       switch (outcome) {
         case "critical-failure":
@@ -198,16 +209,17 @@ export const ITEM_USE_EVENTS = [
       },
     ],
 
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+    resolve(context): EventResolution {
+      const { eventId, round, random, participantsByRole } = context;
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const slingshot = requireEventItem(tribute, "slingshot", "slingshot-trick-shot");
+      const slingshot = requireEventItem(context, tribute, "slingshot", "slingshot-trick-shot");
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
       const consumeSlingshot = createItemConsumptionChange(
-        tribute,
-        slingshot,
+        slingshot.owner,
+        slingshot.item,
         "slingshot-trick-shot",
       );
 
@@ -279,16 +291,22 @@ export const ITEM_USE_EVENTS = [
       },
     ],
 
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+    resolve(context): EventResolution {
+      const { eventId, round, random, participantsByRole } = context;
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const trapKit = requireEventItem(tribute, "trap-kit", "trap-kit-instructions-missing");
+      const trapKit = requireEventItem(
+        context,
+        tribute,
+        "trap-kit",
+        "trap-kit-instructions-missing",
+      );
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
       const consumeTrapKit = createItemConsumptionChange(
-        tribute,
-        trapKit,
+        trapKit.owner,
+        trapKit.item,
         "trap-kit-instructions-missing",
       );
 
@@ -356,16 +374,22 @@ export const ITEM_USE_EVENTS = [
       },
     ],
 
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+    resolve(context): EventResolution {
+      const { eventId, round, random, participantsByRole } = context;
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const shield = requireEventItem(tribute, "shield", "shield-used-for-everything-else");
+      const shield = requireEventItem(
+        context,
+        tribute,
+        "shield",
+        "shield-used-for-everything-else",
+      );
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
       const consumeShield = createItemConsumptionChange(
-        tribute,
-        shield,
+        shield.owner,
+        shield.item,
         "shield-used-for-everything-else",
       );
 
@@ -439,14 +463,15 @@ export const ITEM_USE_EVENTS = [
       },
     ],
 
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+    resolve(context): EventResolution {
+      const { eventId, round, random, participantsByRole } = context;
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const net = requireEventItem(tribute, "camouflage-net", "camouflage-catastrophe");
+      const net = requireEventItem(context, tribute, "camouflage-net", "camouflage-catastrophe");
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
-      const consumeNet = createItemConsumptionChange(tribute, net, "camouflage-catastrophe");
+      const consumeNet = createItemConsumptionChange(net.owner, net.item, "camouflage-catastrophe");
 
       switch (outcome) {
         case "critical-failure":

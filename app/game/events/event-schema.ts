@@ -11,7 +11,13 @@
  */
 
 import type { RandomSource } from "~/game/engine/random";
-import type { GameChange, GameState, GameTribute, RoundReference } from "~/game/types/game-state";
+import type {
+  GameChange,
+  GameState,
+  GameTribute,
+  InventoryItem,
+  RoundReference,
+} from "~/game/types/game-state";
 import type { ItemDefinitionId, ItemTag } from "~/game/items/item-schema";
 
 export type EventCategory = "fatal" | "survival" | "hazard";
@@ -39,7 +45,13 @@ export interface EventSelectionContext {
 }
 
 export type ParticipantsByRole = Readonly<Record<string, readonly GameTribute[]>>;
+export interface EventItemSelection {
+  userTributeId: string;
+  owner: GameTribute;
+  item: InventoryItem;
+}
 
+export type EventItemsByRole = Readonly<Record<string, readonly EventItemSelection[]>>;
 export interface ParticipantSelectionContext extends EventSelectionContext {
   /**
    * Participants already selected for
@@ -68,6 +80,22 @@ export interface EventResolutionContext extends EventSelectionContext {
   eventId: string;
   random: RandomSource;
   participantsByRole: ParticipantsByRole;
+
+  /**
+   * Required items reserved during participant
+   * selection, aligned with each role's participants.
+   *
+   * Optional so individual event unit tests may
+   * still resolve definitions directly.
+   */
+  itemsByRole?: EventItemsByRole;
+
+  /**
+   * Items already claimed by earlier events in
+   * this round. Opportunistic item lookups must
+   * exclude these instances.
+   */
+  unavailableItemInstanceIds?: ReadonlySet<string>;
 }
 
 export interface EventResolution {

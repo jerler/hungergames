@@ -5,10 +5,14 @@ import {
   type StatCheckOutcome,
 } from "~/game/events/event-outcomes";
 import { getItemDefinition } from "~/game/items/item-catalogue";
-import { findUsableInventoryItem } from "~/game/items/inventory-engine";
+import {
+  findAccessibleInventoryItem,
+  type AccessibleInventoryItem,
+} from "~/game/items/inventory-engine";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
-import type { GameTribute, InventoryItem } from "~/game/types/game-state";
+import type { GameTribute } from "~/game/types/game-state";
 import type { TributeStatValue } from "~/game/types/tribute";
+import type { EventResolutionContext } from "./event-schema";
 
 export function clampStatCheckDifficulty(difficulty: number): TributeStatValue {
   return Math.max(1, Math.min(5, Math.round(difficulty))) as TributeStatValue;
@@ -50,21 +54,43 @@ export function getItemLabel(itemId: ItemDefinitionId): string {
 }
 
 export function requireEventItem(
+  context: EventResolutionContext,
   tribute: GameTribute,
   itemId: ItemDefinitionId,
   eventId: string,
-): InventoryItem {
-  const item = findUsableInventoryItem(tribute, {
+): AccessibleInventoryItem {
+  const selectedItem = Object.values(context.itemsByRole ?? {})
+    .flat()
+    .find(
+      (selection) =>
+        selection.userTributeId === tribute.id && selection.item.definitionId === itemId,
+    );
+
+  if (selectedItem) {
+    return {
+      owner: selectedItem.owner,
+      item: selectedItem.item,
+    };
+  }
+
+  /*
+   * Direct unit tests may resolve an event without
+   * first running participant selection. Fall back
+   * to the same truce-aware lookup in that case.
+   */
+  const accessibleItem = findAccessibleInventoryItem(context.state, tribute, {
     definitionIds: [itemId],
+
+    unavailableItemInstanceIds: context.unavailableItemInstanceIds,
   });
 
-  if (!item) {
+  if (!accessibleItem) {
     throw new Error(
       `Event "${eventId}" selected tribute ` +
-        `"${tribute.id}" without a usable ` +
-        `"${itemId}" item.`,
+        `"${tribute.id}" without access to ` +
+        `a usable "${itemId}" item.`,
     );
   }
 
-  return item;
+  return accessibleItem;
 }

@@ -82,6 +82,7 @@ export function createInitialGameState(
     tributes: tributes.map((tribute) => createGameTribute(tribute, createId)),
 
     truces: [],
+    vendettas: [],
 
     roundEvents: [],
     revealedEventCount: 0,

@@ -88,6 +88,34 @@ export function assertGameStateInvariants(state: GameState): void {
       truceIdByTributeId.set(tributeId, truce.id);
     }
   }
+  assertUniqueValues(
+    state.vendettas.map((vendetta) => vendetta.id),
+    "Vendetta IDs",
+  );
+
+  assertUniqueValues(
+    state.vendettas.map((vendetta) => `${vendetta.hunterTributeId}:` + vendetta.targetTributeId),
+    "Vendetta hunter-target pairs",
+  );
+
+  for (const vendetta of state.vendettas) {
+    assert(
+      vendetta.hunterTributeId !== vendetta.targetTributeId,
+      `vendetta "${vendetta.id}" ` + "targets its own hunter.",
+    );
+
+    const hunter = state.tributes.find((tribute) => tribute.id === vendetta.hunterTributeId);
+
+    const target = state.tributes.find((tribute) => tribute.id === vendetta.targetTributeId);
+
+    assert(hunter, `vendetta "${vendetta.id}" ` + "references a missing hunter.");
+
+    assert(target, `vendetta "${vendetta.id}" ` + "references a missing target.");
+
+    assert(hunter.isAlive, `vendetta "${vendetta.id}" ` + "has a dead hunter.");
+
+    assert(target.isAlive, `vendetta "${vendetta.id}" ` + "has a dead target.");
+  }
   for (const tribute of state.tributes) {
     assert(
       tribute.district >= 1 && tribute.district <= state.config.districtCount,

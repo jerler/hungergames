@@ -185,10 +185,6 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
       unavailableTributeIds.add(tributeId);
     }
 
-    for (const tributeId of selected.selection.participantTributeIds) {
-      unavailableTributeIds.add(tributeId);
-    }
-
     for (const itemInstanceId of selected.selection.selectedItemInstanceIds) {
       unavailableItemInstanceIds.add(itemInstanceId);
     }

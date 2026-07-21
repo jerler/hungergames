@@ -8,8 +8,9 @@ import { createTruceInstance } from "~/game/truces/truce-engine";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
-import type { GameChange, GameState, ResolvedEvent } from "~/game/types/game-state";
+import type { GameChange, GameState, ResolvedEvent, TruceKind } from "~/game/types/game-state";
 import { gameReducer } from "~/state/game-reducer";
+import { ROMANTIC_VENDETTA_CHANCE, STANDARD_VENDETTA_CHANCE } from "~/game/truces/vendetta-engine";
 
 const DAY_ONE = {
   day: 1,
@@ -69,24 +70,35 @@ function createEvent(
   };
 }
 
-function createDeathChange(tributeId: string): GameChange {
+function createDeathChange(
+  tributeId: string,
+  killerTributeIds: readonly string[] = [],
+): GameChange {
   return {
     type: "eliminate-tribute",
 
     tributeId,
 
     causeId: "test-death",
-
     causeLabel: "Test death",
-
     summary: "A tribute died.",
 
-    killerTributeIds: [],
+    killerTributeIds: [...killerTributeIds],
   };
 }
 
-function formTestTruce(game: GameState, memberIds: readonly string[]): GameState {
-  const truce = createTruceInstance("test-truce", memberIds, DAY_ONE, NIGHT_ONE);
+function formTestTruce(
+  game: GameState,
+  memberIds: readonly string[],
+  kind: TruceKind = "standard",
+): GameState {
+  const truce = createTruceInstance(
+    "test-truce",
+    memberIds,
+    DAY_ONE,
+    kind === "romantic" ? null : NIGHT_ONE,
+    kind,
+  );
 
   return applyResolvedEvent(
     game,
@@ -96,7 +108,6 @@ function formTestTruce(game: GameState, memberIds: readonly string[]): GameState
       [
         {
           type: "form-truce",
-
           truce,
         },
       ],
@@ -314,5 +325,194 @@ describe("accidental truce dissolution", () => {
     );
 
     expect(nextState.truces).toEqual([]);
+  });
+
+  it("gives a romantic survivor either a vendetta or disorientation", () => {
+    expect(ROMANTIC_VENDETTA_CHANCE).toBe(0.75);
+
+    let vendettaCount = 0;
+    let disorientedCount = 0;
+
+    const attemptCount = 100;
+
+    for (let attempt = 0; attempt < attemptCount; attempt += 1) {
+      const game = createGame();
+
+      const victim = game.tributes[0];
+      const survivor = game.tributes[1];
+      const killer = game.tributes[2];
+
+      const formedState = formTestTruce(game, [victim.id, survivor.id], "romantic");
+
+      const stateAfterDeath = applyResolvedEvent(
+        formedState,
+
+        createEvent(
+          `romantic-partner-killed-${attempt}`,
+          [createDeathChange(victim.id, [killer.id])],
+          [victim.id, killer.id],
+        ),
+      );
+
+      const survivorAfterDeath = stateAfterDeath.tributes.find(
+        (tribute) => tribute.id === survivor.id,
+      );
+
+      const killerAfterDeath = stateAfterDeath.tributes.find((tribute) => tribute.id === killer.id);
+
+      const vendetta = stateAfterDeath.vendettas.find(
+        (candidate) =>
+          candidate.hunterTributeId === survivor.id && candidate.targetTributeId === killer.id,
+      );
+
+      const disorientedStatus = survivorAfterDeath?.statuses.find(
+        (status) => status.definitionId === "disoriented",
+      );
+
+      /*
+       * The two grief responses are
+       * mutually exclusive.
+       */
+      expect(Boolean(vendetta)).not.toBe(Boolean(disorientedStatus));
+
+      if (vendetta) {
+        vendettaCount += 1;
+
+        expect(vendetta).toMatchObject({
+          hunterTributeId: survivor.id,
+          targetTributeId: killer.id,
+          kind: "romantic",
+        });
+      }
+
+      if (disorientedStatus) {
+        disorientedCount += 1;
+
+        expect(disorientedStatus.severity).toBe(2);
+      }
+
+      /*
+       * Revenge no longer uses the generic
+       * Hunted status.
+       */
+      expect(killerAfterDeath?.statuses.some((status) => status.definitionId === "hunted")).toBe(
+        false,
+      );
+    }
+
+    expect(vendettaCount + disorientedCount).toBe(attemptCount);
+
+    /*
+     * Confirm that the deterministic set of
+     * event IDs exercises both possible paths.
+     */
+    expect(vendettaCount).toBeGreaterThan(0);
+    expect(disorientedCount).toBeGreaterThan(0);
+  });
+  it("disorients a romantic survivor when there is no living killer", () => {
+    const game = createGame();
+
+    const victim = game.tributes[0];
+    const survivor = game.tributes[1];
+
+    const formedState = formTestTruce(game, [victim.id, survivor.id], "romantic");
+
+    const stateAfterDeath = applyResolvedEvent(
+      formedState,
+
+      createEvent("romantic-environmental-death", [createDeathChange(victim.id)], [victim.id]),
+    );
+
+    const survivorAfterDeath = stateAfterDeath.tributes.find(
+      (tribute) => tribute.id === survivor.id,
+    );
+
+    expect(stateAfterDeath.vendettas).toEqual([]);
+
+    expect(survivorAfterDeath?.statuses).toContainEqual(
+      expect.objectContaining({
+        definitionId: "disoriented",
+        severity: 2,
+      }),
+    );
+  });
+  it("sometimes gives a standard truce survivor a vendetta", () => {
+    expect(STANDARD_VENDETTA_CHANCE).toBe(0.5);
+
+    let vendettaCount = 0;
+    const attemptCount = 40;
+
+    for (let attempt = 0; attempt < attemptCount; attempt += 1) {
+      const game = createGame();
+
+      const victim = game.tributes[0];
+      const survivor = game.tributes[1];
+      const killer = game.tributes[2];
+
+      const formedState = formTestTruce(game, [victim.id, survivor.id]);
+
+      const stateAfterDeath = applyResolvedEvent(
+        formedState,
+
+        createEvent(
+          `standard-partner-killed-${attempt}`,
+          [createDeathChange(victim.id, [killer.id])],
+          [victim.id, killer.id],
+        ),
+      );
+
+      const vendetta = stateAfterDeath.vendettas.find(
+        (candidate) =>
+          candidate.hunterTributeId === survivor.id && candidate.targetTributeId === killer.id,
+      );
+
+      if (vendetta) {
+        vendettaCount += 1;
+
+        expect(vendetta.kind).toBe("standard");
+      }
+
+      const survivorAfterDeath = stateAfterDeath.tributes.find(
+        (tribute) => tribute.id === survivor.id,
+      );
+
+      const killerAfterDeath = stateAfterDeath.tributes.find((tribute) => tribute.id === killer.id);
+
+      /*
+       * A failed standard vendetta roll
+       * causes no emotional status.
+       */
+      expect(survivorAfterDeath?.statuses).toEqual([]);
+
+      expect(killerAfterDeath?.statuses.some((status) => status.definitionId === "hunted")).toBe(
+        false,
+      );
+    }
+
+    expect(vendettaCount).toBeGreaterThan(0);
+
+    expect(vendettaCount).toBeLessThan(attemptCount);
+  });
+  it("does nothing emotional for a standard truce when there is no killer", () => {
+    const game = createGame();
+
+    const victim = game.tributes[0];
+    const survivor = game.tributes[1];
+
+    const formedState = formTestTruce(game, [victim.id, survivor.id]);
+
+    const stateAfterDeath = applyResolvedEvent(
+      formedState,
+
+      createEvent("standard-environmental-death", [createDeathChange(victim.id)], [victim.id]),
+    );
+
+    const survivorAfterDeath = stateAfterDeath.tributes.find(
+      (tribute) => tribute.id === survivor.id,
+    );
+
+    expect(stateAfterDeath.vendettas).toEqual([]);
+
+    expect(survivorAfterDeath?.statuses).toEqual([]);
   });
 });

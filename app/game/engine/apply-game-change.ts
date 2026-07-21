@@ -7,6 +7,7 @@ import type {
   ResolvedEvent,
   VictoryOutcome,
   Truce,
+  Vendetta,
 } from "~/game/types/game-state";
 import { getRoundSequence } from "~/game/engine/rounds";
 import { createAccidentalTruceDissolutionEvents } from "~/game/truces/truce-aftermath";
@@ -81,6 +82,50 @@ function validateTruceFormation(state: GameState, truce: Truce): void {
     if (existingTruce) {
       throw new Error(`Tribute "${tributeId}" already belongs to truce "${existingTruce.id}".`);
     }
+  }
+}
+
+function validateVendettaFormation(state: GameState, vendetta: Vendetta): void {
+  if (state.vendettas.some((candidate) => candidate.id === vendetta.id)) {
+    throw new Error(`Vendetta "${vendetta.id}" already exists.`);
+  }
+
+  if (
+    state.vendettas.some(
+      (candidate) =>
+        candidate.hunterTributeId === vendetta.hunterTributeId &&
+        candidate.targetTributeId === vendetta.targetTributeId,
+    )
+  ) {
+    throw new Error(
+      `Tribute "${vendetta.hunterTributeId}" ` +
+        `already has a vendetta against ` +
+        `"${vendetta.targetTributeId}".`,
+    );
+  }
+
+  if (vendetta.hunterTributeId === vendetta.targetTributeId) {
+    throw new Error("A tribute cannot form a vendetta against themself.");
+  }
+
+  const hunter = state.tributes.find((tribute) => tribute.id === vendetta.hunterTributeId);
+
+  const target = state.tributes.find((tribute) => tribute.id === vendetta.targetTributeId);
+
+  if (!hunter) {
+    throw new Error(`Vendetta references missing hunter ` + `"${vendetta.hunterTributeId}".`);
+  }
+
+  if (!target) {
+    throw new Error(`Vendetta references missing target ` + `"${vendetta.targetTributeId}".`);
+  }
+
+  if (!hunter.isAlive) {
+    throw new Error(`Dead tribute "${hunter.id}" ` + "cannot form a vendetta.");
+  }
+
+  if (!target.isAlive) {
+    throw new Error(`A vendetta cannot target dead tribute ` + `"${target.id}".`);
   }
 }
 
@@ -167,10 +212,10 @@ export function applyGameChange(
   event: ResolvedEvent,
 ): GameState {
   switch (change.type) {
-    case "eliminate-tribute":
-      return updateTribute(state, change.tributeId, (tribute) => {
+    case "eliminate-tribute": {
+      const stateAfterElimination = updateTribute(state, change.tributeId, (tribute) => {
         if (!tribute.isAlive) {
-          throw new Error(`Tribute "${tribute.id}" cannot be eliminated twice.`);
+          throw new Error(`Tribute "${tribute.id}" ` + "cannot be eliminated twice.");
         }
 
         return {
@@ -187,6 +232,22 @@ export function applyGameChange(
           },
         };
       });
+
+      /*
+       * Vengeful lasts until either the hunter
+       * or the target dies. The same cleanup
+       * handles both outcomes.
+       */
+      return {
+        ...stateAfterElimination,
+
+        vendettas: stateAfterElimination.vendettas.filter(
+          (vendetta) =>
+            vendetta.hunterTributeId !== change.tributeId &&
+            vendetta.targetTributeId !== change.tributeId,
+        ),
+      };
+    }
     case "increment-statistic":
       return updateTribute(state, change.tributeId, (tribute) => ({
         ...tribute,
@@ -455,6 +516,16 @@ export function applyGameChange(
         ...state,
 
         truces: state.truces.filter((candidate) => candidate.id !== truce.id),
+      };
+    }
+
+    case "form-vendetta": {
+      validateVendettaFormation(state, change.vendetta);
+
+      return {
+        ...state,
+
+        vendettas: [...state.vendettas, change.vendetta],
       };
     }
 

@@ -25,6 +25,20 @@ export interface Truce {
   expiresAfterRound: RoundReference | null;
 }
 
+export type VendettaKind = "standard" | "romantic";
+
+export interface Vendetta {
+  id: string;
+
+  hunterTributeId: string;
+  targetTributeId: string;
+
+  kind: VendettaKind;
+
+  sourceEventId: string;
+  createdRound: RoundReference;
+}
+
 export interface TributeDeath {
   round: RoundReference;
   causeId: string;
@@ -164,6 +178,11 @@ export interface BreakTruceChange {
   reason: TruceBreakReason;
 }
 
+export interface FormVendettaChange {
+  type: "form-vendetta";
+  vendetta: Vendetta;
+}
+
 export interface DeclareVictoryChange {
   type: "declare-victory";
   outcome: VictoryOutcome;
@@ -222,6 +241,7 @@ export type GameChange =
   | TransferInventoryItemChange
   | FormTruceChange
   | BreakTruceChange
+  | FormVendettaChange
   | DeclareVictoryChange;
 
 export type EventResolutionMode = "standard" | "safety";
@@ -256,6 +276,7 @@ export interface GameState {
 
   tributes: GameTribute[];
   truces: Truce[];
+  vendettas: Vendetta[];
 
   roundEvents: ResolvedEvent[];
   revealedEventCount: number;

@@ -1,6 +1,23 @@
-import type { GameState, ResolvedEvent, Truce } from "~/game/types/game-state";
+import { createSeededRandom } from "~/game/engine/random";
 import { createStatusEffectInstance } from "~/game/statuses/status-engine";
-import type { GameChange } from "~/game/types/game-state";
+import {
+  createVendettaInstance,
+  ROMANTIC_VENDETTA_CHANCE,
+  STANDARD_VENDETTA_CHANCE,
+} from "~/game/truces/vendetta-engine";
+import type {
+  GameChange,
+  GameState,
+  GameTribute,
+  ResolvedEvent,
+  Truce,
+} from "~/game/types/game-state";
+
+interface DeathResponse {
+  changes: GameChange[];
+  text: string;
+  participantTributeIds: string[];
+}
 
 function formatNameList(names: readonly string[]): string {
   if (names.length === 0) {
@@ -25,6 +42,38 @@ function getTributeName(state: GameState, tributeId: string): string {
   );
 }
 
+function getLivingTruceMembers(state: GameState, truce: Truce): GameTribute[] {
+  return truce.tributeIds.flatMap((tributeId) => {
+    const tribute = state.tributes.find(
+      (candidate) => candidate.id === tributeId && candidate.isAlive,
+    );
+
+    return tribute ? [tribute] : [];
+  });
+}
+
+function getLivingKillersForTruceDeaths(
+  state: GameState,
+  primaryEvent: ResolvedEvent,
+  truce: Truce,
+): GameTribute[] {
+  const killerIds = new Set(
+    primaryEvent.changes.flatMap((change) => {
+      if (change.type !== "eliminate-tribute" || !truce.tributeIds.includes(change.tributeId)) {
+        return [];
+      }
+
+      return change.killerTributeIds;
+    }),
+  );
+
+  return [...killerIds].flatMap((killerId) => {
+    const killer = state.tributes.find((tribute) => tribute.id === killerId && tribute.isAlive);
+
+    return killer ? [killer] : [];
+  });
+}
+
 function createAccidentalDissolutionText(
   beforeState: GameState,
   afterState: GameState,
@@ -39,13 +88,9 @@ function createAccidentalDissolutionText(
     .filter((tributeId) => eliminatedTributeIds.has(tributeId))
     .map((tributeId) => getTributeName(beforeState, tributeId));
 
-  const survivingMemberNames = truce.tributeIds.flatMap((tributeId) => {
-    const tribute = afterState.tributes.find(
-      (candidate) => candidate.id === tributeId && candidate.isAlive,
-    );
-
-    return tribute ? [tribute.snapshot.name] : [];
-  });
+  const survivingMemberNames = getLivingTruceMembers(afterState, truce).map(
+    (tribute) => tribute.snapshot.name,
+  );
 
   const eliminatedNames = formatNameList(eliminatedMemberNames);
 
@@ -56,14 +101,16 @@ function createAccidentalDissolutionText(
   if (survivingMemberNames.length === 1) {
     return (
       `With ${eliminatedNames} dead, ` +
-      `${survivingMemberNames[0]} is left on their own. ` +
-      "Their truce ends abruptly."
+      `${survivingMemberNames[0]} is left ` +
+      "on their own. Their truce ends abruptly."
     );
   }
 
   return (
-    `The death of ${eliminatedNames} brings the truce ` +
-    `to an abrupt end. ${formatNameList(survivingMemberNames)} go their separate ways.`
+    `The death of ${eliminatedNames} brings ` +
+    "the truce to an abrupt end. " +
+    `${formatNameList(survivingMemberNames)} ` +
+    "go their separate ways."
   );
 }
 
@@ -77,25 +124,197 @@ function createRomanticDissolutionText(
     .filter((tributeId) => eliminatedTributeIds.has(tributeId))
     .map((tributeId) => getTributeName(beforeState, tributeId));
 
-  const survivingNames = truce.tributeIds.flatMap((tributeId) => {
-    const tribute = afterState.tributes.find(
-      (candidate) => candidate.id === tributeId && candidate.isAlive,
-    );
-
-    return tribute ? [tribute.snapshot.name] : [];
-  });
+  const survivingNames = getLivingTruceMembers(afterState, truce).map(
+    (tribute) => tribute.snapshot.name,
+  );
 
   if (survivingNames.length === 0) {
     return (
-      `${formatNameList(eliminatedNames)} die together. ` + "Their promise ends only when they do."
+      `${formatNameList(eliminatedNames)} ` +
+      "die together. Their promise ends " +
+      "only when they do."
     );
   }
 
   return (
     `With ${formatNameList(eliminatedNames)} dead, ` +
     `${survivingNames[0]} is devastated. ` +
-    "Their romantic truce ends only because the arena has torn them apart."
+    "Their romantic truce ends only because " +
+    "the arena has torn them apart."
   );
+}
+
+function rollsForVendetta(
+  state: GameState,
+  primaryEvent: ResolvedEvent,
+  truce: Truce,
+  hunterTributeId: string,
+  targetTributeIds: readonly string[],
+  chance: number,
+): boolean {
+  const random = createSeededRandom(
+    [
+      state.seed,
+      "vendetta-response",
+      primaryEvent.id,
+      truce.id,
+      hunterTributeId,
+      ...targetTributeIds,
+    ].join(":"),
+  );
+
+  return random() < chance;
+}
+
+function createDisorientedResponse(
+  aftermathEventId: string,
+  survivor: GameTribute,
+  primaryEvent: ResolvedEvent,
+): DeathResponse {
+  return {
+    changes: [
+      {
+        type: "apply-status",
+
+        tributeId: survivor.id,
+
+        status: createStatusEffectInstance(
+          aftermathEventId,
+          survivor.id,
+          "disoriented",
+          2,
+          primaryEvent.round,
+        ),
+      },
+    ],
+
+    text: `${survivor.snapshot.name} is overcome ` + "by grief and becomes disoriented.",
+
+    participantTributeIds: [],
+  };
+}
+
+function createVendettaResponse(
+  aftermathEventId: string,
+  primaryEvent: ResolvedEvent,
+  hunter: GameTribute,
+  targets: readonly GameTribute[],
+  kind: Truce["kind"],
+): DeathResponse {
+  const changes: GameChange[] = targets.map((target) => ({
+    type: "form-vendetta",
+
+    vendetta: createVendettaInstance(
+      aftermathEventId,
+      hunter.id,
+      target.id,
+      kind,
+      primaryEvent.round,
+    ),
+  }));
+
+  return {
+    changes,
+
+    text:
+      `${hunter.snapshot.name} turns their ` +
+      "grief into vengeance and swears to hunt " +
+      `${formatNameList(targets.map((target) => target.snapshot.name))} down.`,
+
+    participantTributeIds: targets.map((target) => target.id),
+  };
+}
+
+function createRomanticDeathResponse(
+  beforeState: GameState,
+  afterState: GameState,
+  primaryEvent: ResolvedEvent,
+  truce: Truce,
+  aftermathEventId: string,
+): DeathResponse {
+  const survivor = getLivingTruceMembers(afterState, truce)[0];
+
+  if (!survivor) {
+    return {
+      changes: [],
+      text: "",
+      participantTributeIds: [],
+    };
+  }
+
+  const killers = getLivingKillersForTruceDeaths(afterState, primaryEvent, truce).filter(
+    (killer) => killer.id !== survivor.id,
+  );
+
+  if (killers.length === 0) {
+    return createDisorientedResponse(aftermathEventId, survivor, primaryEvent);
+  }
+
+  const becomesVengeful = rollsForVendetta(
+    beforeState,
+    primaryEvent,
+    truce,
+    survivor.id,
+    killers.map((killer) => killer.id),
+    ROMANTIC_VENDETTA_CHANCE,
+  );
+
+  if (!becomesVengeful) {
+    return createDisorientedResponse(aftermathEventId, survivor, primaryEvent);
+  }
+
+  return createVendettaResponse(aftermathEventId, primaryEvent, survivor, killers, "romantic");
+}
+
+function createStandardDeathResponse(
+  beforeState: GameState,
+  afterState: GameState,
+  primaryEvent: ResolvedEvent,
+  truce: Truce,
+  aftermathEventId: string,
+): DeathResponse {
+  const killers = getLivingKillersForTruceDeaths(afterState, primaryEvent, truce);
+
+  if (killers.length === 0) {
+    return {
+      changes: [],
+      text: "",
+      participantTributeIds: [],
+    };
+  }
+
+  const responses = getLivingTruceMembers(afterState, truce).flatMap((survivor) => {
+    const eligibleKillers = killers.filter((killer) => killer.id !== survivor.id);
+
+    if (eligibleKillers.length === 0) {
+      return [];
+    }
+
+    const formsVendetta = rollsForVendetta(
+      beforeState,
+      primaryEvent,
+      truce,
+      survivor.id,
+      eligibleKillers.map((killer) => killer.id),
+      STANDARD_VENDETTA_CHANCE,
+    );
+
+    if (!formsVendetta) {
+      return [];
+    }
+
+    return [
+      createVendettaResponse(aftermathEventId, primaryEvent, survivor, eligibleKillers, "standard"),
+    ];
+  });
+
+  return {
+    changes: responses.flatMap((response) => response.changes),
+
+    text: responses.map((response) => response.text).join(" "),
+
+    participantTributeIds: responses.flatMap((response) => response.participantTributeIds),
+  };
 }
 
 export function createAccidentalTruceDissolutionEvents(
@@ -113,12 +332,6 @@ export function createAccidentalTruceDissolutionEvents(
     return [];
   }
 
-  /*
-   * A primary event may eventually
-   * handle its own truce breakup.
-   * Avoid generating a duplicate
-   * automatic aftermath in that case.
-   */
   const explicitlyBrokenTruceIds = new Set(
     primaryEvent.changes.flatMap((change) =>
       change.type === "break-truce" ? [change.truceId] : [],
@@ -138,36 +351,24 @@ export function createAccidentalTruceDissolutionEvents(
 
     const aftermathEventId = `truce-aftermath:` + `${primaryEvent.id}:` + truce.id;
 
-    const survivingMember =
+    const response =
       truce.kind === "romantic"
-        ? truce.tributeIds
-            .map((tributeId) =>
-              afterPrimaryEventState.tributes.find(
-                (tribute) => tribute.id === tributeId && tribute.isAlive,
-              ),
-            )
-            .find((tribute): tribute is NonNullable<typeof tribute> => Boolean(tribute))
-        : undefined;
+        ? createRomanticDeathResponse(
+            beforeState,
+            afterPrimaryEventState,
+            primaryEvent,
+            truce,
+            aftermathEventId,
+          )
+        : createStandardDeathResponse(
+            beforeState,
+            afterPrimaryEventState,
+            primaryEvent,
+            truce,
+            aftermathEventId,
+          );
 
-    const emotionalChanges: GameChange[] = survivingMember
-      ? [
-          {
-            type: "apply-status",
-
-            tributeId: survivingMember.id,
-
-            status: createStatusEffectInstance(
-              aftermathEventId,
-              survivingMember.id,
-              "disoriented",
-              2,
-              primaryEvent.round,
-            ),
-          },
-        ]
-      : [];
-
-    const text = createAccidentalDissolutionText(
+    const dissolutionText = createAccidentalDissolutionText(
       beforeState,
       afterPrimaryEventState,
       truce,
@@ -187,12 +388,14 @@ export function createAccidentalTruceDissolutionEvents(
           ...primaryEvent.round,
         },
 
-        participantTributeIds: [...truce.tributeIds],
+        participantTributeIds: [
+          ...new Set([...truce.tributeIds, ...response.participantTributeIds]),
+        ],
 
-        text,
+        text: response.text ? `${dissolutionText} ${response.text}` : dissolutionText,
 
         changes: [
-          ...emotionalChanges,
+          ...response.changes,
 
           {
             type: "break-truce",

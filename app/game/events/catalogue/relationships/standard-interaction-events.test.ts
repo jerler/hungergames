@@ -452,12 +452,38 @@ describe("truce conflict events", () => {
     expect(resultingBetrayer?.inventory).toEqual(expect.arrayContaining(originalItems));
 
     expect(resultingPartner?.inventory).toEqual([]);
+    const originalItemIds = new Set(originalItems.map((item) => item.id));
+
+    const originalItemTransfers = nextState.itemTransactions.filter(
+      (transaction) =>
+        transaction.type === "transferred" && originalItemIds.has(transaction.itemInstanceId),
+    );
+
+    expect(originalItemTransfers).toHaveLength(originalItems.length);
+
+    for (const item of originalItems) {
+      expect(
+        originalItemTransfers.filter((transaction) => transaction.itemInstanceId === item.id),
+      ).toHaveLength(1);
+    }
+
+    /*
+     * In this two-person betrayal, the only
+     * partner is also the killed defender.
+     * Their inventory must therefore move
+     * exclusively through death loot.
+     */
+    expect(
+      originalItemTransfers.every((transaction) => transaction.sourceId === "death-loot"),
+    ).toBe(true);
 
     expect(resultingPartner?.isAlive).toBe(false);
 
     expect(resultingBetrayer?.statistics.kills).toBe(1);
 
     expect(nextState.truces).toEqual([]);
+
+    expect(() => assertGameStateInvariants(nextState)).not.toThrow();
   });
 
   it("selects a protection target from the protector's own truce", () => {

@@ -6,6 +6,7 @@ import { getCombatScore, getForagingScore, getSurvivalScore } from "~/game/engin
 import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 import {
   createInventoryItemInstance,
+  findAccessibleInventoryItem,
   prepareTributesForRound,
 } from "~/game/items/inventory-engine";
 import { createFatalChanges } from "~/game/events/event-change-builders";
@@ -756,6 +757,197 @@ describe("death loot", () => {
         }),
       ]),
     );
+
+    expect(() => assertGameStateInvariants(stateAfterDeath)).not.toThrow();
+  });
+
+  it("makes looted items accessible to the killer's truce partners", () => {
+    const game = createGame();
+
+    const originalVictim = game.tributes[0];
+    const originalKiller = game.tributes[1];
+    const originalPartner = game.tributes[2];
+
+    const knife = createInventoryItemInstance(
+      "death-loot-access-setup",
+      originalVictim.id,
+      "knife",
+      DAY_ONE,
+    );
+
+    const stateWithInventory = applyResolvedEvent(
+      game,
+      createEvent(
+        "death-loot-access-item",
+        [
+          {
+            type: "acquire-item",
+
+            tributeId: originalVictim.id,
+
+            item: knife,
+          },
+        ],
+        [originalVictim.id],
+      ),
+    );
+
+    const truce = createTruceInstance(
+      "death-loot-access-truce",
+      [originalKiller.id, originalPartner.id],
+      DAY_ONE,
+      {
+        day: 1,
+        period: "night",
+      },
+    );
+
+    const stateWithTruce = applyResolvedEvent(
+      stateWithInventory,
+      createEvent(
+        "death-loot-access-truce-event",
+        [
+          {
+            type: "form-truce",
+            truce,
+          },
+        ],
+        truce.tributeIds,
+      ),
+    );
+
+    const victim = stateWithTruce.tributes.find((tribute) => tribute.id === originalVictim.id);
+
+    const killer = stateWithTruce.tributes.find((tribute) => tribute.id === originalKiller.id);
+
+    if (!victim || !killer) {
+      throw new Error("Death-loot access test tributes are missing.");
+    }
+
+    const text = `${killer.snapshot.name} kills ` + `${victim.snapshot.name}.`;
+
+    const stateAfterDeath = applyResolvedEvent(
+      stateWithTruce,
+      createEvent(
+        "death-loot-access-kill",
+        createFatalChanges(victim, "death-loot-access-test", "Killed", text, killer),
+        [victim.id, killer.id],
+      ),
+    );
+
+    const killerAfterDeath = stateAfterDeath.tributes.find(
+      (tribute) => tribute.id === originalKiller.id,
+    );
+
+    const partnerAfterDeath = stateAfterDeath.tributes.find(
+      (tribute) => tribute.id === originalPartner.id,
+    );
+
+    if (!killerAfterDeath || !partnerAfterDeath) {
+      throw new Error("Death-loot access test survivors are missing.");
+    }
+
+    const accessibleKnife = findAccessibleInventoryItem(stateAfterDeath, partnerAfterDeath, {
+      definitionIds: ["knife"],
+    });
+
+    /*
+     * The killer physically owns the item.
+     */
+    expect(killerAfterDeath.inventory).toContainEqual(knife);
+
+    expect(partnerAfterDeath.inventory).not.toContainEqual(knife);
+
+    /*
+     * The killer's active truce partner can
+     * nevertheless access the looted item.
+     */
+    expect(accessibleKnife).toMatchObject({
+      owner: {
+        id: killerAfterDeath.id,
+      },
+
+      item: {
+        id: knife.id,
+        definitionId: "knife",
+        usesRemaining: knife.usesRemaining,
+      },
+    });
+
+    expect(stateAfterDeath.truces).toContainEqual(truce);
+
+    expect(() => assertGameStateInvariants(stateAfterDeath)).not.toThrow();
+  });
+
+  it("does not transfer inventory when no killer is credited", () => {
+    const game = createGame();
+
+    const originalVictim = game.tributes[0];
+
+    const knife = createInventoryItemInstance(
+      "uncredited-death-setup",
+      originalVictim.id,
+      "knife",
+      DAY_ONE,
+    );
+
+    const stateWithInventory = applyResolvedEvent(
+      game,
+      createEvent(
+        "uncredited-death-item",
+        [
+          {
+            type: "acquire-item",
+
+            tributeId: originalVictim.id,
+
+            item: knife,
+          },
+        ],
+        [originalVictim.id],
+      ),
+    );
+
+    const victim = stateWithInventory.tributes.find((tribute) => tribute.id === originalVictim.id);
+
+    if (!victim) {
+      throw new Error("Uncredited-death test victim is missing.");
+    }
+
+    const text = `${victim.snapshot.name} is killed ` + "by an arena hazard.";
+
+    const stateAfterDeath = applyResolvedEvent(
+      stateWithInventory,
+      createEvent(
+        "uncredited-death",
+        createFatalChanges(victim, "arena-hazard", "Arena hazard", text),
+        [victim.id],
+      ),
+    );
+
+    const deadVictim = stateAfterDeath.tributes.find((tribute) => tribute.id === victim.id);
+
+    expect(deadVictim).toMatchObject({
+      isAlive: false,
+
+      death: {
+        killerTributeIds: [],
+      },
+
+      inventory: [knife],
+    });
+
+    const deathLootTransactions = stateAfterDeath.itemTransactions.filter(
+      (transaction) => transaction.type === "transferred" && transaction.sourceId === "death-loot",
+    );
+
+    expect(deathLootTransactions).toEqual([]);
+
+    const anotherTributeReceivedKnife = stateAfterDeath.tributes
+      .filter((tribute) => tribute.id !== victim.id)
+      .some((tribute) => tribute.inventory.some((item) => item.id === knife.id));
+
+    expect(anotherTributeReceivedKnife).toBe(false);
 
     expect(() => assertGameStateInvariants(stateAfterDeath)).not.toThrow();
   });

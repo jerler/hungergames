@@ -6,7 +6,7 @@ import {
   getSurvivalSelectionWeight,
 } from "~/game/engine/stat-formulas";
 import {
-  createItemAcquisitionChanges,
+  createItemAcquisitionAndSurvivalChanges,
   createStatusChange,
   createSurvivalChanges,
 } from "~/game/events/event-change-builders";
@@ -75,7 +75,7 @@ function resolvePicnicParticipant(
       return {
         sentence: `${tribute.snapshot.name} identifies the safe dishes ` + "and pockets some food.",
 
-        changes: createItemAcquisitionChanges(eventId, tribute, ["food"], round),
+        changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
       };
 
     case "exceptional-success":
@@ -83,7 +83,12 @@ function resolvePicnicParticipant(
         sentence:
           `${tribute.snapshot.name} finds sealed food and water ` + "hidden beneath the table.",
 
-        changes: createItemAcquisitionChanges(eventId, tribute, ["food", "water"], round),
+        changes: createItemAcquisitionAndSurvivalChanges(
+          eventId,
+          tribute,
+          ["food", "water"],
+          round,
+        ),
       };
   }
 }
@@ -111,7 +116,7 @@ export const SURVIVAL_EVENTS = [
       return {
         text: `${tribute.snapshot.name} discovers ` + "a bottle of clean water.",
 
-        changes: createItemAcquisitionChanges(eventId, tribute, ["water"], round),
+        changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["water"], round),
       };
     },
   },
@@ -139,7 +144,7 @@ export const SURVIVAL_EVENTS = [
         text:
           `${tribute.snapshot.name} searches an abandoned ` + `supply crate and finds ${itemId}.`,
 
-        changes: createItemAcquisitionChanges(eventId, tribute, [itemId], round),
+        changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, [itemId], round),
       };
     },
   },
@@ -188,7 +193,7 @@ export const SURVIVAL_EVENTS = [
               `${tribute.snapshot.name} corrects an upside-down arena map ` +
               "and keeps it for later.",
 
-            changes: createItemAcquisitionChanges(eventId, tribute, ["map"], round),
+            changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["map"], round),
           };
 
         case "exceptional-success": {
@@ -199,7 +204,12 @@ export const SURVIVAL_EVENTS = [
               `${tribute.snapshot.name} corrects an upside-down map ` +
               `and follows it to a cache containing ${getItemLabel(cacheItemId)}.`,
 
-            changes: createItemAcquisitionChanges(eventId, tribute, ["map", cacheItemId], round),
+            changes: createItemAcquisitionAndSurvivalChanges(
+              eventId,
+              tribute,
+              ["map", cacheItemId],
+              round,
+            ),
           };
         }
       }
@@ -330,7 +340,7 @@ export const SURVIVAL_EVENTS = [
       return {
         text: `${tribute.snapshot.name} discovers ` + `a discarded ${itemId}.`,
 
-        changes: createItemAcquisitionChanges(eventId, tribute, [itemId], round),
+        changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, [itemId], round),
       };
     },
   },

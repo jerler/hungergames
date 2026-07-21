@@ -1,14 +1,8 @@
 import { applyResolvedEvent } from "~/game/engine/apply-game-change";
+import { createFatalStatusResolutionEvent } from "~/game/events/catalogue/statuses/resolution-events";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import type { StatusEffectId, StatusModifiers } from "~/game/statuses/status-schema";
-import type {
-  GameChange,
-  GameState,
-  GameTribute,
-  ResolvedEvent,
-  RoundReference,
-  StatusEffect,
-} from "~/game/types/game-state";
+import type { GameState, GameTribute, RoundReference, StatusEffect } from "~/game/types/game-state";
 
 export type StatusScoreKey = "combat" | "survival" | "awareness" | "foraging";
 
@@ -88,61 +82,6 @@ function removeExpiredRecoveringStatuses(tribute: GameTribute): GameTribute {
 
       return getStatusDefinition(status.definitionId).expiration === "fatal";
     }),
-  };
-}
-
-function createFatalStatusEvent(
-  tribute: GameTribute,
-  status: StatusEffect,
-  round: RoundReference,
-): ResolvedEvent {
-  const definition = getStatusDefinition(status.definitionId);
-
-  if (definition.expiration !== "fatal") {
-    throw new Error(`Recovering status "${definition.id}" cannot create a fatal event.`);
-  }
-
-  const eventId =
-    `status-fatality:${round.day}:` + `${round.period}:` + `${tribute.id}:` + status.id;
-
-  const text = `${tribute.snapshot.name} ` + definition.fatalSummary;
-
-  const removeStatusChanges: GameChange[] = tribute.statuses.map((activeStatus) => ({
-    type: "remove-status",
-    tributeId: tribute.id,
-    statusId: activeStatus.id,
-  }));
-
-  return {
-    id: eventId,
-
-    definitionId: `status-fatality:` + definition.id,
-
-    resolutionMode: "standard",
-
-    round: {
-      ...round,
-    },
-
-    participantTributeIds: [tribute.id],
-
-    text,
-
-    changes: [
-      {
-        type: "eliminate-tribute",
-        tributeId: tribute.id,
-
-        causeId: `status:` + definition.id,
-
-        causeLabel: definition.fatalCauseLabel,
-
-        summary: text,
-        killerTributeIds: [],
-      },
-
-      ...removeStatusChanges,
-    ],
   };
 }
 
@@ -237,10 +176,10 @@ export function advanceStatusDurations(state: GameState): GameState {
       const fatalStatus = getFatalStatus(tribute);
 
       if (!fatalStatus) {
-        throw new Error(`Fatal status could not be resolved for tribute "${tribute.id}".`);
+        throw new Error(`Fatal status could not be resolved ` + `for tribute "${tribute.id}".`);
       }
 
-      return createFatalStatusEvent(tribute, fatalStatus, completedRound);
+      return createFatalStatusResolutionEvent(tribute, fatalStatus, completedRound);
     });
 
   for (const fatalEvent of fatalEvents) {

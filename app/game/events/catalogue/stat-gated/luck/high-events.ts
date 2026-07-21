@@ -1,6 +1,6 @@
 import { selectRandomItem } from "~/game/engine/random";
 import {
-  createItemAcquisitionChanges,
+  createItemAcquisitionAndSurvivalChanges,
   createStatusChange,
   createSurvivalChanges,
 } from "~/game/events/event-change-builders";
@@ -105,7 +105,7 @@ export const HIGH_LUCK_EVENTS = [
           return {
             text,
 
-            changes: createItemAcquisitionChanges(eventId, tribute, [itemId], round, 1),
+            changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, [itemId], round, 1),
           };
         }
 
@@ -118,7 +118,13 @@ export const HIGH_LUCK_EVENTS = [
           return {
             text,
 
-            changes: createItemAcquisitionChanges(eventId, tribute, ["medicine", "bow"], round, 2),
+            changes: createItemAcquisitionAndSurvivalChanges(
+              eventId,
+              tribute,
+              ["medicine", "bow"],
+              round,
+              2,
+            ),
           };
         }
       }

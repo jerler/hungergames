@@ -1,5 +1,5 @@
 import {
-  createItemAcquisitionChanges,
+  createItemAcquisitionAndSurvivalChanges,
   createStatusChange,
   createSurvivalChanges,
 } from "~/game/events/event-change-builders";
@@ -80,7 +80,7 @@ export const LOW_LUCK_EVENTS = [
           return {
             text,
 
-            changes: createItemAcquisitionChanges(eventId, tribute, ["water"], round),
+            changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["water"], round),
           };
         }
 
@@ -93,7 +93,12 @@ export const LOW_LUCK_EVENTS = [
           return {
             text,
 
-            changes: createItemAcquisitionChanges(eventId, tribute, ["medicine", "matches"], round),
+            changes: createItemAcquisitionAndSurvivalChanges(
+              eventId,
+              tribute,
+              ["medicine", "matches"],
+              round,
+            ),
           };
         }
       }

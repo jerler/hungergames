@@ -5,9 +5,9 @@
  * participant roles, eligibility, weighting, resolution context,
  * and the explicit changes an event may produce.
  *
- * It does not contain any playable event content.
- * Actual events such as knife ambushes, temporary truces, and
- * resource discoveries are defined in `event-catalogue.ts`.
+ * It does not contain playable event content. Playable event
+ * definitions live under `events/catalogue`, grouped by their
+ * primary eligibility and ownership rules.
  */
 
 import type { RandomSource } from "~/game/engine/random";

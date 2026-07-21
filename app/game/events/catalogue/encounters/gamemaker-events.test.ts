@@ -33,7 +33,7 @@ function createTestGame(): GameState {
         nextId += 1;
         return `test-id-${nextId}`;
       },
-      seed: "luck-event-tests",
+      seed: "gamemaker-event-tests",
       now: "2026-07-19T12:00:00.000Z",
     },
   );

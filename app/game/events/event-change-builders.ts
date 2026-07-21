@@ -29,7 +29,13 @@ export function createStatusChange(
   };
 }
 
-export function createItemAcquisitionChanges(
+/**
+ * Creates item-acquisition changes and counts the event as
+ * survived for the receiving tribute.
+ *
+ * Pass `giftsReceived` when the acquired items came from sponsors.
+ */
+export function createItemAcquisitionAndSurvivalChanges(
   eventId: string,
   tribute: GameTribute,
   itemIds: readonly ItemDefinitionId[],

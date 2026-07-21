@@ -1,9 +1,8 @@
 import { selectRandomItem } from "~/game/engine/random";
 import { getVulnerabilityWeight } from "~/game/engine/stat-formulas";
-import { createStatusEffectInstance } from "~/game/statuses/status-engine";
 import {
   createFatalChanges,
-  createItemAcquisitionChanges,
+  createItemAcquisitionAndSurvivalChanges,
   createItemConsumptionChange,
   createStatusChange,
   createSurvivalChanges,
@@ -165,14 +164,7 @@ export const ENVIRONMENTAL_EVENTS = [
       return {
         text: `${tribute.snapshot.name} is injured while ` + "crossing rough terrain.",
 
-        changes: [
-          {
-            type: "apply-status",
-            tributeId: tribute.id,
-
-            status: createStatusEffectInstance(eventId, tribute.id, "injured", 1, round),
-          },
-        ],
+        changes: [createStatusChange(eventId, tribute, "injured", 1, round)],
       };
     },
   },
@@ -197,14 +189,7 @@ export const ENVIRONMENTAL_EVENTS = [
       return {
         text: `${tribute.snapshot.name} drinks contaminated ` + "water and becomes dehydrated.",
 
-        changes: [
-          {
-            type: "apply-status",
-            tributeId: tribute.id,
-
-            status: createStatusEffectInstance(eventId, tribute.id, "dehydrated", 2, round),
-          },
-        ],
+        changes: [createStatusChange(eventId, tribute, "dehydrated", 2, round)],
       };
     },
   },
@@ -275,7 +260,7 @@ export const ENVIRONMENTAL_EVENTS = [
               `${tribute.snapshot.name} befriends an arena goose, ` +
               "which leads them to an abandoned package of food.",
 
-            changes: createItemAcquisitionChanges(eventId, tribute, ["food"], round),
+            changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
           };
       }
     },
@@ -353,7 +338,7 @@ export const ENVIRONMENTAL_EVENTS = [
               `and retrieves ${getItemLabel(itemId)} before the fire closes in.`,
 
             changes: [
-              ...createItemAcquisitionChanges(eventId, tribute, [itemId], round),
+              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, [itemId], round),
               ...protectionChanges,
             ],
           };
@@ -412,14 +397,7 @@ export const ENVIRONMENTAL_EVENTS = [
       return {
         text: `${tribute.snapshot.name} is caught without ` + "shelter in freezing rain.",
 
-        changes: [
-          {
-            type: "apply-status",
-            tributeId: tribute.id,
-
-            status: createStatusEffectInstance(eventId, tribute.id, "exposed", 2, round),
-          },
-        ],
+        changes: [createStatusChange(eventId, tribute, "exposed", 2, round)],
       };
     },
   },
@@ -474,14 +452,7 @@ export const ENVIRONMENTAL_EVENTS = [
       return {
         text: `${tribute.snapshot.name} suffers ` + "a deep cut and begins bleeding.",
 
-        changes: [
-          {
-            type: "apply-status",
-            tributeId: tribute.id,
-
-            status: createStatusEffectInstance(eventId, tribute.id, "bleeding", 2, round),
-          },
-        ],
+        changes: [createStatusChange(eventId, tribute, "bleeding", 2, round)],
       };
     },
   },

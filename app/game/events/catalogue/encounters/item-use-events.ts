@@ -1,6 +1,6 @@
 import { getForagingScore, getVulnerabilityWeight } from "~/game/engine/stat-formulas";
 import {
-  createItemAcquisitionChanges,
+  createItemAcquisitionAndSurvivalChanges,
   createItemConsumptionChange,
   createStatusChange,
   createSurvivalChanges,
@@ -81,7 +81,7 @@ export const ITEM_USE_EVENTS = [
               "and prepares enough food to keep going.",
 
             changes: [
-              ...createItemAcquisitionChanges(eventId, tribute, ["food"], round),
+              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
               consumeFishingGear,
             ],
           };
@@ -93,7 +93,7 @@ export const ITEM_USE_EVENTS = [
               "and is briefly overwhelmed by their own competence.",
 
             changes: [
-              ...createItemAcquisitionChanges(eventId, tribute, ["food"], round),
+              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
               createStatusChange(eventId, tribute, "inspired", 2, round),
               consumeFishingGear,
             ],
@@ -237,7 +237,7 @@ export const ITEM_USE_EVENTS = [
               "to knock edible fruit from a high branch.",
 
             changes: [
-              ...createItemAcquisitionChanges(eventId, tribute, ["food"], round),
+              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
               consumeSlingshot,
             ],
           };
@@ -249,7 +249,7 @@ export const ITEM_USE_EVENTS = [
               "collects the fallen food, and feels extremely pleased with themself.",
 
             changes: [
-              ...createItemAcquisitionChanges(eventId, tribute, ["food"], round),
+              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
               createStatusChange(eventId, tribute, "inspired", 1, round),
               consumeSlingshot,
             ],
@@ -318,7 +318,7 @@ export const ITEM_USE_EVENTS = [
               "and catches enough game for a meal.",
 
             changes: [
-              ...createItemAcquisitionChanges(eventId, tribute, ["food"], round),
+              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
               consumeTrapKit,
             ],
           };
@@ -330,7 +330,7 @@ export const ITEM_USE_EVENTS = [
               "secures food, and feels considerably more capable than before.",
 
             changes: [
-              ...createItemAcquisitionChanges(eventId, tribute, ["food"], round),
+              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
               createStatusChange(eventId, tribute, "inspired", 1, round),
               consumeTrapKit,
             ],
@@ -399,7 +399,7 @@ export const ITEM_USE_EVENTS = [
               "and collects a clean supply of water.",
 
             changes: [
-              ...createItemAcquisitionChanges(eventId, tribute, ["water"], round),
+              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["water"], round),
               consumeShield,
             ],
           };
@@ -411,7 +411,12 @@ export const ITEM_USE_EVENTS = [
               "and accidentally glides directly into a hidden supply cache.",
 
             changes: [
-              ...createItemAcquisitionChanges(eventId, tribute, ["food", "water"], round),
+              ...createItemAcquisitionAndSurvivalChanges(
+                eventId,
+                tribute,
+                ["food", "water"],
+                round,
+              ),
               consumeShield,
             ],
           };

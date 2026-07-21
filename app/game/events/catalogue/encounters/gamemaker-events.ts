@@ -1,7 +1,7 @@
 import { selectRandomItem, type RandomSource } from "~/game/engine/random";
 import { getDefinitionPopulationMultiplier } from "~/game/engine/stat-formulas";
 import {
-  createItemAcquisitionChanges,
+  createItemAcquisitionAndSurvivalChanges,
   createStatusChange,
   createSurvivalChanges,
 } from "~/game/events/event-change-builders";
@@ -120,9 +120,14 @@ export const GAMEMAKER_EVENTS = [
         return {
           text,
           changes: [
-            ...createItemAcquisitionChanges(eventId, firstTribute, [firstItemId], round),
+            ...createItemAcquisitionAndSurvivalChanges(eventId, firstTribute, [firstItemId], round),
 
-            ...createItemAcquisitionChanges(eventId, secondTribute, [secondItemId], round),
+            ...createItemAcquisitionAndSurvivalChanges(
+              eventId,
+              secondTribute,
+              [secondItemId],
+              round,
+            ),
           ],
         };
       }
@@ -150,7 +155,7 @@ export const GAMEMAKER_EVENTS = [
         return {
           text,
           changes: [
-            ...createItemAcquisitionChanges(eventId, successfulTribute, [itemId], round),
+            ...createItemAcquisitionAndSurvivalChanges(eventId, successfulTribute, [itemId], round),
 
             ...createFailedPrizeChanges(eventId, unsuccessfulTribute, unsuccessfulOutcome, round),
           ],

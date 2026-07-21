@@ -371,10 +371,9 @@ describe("environmental events", () => {
     });
 
     expect(resolution.changes).toContainEqual({
-      type: "consume-item",
+      type: "use-item",
       tributeId: itemOwner.id,
       itemInstanceId: shield?.id,
-      uses: 1,
       reason: "brushfire-protection",
     });
   });

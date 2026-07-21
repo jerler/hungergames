@@ -1,7 +1,7 @@
 import { getForagingScore, getVulnerabilityWeight } from "~/game/engine/stat-formulas";
 import {
   createItemAcquisitionAndSurvivalChanges,
-  createItemConsumptionChange,
+  createItemUseChange,
   createStatusChange,
   createSurvivalChanges,
 } from "~/game/events/event-change-builders";
@@ -48,7 +48,7 @@ export const ITEM_USE_EVENTS = [
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, random);
 
-      const consumeFishingGear = createItemConsumptionChange(
+      const consumeFishingGear = createItemUseChange(
         fishingGear.owner,
         fishingGear.item,
         "fishing-gear-enormous-fish",
@@ -131,11 +131,7 @@ export const ITEM_USE_EVENTS = [
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
-      const consumeAxe = createItemConsumptionChange(
-        axe.owner,
-        axe.item,
-        "axe-based-shelter-renovation",
-      );
+      const consumeAxe = createItemUseChange(axe.owner, axe.item, "axe-based-shelter-renovation");
 
       switch (outcome) {
         case "critical-failure":
@@ -217,7 +213,7 @@ export const ITEM_USE_EVENTS = [
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
-      const consumeSlingshot = createItemConsumptionChange(
+      const consumeSlingshot = createItemUseChange(
         slingshot.owner,
         slingshot.item,
         "slingshot-trick-shot",
@@ -304,7 +300,7 @@ export const ITEM_USE_EVENTS = [
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
-      const consumeTrapKit = createItemConsumptionChange(
+      const consumeTrapKit = createItemUseChange(
         trapKit.owner,
         trapKit.item,
         "trap-kit-instructions-missing",
@@ -387,7 +383,7 @@ export const ITEM_USE_EVENTS = [
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
-      const consumeShield = createItemConsumptionChange(
+      const consumeShield = createItemUseChange(
         shield.owner,
         shield.item,
         "shield-used-for-everything-else",
@@ -471,7 +467,7 @@ export const ITEM_USE_EVENTS = [
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
-      const consumeNet = createItemConsumptionChange(net.owner, net.item, "camouflage-catastrophe");
+      const consumeNet = createItemUseChange(net.owner, net.item, "camouflage-catastrophe");
 
       switch (outcome) {
         case "critical-failure":

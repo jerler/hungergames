@@ -14,6 +14,7 @@ import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState, ResolvedEvent } from "~/game/types/game-state";
 import { createTruceInstance } from "~/game/truces/truce-engine";
+import { getItemDefinition } from "~/game/items/item-catalogue";
 
 function createGame(): GameState {
   const config = {
@@ -593,13 +594,24 @@ describe("status and inventory interactions", () => {
       const consumedTransaction = preparedState.itemTransactions.find(
         (transaction) => transaction.type === "consumed" && transaction.definitionId === itemId,
       );
+      const itemDefinition = getItemDefinition(itemId);
 
-      expect(consumedTransaction).toMatchObject({
-        tributeId: tribute.id,
-        definitionId: itemId,
-        uses: 1,
-        sourceId: `automatic-treatment:` + statusId,
-      });
+      const remainingItem = preparedTribute?.inventory.find((item) => item.definitionId === itemId);
+
+      if (itemDefinition.maxUses === undefined) {
+        expect(consumedTransaction).toBeUndefined();
+
+        expect(remainingItem?.usesRemaining).toBeNull();
+      } else {
+        expect(consumedTransaction).toMatchObject({
+          tributeId: tribute.id,
+          definitionId: itemId,
+          uses: 1,
+          sourceId: `automatic-treatment:${statusId}`,
+        });
+
+        expect(remainingItem?.usesRemaining ?? 0).toBe(itemDefinition.maxUses - 1);
+      }
     },
   );
 });

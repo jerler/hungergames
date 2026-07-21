@@ -111,9 +111,11 @@ describe("item catalogue treatments", () => {
 
       expect(new Set(item.tags).size).toBe(item.tags.length);
 
-      expect(Number.isInteger(item.maxUses)).toBe(true);
+      if (item.maxUses !== undefined) {
+        expect(Number.isInteger(item.maxUses)).toBe(true);
 
-      expect(item.maxUses).toBeGreaterThan(0);
+        expect(item.maxUses).toBeGreaterThan(0);
+      }
     }
   });
 
@@ -156,5 +158,15 @@ describe("item catalogue treatments", () => {
       combatBonus: 0.65,
       foragingBonus: 0.25,
     });
+  });
+
+  it("distinguishes reusable and limited-use items", () => {
+    expect(getItemDefinition("knife").maxUses).toBeUndefined();
+
+    expect(getItemDefinition("shield").maxUses).toBeUndefined();
+
+    expect(getItemDefinition("medicine").maxUses).toBe(1);
+
+    expect(getItemDefinition("water").maxUses).toBe(1);
   });
 });

@@ -22,7 +22,7 @@ export const ITEM_CATALOGUE = [
     label: "Food",
     description: "A supply of food that restores energy and automatically treats exhaustion.",
     tags: ["consumable", "food"],
-    maxUses: 2,
+    maxUses: 1,
     survivalBonus: 0.15,
 
     treatments: [
@@ -81,7 +81,6 @@ export const ITEM_CATALOGUE = [
     label: "Blanket",
     description: "A warm blanket that provides temporary shelter.",
     tags: ["shelter", "tool"],
-    maxUses: 3,
     survivalBonus: 0.35,
     treatments: [
       {
@@ -113,7 +112,6 @@ export const ITEM_CATALOGUE = [
     label: "Rope",
     description: "A versatile tool for climbing and crossing hazards.",
     tags: ["tool"],
-    maxUses: 3,
     survivalBonus: 0.25,
     foragingBonus: 0.2,
   },
@@ -123,7 +121,6 @@ export const ITEM_CATALOGUE = [
     description:
       "A partial map of the arena that improves navigation and helps a disoriented tribute recover.",
     tags: ["tool", "navigation"],
-    maxUses: 4,
     awarenessBonus: 0.45,
     foragingBonus: 0.35,
 
@@ -142,7 +139,6 @@ export const ITEM_CATALOGUE = [
     description:
       "A portable camouflage net that improves concealment and helps a hunted tribute lose their pursuer.",
     tags: ["tool", "shelter", "camouflage"],
-    maxUses: 3,
     survivalBonus: 0.5,
     awarenessBonus: 0.1,
 
@@ -172,7 +168,7 @@ export const ITEM_CATALOGUE = [
     description:
       "A compact fishing kit that greatly improves the tribute's ability to gather food near water.",
     tags: ["tool", "fishing", "hunting"],
-    maxUses: 4,
+    maxUses: 3,
 
     survivalBonus: 0.15,
     foragingBonus: 0.7,
@@ -185,7 +181,6 @@ export const ITEM_CATALOGUE = [
     description:
       "A light ranged weapon useful for hunting small animals and creating distractions.",
     tags: ["weapon", "hunting"],
-    maxUses: 6,
 
     combatBonus: 0.65,
     awarenessBonus: 0.1,
@@ -196,7 +191,6 @@ export const ITEM_CATALOGUE = [
     label: "Knife",
     description: "A compact weapon that is also useful as a tool.",
     tags: ["weapon", "tool"],
-    maxUses: 4,
     combatBonus: 1,
     foragingBonus: 0.15,
   },
@@ -205,7 +199,6 @@ export const ITEM_CATALOGUE = [
     label: "Spear",
     description: "A strong close- and medium-range weapon.",
     tags: ["weapon"],
-    maxUses: 3,
     combatBonus: 1.35,
   },
   {
@@ -213,7 +206,6 @@ export const ITEM_CATALOGUE = [
     label: "Bow and arrows",
     description: "A powerful ranged weapon with limited ammunition.",
     tags: ["weapon"],
-    maxUses: 2,
     combatBonus: 1.6,
     awarenessBonus: 0.2,
   },
@@ -223,7 +215,6 @@ export const ITEM_CATALOGUE = [
     description:
       "A heavy weapon that is also useful for chopping wood, clearing paths, and building shelter.",
     tags: ["weapon", "tool", "hunting"],
-    maxUses: 4,
 
     combatBonus: 1.45,
     survivalBonus: 0.2,
@@ -234,7 +225,6 @@ export const ITEM_CATALOGUE = [
     label: "Shield",
     description: "A sturdy shield that improves combat survivability and protection from hazards.",
     tags: ["tool", "defense"],
-    maxUses: 4,
 
     combatBonus: 0.45,
     survivalBonus: 0.55,

@@ -20,7 +20,7 @@ export function createInventoryItemInstance(
   return {
     id: `${eventId}:${tributeId}:${definitionId}`,
     definitionId,
-    usesRemaining: definition.maxUses,
+    usesRemaining: definition.maxUses ?? null,
     sourceEventId: eventId,
     acquiredRound: {
       ...round,
@@ -39,11 +39,15 @@ export interface AccessibleInventoryItem {
   item: InventoryItem;
 }
 
+function itemHasRemainingUses(item: InventoryItem): boolean {
+  return item.usesRemaining === null || item.usesRemaining > 0;
+}
+
 function itemMatchesRequirements(
   item: InventoryItem,
   requirements: InventoryItemRequirements,
 ): boolean {
-  if (item.usesRemaining <= 0) {
+  if (!itemHasRemainingUses(item)) {
     return false;
   }
 
@@ -157,7 +161,7 @@ export function getInventoryBonus(
   bonus: "combatBonus" | "survivalBonus" | "awarenessBonus" | "foragingBonus",
 ): number {
   return tribute.inventory.reduce((total, item) => {
-    if (item.usesRemaining <= 0) {
+    if (!itemHasRemainingUses(item)) {
       return total;
     }
 
@@ -266,30 +270,33 @@ export function prepareTributesForRound(state: GameState, round: RoundReference)
       const itemOwnerId = treatment.owner.id;
       const itemInstanceId = treatment.item.id;
 
-      const transaction: InventoryTransaction = {
-        id: [
-          "automatic-use",
-          round.period,
-          round.day,
-          patientId,
-          itemOwnerId,
-          itemInstanceId,
-          currentStatus.id,
-        ].join(":"),
+      const itemHasLimitedUses = treatment.item.usesRemaining !== null;
+      const transaction: InventoryTransaction | null = itemHasLimitedUses
+        ? {
+            id: [
+              "automatic-use",
+              round.period,
+              round.day,
+              patientId,
+              itemOwnerId,
+              itemInstanceId,
+              currentStatus.id,
+            ].join(":"),
 
-        type: "consumed",
+            type: "consumed",
 
-        tributeId: itemOwnerId,
-        itemInstanceId,
-        definitionId: treatment.item.definitionId,
-        uses: 1,
+            tributeId: itemOwnerId,
+            itemInstanceId,
+            definitionId: treatment.item.definitionId,
+            uses: 1,
 
-        round: {
-          ...round,
-        },
+            round: {
+              ...round,
+            },
 
-        sourceId: `automatic-treatment:${currentStatus.definitionId}`,
-      };
+            sourceId: `automatic-treatment:${currentStatus.definitionId}`,
+          }
+        : null;
 
       nextState = {
         ...nextState,
@@ -318,27 +325,31 @@ export function prepareTributesForRound(state: GameState, round: RoundReference)
             };
           }
 
-          if (tribute.id === itemOwnerId) {
+          if (tribute.id === itemOwnerId && itemHasLimitedUses) {
             updatedTribute = {
               ...updatedTribute,
 
               inventory: updatedTribute.inventory
-                .map((item) =>
-                  item.id === itemInstanceId
-                    ? {
-                        ...item,
-                        usesRemaining: item.usesRemaining - 1,
-                      }
-                    : item,
-                )
-                .filter((item) => item.usesRemaining > 0),
+                .map((item) => {
+                  if (item.id !== itemInstanceId || item.usesRemaining === null) {
+                    return item;
+                  }
+
+                  return {
+                    ...item,
+                    usesRemaining: item.usesRemaining - 1,
+                  };
+                })
+                .filter((item) => item.usesRemaining === null || item.usesRemaining > 0),
             };
           }
 
           return updatedTribute;
         }),
 
-        itemTransactions: [...nextState.itemTransactions, transaction],
+        itemTransactions: transaction
+          ? [...nextState.itemTransactions, transaction]
+          : nextState.itemTransactions,
       };
     }
   }

@@ -47,7 +47,7 @@ export interface ItemDefinition {
   description: string;
   tags: readonly ItemTag[];
 
-  maxUses: number;
+  maxUses?: number;
 
   combatBonus?: number;
   survivalBonus?: number;

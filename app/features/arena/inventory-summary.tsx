@@ -35,7 +35,9 @@ export function InventorySummary({ tributes }: InventorySummaryProps) {
                       <span>{definition.label}</span>
 
                       <span>
-                        {item.usesRemaining} {item.usesRemaining === 1 ? "use" : "uses"}
+                        {item.usesRemaining === null
+                          ? "Reusable"
+                          : `${item.usesRemaining} ${item.usesRemaining === 1 ? "use" : "uses"}`}
                       </span>
                     </li>
                   );

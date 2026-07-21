@@ -159,11 +159,21 @@ export function assertGameStateInvariants(state: GameState): void {
     for (const item of tribute.inventory) {
       const definition = getItemDefinition(item.definitionId);
 
+      if (definition.maxUses === undefined) {
+        assert(
+          item.usesRemaining === null,
+          `reusable item "${item.id}" ` + "must have null remaining uses.",
+        );
+
+        continue;
+      }
+
       assert(
-        Number.isInteger(item.usesRemaining) &&
+        item.usesRemaining !== null &&
+          Number.isInteger(item.usesRemaining) &&
           item.usesRemaining > 0 &&
           item.usesRemaining <= definition.maxUses,
-        `item "${item.id}" has invalid remaining uses.`,
+        `limited-use item "${item.id}" ` + "has invalid remaining uses.",
       );
     }
 
@@ -180,7 +190,7 @@ export function assertGameStateInvariants(state: GameState): void {
     "Inventory transaction IDs",
   );
 
-  const itemUseLedger = new Map<string, number>();
+  const itemUseLedger = new Map<string, number | null>();
 
   const itemOwnerLedger = new Map<string, string>();
 
@@ -190,18 +200,56 @@ export function assertGameStateInvariants(state: GameState): void {
       `inventory transaction "${transaction.id}" ` + "references a missing tribute.",
     );
 
-    getItemDefinition(transaction.definitionId);
+    const definition = getItemDefinition(transaction.definitionId);
 
-    assert(
-      Number.isInteger(transaction.uses) && transaction.uses > 0,
-      `inventory transaction "${transaction.id}" ` + "has invalid uses.",
-    );
+    /*
+     * Consumption always represents a
+     * positive number of expended uses.
+     *
+     * Acquisition and transfer records use
+     * null for reusable items and a positive
+     * number for limited-use items.
+     */
+    if (transaction.type === "consumed") {
+      assert(
+        Number.isInteger(transaction.uses) && transaction.uses > 0,
+        `inventory transaction "${transaction.id}" ` + "has invalid consumed uses.",
+      );
+    } else if (definition.maxUses === undefined) {
+      assert(
+        transaction.uses === null,
+        `transaction "${transaction.id}" for reusable ` +
+          `item "${transaction.itemInstanceId}" ` +
+          "must record null uses.",
+      );
+    } else {
+      assert(
+        transaction.uses !== null &&
+          Number.isInteger(transaction.uses) &&
+          transaction.uses > 0 &&
+          transaction.uses <= definition.maxUses,
+        `transaction "${transaction.id}" for limited-use ` +
+          `item "${transaction.itemInstanceId}" ` +
+          "has invalid recorded uses.",
+      );
+    }
 
     if (transaction.type === "acquired") {
       assert(
         !itemUseLedger.has(transaction.itemInstanceId),
         `item "${transaction.itemInstanceId}" ` + "was acquired more than once.",
       );
+
+      /*
+       * New limited-use items begin with
+       * their definition's full use count.
+       */
+      if (definition.maxUses !== undefined) {
+        assert(
+          transaction.uses === definition.maxUses,
+          `item "${transaction.itemInstanceId}" ` + "was acquired with an incorrect use count.",
+        );
+      }
 
       itemUseLedger.set(transaction.itemInstanceId, transaction.uses);
 
@@ -257,11 +305,21 @@ export function assertGameStateInvariants(state: GameState): void {
       continue;
     }
 
+    /*
+     * After the acquired and transferred
+     * branches continue, TypeScript knows
+     * this is a consumed transaction.
+     */
     assert(
       currentOwnerId === transaction.tributeId,
       `item "${transaction.itemInstanceId}" was ` +
         `consumed by "${transaction.tributeId}" ` +
         `but is owned by "${currentOwnerId}".`,
+    );
+
+    assert(
+      remainingUses !== null,
+      `reusable item "${transaction.itemInstanceId}" ` + "was recorded as consumed.",
     );
 
     assert(
@@ -272,8 +330,17 @@ export function assertGameStateInvariants(state: GameState): void {
     itemUseLedger.set(transaction.itemInstanceId, remainingUses - transaction.uses);
   }
 
+  /*
+   * Confirm that every item currently held by
+   * a tribute agrees with the transaction ledger.
+   */
   for (const tribute of state.tributes) {
     for (const item of tribute.inventory) {
+      assert(
+        itemUseLedger.has(item.id),
+        `item "${item.id}" is present in inventory ` + "without an acquisition transaction.",
+      );
+
       assert(
         itemUseLedger.get(item.id) === item.usesRemaining,
         `item "${item.id}" does not match ` + "its transaction history.",

@@ -1,8 +1,5 @@
 import { getVulnerabilityWeight } from "~/game/engine/stat-formulas";
-import {
-  createFatalChanges,
-  createItemConsumptionChange,
-} from "~/game/events/event-change-builders";
+import { createFatalChanges, createItemUseChange } from "~/game/events/event-change-builders";
 import { requireEventItem } from "~/game/events/event-resolution-helpers";
 import {
   requireSingleParticipant,
@@ -53,7 +50,7 @@ export const COMBAT_EVENTS = [
         changes: [
           ...createFatalChanges(victim, "spear-attack", "Speared", text, killer),
 
-          createItemConsumptionChange(spear.owner, spear.item, "spear-attack"),
+          createItemUseChange(spear.owner, spear.item, "spear-attack"),
         ],
       };
     },
@@ -98,7 +95,7 @@ export const COMBAT_EVENTS = [
         changes: [
           ...createFatalChanges(victim, "knife-ambush", "Knifed", text, killer),
 
-          createItemConsumptionChange(knife.owner, knife.item, "knife-ambush"),
+          createItemUseChange(knife.owner, knife.item, "knife-ambush"),
         ],
       };
     },

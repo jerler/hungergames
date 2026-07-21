@@ -62,7 +62,13 @@ export interface StatusEffect {
 export interface InventoryItem {
   id: string;
   definitionId: ItemDefinitionId;
-  usesRemaining: number;
+
+  /**
+   * Null represents reusable equipment.
+   * A number represents the remaining uses
+   * of a limited-use item.
+   */
+  usesRemaining: number | null;
 
   sourceEventId: string;
   acquiredRound: RoundReference;
@@ -142,6 +148,14 @@ export interface ConsumeInventoryItemChange {
   reason: string;
 }
 
+export interface UseInventoryItemChange {
+  type: "use-item";
+
+  tributeId: string;
+  itemInstanceId: string;
+  reason: string;
+}
+
 export interface TransferInventoryItemChange {
   type: "transfer-item";
 
@@ -208,7 +222,7 @@ interface InventoryTransactionBase {
   itemInstanceId: string;
   definitionId: ItemDefinitionId;
 
-  uses: number;
+  uses: number | null;
   round: RoundReference;
   sourceId: string;
 }
@@ -219,6 +233,7 @@ export interface AcquiredInventoryTransaction extends InventoryTransactionBase {
 
 export interface ConsumedInventoryTransaction extends InventoryTransactionBase {
   type: "consumed";
+  uses: number;
 }
 
 export interface TransferredInventoryTransaction extends InventoryTransactionBase {
@@ -237,6 +252,7 @@ export type GameChange =
   | ApplyStatusChange
   | RemoveStatusChange
   | AcquireInventoryItemChange
+  | UseInventoryItemChange
   | ConsumeInventoryItemChange
   | TransferInventoryItemChange
   | FormTruceChange

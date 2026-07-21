@@ -271,7 +271,7 @@ describe("item use events", () => {
     },
   );
 
-  it.each(EVENT_ITEM_CASES)("$eventId consumes one use of $itemId", ({ eventId, itemId }) => {
+  it.each(EVENT_ITEM_CASES)("$eventId records the use of $itemId", ({ eventId, itemId }) => {
     const game = createTestGame();
 
     const tribute = withItem(withStats(game.tributes[0], BALANCED_STATS), itemId);
@@ -287,13 +287,25 @@ describe("item use events", () => {
       [0.6],
     );
 
-    expect(resolution.changes).toContainEqual({
-      type: "consume-item",
+    const itemUseChange = resolution.changes.find(
+      (change) =>
+        (change.type === "use-item" || change.type === "consume-item") &&
+        change.itemInstanceId === item?.id,
+    );
+
+    const definition = getItemDefinition(itemId);
+
+    expect(itemUseChange).toMatchObject({
+      type: definition.maxUses === undefined ? "use-item" : "consume-item",
+
       tributeId: tribute.id,
       itemInstanceId: item?.id,
-      uses: 1,
       reason: eventId,
     });
+
+    if (itemUseChange?.type === "consume-item") {
+      expect(itemUseChange.uses).toBe(1);
+    }
   });
 
   it("the trap kit can produce food and inspiration", () => {
@@ -363,10 +375,9 @@ describe("item use events", () => {
     ]);
 
     expect(resolution.changes).toContainEqual({
-      type: "consume-item",
+      type: "use-item",
       tributeId: tribute.id,
       itemInstanceId: net?.id,
-      uses: 1,
       reason: "camouflage-catastrophe",
     });
   });
@@ -453,7 +464,7 @@ describe("item use events", () => {
     }
   });
 
-  it("applies rewards and item consumption to game state", () => {
+  it("applies rewards without consuming reusable equipment", () => {
     const originalGame = createTestGame();
 
     const equippedTribute = withItem(
@@ -502,12 +513,58 @@ describe("item use events", () => {
 
     expect(
       nextTribute?.inventory.find((item) => item.definitionId === "slingshot")?.usesRemaining,
-    ).toBe(getItemDefinition("slingshot").maxUses - 1);
+    ).toBeNull();
 
-    expect(nextState.itemTransactions.map((transaction) => transaction.type)).toEqual([
-      "acquired",
-      "consumed",
-    ]);
+    expect(nextState.itemTransactions.map((transaction) => transaction.type)).toEqual(["acquired"]);
+  });
+
+  it("decrements limited-use equipment", () => {
+    const originalGame = createTestGame();
+
+    const equippedTribute = withItem(
+      withStats(originalGame.tributes[0], BALANCED_STATS),
+      "trap-kit",
+    );
+
+    const game: GameState = {
+      ...originalGame,
+
+      tributes: originalGame.tributes.map((tribute) =>
+        tribute.id === equippedTribute.id ? equippedTribute : tribute,
+      ),
+    };
+
+    const definition = requireEvent("trap-kit-instructions-missing");
+
+    const resolution = resolveEvent(
+      definition,
+      game,
+      {
+        tribute: [equippedTribute],
+      },
+      [0.6],
+    );
+
+    const nextState = applyResolvedEvent(game, {
+      id: `test:${definition.id}`,
+      definitionId: definition.id,
+      resolutionMode: "standard",
+      round: ROUND,
+      participantTributeIds: [equippedTribute.id],
+      ...resolution,
+    });
+
+    const nextTrapKit = nextState.tributes
+      .find((tribute) => tribute.id === equippedTribute.id)
+      ?.inventory.find((item) => item.definitionId === "trap-kit");
+
+    expect(nextTrapKit?.usesRemaining).toBe(2);
+
+    expect(
+      nextState.itemTransactions.some(
+        (transaction) => transaction.type === "consumed" && transaction.definitionId === "trap-kit",
+      ),
+    ).toBe(true);
   });
 
   it("lets a tribute use an item owned by a truce partner", () => {
@@ -602,7 +659,7 @@ describe("item use events", () => {
     });
 
     expect(resolution.changes).toContainEqual({
-      type: "consume-item",
+      type: "use-item",
 
       /*
        * The event participant used it,
@@ -611,7 +668,6 @@ describe("item use events", () => {
       tributeId: itemOwner.id,
 
       itemInstanceId: slingshot.id,
-      uses: 1,
       reason: "slingshot-trick-shot",
     });
   });

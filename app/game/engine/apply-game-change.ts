@@ -326,6 +326,31 @@ export function applyGameChange(
       };
     }
 
+    case "use-item": {
+      const itemOwner = state.tributes.find((tribute) => tribute.id === change.tributeId);
+
+      if (!itemOwner) {
+        throw new Error(`Cannot use an item owned by missing tribute ` + `"${change.tributeId}".`);
+      }
+
+      const item = itemOwner.inventory.find((candidate) => candidate.id === change.itemInstanceId);
+
+      if (!item) {
+        throw new Error(`Cannot use missing item ` + `"${change.itemInstanceId}".`);
+      }
+
+      if (item.usesRemaining !== null) {
+        throw new Error(`Limited-use item "${item.id}" must be ` + "consumed when used.");
+      }
+
+      /*
+       * Reusable equipment remains unchanged.
+       * The change is retained in event history,
+       * but creates no inventory transaction.
+       */
+      return state;
+    }
+
     case "consume-item": {
       let definitionId: InventoryTransaction["definitionId"] | null = null;
 
@@ -336,8 +361,8 @@ export function applyGameChange(
           throw new Error(`Cannot consume missing item "${change.itemInstanceId}".`);
         }
 
-        if (item.usesRemaining < change.uses) {
-          throw new Error(`Item "${item.id}" does not have enough remaining uses.`);
+        if (item.usesRemaining === null) {
+          throw new Error(`Reusable item "${item.id}" cannot be consumed.`);
         }
 
         definitionId = item.definitionId;
@@ -351,11 +376,14 @@ export function applyGameChange(
                 ? {
                     ...candidate,
 
-                    usesRemaining: candidate.usesRemaining - change.uses,
+                    usesRemaining:
+                      candidate.usesRemaining !== null
+                        ? candidate.usesRemaining - change.uses
+                        : null,
                   }
                 : candidate,
             )
-            .filter((candidate) => candidate.usesRemaining > 0),
+            .filter((candidate) => candidate.usesRemaining === null || candidate.usesRemaining > 0),
         };
       });
 

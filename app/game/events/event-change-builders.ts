@@ -63,23 +63,28 @@ export function createItemAcquisitionAndSurvivalChanges(
   return changes;
 }
 
-export function createItemConsumptionChange(
+export function createItemUseChange(
   itemOwner: GameTribute,
   item: InventoryItem,
   reason: string,
 ): GameChange {
+  const sharedFields = {
+    tributeId: itemOwner.id,
+    itemInstanceId: item.id,
+    reason,
+  };
+
+  if (item.usesRemaining === null) {
+    return {
+      type: "use-item",
+      ...sharedFields,
+    };
+  }
+
   return {
     type: "consume-item",
-
-    /*
-     * consume-item targets the physical owner,
-     * even when another truce member used it.
-     */
-    tributeId: itemOwner.id,
-
-    itemInstanceId: item.id,
+    ...sharedFields,
     uses: 1,
-    reason,
   };
 }
 

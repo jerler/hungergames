@@ -190,12 +190,15 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
     }
 
     /*
-     * Also reserve opportunistically consumed items,
-     * such as food stolen by the goose or water used
-     * as brushfire protection.
+     * Reserve opportunistically used items,
+     * whether the item is consumed or reusable.
+     *
+     * Reusable does not mean that two tributes
+     * can hold the same item simultaneously
+     * during one round.
      */
     for (const change of resolution.changes) {
-      if (change.type === "consume-item") {
+      if (change.type === "consume-item" || change.type === "use-item") {
         unavailableItemInstanceIds.add(change.itemInstanceId);
       }
     }

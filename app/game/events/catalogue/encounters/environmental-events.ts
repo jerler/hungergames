@@ -3,7 +3,7 @@ import { getVulnerabilityWeight } from "~/game/engine/stat-formulas";
 import {
   createFatalChanges,
   createItemAcquisitionAndSurvivalChanges,
-  createItemConsumptionChange,
+  createItemUseChange,
   createStatusChange,
   createSurvivalChanges,
 } from "~/game/events/event-change-builders";
@@ -239,7 +239,7 @@ export const ENVIRONMENTAL_EVENTS = [
           const changes: GameChange[] = [createStatusChange(eventId, tribute, "hunted", 2, round)];
 
           if (food) {
-            changes.push(createItemConsumptionChange(food.owner, food.item, "arena-goose-theft"));
+            changes.push(createItemUseChange(food.owner, food.item, "arena-goose-theft"));
           }
 
           return {
@@ -320,7 +320,7 @@ export const ENVIRONMENTAL_EVENTS = [
 
       const protectionChanges = protection
         ? [
-            createItemConsumptionChange(
+            createItemUseChange(
               protection.accessibleItem.owner,
               protection.accessibleItem.item,
               "brushfire-protection",

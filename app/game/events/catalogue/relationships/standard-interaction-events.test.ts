@@ -6,7 +6,7 @@ import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 import type { RandomSource } from "~/game/engine/random";
 import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
 import { selectEventParticipants } from "~/game/events/participant-selection";
-import { TRUCE_CONFLICT_EVENTS } from "~/game/events/catalogue/truce-conflict-events";
+import { STANDARD_INTERACTION_EVENTS } from "./standard-interaction-events";
 import type {
   EventDefinition,
   EventResolution,
@@ -90,7 +90,7 @@ function createSequenceRandom(values: readonly number[]): RandomSource {
 }
 
 function requireConflictEvent(eventId: string): EventDefinition {
-  const event = TRUCE_CONFLICT_EVENTS.find((candidate) => candidate.id === eventId);
+  const event = STANDARD_INTERACTION_EVENTS.find((candidate) => candidate.id === eventId);
 
   if (!event) {
     throw new Error(`Missing truce conflict event "${eventId}".`);
@@ -211,7 +211,7 @@ function applyResolution(
 describe("truce conflict events", () => {
   it("includes every conflict event in the main catalogue", () => {
     expect(
-      TRUCE_CONFLICT_EVENTS.every((event) =>
+      STANDARD_INTERACTION_EVENTS.every((event) =>
         EVENT_CATALOGUE.some((candidate) => candidate.id === event.id),
       ),
     ).toBe(true);

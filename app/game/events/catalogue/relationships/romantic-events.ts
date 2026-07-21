@@ -6,41 +6,17 @@ import {
   type EventResolution,
   type EventResolutionContext,
 } from "~/game/events/event-schema";
-import { createStatusEffectInstance } from "~/game/statuses/status-engine";
-import type { StatusEffectId } from "~/game/statuses/status-schema";
+import { createStatusChange, createSurvivalChanges } from "~/game/events/event-change-builders";
 import {
   createTruceInstance,
   getActiveTruceForTribute,
   getTruceFormationPopulationMultiplier,
 } from "~/game/truces/truce-engine";
 import { getAverageDistrictAffinityWeight } from "~/game/truces/truce-selection";
-import type { GameChange, GameTribute } from "~/game/types/game-state";
+import type { GameState } from "~/game/types/game-state";
+import { createJointVictoryOutcome } from "~/game/victory/victory-outcome";
 
 const ROMANTIC_FORMATION_WEIGHT = 0.2;
-
-function createSurvivalChanges(tributes: readonly GameTribute[]): GameChange[] {
-  return tributes.map((tribute) => ({
-    type: "increment-statistic",
-    tributeId: tribute.id,
-    statistic: "eventsSurvived",
-    amount: 1,
-  }));
-}
-
-function createStatusChange(
-  eventId: string,
-  tribute: GameTribute,
-  statusId: StatusEffectId,
-  severity: 1 | 2 | 3,
-  round: EventResolutionContext["round"],
-): GameChange {
-  return {
-    type: "apply-status",
-    tributeId: tribute.id,
-
-    status: createStatusEffectInstance(eventId, tribute.id, statusId, severity, round),
-  };
-}
 
 function belongsToRomanticTruce(
   state: EventResolutionContext["state"],
@@ -49,7 +25,29 @@ function belongsToRomanticTruce(
   return getActiveTruceForTribute(state, tributeId)?.kind === "romantic";
 }
 
-const ROMANTIC_TRUCE_FORMATION_EVENT: EventDefinition = {
+export function isPoisonousBerriesFinaleEligible(state: GameState): boolean {
+  const livingTributes = state.tributes.filter((tribute) => tribute.isAlive);
+
+  if (livingTributes.length !== 2) {
+    return false;
+  }
+
+  const [firstTribute, secondTribute] = livingTributes;
+
+  if (!firstTribute || !secondTribute) {
+    return false;
+  }
+
+  const truce = getActiveTruceForTribute(state, firstTribute.id);
+
+  return (
+    truce?.kind === "romantic" &&
+    truce.tributeIds.length === 2 &&
+    truce.tributeIds.includes(secondTribute.id)
+  );
+}
+
+const ROMANTIC_FORMATION_EVENT: EventDefinition = {
   id: "romantic-truce-formation",
   category: "survival",
 
@@ -123,7 +121,6 @@ const ROMANTIC_TRUCE_FORMATION_EVENT: EventDefinition = {
         },
 
         createStatusChange(eventId, firstTribute, "inspired", 1, round),
-
         createStatusChange(eventId, secondTribute, "inspired", 1, round),
 
         ...createSurvivalChanges([firstTribute, secondTribute]),
@@ -139,7 +136,6 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
   tags: ["hazard", "truce", "cooperative", "romantic", "status"],
 
   periods: ["day", "night"],
-
   baseWeight: 2.5,
 
   roles: [
@@ -151,7 +147,6 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
 
       getWeight: (tribute) => Math.max(tribute.snapshot.stats.brawn, tribute.snapshot.stats.brains),
     },
-
     {
       id: "partner",
       count: 1,
@@ -174,7 +169,6 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
 
   resolve({ state, eventId, round, random, participantsByRole }): EventResolution {
     const protector = requireSingleParticipant(participantsByRole, "protector");
-
     const partner = requireSingleParticipant(participantsByRole, "partner");
 
     const truce = getActiveTruceForTribute(state, protector.id);
@@ -188,9 +182,7 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
 
     const outcome = resolveStatCheck({
       stats: protector.snapshot.stats,
-
       stat: protectiveStat,
-
       difficulty: 3,
       random,
     });
@@ -215,11 +207,8 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
             {
               type: "eliminate-tribute",
               tributeId: protector.id,
-
               causeId: "protecting-romantic-partner",
-
               causeLabel: "Died protecting their partner",
-
               summary: text,
               killerTributeIds: [],
             },
@@ -238,7 +227,6 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
 
           changes: [
             createStatusChange(eventId, protector, "injured", 2, round),
-
             createStatusChange(eventId, partner, "inspired", 1, round),
 
             ...createSurvivalChanges([partner]),
@@ -263,7 +251,6 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
 
           changes: [
             createStatusChange(eventId, protector, "inspired", 2, round),
-
             createStatusChange(eventId, partner, "inspired", 2, round),
 
             ...createSurvivalChanges([protector, partner]),
@@ -273,7 +260,84 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
   },
 };
 
-export const ROMANTIC_TRUCE_EVENTS = [
-  ROMANTIC_TRUCE_FORMATION_EVENT,
+export const POISONOUS_BERRIES_JOINT_VICTORY_EVENT: EventDefinition = {
+  id: "poisonous-berries-joint-victory",
+  category: "survival",
+
+  tags: ["survival", "truce", "cooperative", "romantic", "victory"],
+
+  periods: ["day", "night"],
+
+  /*
+   * The sequencer forces this event when
+   * eligible, so its ordinary weight is
+   * not used to determine the finale.
+   */
+  baseWeight: 1,
+
+  roles: [
+    {
+      id: "partners",
+      count: 2,
+
+      isEligible: (tribute, { state }) => {
+        if (!isPoisonousBerriesFinaleEligible(state)) {
+          return false;
+        }
+
+        return getActiveTruceForTribute(state, tribute.id)?.kind === "romantic";
+      },
+    },
+  ],
+
+  isEligible: ({ state }) => isPoisonousBerriesFinaleEligible(state),
+
+  resolve({ state, eventId, participantsByRole }): EventResolution {
+    const partners = requireParticipants(participantsByRole, "partners");
+
+    if (partners.length !== 2) {
+      throw new Error("The poisonous-berries finale requires exactly two partners.");
+    }
+
+    const [firstPartner, secondPartner] = partners;
+
+    if (!firstPartner || !secondPartner) {
+      throw new Error("The poisonous-berries finale could not resolve both partners.");
+    }
+
+    const truce = getActiveTruceForTribute(state, firstPartner.id);
+
+    if (truce?.kind !== "romantic" || !truce.tributeIds.includes(secondPartner.id)) {
+      throw new Error("The poisonous-berries finale requires an active romantic pair.");
+    }
+
+    const text =
+      `${firstPartner.snapshot.name} and ` +
+      `${secondPartner.snapshot.name} refuse to turn on one another. ` +
+      "They raise poisonous berries to their lips, threatening to leave " +
+      "the Capitol without a victor. At the final moment, the Games are stopped " +
+      "and both are declared victorious.";
+
+    return {
+      text,
+
+      changes: [
+        {
+          type: "declare-victory",
+
+          outcome: createJointVictoryOutcome(firstPartner.id, secondPartner.id, eventId),
+        },
+
+        ...createSurvivalChanges(partners),
+      ],
+    };
+  },
+};
+
+export const ROMANTIC_EVENTS = [
+  /* Day and Night */
+
+  ROMANTIC_FORMATION_EVENT,
   ROMANTIC_PROTECTION_EVENT,
+  POISONOUS_BERRIES_JOINT_VICTORY_EVENT,
 ] satisfies readonly EventDefinition[];

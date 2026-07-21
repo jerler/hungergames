@@ -1,20 +1,21 @@
 import { describe, expect, it } from "vitest";
 
+import { createInitialGameState } from "~/game/engine/create-initial-game-state";
+import type { RandomSource } from "~/game/engine/random";
+import { EVENT_CATALOGUE } from "~/game/events/catalogue";
 import type {
   EventDefinition,
   EventResolution,
   ParticipantSelectionContext,
   ParticipantsByRole,
 } from "~/game/events/event-schema";
-import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
-import { LUCK_EVENTS } from "~/game/events/catalogue/luck-events";
-import { createInitialGameState } from "~/game/engine/create-initial-game-state";
-import type { RandomSource } from "~/game/engine/random";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState, GameTribute } from "~/game/types/game-state";
 import type { TributeStatValue } from "~/game/types/tribute";
+
+import { LOW_LUCK_EVENTS } from "./low-events";
 
 const ROUND = {
   day: 1,
@@ -31,14 +32,19 @@ function createTestGame(): GameState {
 
   return createInitialGameState(
     config,
+
     createRandomTributeDrafts(6, DEFAULT_TRIBUTES, () => 0.5),
+
     "random",
+
     {
       createId: () => {
         nextId += 1;
+
         return `test-id-${nextId}`;
       },
-      seed: "luck-event-tests",
+
+      seed: "low-luck-event-tests",
       now: "2026-07-19T12:00:00.000Z",
     },
   );
@@ -47,9 +53,11 @@ function createTestGame(): GameState {
 function withLuck(tribute: GameTribute, luck: TributeStatValue, name: string): GameTribute {
   return {
     ...tribute,
+
     snapshot: {
       ...tribute.snapshot,
       name,
+
       stats: {
         ...tribute.snapshot.stats,
         luck,
@@ -58,11 +66,11 @@ function withLuck(tribute: GameTribute, luck: TributeStatValue, name: string): G
   };
 }
 
-function requireLuckEvent(eventId: string): EventDefinition {
-  const event = LUCK_EVENTS.find((candidate) => candidate.id === eventId);
+function requireLowLuckEvent(eventId: string): EventDefinition {
+  const event = LOW_LUCK_EVENTS.find((candidate) => candidate.id === eventId);
 
   if (!event) {
-    throw new Error(`Missing Luck event "${eventId}".`);
+    throw new Error(`Missing low-Luck event "${eventId}".`);
   }
 
   return event;
@@ -87,87 +95,51 @@ function resolveEvent(
   game: GameState,
   participantsByRole: ParticipantsByRole,
   randomValues: readonly number[],
-) {
-  const livingTributes = Object.values(participantsByRole).flat();
-
+): EventResolution {
   return definition.resolve({
     state: game,
     round: ROUND,
-    livingTributes,
+
+    livingTributes: game.tributes.filter((tribute) => tribute.isAlive),
+
     eventId: `test:${definition.id}`,
+
     random: createSequenceRandom(randomValues),
+
     participantsByRole,
   });
 }
 
-function getAcquiredItemIds(changes: EventResolution["changes"]) {
+function getAcquiredItemIds(changes: EventResolution["changes"]): string[] {
   return changes.flatMap((change) =>
     change.type === "acquire-item" ? [change.item.definitionId] : [],
   );
 }
 
-describe("Luck events", () => {
-  it("is included in the main event catalogue", () => {
-    expect(LUCK_EVENTS.every((event) => EVENT_CATALOGUE.includes(event))).toBe(true);
+describe("low-Luck events", () => {
+  it("includes every low-Luck event in the main catalogue", () => {
+    expect(LOW_LUCK_EVENTS.every((event) => EVENT_CATALOGUE.includes(event))).toBe(true);
   });
 
-  it("restricts high- and low-Luck events", () => {
+  it("only accepts tributes with low Luck", () => {
     const game = createTestGame();
 
-    const luckyTribute = withLuck(game.tributes[0], 5, "Fortuna");
+    const unluckyTribute = withLuck(game.tributes[0], 1, "Murphy");
 
     const averageTribute = withLuck(game.tributes[1], 3, "Average");
 
-    const unluckyTribute = withLuck(game.tributes[2], 1, "Murphy");
-
     const context: ParticipantSelectionContext = {
       state: game,
-
-      round: {
-        day: 1,
-        period: "day",
-      },
-
+      round: ROUND,
       livingTributes: game.tributes,
-
       participantsByRole: {},
     };
 
-    const sponsorRole = requireLuckEvent("sponsor-drone-malfunction").roles[0];
+    const role = requireLowLuckEvent("runaway-vending-machine").roles[0];
 
-    const vendingRole = requireLuckEvent("runaway-vending-machine").roles[0];
+    expect(role.isEligible?.(unluckyTribute, context)).toBe(true);
 
-    expect(sponsorRole.isEligible?.(luckyTribute, context)).toBe(true);
-
-    expect(sponsorRole.isEligible?.(averageTribute, context)).toBe(false);
-
-    expect(vendingRole.isEligible?.(unluckyTribute, context)).toBe(true);
-
-    expect(vendingRole.isEligible?.(averageTribute, context)).toBe(false);
-  });
-
-  it("gives an exceptionally lucky tribute a sponsor jackpot", () => {
-    const game = createTestGame();
-
-    const tribute = withLuck(game.tributes[0], 4, "Fortuna");
-
-    const resolution = resolveEvent(
-      requireLuckEvent("sponsor-drone-malfunction"),
-      game,
-      {
-        tribute: [tribute],
-      },
-      [0.95],
-    );
-
-    expect(getAcquiredItemIds(resolution.changes)).toEqual(["medicine", "bow"]);
-
-    expect(resolution.changes).toContainEqual({
-      type: "increment-statistic",
-      tributeId: tribute.id,
-      statistic: "giftsReceived",
-      amount: 2,
-    });
+    expect(role.isEligible?.(averageTribute, context)).toBe(false);
   });
 
   it("injures a critically unlucky vending-machine tribute", () => {
@@ -176,11 +148,14 @@ describe("Luck events", () => {
     const tribute = withLuck(game.tributes[0], 1, "Murphy");
 
     const resolution = resolveEvent(
-      requireLuckEvent("runaway-vending-machine"),
+      requireLowLuckEvent("runaway-vending-machine"),
+
       game,
+
       {
         tribute: [tribute],
       },
+
       [0.05],
     );
 
@@ -188,6 +163,7 @@ describe("Luck events", () => {
       expect.objectContaining({
         type: "apply-status",
         tributeId: tribute.id,
+
         status: expect.objectContaining({
           definitionId: "injured",
           severity: 2,
@@ -202,48 +178,17 @@ describe("Luck events", () => {
     const tribute = withLuck(game.tributes[0], 2, "Murphy");
 
     const resolution = resolveEvent(
-      requireLuckEvent("runaway-vending-machine"),
+      requireLowLuckEvent("runaway-vending-machine"),
+
       game,
+
       {
         tribute: [tribute],
       },
+
       [0.95],
     );
 
     expect(getAcquiredItemIds(resolution.changes)).toEqual(["medicine", "matches"]);
-  });
-
-  it("resolves each prize-crate participant independently", () => {
-    const game = createTestGame();
-
-    const luckyTribute = withLuck(game.tributes[0], 5, "Fortuna");
-
-    const unluckyTribute = withLuck(game.tributes[1], 1, "Murphy");
-
-    const resolution = resolveEvent(
-      requireLuckEvent("capitol-prize-crate"),
-      game,
-      {
-        tributes: [luckyTribute, unluckyTribute],
-      },
-      [0.6, 0.05, 0],
-    );
-
-    expect(resolution.changes).toContainEqual(
-      expect.objectContaining({
-        type: "acquire-item",
-        tributeId: luckyTribute.id,
-      }),
-    );
-
-    expect(resolution.changes).toContainEqual(
-      expect.objectContaining({
-        type: "apply-status",
-        tributeId: unluckyTribute.id,
-        status: expect.objectContaining({
-          definitionId: "injured",
-        }),
-      }),
-    );
   });
 });

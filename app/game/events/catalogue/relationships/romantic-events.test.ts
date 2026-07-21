@@ -4,17 +4,24 @@ import { applyResolvedEvent } from "~/game/engine/apply-game-change";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 import type { RandomSource } from "~/game/engine/random";
-import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
+import { EVENT_CATALOGUE } from "~/game/events/catalogue";
+import {
+  isPoisonousBerriesFinaleEligible,
+  POISONOUS_BERRIES_JOINT_VICTORY_EVENT,
+  ROMANTIC_EVENTS,
+} from "./romantic-events";
+import { sequenceRoundEvents } from "~/game/engine/event-sequencer";
+import { selectLivingTributes } from "~/game/selectors/game-selectors";
+import { gameReducer } from "~/state/game-reducer";
+import { STANDARD_DISSOLUTION_EVENTS } from "~/game/events/catalogue/relationships/standard-dissolution-events";
+import { STANDARD_FORMATION_EVENTS } from "~/game/events/catalogue/relationships/standard-formation-events";
+import { STANDARD_INTERACTION_EVENTS } from "~/game/events/catalogue/relationships/standard-interaction-events";
 import type {
   EventDefinition,
   EventResolution,
   ParticipantsByRole,
 } from "~/game/events/event-schema";
 import { selectEventParticipants } from "~/game/events/participant-selection";
-import { ROMANTIC_TRUCE_EVENTS } from "~/game/events/catalogue/romantic-truce-events";
-import { TRUCE_CONFLICT_EVENTS } from "~/game/events/catalogue/truce-conflict-events";
-import { TRUCE_DISSOLUTION_EVENTS } from "~/game/events/catalogue/truce-dissolution-events";
-import { TRUCE_FORMATION_EVENTS } from "~/game/events/catalogue/truce-formation-events";
 import { createTruceInstance, expireTrucesAfterRound } from "~/game/truces/truce-engine";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
@@ -25,6 +32,11 @@ import type { TributeStats } from "~/game/types/tribute";
 const DAY_ONE = {
   day: 1,
   period: "day",
+} as const;
+
+const NIGHT_ONE = {
+  day: 1,
+  period: "night",
 } as const;
 
 const BALANCED_STATS = {
@@ -97,13 +109,124 @@ function createSequenceRandom(values: readonly number[]): RandomSource {
 }
 
 function requireRomanticEvent(eventId: string): EventDefinition {
-  const definition = ROMANTIC_TRUCE_EVENTS.find((candidate) => candidate.id === eventId);
+  const definition = ROMANTIC_EVENTS.find((candidate) => candidate.id === eventId);
 
   if (!definition) {
-    throw new Error(`Missing romantic truce event "${eventId}".`);
+    throw new Error(`Missing romantic event "${eventId}".`);
   }
 
   return definition;
+}
+
+function createFinalPairState(kind: "standard" | "romantic", livingTributeCount = 2): GameState {
+  let state = createGame();
+
+  const survivingTributeIds = new Set(
+    state.tributes.slice(0, livingTributeCount).map((tribute) => tribute.id),
+  );
+
+  for (const [index, tribute] of state.tributes.entries()) {
+    if (survivingTributeIds.has(tribute.id)) {
+      continue;
+    }
+
+    const eventId = `setup-elimination-${index}`;
+    const summary = `${tribute.snapshot.name} was eliminated ` + "during test setup.";
+
+    state = applyResolvedEvent(state, {
+      id: eventId,
+      definitionId: "test-elimination",
+      resolutionMode: "standard",
+      round: DAY_ONE,
+      participantTributeIds: [tribute.id],
+      text: summary,
+
+      changes: [
+        {
+          type: "eliminate-tribute",
+          tributeId: tribute.id,
+          causeId: "test-elimination",
+          causeLabel: "Test elimination",
+          summary,
+          killerTributeIds: [],
+        },
+      ],
+    });
+  }
+
+  const firstPartner = state.tributes[0];
+  const secondPartner = state.tributes[1];
+
+  if (!firstPartner || !secondPartner) {
+    throw new Error("The test Game does not contain two tributes.");
+  }
+
+  const truce = createTruceInstance(
+    `test-${kind}-truce`,
+    [firstPartner.id, secondPartner.id],
+    DAY_ONE,
+    kind === "romantic" ? null : NIGHT_ONE,
+    kind,
+  );
+
+  return {
+    ...state,
+    phase: "round-complete",
+    currentRound: DAY_ONE,
+    truces: [truce],
+    roundEvents: [],
+    revealedEventCount: 0,
+    victoryOutcome: null,
+  };
+}
+
+function createJointVictoryEvent(
+  state: GameState,
+  options: {
+    id?: string;
+    definitionId?: string;
+    sourceEventId?: string;
+  } = {},
+): ResolvedEvent {
+  const partners = selectLivingTributes(state).slice(0, 2);
+
+  const firstPartner = partners[0];
+  const secondPartner = partners[1];
+
+  if (!firstPartner || !secondPartner) {
+    throw new Error("The joint-victory test requires two living tributes.");
+  }
+
+  const eventId = options.id ?? "test-berries-finale";
+
+  return {
+    id: eventId,
+
+    definitionId: options.definitionId ?? "poisonous-berries-joint-victory",
+
+    resolutionMode: "standard",
+    round: NIGHT_ONE,
+
+    participantTributeIds: [firstPartner.id, secondPartner.id],
+
+    text: "The finalists threaten to eat poisonous berries.",
+
+    changes: [
+      {
+        type: "declare-victory",
+
+        outcome: {
+          kind: "joint",
+
+          victorTributeIds: [firstPartner.id, secondPartner.id],
+
+          sourceEventId: options.sourceEventId ?? eventId,
+
+          reason: "poisonous-berries",
+        },
+      },
+    ],
+  };
 }
 
 function resolveEvent(
@@ -232,10 +355,10 @@ function createRomanticTruceState(): RomanticTruceFixture {
   };
 }
 
-describe("romantic truce events", () => {
+describe("romantic events", () => {
   it("includes every romantic event in the main catalogue", () => {
     expect(
-      ROMANTIC_TRUCE_EVENTS.every((event) =>
+      ROMANTIC_EVENTS.every((event) =>
         EVENT_CATALOGUE.some((candidate) => candidate.id === event.id),
       ),
     ).toBe(true);
@@ -244,7 +367,7 @@ describe("romantic truce events", () => {
   it("keeps romantic formation substantially rarer than standard pair formation", () => {
     const romanticFormation = requireRomanticEvent("romantic-truce-formation");
 
-    const standardFormation = TRUCE_FORMATION_EVENTS.find(
+    const standardFormation = STANDARD_FORMATION_EVENTS.find(
       (event) => event.id === "share-shelter-truce-2",
     );
 
@@ -401,13 +524,13 @@ describe("romantic truce events", () => {
   it("does not allow romantic truces into ordinary breakup events", () => {
     const { state } = createRomanticTruceState();
 
-    const amicableSeparation = TRUCE_DISSOLUTION_EVENTS.find(
+    const amicableSeparation = STANDARD_DISSOLUTION_EVENTS.find(
       (event) => event.id === "amicable-truce-separation-2",
     );
 
-    const betrayal = TRUCE_CONFLICT_EVENTS.find((event) => event.id === "truce-betrayal-2");
+    const betrayal = STANDARD_INTERACTION_EVENTS.find((event) => event.id === "truce-betrayal-2");
 
-    const standardProtection = TRUCE_CONFLICT_EVENTS.find(
+    const standardProtection = STANDARD_INTERACTION_EVENTS.find(
       (event) => event.id === "protects-truce-partner",
     );
 
@@ -800,5 +923,188 @@ describe("romantic truce events", () => {
       );
 
     expect(resolve()).toEqual(resolve());
+  });
+
+  // Nested describe for the poisonous berries joint victory tests
+  describe("poisonous berries joint victory", () => {
+    it("is eligible for the final two tributes " + "when they share a romantic truce", () => {
+      const state = createFinalPairState("romantic");
+
+      expect(selectLivingTributes(state)).toHaveLength(2);
+
+      expect(isPoisonousBerriesFinaleEligible(state)).toBe(true);
+    });
+
+    it(
+      "is not eligible for the final two tributes " + "when they share only a standard truce",
+      () => {
+        const state = createFinalPairState("standard");
+
+        expect(isPoisonousBerriesFinaleEligible(state)).toBe(false);
+      },
+    );
+
+    it("is not eligible while a third tribute remains alive", () => {
+      const state = createFinalPairState("romantic", 3);
+
+      expect(selectLivingTributes(state)).toHaveLength(3);
+
+      expect(isPoisonousBerriesFinaleEligible(state)).toBe(false);
+    });
+
+    it("resolves by declaring both romantic partners victorious", () => {
+      const state = createFinalPairState("romantic");
+      const partners = selectLivingTributes(state);
+
+      const firstPartner = partners[0];
+      const secondPartner = partners[1];
+
+      if (!firstPartner || !secondPartner) {
+        throw new Error("The test state does not contain two living partners.");
+      }
+
+      const resolution = POISONOUS_BERRIES_JOINT_VICTORY_EVENT.resolve({
+        state,
+        round: NIGHT_ONE,
+        livingTributes: partners,
+        eventId: "berries-finale",
+        random: () => 0.5,
+
+        participantsByRole: {
+          partners,
+        },
+      });
+
+      expect(resolution.changes).toContainEqual({
+        type: "declare-victory",
+
+        outcome: {
+          kind: "joint",
+
+          victorTributeIds: [firstPartner.id, secondPartner.id],
+
+          sourceEventId: "berries-finale",
+          reason: "poisonous-berries",
+        },
+      });
+    });
+
+    it("rejects joint victory while another tribute remains alive", () => {
+      const state = createFinalPairState("romantic", 3);
+
+      expect(() => applyResolvedEvent(state, createJointVictoryEvent(state))).toThrow(
+        /every living tribute must be included/i,
+      );
+    });
+
+    it("rejects joint victory from an event other than " + "the berries finale", () => {
+      const state = createFinalPairState("romantic");
+
+      expect(() =>
+        applyResolvedEvent(
+          state,
+
+          createJointVictoryEvent(state, {
+            definitionId: "ordinary-survival-event",
+          }),
+        ),
+      ).toThrow(/only be declared by the poisonous-berries finale/i);
+    });
+
+    it("rejects joint victory that references " + "a different source event", () => {
+      const state = createFinalPairState("romantic");
+
+      expect(() =>
+        applyResolvedEvent(
+          state,
+
+          createJointVictoryEvent(state, {
+            id: "actual-berries-event",
+            sourceEventId: "different-event",
+          }),
+        ),
+      ).toThrow(/must reference the event that declared it/i);
+    });
+
+    it("rejects joint victory for finalists " + "outside a romantic truce", () => {
+      const state = createFinalPairState("standard");
+
+      expect(() => applyResolvedEvent(state, createJointVictoryEvent(state))).toThrow(
+        /same active romantic truce/i,
+      );
+    });
+
+    it("sequences only the poisonous berries event " + "for the final romantic pair", () => {
+      const state = createFinalPairState("romantic");
+
+      const events = sequenceRoundEvents(state, NIGHT_ONE);
+
+      expect(events).toHaveLength(1);
+
+      expect(events[0]?.definitionId).toBe("poisonous-berries-joint-victory");
+
+      expect(new Set(events[0]?.participantTributeIds)).toEqual(
+        new Set(selectLivingTributes(state).map((tribute) => tribute.id)),
+      );
+    });
+
+    it("enters joint victory after revealing " + "the berries finale", () => {
+      const state = createFinalPairState("romantic");
+      const partners = selectLivingTributes(state);
+
+      const events = sequenceRoundEvents(state, NIGHT_ONE);
+
+      const berriesEvent = events[0];
+
+      if (!berriesEvent) {
+        throw new Error("The berries finale was not sequenced.");
+      }
+
+      const roundState: GameState = {
+        ...state,
+        phase: "round-events",
+        currentRound: NIGHT_ONE,
+        roundEvents: events,
+        revealedEventCount: 0,
+      };
+
+      const nextState = gameReducer(roundState, {
+        type: "event/revealed",
+        now: "2026-07-20T12:01:00.000Z",
+      });
+
+      if (!nextState) {
+        throw new Error("The Game unexpectedly disappeared.");
+      }
+
+      expect(nextState.phase).toBe("victory");
+
+      expect(nextState.victoryOutcome).toMatchObject({
+        kind: "joint",
+        sourceEventId: berriesEvent.id,
+        reason: "poisonous-berries",
+      });
+
+      if (nextState.victoryOutcome?.kind !== "joint") {
+        throw new Error("The berries finale did not produce a joint victory.");
+      }
+
+      expect(new Set(nextState.victoryOutcome.victorTributeIds)).toEqual(
+        new Set(partners.map((tribute) => tribute.id)),
+      );
+
+      expect(selectLivingTributes(nextState)).toHaveLength(2);
+
+      expect(
+        nextState.eventHistory.some(
+          (event) => event.definitionId === "poisonous-berries-joint-victory",
+        ),
+      ).toBe(true);
+
+      expect(nextState.truces).toHaveLength(1);
+      expect(nextState.truces[0]?.kind).toBe("romantic");
+
+      expect(() => assertGameStateInvariants(nextState)).not.toThrow();
+    });
   });
 });

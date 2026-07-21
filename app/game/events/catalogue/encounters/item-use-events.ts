@@ -1,213 +1,22 @@
+import { getForagingScore, getVulnerabilityWeight } from "~/game/engine/stat-formulas";
 import {
-  resolveStatCheck,
-  type EventStat,
-  type StatCheckOutcome,
-} from "~/game/events/event-outcomes";
+  createItemAcquisitionChanges,
+  createItemConsumptionChange,
+  createStatusChange,
+  createSurvivalChanges,
+} from "~/game/events/event-change-builders";
+import {
+  requireEventItem,
+  resolveLuckAdjustedStatCheck,
+} from "~/game/events/event-resolution-helpers";
 import {
   requireSingleParticipant,
   type EventDefinition,
   type EventResolution,
-  type EventResolutionContext,
 } from "~/game/events/event-schema";
-import { getForagingScore, getVulnerabilityWeight } from "~/game/engine/stat-formulas";
-import type { RandomSource } from "~/game/engine/random";
-import {
-  createInventoryItemInstance,
-  findUsableInventoryItem,
-} from "~/game/items/inventory-engine";
-import type { ItemDefinitionId } from "~/game/items/item-schema";
-import { createStatusEffectInstance } from "~/game/statuses/status-engine";
-import type { StatusEffectId } from "~/game/statuses/status-schema";
-import type { GameChange, GameTribute, InventoryItem } from "~/game/types/game-state";
-import type { TributeStatValue } from "~/game/types/tribute";
 
-function clampDifficulty(difficulty: number): TributeStatValue {
-  return Math.max(1, Math.min(5, Math.round(difficulty))) as TributeStatValue;
-}
-
-function getLuckDifficultyAdjustment(luck: TributeStatValue): number {
-  if (luck >= 4) {
-    return -1;
-  }
-
-  if (luck <= 2) {
-    return 1;
-  }
-
-  return 0;
-}
-
-function resolveAdjustedStatCheck(
-  tribute: GameTribute,
-  stat: EventStat,
-  baseDifficulty: TributeStatValue,
-  random: RandomSource,
-): StatCheckOutcome {
-  const difficulty = clampDifficulty(
-    baseDifficulty + getLuckDifficultyAdjustment(tribute.snapshot.stats.luck),
-  );
-
-  return resolveStatCheck({
-    stats: tribute.snapshot.stats,
-    stat,
-    difficulty,
-    random,
-  });
-}
-
-function createSurvivalChanges(tributes: readonly GameTribute[]): GameChange[] {
-  return tributes.map((tribute) => ({
-    type: "increment-statistic",
-    tributeId: tribute.id,
-    statistic: "eventsSurvived",
-    amount: 1,
-  }));
-}
-
-function createStatusChange(
-  eventId: string,
-  tribute: GameTribute,
-  statusId: StatusEffectId,
-  severity: 1 | 2 | 3,
-  round: EventResolutionContext["round"],
-): GameChange {
-  return {
-    type: "apply-status",
-    tributeId: tribute.id,
-
-    status: createStatusEffectInstance(eventId, tribute.id, statusId, severity, round),
-  };
-}
-
-function createItemAcquisitionChanges(
-  eventId: string,
-  tribute: GameTribute,
-  itemIds: readonly ItemDefinitionId[],
-  round: EventResolutionContext["round"],
-): GameChange[] {
-  return [
-    ...itemIds.map((itemId): GameChange => ({
-      type: "acquire-item",
-      tributeId: tribute.id,
-
-      item: createInventoryItemInstance(eventId, tribute.id, itemId, round),
-    })),
-
-    ...createSurvivalChanges([tribute]),
-  ];
-}
-
-function createItemConsumptionChange(
-  tribute: GameTribute,
-  item: InventoryItem,
-  reason: string,
-): GameChange {
-  return {
-    type: "consume-item",
-    tributeId: tribute.id,
-    itemInstanceId: item.id,
-    uses: 1,
-    reason,
-  };
-}
-
-function requireEventItem(
-  tribute: GameTribute,
-  itemId: ItemDefinitionId,
-  eventId: string,
-): InventoryItem {
-  const item = findUsableInventoryItem(tribute, {
-    definitionIds: [itemId],
-  });
-
-  if (!item) {
-    throw new Error(
-      `Event "${eventId}" selected tribute "${tribute.id}" ` + `without a usable "${itemId}" item.`,
-    );
-  }
-
-  return item;
-}
-
-export const TOOL_AND_WEAPON_EVENTS = [
-  {
-    id: "trap-kit-instructions-missing",
-    category: "hazard",
-    tags: ["hazard", "tool", "item", "status", "resource"],
-    periods: ["day", "night"],
-    baseWeight: 3.5,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-
-        requiredItemDefinitionIds: ["trap-kit"],
-
-        getWeight: getForagingScore,
-      },
-    ],
-
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
-      const trapKit = requireEventItem(tribute, "trap-kit", "trap-kit-instructions-missing");
-
-      const outcome = resolveAdjustedStatCheck(tribute, "brains", 3, random);
-
-      const consumeTrapKit = createItemConsumptionChange(
-        tribute,
-        trapKit,
-        "trap-kit-instructions-missing",
-      );
-
-      switch (outcome) {
-        case "critical-failure":
-          return {
-            text:
-              `${tribute.snapshot.name} tries to assemble a trap kit ` +
-              "without instructions and immediately catches themself.",
-
-            changes: [createStatusChange(eventId, tribute, "injured", 1, round), consumeTrapKit],
-          };
-
-        case "failure":
-          return {
-            text:
-              `${tribute.snapshot.name} spends hours constructing a trap ` +
-              "that repeatedly springs before anything approaches it.",
-
-            changes: [createStatusChange(eventId, tribute, "exhausted", 1, round), consumeTrapKit],
-          };
-
-        case "success":
-          return {
-            text:
-              `${tribute.snapshot.name} successfully assembles a trap ` +
-              "and catches enough game for a meal.",
-
-            changes: [
-              ...createItemAcquisitionChanges(eventId, tribute, ["food"], round),
-              consumeTrapKit,
-            ],
-          };
-
-        case "exceptional-success":
-          return {
-            text:
-              `${tribute.snapshot.name} constructs an ingenious trap, ` +
-              "secures food, and feels considerably more capable than before.",
-
-            changes: [
-              ...createItemAcquisitionChanges(eventId, tribute, ["food"], round),
-              createStatusChange(eventId, tribute, "inspired", 1, round),
-              consumeTrapKit,
-            ],
-          };
-      }
-    },
-  },
-
+export const ITEM_USE_EVENTS = [
+  /* Day Only */
   {
     id: "fishing-gear-enormous-fish",
     category: "hazard",
@@ -231,7 +40,7 @@ export const TOOL_AND_WEAPON_EVENTS = [
 
       const fishingGear = requireEventItem(tribute, "fishing-gear", "fishing-gear-enormous-fish");
 
-      const outcome = resolveAdjustedStatCheck(tribute, "brawn", 3, random);
+      const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, random);
 
       const consumeFishingGear = createItemConsumptionChange(
         tribute,
@@ -292,7 +101,6 @@ export const TOOL_AND_WEAPON_EVENTS = [
       }
     },
   },
-
   {
     id: "axe-based-shelter-renovation",
     category: "hazard",
@@ -314,7 +122,7 @@ export const TOOL_AND_WEAPON_EVENTS = [
 
       const axe = requireEventItem(tribute, "axe", "axe-based-shelter-renovation");
 
-      const outcome = resolveAdjustedStatCheck(tribute, "brains", 3, random);
+      const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
       const consumeAxe = createItemConsumptionChange(tribute, axe, "axe-based-shelter-renovation");
 
@@ -374,7 +182,6 @@ export const TOOL_AND_WEAPON_EVENTS = [
       }
     },
   },
-
   {
     id: "slingshot-trick-shot",
     category: "hazard",
@@ -396,7 +203,7 @@ export const TOOL_AND_WEAPON_EVENTS = [
 
       const slingshot = requireEventItem(tribute, "slingshot", "slingshot-trick-shot");
 
-      const outcome = resolveAdjustedStatCheck(tribute, "brains", 3, random);
+      const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
       const consumeSlingshot = createItemConsumptionChange(
         tribute,
@@ -451,6 +258,86 @@ export const TOOL_AND_WEAPON_EVENTS = [
     },
   },
 
+  /* Night Only */
+
+  /* Day and Night */
+  {
+    id: "trap-kit-instructions-missing",
+    category: "hazard",
+    tags: ["hazard", "tool", "item", "status", "resource"],
+    periods: ["day", "night"],
+    baseWeight: 3.5,
+
+    roles: [
+      {
+        id: "tribute",
+        count: 1,
+
+        requiredItemDefinitionIds: ["trap-kit"],
+
+        getWeight: getForagingScore,
+      },
+    ],
+
+    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+      const tribute = requireSingleParticipant(participantsByRole, "tribute");
+
+      const trapKit = requireEventItem(tribute, "trap-kit", "trap-kit-instructions-missing");
+
+      const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
+
+      const consumeTrapKit = createItemConsumptionChange(
+        tribute,
+        trapKit,
+        "trap-kit-instructions-missing",
+      );
+
+      switch (outcome) {
+        case "critical-failure":
+          return {
+            text:
+              `${tribute.snapshot.name} tries to assemble a trap kit ` +
+              "without instructions and immediately catches themself.",
+
+            changes: [createStatusChange(eventId, tribute, "injured", 1, round), consumeTrapKit],
+          };
+
+        case "failure":
+          return {
+            text:
+              `${tribute.snapshot.name} spends hours constructing a trap ` +
+              "that repeatedly springs before anything approaches it.",
+
+            changes: [createStatusChange(eventId, tribute, "exhausted", 1, round), consumeTrapKit],
+          };
+
+        case "success":
+          return {
+            text:
+              `${tribute.snapshot.name} successfully assembles a trap ` +
+              "and catches enough game for a meal.",
+
+            changes: [
+              ...createItemAcquisitionChanges(eventId, tribute, ["food"], round),
+              consumeTrapKit,
+            ],
+          };
+
+        case "exceptional-success":
+          return {
+            text:
+              `${tribute.snapshot.name} constructs an ingenious trap, ` +
+              "secures food, and feels considerably more capable than before.",
+
+            changes: [
+              ...createItemAcquisitionChanges(eventId, tribute, ["food"], round),
+              createStatusChange(eventId, tribute, "inspired", 1, round),
+              consumeTrapKit,
+            ],
+          };
+      }
+    },
+  },
   {
     id: "shield-used-for-everything-else",
     category: "hazard",
@@ -474,7 +361,7 @@ export const TOOL_AND_WEAPON_EVENTS = [
 
       const shield = requireEventItem(tribute, "shield", "shield-used-for-everything-else");
 
-      const outcome = resolveAdjustedStatCheck(tribute, "brains", 3, random);
+      const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
       const consumeShield = createItemConsumptionChange(
         tribute,
@@ -527,6 +414,70 @@ export const TOOL_AND_WEAPON_EVENTS = [
               ...createItemAcquisitionChanges(eventId, tribute, ["food", "water"], round),
               consumeShield,
             ],
+          };
+      }
+    },
+  },
+  {
+    id: "camouflage-catastrophe",
+    category: "hazard",
+    tags: ["hazard", "item", "tool", "status"],
+    periods: ["day", "night"],
+    baseWeight: 3.5,
+
+    roles: [
+      {
+        id: "tribute",
+        count: 1,
+
+        requiredItemDefinitionIds: ["camouflage-net"],
+      },
+    ],
+
+    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+      const tribute = requireSingleParticipant(participantsByRole, "tribute");
+
+      const net = requireEventItem(tribute, "camouflage-net", "camouflage-catastrophe");
+
+      const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
+
+      const consumeNet = createItemConsumptionChange(tribute, net, "camouflage-catastrophe");
+
+      switch (outcome) {
+        case "critical-failure":
+          return {
+            text:
+              `${tribute.snapshot.name} becomes completely tangled ` +
+              "in their camouflage net and loses all sense of direction.",
+
+            changes: [createStatusChange(eventId, tribute, "disoriented", 1, round), consumeNet],
+          };
+
+        case "failure":
+          return {
+            text:
+              `${tribute.snapshot.name} hangs their camouflage net backwards, ` +
+              "creating an extremely visible tribute-shaped landmark.",
+
+            changes: [createStatusChange(eventId, tribute, "hunted", 1, round), consumeNet],
+          };
+
+        case "success":
+          return {
+            text:
+              `${tribute.snapshot.name} uses their camouflage net ` +
+              "to disappear into the surrounding terrain.",
+
+            changes: [createStatusChange(eventId, tribute, "concealed", 1, round), consumeNet],
+          };
+
+        case "exceptional-success":
+          return {
+            text:
+              `${tribute.snapshot.name} constructs an almost perfect hideout ` +
+              "with their camouflage net.",
+
+            changes: [createStatusChange(eventId, tribute, "concealed", 2, round), consumeNet],
           };
       }
     },

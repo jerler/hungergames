@@ -4,6 +4,7 @@ import {
   type EventDefinition,
   type EventResolution,
 } from "~/game/events/event-schema";
+import { createSurvivalChanges } from "~/game/events/event-change-builders";
 import { createInventoryItemInstance } from "~/game/items/inventory-engine";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import {
@@ -37,17 +38,7 @@ function formatNameList(names: readonly string[]): string {
     return `${names[0]} and ${names[1]}`;
   }
 
-  return `${names.slice(0, -1).join(", ")}, and ` + names[names.length - 1];
-}
-
-function createSurvivalChanges(tributes: readonly GameTribute[]): GameChange[] {
-  return tributes.map((tribute) => ({
-    type: "increment-statistic",
-
-    tributeId: tribute.id,
-    statistic: "eventsSurvived",
-    amount: 1,
-  }));
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
 }
 
 function createSupplyChanges(
@@ -60,9 +51,7 @@ function createSupplyChanges(
 
     return {
       type: "acquire-item",
-
       tributeId: tribute.id,
-
       item: createInventoryItemInstance(eventId, tribute.id, itemId, round),
     };
   });
@@ -74,7 +63,6 @@ function createFormationEvent(
   groupSizeWeight: number,
 ): EventDefinition {
   const sharesShelter = theme === "share-shelter";
-
   const eventId = `${theme}-truce-${groupSize}`;
 
   return {
@@ -85,12 +73,6 @@ function createFormationEvent(
       ? ["survival", "truce", "cooperative", "environment"]
       : ["survival", "truce", "cooperative", "item", "resource"],
 
-    /*
-     * Shelter agreements form during
-     * the day for the coming night.
-     * Supply agreements form at night
-     * and persist through the next day.
-     */
     periods: sharesShelter ? ["day"] : ["night"],
 
     /*
@@ -132,9 +114,7 @@ function createFormationEvent(
 
       if (tributes.length !== groupSize) {
         throw new Error(
-          `Event "${eventId}" expected ` +
-            `${groupSize} tributes but ` +
-            `received ${tributes.length}.`,
+          `Event "${eventId}" expected ` + `${groupSize} tributes but received ${tributes.length}.`,
         );
       }
 
@@ -174,8 +154,20 @@ function createFormationEvent(
   };
 }
 
-export const TRUCE_FORMATION_EVENTS = TRUCE_GROUP_SIZE_WEIGHTS.flatMap(({ size, weight }) => [
+const STANDARD_DAY_FORMATION_EVENTS = TRUCE_GROUP_SIZE_WEIGHTS.map(({ size, weight }) =>
   createFormationEvent("share-shelter", size, weight),
+);
 
+const STANDARD_NIGHT_FORMATION_EVENTS = TRUCE_GROUP_SIZE_WEIGHTS.map(({ size, weight }) =>
   createFormationEvent("split-supplies", size, weight),
-]) satisfies readonly EventDefinition[];
+);
+
+export const STANDARD_FORMATION_EVENTS = [
+  /* Day Only */
+
+  ...STANDARD_DAY_FORMATION_EVENTS,
+
+  /* Night Only */
+
+  ...STANDARD_NIGHT_FORMATION_EVENTS,
+] satisfies readonly EventDefinition[];

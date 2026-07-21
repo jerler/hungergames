@@ -6,9 +6,7 @@ describe("event catalogue", () => {
   it("contains every event definition exactly once", () => {
     const eventIds = EVENT_CATALOGUE.map((event) => event.id);
 
-    const duplicateIds = eventIds.filter(
-      (eventId, index) => eventIds.indexOf(eventId) !== index,
-    );
+    const duplicateIds = eventIds.filter((eventId, index) => eventIds.indexOf(eventId) !== index);
 
     expect(duplicateIds).toEqual([]);
   });

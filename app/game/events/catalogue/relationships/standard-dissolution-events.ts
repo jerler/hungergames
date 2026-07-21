@@ -3,10 +3,11 @@ import {
   type EventDefinition,
   type EventResolution,
 } from "~/game/events/event-schema";
+import { createSurvivalChanges } from "~/game/events/event-change-builders";
 import { getActiveTruceForTribute } from "~/game/truces/truce-engine";
 import { createEvenTruceInventoryRedistributionChanges } from "~/game/truces/truce-inventory";
 import { TRUCE_GROUP_SIZE_WEIGHTS, type TruceGroupSize } from "~/game/truces/truce-selection";
-import type { GameChange, GameTribute, Truce } from "~/game/types/game-state";
+import type { Truce } from "~/game/types/game-state";
 
 const AMICABLE_SEPARATION_TOTAL_WEIGHT = 2;
 
@@ -16,18 +17,6 @@ function formatNameList(names: readonly string[]): string {
   }
 
   return `${names.slice(0, -1).join(", ")}, and ` + names[names.length - 1];
-}
-
-function createSurvivalChanges(members: readonly GameTribute[]): GameChange[] {
-  return members.map((member) => ({
-    type: "increment-statistic",
-
-    tributeId: member.id,
-
-    statistic: "eventsSurvived",
-
-    amount: 1,
-  }));
 }
 
 function isStandardTruceOfSize(truce: Truce | null, size: TruceGroupSize): truce is Truce {
@@ -126,6 +115,10 @@ function createAmicableSeparationEvent(size: TruceGroupSize, sizeWeight: number)
   };
 }
 
-export const TRUCE_DISSOLUTION_EVENTS = TRUCE_GROUP_SIZE_WEIGHTS.map(({ size, weight }) =>
-  createAmicableSeparationEvent(size, weight),
-) satisfies readonly EventDefinition[];
+export const STANDARD_DISSOLUTION_EVENTS = [
+  /* Day and Night */
+
+  ...TRUCE_GROUP_SIZE_WEIGHTS.map(({ size, weight }) =>
+    createAmicableSeparationEvent(size, weight),
+  ),
+] satisfies readonly EventDefinition[];

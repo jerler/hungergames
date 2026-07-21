@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
-import { SURVIVAL_MISADVENTURE_EVENTS } from "~/game/events/catalogue/survival-misadventure-events";
 import type {
   EventDefinition,
   EventResolution,
@@ -9,13 +8,12 @@ import type {
 } from "~/game/events/event-schema";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import type { RandomSource } from "~/game/engine/random";
-import { createInventoryItemInstance } from "~/game/items/inventory-engine";
-import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState, GameTribute } from "~/game/types/game-state";
 import type { TributeStats } from "~/game/types/tribute";
+import { SURVIVAL_EVENTS } from "./survival-events";
 
 const ROUND = {
   day: 1,
@@ -67,18 +65,6 @@ function withStats(
   };
 }
 
-function withItem(tribute: GameTribute, itemId: ItemDefinitionId): GameTribute {
-  return {
-    ...tribute,
-
-    inventory: [
-      ...tribute.inventory,
-
-      createInventoryItemInstance(`setup-${itemId}`, tribute.id, itemId, ROUND),
-    ],
-  };
-}
-
 function createSequenceRandom(values: readonly number[]): RandomSource {
   let index = 0;
 
@@ -94,10 +80,10 @@ function createSequenceRandom(values: readonly number[]): RandomSource {
 }
 
 function requireEvent(eventId: string): EventDefinition {
-  const definition = SURVIVAL_MISADVENTURE_EVENTS.find((candidate) => candidate.id === eventId);
+  const definition = SURVIVAL_EVENTS.find((candidate) => candidate.id === eventId);
 
   if (!definition) {
-    throw new Error(`Missing survival misadventure event "${eventId}".`);
+    throw new Error(`Missing survival event "${eventId}".`);
   }
 
   return definition;
@@ -135,11 +121,9 @@ function getAcquiredItemIds(resolution: EventResolution) {
   );
 }
 
-describe("survival misadventure events", () => {
+describe("survival events", () => {
   it("includes every event in the main catalogue", () => {
-    expect(SURVIVAL_MISADVENTURE_EVENTS.every((event) => EVENT_CATALOGUE.includes(event))).toBe(
-      true,
-    );
+    expect(SURVIVAL_EVENTS.every((event) => EVENT_CATALOGUE.includes(event))).toBe(true);
   });
 
   it("applies disoriented after a critical map failure", () => {
@@ -208,162 +192,6 @@ describe("survival misadventure events", () => {
     expect(getAppliedStatuses(resolution).map((status) => status.definitionId)).toEqual([
       "sick",
       "sick",
-    ]);
-  });
-
-  it("applies exhaustion after losing a prolonged goose confrontation", () => {
-    const game = createTestGame();
-
-    const tribute = withStats(game.tributes[0], BALANCED_STATS);
-
-    const resolution = resolveEvent(
-      requireEvent("arena-goose"),
-      game,
-      {
-        tribute: [tribute],
-      },
-      [0.3],
-    );
-
-    expect(getAppliedStatuses(resolution)).toEqual([
-      expect.objectContaining({
-        definitionId: "exhausted",
-      }),
-    ]);
-  });
-
-  it("lets the goose steal food and apply hunted", () => {
-    const game = createTestGame();
-
-    const tribute = withItem(withStats(game.tributes[0], BALANCED_STATS), "food");
-
-    const food = tribute.inventory.find((item) => item.definitionId === "food");
-
-    const resolution = resolveEvent(
-      requireEvent("arena-goose"),
-      game,
-      {
-        tribute: [tribute],
-      },
-      [0],
-    );
-
-    expect(getAppliedStatuses(resolution)).toEqual([
-      expect.objectContaining({
-        definitionId: "hunted",
-        severity: 2,
-      }),
-    ]);
-
-    expect(resolution.changes).toContainEqual({
-      type: "consume-item",
-      tributeId: tribute.id,
-      itemInstanceId: food?.id,
-      uses: 1,
-      reason: "arena-goose-theft",
-    });
-  });
-
-  it("uses a camouflage net to apply concealed", () => {
-    const game = createTestGame();
-
-    const tribute = withItem(
-      withStats(game.tributes[0], {
-        brains: 5,
-        brawn: 3,
-        luck: 5,
-      }),
-      "camouflage-net",
-    );
-
-    const net = tribute.inventory.find((item) => item.definitionId === "camouflage-net");
-
-    const resolution = resolveEvent(
-      requireEvent("camouflage-catastrophe"),
-      game,
-      {
-        tribute: [tribute],
-      },
-      [0.999],
-    );
-
-    expect(getAppliedStatuses(resolution)).toEqual([
-      expect.objectContaining({
-        definitionId: "concealed",
-        severity: 2,
-      }),
-    ]);
-
-    expect(resolution.changes).toContainEqual({
-      type: "consume-item",
-      tributeId: tribute.id,
-      itemInstanceId: net?.id,
-      uses: 1,
-      reason: "camouflage-catastrophe",
-    });
-  });
-
-  it("lets protective equipment reduce brushfire severity", () => {
-    const game = createTestGame();
-
-    const unprotectedTribute = withStats(game.tributes[0], BALANCED_STATS);
-
-    const protectedTribute = withItem(withStats(game.tributes[1], BALANCED_STATS), "shield");
-
-    const event = requireEvent("brushfire-supply-run");
-
-    const unprotectedResolution = resolveEvent(
-      event,
-      game,
-      {
-        tribute: [unprotectedTribute],
-      },
-      [0.14],
-    );
-
-    const protectedResolution = resolveEvent(
-      event,
-      game,
-      {
-        tribute: [protectedTribute],
-      },
-      [0.14],
-    );
-
-    expect(getAppliedStatuses(unprotectedResolution)[0]).toMatchObject({
-      definitionId: "burned",
-      severity: 2,
-    });
-
-    expect(getAppliedStatuses(protectedResolution)[0]).toMatchObject({
-      definitionId: "burned",
-      severity: 1,
-    });
-  });
-
-  it("applies inspired after an exceptional pep talk", () => {
-    const game = createTestGame();
-
-    const tribute = withStats(game.tributes[0], {
-      brains: 3,
-      brawn: 3,
-      luck: 5,
-    });
-
-    const resolution = resolveEvent(
-      requireEvent("unexpected-pep-talk"),
-      game,
-      {
-        tribute: [tribute],
-      },
-      [0.999],
-    );
-
-    expect(getAppliedStatuses(resolution)).toEqual([
-      expect.objectContaining({
-        definitionId: "inspired",
-        severity: 2,
-      }),
     ]);
   });
 });

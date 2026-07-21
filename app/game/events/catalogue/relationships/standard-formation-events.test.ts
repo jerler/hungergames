@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
-import { TRUCE_FORMATION_EVENTS } from "~/game/events/catalogue/truce-formation-events";
+import { STANDARD_FORMATION_EVENTS } from "./standard-formation-events";
 import type { EventDefinition } from "~/game/events/event-schema";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import { TRUCE_GROUP_SIZE_WEIGHTS } from "~/game/truces/truce-selection";
@@ -49,7 +49,7 @@ function createGame(): GameState {
 }
 
 function requireEvent(eventId: string): EventDefinition {
-  const definition = TRUCE_FORMATION_EVENTS.find((candidate) => candidate.id === eventId);
+  const definition = STANDARD_FORMATION_EVENTS.find((candidate) => candidate.id === eventId);
 
   if (!definition) {
     throw new Error(`Missing truce event "${eventId}".`);
@@ -61,7 +61,7 @@ function requireEvent(eventId: string): EventDefinition {
 describe("truce formation events", () => {
   it("includes every formation event in the main catalogue", () => {
     expect(
-      TRUCE_FORMATION_EVENTS.every((event) =>
+      STANDARD_FORMATION_EVENTS.every((event) =>
         EVENT_CATALOGUE.some((candidate) => candidate.id === event.id),
       ),
     ).toBe(true);

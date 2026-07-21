@@ -1,34 +1,32 @@
+import { shuffleItems, type RandomSource } from "~/game/engine/random";
+import {
+  createFatalChanges,
+  createStatusChange,
+  createSurvivalChanges,
+} from "~/game/events/event-change-builders";
 import {
   resolveStatCheck,
   type EventStat,
+  type StatCheckDifficulty,
   type StatCheckOutcome,
 } from "~/game/events/event-outcomes";
+import { clampStatCheckDifficulty } from "~/game/events/event-resolution-helpers";
 import {
   requireParticipants,
   requireSingleParticipant,
   type EventDefinition,
   type EventResolution,
-  type EventResolutionContext,
 } from "~/game/events/event-schema";
-import { shuffleItems, type RandomSource } from "~/game/engine/random";
-import { createStatusEffectInstance } from "~/game/statuses/status-engine";
-import type { StatusEffectId } from "~/game/statuses/status-schema";
 import { getActiveTruceForTribute } from "~/game/truces/truce-engine";
 import { TRUCE_GROUP_SIZE_WEIGHTS, type TruceGroupSize } from "~/game/truces/truce-selection";
 import type {
-  GameChange,
   GameState,
   GameTribute,
   TransferInventoryItemChange,
   Truce,
 } from "~/game/types/game-state";
-import type { TributeStatValue } from "~/game/types/tribute";
 
 const BETRAYAL_TOTAL_WEIGHT = 1.5;
-
-function clampDifficulty(value: number): TributeStatValue {
-  return Math.max(1, Math.min(5, Math.round(value))) as TributeStatValue;
-}
 
 function formatNameList(names: readonly string[]): string {
   if (names.length === 0) {
@@ -44,61 +42,6 @@ function formatNameList(names: readonly string[]): string {
   }
 
   return `${names.slice(0, -1).join(", ")}, and ` + names[names.length - 1];
-}
-
-function createSurvivalChanges(tributes: readonly GameTribute[]): GameChange[] {
-  return tributes.map((tribute) => ({
-    type: "increment-statistic",
-    tributeId: tribute.id,
-    statistic: "eventsSurvived",
-    amount: 1,
-  }));
-}
-
-function createStatusChange(
-  eventId: string,
-  tribute: GameTribute,
-  statusId: StatusEffectId,
-  severity: 1 | 2 | 3,
-  round: EventResolutionContext["round"],
-): GameChange {
-  return {
-    type: "apply-status",
-    tributeId: tribute.id,
-
-    status: createStatusEffectInstance(eventId, tribute.id, statusId, severity, round),
-  };
-}
-
-function createFatalChanges(
-  victim: GameTribute,
-  killer: GameTribute,
-  causeId: string,
-  causeLabel: string,
-  summary: string,
-): GameChange[] {
-  return [
-    {
-      type: "eliminate-tribute",
-      tributeId: victim.id,
-      causeId,
-      causeLabel,
-      summary,
-      killerTributeIds: [killer.id],
-    },
-    {
-      type: "increment-statistic",
-      tributeId: killer.id,
-      statistic: "attemptedKills",
-      amount: 1,
-    },
-    {
-      type: "increment-statistic",
-      tributeId: killer.id,
-      statistic: "kills",
-      amount: 1,
-    },
-  ];
 }
 
 function isStandardTruceOfSize(truce: Truce | null, size: TruceGroupSize): truce is Truce {
@@ -144,7 +87,7 @@ function getBetrayalStat(betrayer: GameTribute): EventStat {
   return betrayer.snapshot.stats.brains >= betrayer.snapshot.stats.brawn ? "brains" : "brawn";
 }
 
-function getBetrayalDifficulty(partners: readonly GameTribute[]): TributeStatValue {
+function getBetrayalDifficulty(partners: readonly GameTribute[]): StatCheckDifficulty {
   const averageResistance =
     partners.reduce(
       (total, partner) =>
@@ -163,7 +106,7 @@ function getBetrayalDifficulty(partners: readonly GameTribute[]): TributeStatVal
    */
   const groupPenalty = Math.max(0, partners.length - 1) * 0.5;
 
-  return clampDifficulty(averageResistance + groupPenalty);
+  return clampStatCheckDifficulty(averageResistance + groupPenalty);
 }
 
 function resolveBetrayalCheck(
@@ -313,10 +256,10 @@ function createBetrayalEvent(groupSize: TruceGroupSize, groupSizeWeight: number)
             changes: [
               ...createFatalChanges(
                 betrayer,
-                defender,
                 "failed-truce-betrayal",
                 "Killed during a failed betrayal",
                 text,
+                defender,
               ),
 
               {
@@ -404,10 +347,10 @@ function createBetrayalEvent(groupSize: TruceGroupSize, groupSizeWeight: number)
 
               ...createFatalChanges(
                 defender,
-                betrayer,
                 "successful-truce-betrayal",
                 "Killed by a truce partner",
                 text,
+                betrayer,
               ),
 
               createStatusChange(eventId, betrayer, "inspired", 1, round),
@@ -427,7 +370,7 @@ function createBetrayalEvent(groupSize: TruceGroupSize, groupSizeWeight: number)
   };
 }
 
-const TRUCE_BETRAYAL_EVENTS = TRUCE_GROUP_SIZE_WEIGHTS.map(({ size, weight }) =>
+const STANDARD_BETRAYAL_EVENTS = TRUCE_GROUP_SIZE_WEIGHTS.map(({ size, weight }) =>
   createBetrayalEvent(size, weight),
 );
 
@@ -513,17 +456,12 @@ const PROTECTS_TRUCE_PARTNER_EVENT: EventDefinition = {
            * accidental-dissolution aftermath.
            */
           changes: [
-            {
-              type: "eliminate-tribute",
-              tributeId: protector.id,
-
-              causeId: "protecting-truce-partner",
-
-              causeLabel: "Died protecting a truce partner",
-
-              summary: text,
-              killerTributeIds: [],
-            },
+            ...createFatalChanges(
+              protector,
+              "protecting-truce-partner",
+              "Died protecting a truce partner",
+              text,
+            ),
 
             ...createSurvivalChanges([partner]),
           ],
@@ -573,7 +511,9 @@ const PROTECTS_TRUCE_PARTNER_EVENT: EventDefinition = {
   },
 };
 
-export const TRUCE_CONFLICT_EVENTS = [
-  ...TRUCE_BETRAYAL_EVENTS,
+export const STANDARD_INTERACTION_EVENTS = [
+  /* Day and Night */
+
+  ...STANDARD_BETRAYAL_EVENTS,
   PROTECTS_TRUCE_PARTNER_EVENT,
 ] satisfies readonly EventDefinition[];

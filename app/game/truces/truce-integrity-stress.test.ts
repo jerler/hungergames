@@ -6,8 +6,8 @@ import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 import { createSeededRandom } from "~/game/engine/random";
 import { isEventDefinitionEligible } from "~/game/events/event-eligibility";
 import { selectEventParticipants } from "~/game/events/participant-selection";
-import { TRUCE_CONFLICT_EVENTS } from "~/game/events/catalogue/truce-conflict-events";
-import { TRUCE_DISSOLUTION_EVENTS } from "~/game/events/catalogue/truce-dissolution-events";
+import { STANDARD_INTERACTION_EVENTS } from "~/game/events/catalogue/relationships/standard-interaction-events";
+import { STANDARD_DISSOLUTION_EVENTS } from "~/game/events/catalogue/relationships/standard-dissolution-events";
 import type { EventDefinition } from "~/game/events/event-schema";
 import { createInventoryItemInstance } from "~/game/items/inventory-engine";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
@@ -434,9 +434,9 @@ describe("truce integrity stress tests", () => {
     };
 
     const standardBreakupEvents = [
-      ...TRUCE_DISSOLUTION_EVENTS,
+      ...STANDARD_DISSOLUTION_EVENTS,
 
-      ...TRUCE_CONFLICT_EVENTS.filter((event) => event.id.startsWith("truce-betrayal-")),
+      ...STANDARD_INTERACTION_EVENTS.filter((event) => event.id.startsWith("truce-betrayal-")),
     ];
 
     expect(standardBreakupEvents.length).toBeGreaterThan(0);
@@ -598,7 +598,7 @@ describe("truce integrity stress tests", () => {
       "cooperative-truce",
     );
 
-    const definition = requireEvent(TRUCE_CONFLICT_EVENTS, "protects-truce-partner");
+    const definition = requireEvent(STANDARD_INTERACTION_EVENTS, "protects-truce-partner");
 
     const context = {
       state,

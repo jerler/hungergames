@@ -4,8 +4,9 @@ import { createInitialGameState } from "~/game/engine/create-initial-game-state"
 import type { RandomSource } from "~/game/engine/random";
 import { selectEventParticipants } from "~/game/events/participant-selection";
 import type { EventDefinition } from "~/game/events/event-schema";
-import { SURVIVAL_MISADVENTURE_EVENTS } from "~/game/events/catalogue/survival-misadventure-events";
-import { TRUCE_FORMATION_EVENTS } from "~/game/events/catalogue/truce-formation-events";
+import { SURVIVAL_EVENTS } from "~/game/events/catalogue/encounters/survival-events";
+import { STANDARD_FORMATION_EVENTS } from "~/game/events/catalogue/relationships/standard-formation-events";
+
 import {
   createTruceInstance,
   getTruceFormationPopulationMultiplier,
@@ -67,7 +68,7 @@ function createSequenceRandom(values: readonly number[]): RandomSource {
 }
 
 function requireFormationEvent(eventId: string): EventDefinition {
-  const definition = TRUCE_FORMATION_EVENTS.find((candidate) => candidate.id === eventId);
+  const definition = STANDARD_FORMATION_EVENTS.find((candidate) => candidate.id === eventId);
 
   if (!definition) {
     throw new Error(`Missing truce formation event "${eventId}".`);
@@ -249,7 +250,7 @@ describe("truce selection", () => {
       truces: [truce],
     };
 
-    const picnic = SURVIVAL_MISADVENTURE_EVENTS.find((event) => event.id === "suspicious-picnic");
+    const picnic = SURVIVAL_EVENTS.find((event) => event.id === "suspicious-picnic");
 
     if (!picnic) {
       throw new Error("Missing suspicious-picnic event.");

@@ -5,7 +5,7 @@ import { createInitialGameState } from "~/game/engine/create-initial-game-state"
 import type { RandomSource } from "~/game/engine/random";
 import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
 import { selectEventParticipants } from "~/game/events/participant-selection";
-import { TOOL_AND_WEAPON_EVENTS } from "~/game/events/catalogue/tool-and-weapon-events";
+import { ITEM_USE_EVENTS } from "~/game/events/catalogue/encounters/item-use-events";
 import type {
   EventDefinition,
   EventResolution,
@@ -84,6 +84,12 @@ function createTestGame(): GameState {
   );
 }
 
+function getAppliedStatuses(resolution: EventResolution) {
+  return resolution.changes.flatMap((change) =>
+    change.type === "apply-status" ? [change.status] : [],
+  );
+}
+
 function withStats(tribute: GameTribute, stats: TributeStats): GameTribute {
   return {
     ...tribute,
@@ -122,7 +128,7 @@ function createSequenceRandom(values: readonly number[]): RandomSource {
 }
 
 function requireEvent(eventId: string): EventDefinition {
-  const definition = TOOL_AND_WEAPON_EVENTS.find((candidate) => candidate.id === eventId);
+  const definition = ITEM_USE_EVENTS.find((candidate) => candidate.id === eventId);
 
   if (!definition) {
     throw new Error(`Missing tool or weapon event "${eventId}".`);
@@ -163,10 +169,10 @@ function getAcquiredItemIds(resolution: EventResolution) {
   );
 }
 
-describe("tool and weapon events", () => {
+describe("item use events", () => {
   it("includes every event in the main catalogue", () => {
     expect(
-      TOOL_AND_WEAPON_EVENTS.every((event) =>
+      ITEM_USE_EVENTS.every((event) =>
         EVENT_CATALOGUE.some((candidate) => candidate.id === event.id),
       ),
     ).toBe(true);
@@ -323,6 +329,45 @@ describe("tool and weapon events", () => {
     );
 
     expect(getAppliedStatusIds(resolution)).toEqual(["injured", "exhausted"]);
+  });
+
+  it("uses a camouflage net to apply concealed", () => {
+    const game = createTestGame();
+
+    const tribute = withItem(
+      withStats(game.tributes[0], {
+        brains: 5,
+        brawn: 3,
+        luck: 5,
+      }),
+      "camouflage-net",
+    );
+
+    const net = tribute.inventory.find((item) => item.definitionId === "camouflage-net");
+
+    const resolution = resolveEvent(
+      requireEvent("camouflage-catastrophe"),
+      game,
+      {
+        tribute: [tribute],
+      },
+      [0.999],
+    );
+
+    expect(getAppliedStatuses(resolution)).toEqual([
+      expect.objectContaining({
+        definitionId: "concealed",
+        severity: 2,
+      }),
+    ]);
+
+    expect(resolution.changes).toContainEqual({
+      type: "consume-item",
+      tributeId: tribute.id,
+      itemInstanceId: net?.id,
+      uses: 1,
+      reason: "camouflage-catastrophe",
+    });
   });
 
   it("successful shelter renovation applies concealed", () => {

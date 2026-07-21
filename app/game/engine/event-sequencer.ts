@@ -15,7 +15,7 @@ import type {
 import {
   POISONOUS_BERRIES_JOINT_VICTORY_EVENT,
   isPoisonousBerriesFinaleEligible,
-} from "~/game/events/catalogue/poisonous-berries-event";
+} from "~/game/events/catalogue/relationships/romantic-events";
 
 export const MAX_CONSECUTIVE_NON_ELIMINATION_ROUNDS = 2;
 

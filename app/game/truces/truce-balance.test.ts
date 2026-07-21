@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import { createSeededRandom, selectWeightedItem } from "~/game/engine/random";
-import { TRUCE_FORMATION_EVENTS } from "~/game/events/catalogue/truce-formation-events";
+import { STANDARD_FORMATION_EVENTS } from "~/game/events/catalogue/relationships/standard-formation-events";
 import { getEventDefinitionWeight } from "~/game/events/event-weighting";
 import { getTruceFormationPopulationMultiplier } from "~/game/truces/truce-engine";
 import {
@@ -278,7 +278,7 @@ describe("truce balance", () => {
 
       expect(getTruceFormationPopulationMultiplier(state)).toBe(multiplier);
 
-      for (const definition of TRUCE_FORMATION_EVENTS) {
+      for (const definition of STANDARD_FORMATION_EVENTS) {
         expect(getEventDefinitionWeight(definition, context)).toBeCloseTo(
           definition.baseWeight * multiplier,
           10,

@@ -7,7 +7,10 @@ import type {
   ParticipantRoleDefinition,
   ParticipantsByRole,
 } from "~/game/events/event-schema";
-import { findAccessibleInventoryItem } from "~/game/items/inventory-engine";
+import {
+  getAccessibleInventoryItems,
+  type AccessibleInventoryItem,
+} from "~/game/items/inventory-engine";
 import { areTributesInSameTruce } from "~/game/truces/truce-engine";
 import type { GameTribute } from "~/game/types/game-state";
 
@@ -29,6 +32,24 @@ function isProtectedFromRoleByTruce(
 function roleRequiresItem(role: ParticipantRoleDefinition): boolean {
   return (
     (role.requiredItemTags?.length ?? 0) > 0 || (role.requiredItemDefinitionIds?.length ?? 0) > 0
+  );
+}
+
+function findAvailableRoleItem(
+  context: EventSelectionContext,
+  tribute: GameTribute,
+  role: ParticipantRoleDefinition,
+  reservedItemInstanceIds: ReadonlySet<string>,
+  unavailableTributeIds: ReadonlySet<string>,
+): AccessibleInventoryItem | null {
+  return (
+    getAccessibleInventoryItems(context.state, tribute, {
+      definitionIds: role.requiredItemDefinitionIds,
+
+      requiredTags: role.requiredItemTags,
+
+      unavailableItemInstanceIds: reservedItemInstanceIds,
+    }).find(({ owner }) => !unavailableTributeIds.has(owner.id)) ?? null
   );
 }
 
@@ -86,13 +107,13 @@ export function selectEventParticipants(
           !isProtectedFromRoleByTruce(tribute, role, participantsByRole, context) &&
           (!roleRequiresItem(role) ||
             Boolean(
-              findAccessibleInventoryItem(context.state, tribute, {
-                definitionIds: role.requiredItemDefinitionIds,
-
-                requiredTags: role.requiredItemTags,
-
-                unavailableItemInstanceIds: reservedItemInstanceIds,
-              }),
+              findAvailableRoleItem(
+                context,
+                tribute,
+                role,
+                reservedItemInstanceIds,
+                selectedTributeIds,
+              ),
             )) &&
           (role.isEligible ? role.isEligible(tribute, roleContext) : true),
       );
@@ -109,34 +130,51 @@ export function selectEventParticipants(
         random,
       );
 
+      let accessibleItem: AccessibleInventoryItem | null = null;
+
+      /*
+       * Find the item before reserving the acting tribute.
+       * Otherwise their own inventory would be incorrectly
+       * excluded by the unavailable-owner check.
+       */
+      if (roleRequiresItem(role)) {
+        accessibleItem = findAvailableRoleItem(
+          context,
+          selectedTribute,
+          role,
+          reservedItemInstanceIds,
+          selectedTributeIds,
+        );
+
+        if (!accessibleItem) {
+          /*
+           * This should be impossible because the same
+           * requirements were checked while building
+           * the candidate list.
+           */
+          return null;
+        }
+      }
+
       selectedTributeIds.add(selectedTribute.id);
 
       roleParticipants.push(selectedTribute);
 
-      if (roleRequiresItem(role)) {
-        const accessibleItem = findAccessibleInventoryItem(context.state, selectedTribute, {
-          definitionIds: role.requiredItemDefinitionIds,
-
-          requiredTags: role.requiredItemTags,
-
-          unavailableItemInstanceIds: reservedItemInstanceIds,
-        });
-
-        if (!accessibleItem) {
-          /*
-           * This should be impossible because the
-           * same requirement was checked while
-           * building the candidate list.
-           */
-          return null;
-        }
-
+      if (accessibleItem) {
         roleItems.push({
           userTributeId: selectedTribute.id,
 
           owner: accessibleItem.owner,
           item: accessibleItem.item,
         });
+
+        /*
+         * The owner is not necessarily a visible participant,
+         * but this event mutates their inventory. Reserve them
+         * so they cannot be killed or otherwise changed by a
+         * second event in the same round.
+         */
+        selectedTributeIds.add(accessibleItem.owner.id);
 
         reservedItemInstanceIds.add(accessibleItem.item.id);
 

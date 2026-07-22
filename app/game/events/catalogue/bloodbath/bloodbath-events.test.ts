@@ -8,6 +8,8 @@ import {
   CORNUCOPIA_ACQUISITION_EVENTS,
   CORNUCOPIA_CONFLICT_EVENTS,
   CORNUCOPIA_EVENTS,
+  CORNUCOPIA_GROUP_CONFLICT_EVENTS,
+  CORNUCOPIA_PAIR_CONFLICT_EVENTS,
   FLEE_EVENTS,
 } from "~/game/events/catalogue/bloodbath";
 import type { EventDefinition, ParticipantsByRole } from "~/game/events/event-schema";
@@ -28,7 +30,14 @@ function createParticipantsByRole(
   definition: EventDefinition,
   firstTribute: GameTribute,
   secondTribute: GameTribute,
+  thirdTribute: GameTribute,
 ): ParticipantsByRole {
+  if (definition.roles.some((role) => role.id === "contenders")) {
+    return {
+      contenders: [firstTribute, secondTribute, thirdTribute],
+    };
+  }
+
   if (definition.roles.some((role) => role.id === "attacker")) {
     return {
       attacker: [firstTribute],
@@ -183,10 +192,15 @@ describe("Bloodbath event catalogue", () => {
 
   it("uses Cornucopia provenance for every Cornucopia acquisition", () => {
     const game = createTestGame();
-    const [firstTribute, secondTribute] = game.tributes;
+    const [firstTribute, secondTribute, thirdTribute] = game.tributes;
 
     for (const definition of [...CORNUCOPIA_ACQUISITION_EVENTS, ...CORNUCOPIA_CONFLICT_EVENTS]) {
-      const participantsByRole = createParticipantsByRole(definition, firstTribute, secondTribute);
+      const participantsByRole = createParticipantsByRole(
+        definition,
+        firstTribute,
+        secondTribute,
+        thirdTribute,
+      );
 
       for (let index = 0; index < 100; index += 1) {
         const resolution = resolveDefinition(
@@ -229,10 +243,15 @@ describe("Bloodbath event catalogue", () => {
 
   it("resolves every definition deterministically", () => {
     const game = createTestGame();
-    const [firstTribute, secondTribute] = game.tributes;
+    const [firstTribute, secondTribute, thirdTribute] = game.tributes;
 
     for (const definition of BLOODBATH_EVENT_CATALOGUE) {
-      const participantsByRole = createParticipantsByRole(definition, firstTribute, secondTribute);
+      const participantsByRole = createParticipantsByRole(
+        definition,
+        firstTribute,
+        secondTribute,
+        thirdTribute,
+      );
 
       expect(resolveDefinition(definition, game, participantsByRole, 0.73)).toEqual(
         resolveDefinition(definition, game, participantsByRole, 0.73),
@@ -287,11 +306,12 @@ describe("Bloodbath outcome coverage", () => {
     }
   });
 
-  it("reaches every conflict-event outcome", () => {
+  it("reaches every pair-conflict outcome", () => {
     const game = createTestGame();
+
     const [attacker, defender] = game.tributes;
 
-    for (const definition of CORNUCOPIA_CONFLICT_EVENTS) {
+    for (const definition of CORNUCOPIA_PAIR_CONFLICT_EVENTS) {
       const signatures = sampleSignatures(
         definition,
         game,
@@ -303,23 +323,60 @@ describe("Bloodbath outcome coverage", () => {
           const elimination = getEliminations(changes)[0];
 
           if (elimination?.tributeId === attacker.id) {
-            return "critical-failure";
+            return "attacker-dies";
           }
 
           if (elimination?.tributeId === defender.id) {
-            return "exceptional-success";
+            return "defender-dies";
           }
 
           if (getAcquisitions(changes).length === 1) {
-            return "success";
+            return "attacker-wins";
           }
 
-          return "failure";
+          return "both-retreat";
         },
       );
 
       expect(signatures).toEqual(
-        new Set(["critical-failure", "failure", "success", "exceptional-success"]),
+        new Set(["attacker-dies", "both-retreat", "attacker-wins", "defender-dies"]),
+      );
+    }
+  });
+
+  it("reaches every group-conflict outcome", () => {
+    const game = createTestGame();
+
+    const contenders = game.tributes.slice(0, 3);
+
+    for (const definition of CORNUCOPIA_GROUP_CONFLICT_EVENTS) {
+      const signatures = sampleSignatures(
+        definition,
+        game,
+        {
+          contenders,
+        },
+        (changes) => {
+          const eliminationCount = getEliminations(changes).length;
+
+          if (eliminationCount === 3) {
+            return "mutual-destruction";
+          }
+
+          if (eliminationCount === 2) {
+            return "sole-survivor";
+          }
+
+          if (eliminationCount === 1) {
+            return "single-casualty";
+          }
+
+          return "all-retreat";
+        },
+      );
+
+      expect(signatures).toEqual(
+        new Set(["mutual-destruction", "sole-survivor", "single-casualty", "all-retreat"]),
       );
     }
   });
@@ -342,6 +399,90 @@ describe("Bloodbath outcome coverage", () => {
         new Set(["critical-failure", "failure", "success", "exceptional-success"]),
       );
     }
+  });
+
+  it("advantages strong tributes without guaranteeing survival", () => {
+    const game = createTestGame("combat-advantage");
+
+    const originalStrongTribute = game.tributes[0];
+
+    const originalWeakTribute = game.tributes[1];
+
+    const strongTribute: GameTribute = {
+      ...originalStrongTribute,
+
+      snapshot: {
+        ...originalStrongTribute.snapshot,
+
+        stats: {
+          brains: 5,
+          brawn: 5,
+          luck: 5,
+        },
+      },
+    };
+
+    const weakTribute: GameTribute = {
+      ...originalWeakTribute,
+
+      snapshot: {
+        ...originalWeakTribute.snapshot,
+
+        stats: {
+          brains: 1,
+          brawn: 1,
+          luck: 1,
+        },
+      },
+    };
+
+    const definition = CORNUCOPIA_PAIR_CONFLICT_EVENTS[0];
+
+    let strongSurvivalCount = 0;
+    let weakSurvivalCount = 0;
+
+    const sampleCount = 2_000;
+
+    for (let index = 0; index < sampleCount; index += 1) {
+      const strongIsAttacker = index % 2 === 0;
+
+      const attacker = strongIsAttacker ? strongTribute : weakTribute;
+
+      const defender = strongIsAttacker ? weakTribute : strongTribute;
+
+      const resolution = definition.resolve({
+        state: game,
+        round: DAY_ONE,
+        livingTributes: game.tributes,
+
+        eventId: `combat-advantage-${index}`,
+
+        random: createSeededRandom(`combat-advantage-${index}`),
+
+        participantsByRole: {
+          attacker: [attacker],
+          defender: [defender],
+        },
+      });
+
+      const eliminatedIds = new Set(
+        getEliminations(resolution.changes).map((change) => change.tributeId),
+      );
+
+      if (!eliminatedIds.has(strongTribute.id)) {
+        strongSurvivalCount += 1;
+      }
+
+      if (!eliminatedIds.has(weakTribute.id)) {
+        weakSurvivalCount += 1;
+      }
+    }
+
+    expect(strongSurvivalCount).toBeGreaterThan(weakSurvivalCount);
+
+    expect(strongSurvivalCount).toBeLessThan(sampleCount);
+
+    expect(weakSurvivalCount).toBeGreaterThan(0);
   });
 });
 
@@ -489,17 +630,22 @@ describe("Bloodbath conflict inventory", () => {
 
   it("awards each contested item at most once", () => {
     const game = createTestGame();
-    const [attacker, defender] = game.tributes;
+
+    const [firstTribute, secondTribute, thirdTribute] = game.tributes;
 
     for (const definition of CORNUCOPIA_CONFLICT_EVENTS) {
+      const participantsByRole = createParticipantsByRole(
+        definition,
+        firstTribute,
+        secondTribute,
+        thirdTribute,
+      );
+
       for (let index = 0; index < 100; index += 1) {
         const resolution = resolveDefinition(
           definition,
           game,
-          {
-            attacker: [attacker],
-            defender: [defender],
-          },
+          participantsByRole,
           (index + 0.5) / 100,
         );
 

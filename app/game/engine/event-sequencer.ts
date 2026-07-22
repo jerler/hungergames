@@ -191,6 +191,16 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
       unavailableTributeIds.add(tributeId);
     }
 
+    /*
+     * A selected item may belong to a truce partner rather
+     * than the acting tribute. The event will still mutate
+     * that owner's inventory, so the owner must not appear
+     * in another event during this round.
+     */
+    for (const itemSelection of Object.values(selected.selection.itemsByRole).flat()) {
+      unavailableTributeIds.add(itemSelection.owner.id);
+    }
+
     for (const itemInstanceId of selected.selection.selectedItemInstanceIds) {
       unavailableItemInstanceIds.add(itemInstanceId);
     }

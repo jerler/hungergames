@@ -331,6 +331,40 @@ describe("item-based participant selection", () => {
     );
 
     expect(firstSelection?.selectedItemInstanceIds).toEqual([knife.id]);
+    expect(firstSelection?.itemsByRole.tribute[0].owner.id).toBe(itemOwner.id);
+
+    const ownerBlockedSelection = selectEventParticipants(
+      definition,
+
+      {
+        state,
+
+        round: {
+          day: 1,
+          period: "day",
+        },
+
+        livingTributes: [secondUser],
+      },
+
+      () => 0,
+
+      /*
+       * Simulate the item owner already being committed
+       * to another event. Their item must no longer be
+       * available for borrowing.
+       */
+      new Set([itemOwner.id]),
+
+      /*
+       * The item itself is not otherwise reserved. This
+       * proves that owner reservation alone prevents the
+       * unsafe selection.
+       */
+      new Set(),
+    );
+
+    expect(ownerBlockedSelection).toBeNull();
 
     const secondSelection = selectEventParticipants(
       definition,

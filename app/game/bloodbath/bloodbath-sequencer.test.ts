@@ -14,7 +14,8 @@ import {
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
-import type { GameChange, GameState } from "~/game/types/game-state";
+import type { DistrictCount } from "~/game/types/game-config";
+import type { ResolvedEvent, GameChange, GameState } from "~/game/types/game-state";
 import { gameReducer } from "~/state/game-reducer";
 
 import { sequenceBloodbathEvents } from "./bloodbath-sequencer";
@@ -30,10 +31,10 @@ const NIGHT_ONE = {
   period: "night",
 } as const;
 
-function createTestGame(seed = "bloodbath-sequencer"): GameState {
+function createTestGame(seed = "bloodbath-sequencer", districtCount: DistrictCount = 6): GameState {
   const config = {
     ...createDefaultGameConfig(),
-    districtCount: 6 as const,
+    districtCount,
   };
 
   let nextId = 0;
@@ -41,7 +42,11 @@ function createTestGame(seed = "bloodbath-sequencer"): GameState {
   return createInitialGameState(
     config,
 
-    createRandomTributeDrafts(6, DEFAULT_TRIBUTES, createSeededRandom(`${seed}:reaping`)),
+    createRandomTributeDrafts(
+      districtCount,
+      DEFAULT_TRIBUTES,
+      createSeededRandom(`${seed}:reaping`),
+    ),
 
     "random",
 
@@ -54,6 +59,15 @@ function createTestGame(seed = "bloodbath-sequencer"): GameState {
       seed,
       now: "2026-07-21T12:00:00.000Z",
     },
+  );
+}
+
+function countEventEliminations(events: readonly ResolvedEvent[]): number {
+  return events.reduce(
+    (total, event) =>
+      total + event.changes.filter((change) => change.type === "eliminate-tribute").length,
+
+    0,
   );
 }
 
@@ -83,6 +97,44 @@ function requireGameState(state: GameState | null): GameState {
 }
 
 describe("Bloodbath sequencer", () => {
+  it.each([
+    {
+      label: "Half Games",
+      districtCount: 6 as const,
+      minimumAverage: 5,
+      maximumAverage: 6.5,
+    },
+    {
+      label: "Full Games",
+      districtCount: 12 as const,
+      minimumAverage: 10,
+      maximumAverage: 12.5,
+    },
+  ])(
+    "produces the intended average fatality range in $label",
+    ({ districtCount, minimumAverage, maximumAverage }) => {
+      const deathCounts: number[] = [];
+
+      for (let index = 0; index < 500; index += 1) {
+        const game = createTestGame(`bloodbath-balance-${districtCount}-${index}`, districtCount);
+
+        deathCounts.push(countEventEliminations(sequenceBloodbathEvents(game, DAY_ONE)));
+      }
+
+      const average = deathCounts.reduce((total, count) => total + count, 0) / deathCounts.length;
+
+      expect(average).toBeGreaterThanOrEqual(minimumAverage);
+
+      expect(average).toBeLessThanOrEqual(maximumAverage);
+
+      /*
+       * Confirm that the target remains soft rather than
+       * generating the same fixed total in every game.
+       */
+      expect(Math.max(...deathCounts) - Math.min(...deathCounts)).toBeGreaterThanOrEqual(2);
+    },
+  );
+
   it("produces identical events for identical seeds", () => {
     const game = createTestGame("deterministic-bloodbath");
 

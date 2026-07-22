@@ -1,7 +1,8 @@
 import {
-  assignBloodbathStrategies,
-  type BloodbathStrategy,
-} from "~/game/bloodbath/bloodbath-strategy";
+  countPlannedEliminations,
+  determineBloodbathFatalityTarget,
+} from "~/game/bloodbath/bloodbath-balance";
+import { assignBloodbathStrategies } from "~/game/bloodbath/bloodbath-strategy";
 import {
   createSeededRandom,
   selectWeightedItem,
@@ -11,7 +12,8 @@ import {
 import { createRoundSeed } from "~/game/engine/rounds";
 import {
   CORNUCOPIA_ACQUISITION_EVENTS,
-  CORNUCOPIA_CONFLICT_EVENTS,
+  CORNUCOPIA_GROUP_CONFLICT_EVENTS,
+  CORNUCOPIA_PAIR_CONFLICT_EVENTS,
   FLEE_EVENTS,
 } from "~/game/events/catalogue/bloodbath";
 import { isEventDefinitionEligible } from "~/game/events/event-eligibility";
@@ -28,14 +30,6 @@ import type {
   ResolvedEvent,
   RoundReference,
 } from "~/game/types/game-state";
-
-const CORNUCOPIA_CONFLICT_PROBABILITY = 0.65;
-
-interface PendingBloodbathEvent {
-  definition: EventDefinition;
-  strategy: BloodbathStrategy;
-  participantsByRole: ParticipantsByRole;
-}
 
 function createEventId(round: RoundReference, eventIndex: number, definitionId: string): string {
   return ["bloodbath", round.period, round.day, eventIndex, definitionId].join("-");
@@ -56,86 +50,11 @@ function selectDefinition(
 
   return selectWeightedItem(
     eligibleDefinitions,
+
     (definition) => getEventDefinitionWeight(definition, context),
+
     random,
   );
-}
-
-function createCornucopiaEvents(
-  tributes: readonly GameTribute[],
-  context: EventSelectionContext,
-  random: RandomSource,
-): PendingBloodbathEvent[] {
-  const remainingTributes = shuffleItems(tributes, random);
-
-  const events: PendingBloodbathEvent[] = [];
-
-  while (remainingTributes.length > 0) {
-    const shouldCreateConflict =
-      remainingTributes.length >= 2 && random() < CORNUCOPIA_CONFLICT_PROBABILITY;
-
-    if (shouldCreateConflict) {
-      const attacker = remainingTributes.shift();
-      const defender = remainingTributes.shift();
-
-      if (!attacker || !defender) {
-        throw new Error("Bloodbath conflict selection lost a participant.");
-      }
-
-      events.push({
-        definition: selectDefinition(CORNUCOPIA_CONFLICT_EVENTS, context, random),
-
-        strategy: "cornucopia",
-
-        participantsByRole: {
-          attacker: [attacker],
-          defender: [defender],
-        },
-      });
-
-      continue;
-    }
-
-    const tribute = remainingTributes.shift();
-
-    if (!tribute) {
-      throw new Error("Bloodbath acquisition selection lost a participant.");
-    }
-
-    events.push({
-      definition: selectDefinition(CORNUCOPIA_ACQUISITION_EVENTS, context, random),
-
-      strategy: "cornucopia",
-
-      participantsByRole: {
-        tribute: [tribute],
-      },
-    });
-  }
-
-  return events;
-}
-
-function createFleeEvents(
-  tributes: readonly GameTribute[],
-  context: EventSelectionContext,
-  random: RandomSource,
-): PendingBloodbathEvent[] {
-  return shuffleItems(tributes, random).map((tribute) => ({
-    definition: selectDefinition(FLEE_EVENTS, context, random),
-
-    strategy: "flee" as const,
-
-    participantsByRole: {
-      tribute: [tribute],
-    },
-  }));
-}
-
-function getParticipantIds(pendingEvent: PendingBloodbathEvent): string[] {
-  return Object.values(pendingEvent.participantsByRole)
-    .flat()
-    .map((tribute) => tribute.id);
 }
 
 function getCommittedItemInstanceIds(changes: readonly GameChange[]): string[] {
@@ -155,11 +74,223 @@ function getCommittedItemInstanceIds(changes: readonly GameChange[]): string[] {
   });
 }
 
+interface ResolveBloodbathEventOptions {
+  state: GameState;
+  round: RoundReference;
+  livingTributes: readonly GameTribute[];
+  definition: EventDefinition;
+  participantsByRole: ParticipantsByRole;
+  eventIndex: number;
+  random: RandomSource;
+  unavailableItemInstanceIds: Set<string>;
+}
+
+function resolveBloodbathEvent({
+  state,
+  round,
+  livingTributes,
+  definition,
+  participantsByRole,
+  eventIndex,
+  random,
+  unavailableItemInstanceIds,
+}: ResolveBloodbathEventOptions): ResolvedEvent {
+  const eventId = createEventId(round, eventIndex, definition.id);
+
+  const resolution = definition.resolve({
+    state,
+    round,
+    livingTributes,
+
+    eventId,
+    random,
+    participantsByRole,
+
+    unavailableItemInstanceIds,
+  });
+
+  const committedItemInstanceIds = getCommittedItemInstanceIds(resolution.changes);
+
+  for (const itemInstanceId of committedItemInstanceIds) {
+    if (unavailableItemInstanceIds.has(itemInstanceId)) {
+      throw new Error(`Bloodbath item "${itemInstanceId}" ` + "was committed more than once.");
+    }
+
+    unavailableItemInstanceIds.add(itemInstanceId);
+  }
+
+  return {
+    id: eventId,
+    definitionId: definition.id,
+    resolutionMode: "standard",
+    round,
+
+    participantTributeIds: Object.values(participantsByRole)
+      .flat()
+      .map((tribute) => tribute.id),
+
+    text: resolution.text,
+    changes: resolution.changes,
+  };
+}
+
+interface CornucopiaSequenceResult {
+  events: ResolvedEvent[];
+  nextEventIndex: number;
+  plannedEliminationCount: number;
+}
+
+function sequenceCornucopiaEvents(
+  state: GameState,
+  round: RoundReference,
+  livingTributes: readonly GameTribute[],
+  cornucopiaTributes: readonly GameTribute[],
+  fatalityTarget: number,
+  startingEventIndex: number,
+  random: RandomSource,
+  unavailableItemInstanceIds: Set<string>,
+): CornucopiaSequenceResult {
+  const context: EventSelectionContext = {
+    state,
+    round,
+    livingTributes,
+  };
+
+  const remainingTributes = shuffleItems(cornucopiaTributes, random);
+
+  const events: ResolvedEvent[] = [];
+
+  let eventIndex = startingEventIndex;
+
+  let plannedEliminationCount = 0;
+
+  while (remainingTributes.length > 0) {
+    const fatalityDeficit = fatalityTarget - plannedEliminationCount;
+
+    let definition: EventDefinition;
+
+    let participantsByRole: ParticipantsByRole;
+
+    /*
+     * Three-person clashes provide enough possible casualties
+     * to reach the target without sending every tribute into
+     * a separate forced-fatal event.
+     */
+    if (fatalityDeficit >= 2 && remainingTributes.length >= 3) {
+      const contenders = remainingTributes.splice(0, 3);
+
+      if (contenders.length !== 3) {
+        throw new Error("Bloodbath group selection lost a contender.");
+      }
+
+      definition = selectDefinition(CORNUCOPIA_GROUP_CONFLICT_EVENTS, context, random);
+
+      participantsByRole = {
+        contenders,
+      };
+    } else if (fatalityDeficit > 0 && remainingTributes.length >= 2) {
+      const attacker = remainingTributes.shift();
+
+      const defender = remainingTributes.shift();
+
+      if (!attacker || !defender) {
+        throw new Error("Bloodbath pair selection lost a participant.");
+      }
+
+      definition = selectDefinition(CORNUCOPIA_PAIR_CONFLICT_EVENTS, context, random);
+
+      participantsByRole = {
+        attacker: [attacker],
+        defender: [defender],
+      };
+    } else {
+      /*
+       * Once the soft target is reached—or only one entrant
+       * remains—the sequencer falls back to lower-risk
+       * acquisition events.
+       *
+       * It does not reroll previous outcomes or manufacture
+       * an elimination solely to hit the target.
+       */
+      const tribute = remainingTributes.shift();
+
+      if (!tribute) {
+        throw new Error("Bloodbath acquisition selection lost a participant.");
+      }
+
+      definition = selectDefinition(CORNUCOPIA_ACQUISITION_EVENTS, context, random);
+
+      participantsByRole = {
+        tribute: [tribute],
+      };
+    }
+
+    const event = resolveBloodbathEvent({
+      state,
+      round,
+      livingTributes,
+      definition,
+      participantsByRole,
+      eventIndex,
+      random,
+      unavailableItemInstanceIds,
+    });
+
+    plannedEliminationCount += countPlannedEliminations(event.changes);
+
+    events.push(event);
+
+    eventIndex += 1;
+  }
+
+  return {
+    events,
+    nextEventIndex: eventIndex,
+    plannedEliminationCount,
+  };
+}
+
+function sequenceFleeEvents(
+  state: GameState,
+  round: RoundReference,
+  livingTributes: readonly GameTribute[],
+  fleeingTributes: readonly GameTribute[],
+  startingEventIndex: number,
+  random: RandomSource,
+  unavailableItemInstanceIds: Set<string>,
+): ResolvedEvent[] {
+  const context: EventSelectionContext = {
+    state,
+    round,
+    livingTributes,
+  };
+
+  return shuffleItems(fleeingTributes, random).map((tribute, offset) => {
+    const definition = selectDefinition(FLEE_EVENTS, context, random);
+
+    return resolveBloodbathEvent({
+      state,
+      round,
+      livingTributes,
+      definition,
+
+      participantsByRole: {
+        tribute: [tribute],
+      },
+
+      eventIndex: startingEventIndex + offset,
+
+      random,
+      unavailableItemInstanceIds,
+    });
+  });
+}
+
 function assertParticipantCoverage(
   livingTributes: readonly GameTribute[],
-  pendingEvents: readonly PendingBloodbathEvent[],
+  events: readonly ResolvedEvent[],
 ): void {
-  const participantIds = pendingEvents.flatMap(getParticipantIds);
+  const participantIds = events.flatMap((event) => event.participantTributeIds);
 
   if (participantIds.length !== livingTributes.length) {
     throw new Error("Bloodbath sequencing did not cover every living tribute exactly once.");
@@ -176,58 +307,6 @@ function assertParticipantCoverage(
   }
 }
 
-function resolvePendingEvents(
-  state: GameState,
-  round: RoundReference,
-  livingTributes: readonly GameTribute[],
-  pendingEvents: readonly PendingBloodbathEvent[],
-  random: RandomSource,
-): ResolvedEvent[] {
-  const unavailableItemInstanceIds = new Set<string>();
-
-  return pendingEvents.map(({ definition, participantsByRole }, eventIndex) => {
-    const eventId = createEventId(round, eventIndex, definition.id);
-
-    const resolution = definition.resolve({
-      state,
-      round,
-      livingTributes,
-
-      eventId,
-      random,
-      participantsByRole,
-
-      unavailableItemInstanceIds,
-    });
-
-    const committedItemInstanceIds = getCommittedItemInstanceIds(resolution.changes);
-
-    for (const itemInstanceId of committedItemInstanceIds) {
-      if (unavailableItemInstanceIds.has(itemInstanceId)) {
-        throw new Error(
-          `Bloodbath item "${itemInstanceId}" ` + "was committed to more than one event.",
-        );
-      }
-
-      unavailableItemInstanceIds.add(itemInstanceId);
-    }
-
-    return {
-      id: eventId,
-      definitionId: definition.id,
-      resolutionMode: "standard",
-      round,
-
-      participantTributeIds: Object.values(participantsByRole)
-        .flat()
-        .map((tribute) => tribute.id),
-
-      text: resolution.text,
-      changes: resolution.changes,
-    };
-  });
-}
-
 export function sequenceBloodbathEvents(state: GameState, round: RoundReference): ResolvedEvent[] {
   if (round.day !== 1 || round.period !== "day") {
     throw new Error("The Bloodbath sequencer may only run during Day 1 daytime.");
@@ -241,39 +320,63 @@ export function sequenceBloodbathEvents(state: GameState, round: RoundReference)
 
   const random = createSeededRandom(createRoundSeed(state.seed, round));
 
+  /*
+   * Preserve Phase 3's random-stream ordering:
+   * strategy assignment still consumes the first values.
+   */
   const strategyPlan = assignBloodbathStrategies(livingTributes, random);
 
-  const strategiesByTributeId = new Map(
+  const fatalityTarget = determineBloodbathFatalityTarget(livingTributes.length, random);
+
+  const strategyByTributeId = new Map(
     strategyPlan.assignments.map(({ tributeId, strategy }) => [tributeId, strategy] as const),
   );
 
   const cornucopiaTributes = livingTributes.filter(
-    (tribute) => strategiesByTributeId.get(tribute.id) === "cornucopia",
+    (tribute) => strategyByTributeId.get(tribute.id) === "cornucopia",
   );
 
   const fleeingTributes = livingTributes.filter(
-    (tribute) => strategiesByTributeId.get(tribute.id) === "flee",
+    (tribute) => strategyByTributeId.get(tribute.id) === "flee",
   );
 
   if (cornucopiaTributes.length !== strategyPlan.cornucopiaCount) {
     throw new Error("Bloodbath strategy assignment produced an invalid Cornucopia count.");
   }
 
-  const context: EventSelectionContext = {
+  const unavailableItemInstanceIds = new Set<string>();
+
+  const cornucopiaSequence = sequenceCornucopiaEvents(
     state,
     round,
     livingTributes,
-  };
+    cornucopiaTributes,
+    fatalityTarget,
+    0,
+    random,
+    unavailableItemInstanceIds,
+  );
 
-  const pendingEvents = [
-    ...createCornucopiaEvents(cornucopiaTributes, context, random),
+  const fleeEvents = sequenceFleeEvents(
+    state,
+    round,
+    livingTributes,
+    fleeingTributes,
 
-    ...createFleeEvents(fleeingTributes, context, random),
-  ];
+    cornucopiaSequence.nextEventIndex,
 
-  assertParticipantCoverage(livingTributes, pendingEvents);
+    random,
+    unavailableItemInstanceIds,
+  );
 
-  const orderedEvents = shuffleItems(pendingEvents, random);
+  const events = [...cornucopiaSequence.events, ...fleeEvents];
 
-  return resolvePendingEvents(state, round, livingTributes, orderedEvents, random);
+  assertParticipantCoverage(livingTributes, events);
+
+  /*
+   * Resolve before shuffling so fatal-pressure decisions are
+   * made in a coherent sequence. Feed order remains seeded
+   * and does not expose strategy groups.
+   */
+  return shuffleItems(events, random);
 }

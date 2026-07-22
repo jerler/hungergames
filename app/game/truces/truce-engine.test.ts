@@ -450,7 +450,7 @@ describe("truce engine", () => {
             type: "acquire-item",
 
             tributeId: source.id,
-
+            acquisitionSource: "cornucopia",
             item,
           },
         ],
@@ -528,6 +528,7 @@ describe("truce engine", () => {
                 type: "acquire-item",
 
                 tributeId: members[0].id,
+                acquisitionSource: "cornucopia",
 
                 item,
               },

@@ -64,10 +64,26 @@ function beginNextRound(state: GameState, now: string): GameState {
 }
 
 function completeRound(state: GameState, now: string): GameState {
+  /*
+   * An explicit victory declaration ends
+   * the Games immediately.
+   *
+   * Do not advance statuses or expire truces
+   * after the Capitol has already declared
+   * the living finalists victorious.
+   */
+  if (state.victoryOutcome) {
+    return finalizeState({
+      ...state,
+
+      phase: "victory",
+      updatedAt: now,
+    });
+  }
+
   const stateWithAdvancedStatuses = advanceStatusDurations(state);
 
   const stateAfterRoundProcessing = expireTrucesAfterRound(stateWithAdvancedStatuses);
-
   const containedElimination = stateAfterRoundProcessing.roundEvents.some((event) =>
     event.changes.some((change) => change.type === "eliminate-tribute"),
   );

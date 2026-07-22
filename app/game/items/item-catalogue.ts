@@ -6,6 +6,7 @@ export const ITEM_CATALOGUE = [
     id: "water",
     label: "Water bottle",
     description: "Clean water that automatically treats dehydration.",
+    origin: "natural-resource",
     tags: ["consumable", "water"],
     maxUses: 1,
     treatments: [
@@ -21,6 +22,7 @@ export const ITEM_CATALOGUE = [
     id: "food",
     label: "Food",
     description: "A supply of food that restores energy and automatically treats exhaustion.",
+    origin: "natural-resource",
     tags: ["consumable", "food"],
     maxUses: 1,
     survivalBonus: 0.15,
@@ -38,9 +40,9 @@ export const ITEM_CATALOGUE = [
     id: "medicine",
     label: "Medicine",
     description: "Medical supplies that automatically treat wounds, illness, poison, and burns.",
+    origin: "manufactured",
     tags: ["consumable", "medicine"],
     maxUses: 1,
-
     treatments: [
       {
         statusId: "bleeding",
@@ -80,6 +82,7 @@ export const ITEM_CATALOGUE = [
     id: "blanket",
     label: "Blanket",
     description: "A warm blanket that provides temporary shelter.",
+    origin: "manufactured",
     tags: ["shelter", "tool"],
     survivalBonus: 0.35,
     treatments: [
@@ -95,6 +98,7 @@ export const ITEM_CATALOGUE = [
     id: "matches",
     label: "Matches",
     description: "A small supply of matches for starting fires.",
+    origin: "manufactured",
     tags: ["fire", "shelter", "tool"],
     maxUses: 2,
     survivalBonus: 0.2,
@@ -111,6 +115,7 @@ export const ITEM_CATALOGUE = [
     id: "rope",
     label: "Rope",
     description: "A versatile tool for climbing and crossing hazards.",
+    origin: "manufactured",
     tags: ["tool"],
     survivalBonus: 0.25,
     foragingBonus: 0.2,
@@ -120,6 +125,7 @@ export const ITEM_CATALOGUE = [
     label: "Arena map",
     description:
       "A partial map of the arena that improves navigation and helps a disoriented tribute recover.",
+    origin: "manufactured",
     tags: ["tool", "navigation"],
     awarenessBonus: 0.45,
     foragingBonus: 0.35,
@@ -138,6 +144,7 @@ export const ITEM_CATALOGUE = [
     label: "Camouflage net",
     description:
       "A portable camouflage net that improves concealment and helps a hunted tribute lose their pursuer.",
+    origin: "manufactured",
     tags: ["tool", "shelter", "camouflage"],
     survivalBonus: 0.5,
     awarenessBonus: 0.1,
@@ -156,6 +163,7 @@ export const ITEM_CATALOGUE = [
     label: "Trap kit",
     description:
       "Wire, hooks, triggers, and other components for hunting or constructing arena traps.",
+    origin: "manufactured",
     tags: ["tool", "trap", "hunting"],
     maxUses: 3,
 
@@ -167,6 +175,7 @@ export const ITEM_CATALOGUE = [
     label: "Fishing gear",
     description:
       "A compact fishing kit that greatly improves the tribute's ability to gather food near water.",
+    origin: "manufactured",
     tags: ["tool", "fishing", "hunting"],
     maxUses: 3,
 
@@ -180,6 +189,7 @@ export const ITEM_CATALOGUE = [
     label: "Slingshot",
     description:
       "A light ranged weapon useful for hunting small animals and creating distractions.",
+    origin: "manufactured",
     tags: ["weapon", "hunting"],
 
     combatBonus: 0.65,
@@ -190,6 +200,7 @@ export const ITEM_CATALOGUE = [
     id: "knife",
     label: "Knife",
     description: "A compact weapon that is also useful as a tool.",
+    origin: "manufactured",
     tags: ["weapon", "tool"],
     combatBonus: 1,
     foragingBonus: 0.15,
@@ -198,6 +209,7 @@ export const ITEM_CATALOGUE = [
     id: "spear",
     label: "Spear",
     description: "A strong close- and medium-range weapon.",
+    origin: "manufactured",
     tags: ["weapon"],
     combatBonus: 1.35,
   },
@@ -205,6 +217,7 @@ export const ITEM_CATALOGUE = [
     id: "bow",
     label: "Bow and arrows",
     description: "A powerful ranged weapon with limited ammunition.",
+    origin: "manufactured",
     tags: ["weapon"],
     combatBonus: 1.6,
     awarenessBonus: 0.2,
@@ -214,6 +227,7 @@ export const ITEM_CATALOGUE = [
     label: "Axe",
     description:
       "A heavy weapon that is also useful for chopping wood, clearing paths, and building shelter.",
+    origin: "manufactured",
     tags: ["weapon", "tool", "hunting"],
 
     combatBonus: 1.45,
@@ -224,6 +238,7 @@ export const ITEM_CATALOGUE = [
     id: "shield",
     label: "Shield",
     description: "A sturdy shield that improves combat survivability and protection from hazards.",
+    origin: "manufactured",
     tags: ["tool", "defense"],
 
     combatBonus: 0.45,

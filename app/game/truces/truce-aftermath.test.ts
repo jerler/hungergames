@@ -186,7 +186,7 @@ describe("accidental truce dissolution", () => {
             type: "acquire-item",
 
             tributeId: secondMember.id,
-
+            acquisitionSource: "cornucopia",
             item,
           },
         ],

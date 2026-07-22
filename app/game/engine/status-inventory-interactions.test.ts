@@ -180,7 +180,7 @@ describe("status and inventory interactions", () => {
         {
           type: "acquire-item",
           tributeId: tribute.id,
-
+          acquisitionSource: "cornucopia",
           item: createInventoryItemInstance("setup-event", tribute.id, "medicine", round),
         },
       ],
@@ -453,7 +453,7 @@ describe("status and inventory interactions", () => {
         {
           type: "acquire-item",
           tributeId: tribute.id,
-
+          acquisitionSource: "cornucopia",
           item: createInventoryItemInstance("medicine-setup", tribute.id, "medicine", round),
         },
       ],
@@ -598,7 +598,7 @@ describe("status and inventory interactions", () => {
           {
             type: "acquire-item",
             tributeId: tribute.id,
-
+            acquisitionSource: "cornucopia",
             item: createInventoryItemInstance(`item-${itemId}`, tribute.id, itemId, appliedRound),
           },
         ],
@@ -675,14 +675,14 @@ describe("death loot", () => {
             type: "acquire-item",
 
             tributeId: originalVictim.id,
-
+            acquisitionSource: "cornucopia",
             item: knife,
           },
           {
             type: "acquire-item",
 
             tributeId: originalVictim.id,
-
+            acquisitionSource: "cornucopia",
             item: medicine,
           },
         ],
@@ -786,6 +786,7 @@ describe("death loot", () => {
             tributeId: originalVictim.id,
 
             item: knife,
+            acquisitionSource: "cornucopia",
           },
         ],
         [originalVictim.id],
@@ -900,7 +901,7 @@ describe("death loot", () => {
             type: "acquire-item",
 
             tributeId: originalVictim.id,
-
+            acquisitionSource: "cornucopia",
             item: knife,
           },
         ],

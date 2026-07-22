@@ -9,12 +9,19 @@ import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState } from "~/game/types/game-state";
+import { createStatusEffectInstance } from "~/game/statuses/status-engine";
+import { createTruceInstance } from "~/game/truces/truce-engine";
+import { createJointVictoryOutcome } from "~/game/victory/victory-outcome";
 
 import { gameReducer } from "./game-reducer";
 
 const DAY_ONE = {
   day: 1,
   period: "day",
+} as const;
+const NIGHT_ONE = {
+  day: 1,
+  period: "night",
 } as const;
 
 function createTestGame(seed = "complete-game-seed"): GameState {
@@ -230,5 +237,171 @@ describe("gameReducer", () => {
     );
 
     expect(new Set(eliminatedTributeIds).size).toBe(eliminatedTributeIds.length);
+  });
+
+  it("does not advance fatal statuses after an explicit victory declaration", () => {
+    let state = createTestGame("explicit-victory-status-test");
+
+    const firstFinalist = state.tributes[0];
+    const secondFinalist = state.tributes[1];
+
+    if (!firstFinalist || !secondFinalist) {
+      throw new Error("The victory test requires two finalists.");
+    }
+
+    /*
+     * Eliminate everyone except the intended
+     * romantic finalists.
+     */
+    for (const [index, tribute] of state.tributes.entries()) {
+      if (tribute.id === firstFinalist.id || tribute.id === secondFinalist.id) {
+        continue;
+      }
+
+      const eventId = `joint-victory-elimination-${index}`;
+
+      const summary = `${tribute.snapshot.name} was ` + "eliminated during test setup.";
+
+      state = applyResolvedEvent(state, {
+        id: eventId,
+        definitionId: "joint-victory-test-elimination",
+
+        resolutionMode: "standard",
+        round: DAY_ONE,
+
+        participantTributeIds: [tribute.id],
+
+        text: summary,
+
+        changes: [
+          {
+            type: "eliminate-tribute",
+
+            tributeId: tribute.id,
+
+            causeId: "joint-victory-test-elimination",
+
+            causeLabel: "Test elimination",
+
+            summary,
+
+            killerTributeIds: [],
+          },
+        ],
+      });
+    }
+
+    const romanticTruce = createTruceInstance(
+      "joint-victory-test-truce",
+      [firstFinalist.id, secondFinalist.id],
+      DAY_ONE,
+      null,
+      "romantic",
+    );
+
+    /*
+     * This status would expire and kill the
+     * first finalist when Night 1 completes.
+     */
+    const fatalStatus = createStatusEffectInstance(
+      "joint-victory-fatal-status",
+      firstFinalist.id,
+      "poisoned",
+      1,
+      DAY_ONE,
+      1,
+    );
+
+    state = applyResolvedEvent(state, {
+      id: "joint-victory-test-setup",
+      definitionId: "joint-victory-test-setup",
+
+      resolutionMode: "standard",
+      round: DAY_ONE,
+
+      participantTributeIds: [firstFinalist.id, secondFinalist.id],
+
+      text: "The two finalists form a romantic truce.",
+
+      changes: [
+        {
+          type: "form-truce",
+          truce: romanticTruce,
+        },
+        {
+          type: "apply-status",
+
+          tributeId: firstFinalist.id,
+          status: fatalStatus,
+        },
+      ],
+    });
+
+    const victoryEvent = {
+      id: "joint-victory-test-event",
+
+      definitionId: "poisonous-berries-joint-victory",
+
+      resolutionMode: "standard" as const,
+      round: NIGHT_ONE,
+
+      participantTributeIds: [firstFinalist.id, secondFinalist.id],
+
+      text: "The Games are stopped and both finalists are declared victorious.",
+
+      changes: [
+        {
+          type: "declare-victory" as const,
+
+          outcome: createJointVictoryOutcome(
+            firstFinalist.id,
+            secondFinalist.id,
+            "joint-victory-test-event",
+          ),
+        },
+      ],
+    };
+
+    const roundState: GameState = {
+      ...state,
+
+      phase: "round-events",
+      currentRound: NIGHT_ONE,
+
+      roundEvents: [victoryEvent],
+      revealedEventCount: 0,
+
+      victoryOutcome: null,
+    };
+
+    const completedState = gameReducer(roundState, {
+      type: "round/revealed",
+      now: "2026-07-21T19:00:00.000Z",
+    });
+
+    if (!completedState) {
+      throw new Error("The joint-victory test lost its GameState.");
+    }
+
+    const livingTributeIds = selectLivingTributes(completedState).map((tribute) => tribute.id);
+
+    expect(completedState.phase).toBe("victory");
+
+    expect(new Set(livingTributeIds)).toEqual(new Set([firstFinalist.id, secondFinalist.id]));
+
+    expect(completedState.victoryOutcome?.victorTributeIds).toEqual([
+      firstFinalist.id,
+      secondFinalist.id,
+    ]);
+
+    /*
+     * The Games ended before the status
+     * could advance and eliminate a victor.
+     */
+    expect(
+      completedState.tributes.find((tribute) => tribute.id === firstFinalist.id)?.statuses,
+    ).toContainEqual(fatalStatus);
+
+    expect(() => assertGameStateInvariants(completedState)).not.toThrow();
   });
 });

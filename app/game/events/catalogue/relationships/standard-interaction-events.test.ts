@@ -18,7 +18,7 @@ import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState, GameTribute, Truce } from "~/game/types/game-state";
-import type { ItemDefinitionId } from "~/game/items/item-schema";
+import type { ItemAcquisitionSource, ItemDefinitionId } from "~/game/items/item-schema";
 import type { TributeStats } from "~/game/types/tribute";
 
 const DAY_ONE = {
@@ -139,6 +139,7 @@ function acquireItem(
   game: GameState,
   tribute: GameTribute,
   itemId: ItemDefinitionId,
+  acquisitionSource: ItemAcquisitionSource,
   index: number,
 ): GameState {
   const item = createInventoryItemInstance(`setup-item-${index}`, tribute.id, itemId, DAY_ONE);
@@ -161,7 +162,7 @@ function acquireItem(
         type: "acquire-item",
 
         tributeId: tribute.id,
-
+        acquisitionSource,
         item,
       },
     ],
@@ -332,7 +333,7 @@ describe("truce conflict events", () => {
       }),
     };
 
-    state = acquireItem(state, partner, "medicine", 1);
+    state = acquireItem(state, partner, "medicine", "cornucopia", 1);
 
     const itemBefore = state.tributes.find((tribute) => tribute.id === partner.id)?.inventory[0];
 
@@ -420,9 +421,9 @@ describe("truce conflict events", () => {
 
     const partner = originalGame.tributes[1];
 
-    let state = acquireItem(originalGame, partner, "food", 1);
+    let state = acquireItem(originalGame, partner, "food", "natural-foraging", 1);
 
-    state = acquireItem(state, partner, "water", 2);
+    state = acquireItem(state, partner, "water", "natural-foraging", 2);
 
     state = formTruce(state, [betrayer, partner]);
 

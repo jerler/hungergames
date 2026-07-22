@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ITEM_CATALOGUE, getItemDefinition } from "./item-catalogue";
-import type { ItemDefinitionId } from "./item-schema";
+import type { ItemDefinitionId, ItemOrigin } from "./item-schema";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 
@@ -57,9 +57,9 @@ const EXPECTED_TREATMENTS = [
   },
 ] satisfies readonly ExpectedTreatment[];
 
-const EXPECTED_ITEM_IDS = [
-  "water",
-  "food",
+const NATURAL_RESOURCE_ITEM_IDS = ["water", "food"] satisfies readonly ItemDefinitionId[];
+
+const MANUFACTURED_ITEM_IDS = [
   "medicine",
   "blanket",
   "matches",
@@ -74,6 +74,11 @@ const EXPECTED_ITEM_IDS = [
   "spear",
   "axe",
   "bow",
+] satisfies readonly ItemDefinitionId[];
+
+const EXPECTED_ITEM_IDS = [
+  ...NATURAL_RESOURCE_ITEM_IDS,
+  ...MANUFACTURED_ITEM_IDS,
 ] satisfies readonly ItemDefinitionId[];
 
 describe("item catalogue treatments", () => {
@@ -97,6 +102,24 @@ describe("item catalogue treatments", () => {
     expect(actualItemIds).toEqual(expectedItemIds);
   });
 
+  it.each([
+    {
+      origin: "natural-resource",
+      itemIds: NATURAL_RESOURCE_ITEM_IDS,
+    },
+    {
+      origin: "manufactured",
+      itemIds: MANUFACTURED_ITEM_IDS,
+    },
+  ] satisfies readonly {
+    origin: ItemOrigin;
+    itemIds: readonly ItemDefinitionId[];
+  }[])("classifies $origin items correctly", ({ origin, itemIds }) => {
+    for (const itemId of itemIds) {
+      expect(getItemDefinition(itemId).origin).toBe(origin);
+    }
+  });
+
   it.each(EXPECTED_ITEM_IDS)("resolves the %s definition", (itemId) => {
     expect(getItemDefinition(itemId).id).toBe(itemId);
   });
@@ -106,6 +129,8 @@ describe("item catalogue treatments", () => {
       expect(item.label.trim()).not.toBe("");
 
       expect(item.description.trim()).not.toBe("");
+
+      expect(["natural-resource", "manufactured"]).toContain(item.origin);
 
       expect(item.tags.length).toBeGreaterThan(0);
 

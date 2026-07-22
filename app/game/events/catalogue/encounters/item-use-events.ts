@@ -87,7 +87,13 @@ export const ITEM_USE_EVENTS = [
               "and prepares enough food to keep going.",
 
             changes: [
-              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
+              ...createItemAcquisitionAndSurvivalChanges(
+                eventId,
+                tribute,
+                ["food"],
+                round,
+                "natural-foraging",
+              ),
               consumeFishingGear,
             ],
           };
@@ -99,7 +105,13 @@ export const ITEM_USE_EVENTS = [
               "and is briefly overwhelmed by their own competence.",
 
             changes: [
-              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
+              ...createItemAcquisitionAndSurvivalChanges(
+                eventId,
+                tribute,
+                ["food"],
+                round,
+                "natural-foraging",
+              ),
               createStatusChange(eventId, tribute, "inspired", 2, round),
               consumeFishingGear,
             ],
@@ -245,7 +257,13 @@ export const ITEM_USE_EVENTS = [
               "to knock edible fruit from a high branch.",
 
             changes: [
-              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
+              ...createItemAcquisitionAndSurvivalChanges(
+                eventId,
+                tribute,
+                ["food"],
+                round,
+                "natural-foraging",
+              ),
               consumeSlingshot,
             ],
           };
@@ -257,7 +275,13 @@ export const ITEM_USE_EVENTS = [
               "collects the fallen food, and feels extremely pleased with themself.",
 
             changes: [
-              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
+              ...createItemAcquisitionAndSurvivalChanges(
+                eventId,
+                tribute,
+                ["food"],
+                round,
+                "natural-foraging",
+              ),
               createStatusChange(eventId, tribute, "inspired", 1, round),
               consumeSlingshot,
             ],
@@ -332,7 +356,13 @@ export const ITEM_USE_EVENTS = [
               "and catches enough game for a meal.",
 
             changes: [
-              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
+              ...createItemAcquisitionAndSurvivalChanges(
+                eventId,
+                tribute,
+                ["food"],
+                round,
+                "natural-foraging",
+              ),
               consumeTrapKit,
             ],
           };
@@ -344,7 +374,13 @@ export const ITEM_USE_EVENTS = [
               "secures food, and feels considerably more capable than before.",
 
             changes: [
-              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
+              ...createItemAcquisitionAndSurvivalChanges(
+                eventId,
+                tribute,
+                ["food"],
+                round,
+                "natural-foraging",
+              ),
               createStatusChange(eventId, tribute, "inspired", 1, round),
               consumeTrapKit,
             ],
@@ -419,7 +455,13 @@ export const ITEM_USE_EVENTS = [
               "and collects a clean supply of water.",
 
             changes: [
-              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["water"], round),
+              ...createItemAcquisitionAndSurvivalChanges(
+                eventId,
+                tribute,
+                ["water"],
+                round,
+                "natural-foraging",
+              ),
               consumeShield,
             ],
           };
@@ -436,6 +478,7 @@ export const ITEM_USE_EVENTS = [
                 tribute,
                 ["food", "water"],
                 round,
+                "natural-foraging",
               ),
               consumeShield,
             ],

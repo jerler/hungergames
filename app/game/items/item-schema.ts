@@ -18,6 +18,10 @@ export type ItemDefinitionId =
   | "fishing-gear"
   | "slingshot";
 
+export type ItemOrigin = "natural-resource" | "manufactured";
+
+export type ItemAcquisitionSource = "cornucopia" | "natural-foraging" | "sponsor";
+
 export type ItemTag =
   | "consumable"
   | "water"
@@ -45,6 +49,8 @@ export interface ItemDefinition {
   id: ItemDefinitionId;
   label: string;
   description: string;
+
+  origin: ItemOrigin;
   tags: readonly ItemTag[];
 
   maxUses?: number;

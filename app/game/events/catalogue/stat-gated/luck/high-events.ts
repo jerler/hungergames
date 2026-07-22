@@ -105,7 +105,14 @@ export const HIGH_LUCK_EVENTS = [
           return {
             text,
 
-            changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, [itemId], round, 1),
+            changes: createItemAcquisitionAndSurvivalChanges(
+              eventId,
+              tribute,
+              [itemId],
+              round,
+              "sponsor",
+              1,
+            ),
           };
         }
 
@@ -123,6 +130,7 @@ export const HIGH_LUCK_EVENTS = [
               tribute,
               ["medicine", "bow"],
               round,
+              "sponsor",
               2,
             ),
           };

@@ -2,7 +2,7 @@ import type { TributeAssignmentMode } from "~/game/tributes/tribute-drafts";
 import type { PronounSetId } from "~/game/tributes/pronouns";
 import type { GameConfig } from "~/game/types/game-config";
 import type { PortraitPosition, TributeStats } from "~/game/types/tribute";
-import type { ItemDefinitionId } from "~/game/items/item-schema";
+import type { ItemAcquisitionSource, ItemDefinitionId } from "~/game/items/item-schema";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
 
 export type GamePhase = "opening" | "round-events" | "round-complete" | "victory" | "statistics";
@@ -136,7 +136,10 @@ export interface RemoveStatusChange {
 
 export interface AcquireInventoryItemChange {
   type: "acquire-item";
+
   tributeId: string;
+  acquisitionSource: ItemAcquisitionSource;
+
   item: InventoryItem;
 }
 
@@ -229,6 +232,8 @@ interface InventoryTransactionBase {
 
 export interface AcquiredInventoryTransaction extends InventoryTransactionBase {
   type: "acquired";
+
+  acquisitionSource: ItemAcquisitionSource;
 }
 
 export interface ConsumedInventoryTransaction extends InventoryTransactionBase {

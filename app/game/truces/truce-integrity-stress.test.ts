@@ -197,7 +197,7 @@ function createInventoryRedistributionState(): {
             type: "acquire-item",
 
             tributeId: owner.id,
-
+            acquisitionSource: "cornucopia",
             item,
           },
         ],

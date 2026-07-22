@@ -1,6 +1,6 @@
 import type { EventResolutionContext } from "~/game/events/event-schema";
 import { createInventoryItemInstance } from "~/game/items/inventory-engine";
-import type { ItemDefinitionId } from "~/game/items/item-schema";
+import type { ItemAcquisitionSource, ItemDefinitionId } from "~/game/items/item-schema";
 import { createStatusEffectInstance } from "~/game/statuses/status-engine";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
 import type { GameChange, GameTribute, InventoryItem } from "~/game/types/game-state";
@@ -33,6 +33,9 @@ export function createStatusChange(
  * Creates item-acquisition changes and counts the event as
  * survived for the receiving tribute.
  *
+ * Every new item must declare the mechanism through which
+ * it entered the arena inventory system.
+ *
  * Pass `giftsReceived` when the acquired items came from sponsors.
  */
 export function createItemAcquisitionAndSurvivalChanges(
@@ -40,11 +43,14 @@ export function createItemAcquisitionAndSurvivalChanges(
   tribute: GameTribute,
   itemIds: readonly ItemDefinitionId[],
   round: EventResolutionContext["round"],
+  acquisitionSource: ItemAcquisitionSource,
   giftsReceived = 0,
 ): GameChange[] {
   const changes: GameChange[] = itemIds.map((itemId): GameChange => ({
     type: "acquire-item",
+
     tributeId: tribute.id,
+    acquisitionSource,
 
     item: createInventoryItemInstance(eventId, tribute.id, itemId, round),
   }));

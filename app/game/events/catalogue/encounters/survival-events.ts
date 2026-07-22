@@ -114,9 +114,17 @@ export const SURVIVAL_EVENTS = [
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
       return {
-        text: `${tribute.snapshot.name} discovers ` + "a bottle of clean water.",
+        text:
+          `${tribute.snapshot.name} finds a clean ` +
+          "stream and collects enough water to keep going.",
 
-        changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["water"], round),
+        changes: createItemAcquisitionAndSurvivalChanges(
+          eventId,
+          tribute,
+          ["water"],
+          round,
+          "natural-foraging",
+        ),
       };
     },
   },

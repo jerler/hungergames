@@ -1,4 +1,5 @@
-import type { GameState } from "~/game/types/game-state";
+import type { GameState, RoundReference } from "~/game/types/game-state";
+import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import { getRoundSequence } from "~/game/engine/rounds";
@@ -11,6 +12,10 @@ function assert(condition: unknown, message: string): asserts condition {
 
 function assertUniqueValues(values: readonly string[], label: string): void {
   assert(new Set(values).size === values.length, `${label} must be unique.`);
+}
+
+function roundsMatch(first: RoundReference, second: RoundReference): boolean {
+  return first.day === second.day && first.period === second.period;
 }
 
 export function assertGameStateInvariants(state: GameState): void {
@@ -194,6 +199,16 @@ export function assertGameStateInvariants(state: GameState): void {
 
   const itemOwnerLedger = new Map<string, string>();
 
+  const itemDefinitionLedger = new Map<string, ItemDefinitionId>();
+
+  const itemProvenanceLedger = new Map<
+    string,
+    {
+      sourceEventId: string;
+      acquiredRound: RoundReference;
+    }
+  >();
+
   for (const transaction of state.itemTransactions) {
     assert(
       tributeIds.has(transaction.tributeId),
@@ -235,6 +250,42 @@ export function assertGameStateInvariants(state: GameState): void {
     }
 
     if (transaction.type === "acquired") {
+      switch (transaction.acquisitionSource) {
+        case "natural-foraging":
+          assert(
+            definition.origin === "natural-resource",
+            `manufactured item ` +
+              `"${transaction.definitionId}" ` +
+              "was acquired through natural " +
+              "foraging.",
+          );
+
+          break;
+
+        case "cornucopia":
+          assert(
+            transaction.round.day === 1 && transaction.round.period === "day",
+            `Cornucopia item ` +
+              `"${transaction.itemInstanceId}" ` +
+              "was acquired outside Day 1 " +
+              "daytime.",
+          );
+
+          break;
+
+        case "sponsor":
+          assert(
+            false,
+            `sponsor acquisition ` +
+              `"${transaction.id}" exists before ` +
+              "sponsor delivery is implemented.",
+          );
+
+          break;
+
+        default:
+          assert(false, `transaction "${transaction.id}" ` + "has an unknown acquisition source.");
+      }
       assert(
         !itemUseLedger.has(transaction.itemInstanceId),
         `item "${transaction.itemInstanceId}" ` + "was acquired more than once.",
@@ -255,6 +306,16 @@ export function assertGameStateInvariants(state: GameState): void {
 
       itemOwnerLedger.set(transaction.itemInstanceId, transaction.tributeId);
 
+      itemDefinitionLedger.set(transaction.itemInstanceId, transaction.definitionId);
+
+      itemProvenanceLedger.set(transaction.itemInstanceId, {
+        sourceEventId: transaction.sourceId,
+
+        acquiredRound: {
+          ...transaction.round,
+        },
+      });
+
       continue;
     }
 
@@ -263,6 +324,22 @@ export function assertGameStateInvariants(state: GameState): void {
     assert(
       remainingUses !== undefined,
       `item "${transaction.itemInstanceId}" ` + `was ${transaction.type} before acquisition.`,
+    );
+
+    const originalDefinitionId = itemDefinitionLedger.get(transaction.itemInstanceId);
+
+    assert(
+      originalDefinitionId !== undefined,
+      `item "${transaction.itemInstanceId}" ` + "does not have an original definition.",
+    );
+
+    assert(
+      transaction.definitionId === originalDefinitionId,
+      `transaction "${transaction.id}" ` +
+        `changed item ` +
+        `"${transaction.itemInstanceId}" ` +
+        `from "${originalDefinitionId}" to ` +
+        `"${transaction.definitionId}".`,
     );
 
     const currentOwnerId = itemOwnerLedger.get(transaction.itemInstanceId);
@@ -336,6 +413,29 @@ export function assertGameStateInvariants(state: GameState): void {
    */
   for (const tribute of state.tributes) {
     for (const item of tribute.inventory) {
+      const originalDefinitionId = itemDefinitionLedger.get(item.id);
+
+      assert(
+        originalDefinitionId === item.definitionId,
+        `item "${item.id}" has changed its ` + "definition since acquisition.",
+      );
+
+      const originalProvenance = itemProvenanceLedger.get(item.id);
+
+      assert(
+        originalProvenance !== undefined,
+        `item "${item.id}" does not have ` + "recorded acquisition provenance.",
+      );
+
+      assert(
+        item.sourceEventId === originalProvenance.sourceEventId,
+        `item "${item.id}" has changed its ` + "source event since acquisition.",
+      );
+
+      assert(
+        roundsMatch(item.acquiredRound, originalProvenance.acquiredRound),
+        `item "${item.id}" has changed its ` + "acquisition round.",
+      );
       assert(
         itemUseLedger.has(item.id),
         `item "${item.id}" is present in inventory ` + "without an acquisition transaction.",

@@ -470,8 +470,8 @@ export const ITEM_USE_EVENTS = [
           return {
             text:
               `${tribute.snapshot.name} uses their shield as a sled ` +
-              "and accidentally glides directly into a hidden supply cache.",
-
+              "and glides into a sheltered hollow containing edible " +
+              "plants and a clean spring.",
             changes: [
               ...createItemAcquisitionAndSurvivalChanges(
                 eventId,

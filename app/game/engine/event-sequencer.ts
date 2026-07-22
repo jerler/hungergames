@@ -6,6 +6,8 @@ import { getEventDefinitionWeight } from "~/game/events/event-weighting";
 import { createSeededRandom, selectWeightedItem } from "~/game/engine/random";
 import { createRoundSeed } from "~/game/engine/rounds";
 import { getRoundEventTargetCount } from "~/game/engine/stat-formulas";
+import { sequenceBloodbathEvents } from
+  "~/game/bloodbath/bloodbath-sequencer";
 import type {
   EventResolutionMode,
   GameState,
@@ -68,9 +70,26 @@ function selectDefinitionAndParticipants(
   return null;
 }
 
-export function sequenceRoundEvents(state: GameState, round: RoundReference): ResolvedEvent[] {
-  const livingTributes = state.tributes.filter((tribute) => tribute.isAlive);
+export function sequenceRoundEvents(
+  state: GameState,
+  round: RoundReference,
+): ResolvedEvent[] {
+  if (
+    round.day === 1 &&
+    round.period === "day"
+  ) {
+    return sequenceBloodbathEvents(
+      state,
+      round,
+    );
+  }
 
+  const livingTributes =
+    state.tributes.filter(
+      (tribute) => tribute.isAlive,
+    );
+
+  // Existing function continues unchanged.
   if (livingTributes.length <= 1) {
     return [];
   }

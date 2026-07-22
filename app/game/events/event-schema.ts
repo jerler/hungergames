@@ -73,6 +73,16 @@ export interface ParticipantRoleDefinition {
 
   requiredItemDefinitionIds?: readonly ItemDefinitionId[];
 
+  /**
+   * Controls where a required item may come from.
+   *
+   * - "accessible": the tribute or an active truce partner
+   * - "owned": only the tribute's personal inventory
+   *
+   * Defaults to "accessible" for backward compatibility.
+   */
+  itemAccess?: "accessible" | "owned";
+
   opposesRoleIds?: readonly string[];
 }
 

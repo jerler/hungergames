@@ -1,7 +1,10 @@
 import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
 import type { EventDefinition, EventSelectionContext } from "~/game/events/event-schema";
 import { isEventDefinitionEligible } from "~/game/events/event-eligibility";
-import { selectEventParticipants } from "~/game/events/participant-selection";
+import {
+  selectEventParticipants,
+  type ParticipantSelection,
+} from "~/game/events/participant-selection";
 import { getEventDefinitionWeight } from "~/game/events/event-weighting";
 import { createSeededRandom, selectWeightedItem } from "~/game/engine/random";
 import { createRoundSeed } from "~/game/engine/rounds";
@@ -9,6 +12,7 @@ import { getRoundEventTargetCount } from "~/game/engine/stat-formulas";
 import { sequenceBloodbathEvents } from "~/game/bloodbath/bloodbath-sequencer";
 import type {
   EventResolutionMode,
+  GameChange,
   GameState,
   ResolvedEvent,
   RoundReference,
@@ -17,6 +21,7 @@ import {
   POISONOUS_BERRIES_JOINT_VICTORY_EVENT,
   isPoisonousBerriesFinaleEligible,
 } from "~/game/events/catalogue/relationships/romantic-events";
+import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
 
 export const MAX_CONSECUTIVE_NON_ELIMINATION_ROUNDS = 2;
 
@@ -67,6 +72,79 @@ function selectDefinitionAndParticipants(
   }
 
   return null;
+}
+
+/**
+ * Records every tribute and physical item whose state must remain
+ * stable after an ordinary event has been planned for this round.
+ *
+ * Reservations exist only while sequencing the current round.
+ */
+export function reserveEventCommitments(
+  selection: ParticipantSelection,
+  changes: readonly GameChange[],
+  unavailableTributeIds: Set<string>,
+  unavailableItemInstanceIds: Set<string>,
+): void {
+  /*
+   * Visible participants cannot appear in another event
+   * during this round.
+   */
+  for (const tributeId of selection.participantTributeIds) {
+    unavailableTributeIds.add(tributeId);
+  }
+
+  /*
+   * A required item may belong to a truce partner rather
+   * than the visible user. Reserve that physical owner so
+   * another event cannot kill them or move their inventory.
+   */
+  for (const itemSelection of Object.values(selection.itemsByRole).flat()) {
+    unavailableTributeIds.add(itemSelection.owner.id);
+  }
+
+  /*
+   * Items selected during participant selection are
+   * committed even if resolution ultimately produces
+   * no use or consumption change.
+   */
+  for (const itemInstanceId of selection.selectedItemInstanceIds) {
+    unavailableItemInstanceIds.add(itemInstanceId);
+  }
+
+  /*
+   * Some events locate an item opportunistically during
+   * resolution rather than through a required-item role.
+   *
+   * Reserve every inventory owner whose state is referenced
+   * or mutated by the resulting changes.
+   */
+  for (const change of changes) {
+    switch (change.type) {
+      case "acquire-item":
+      case "use-item":
+      case "consume-item":
+        unavailableTributeIds.add(change.tributeId);
+        break;
+
+      case "transfer-item":
+        unavailableTributeIds.add(change.fromTributeId);
+
+        unavailableTributeIds.add(change.toTributeId);
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  /*
+   * Reserve every newly created, used, consumed, or
+   * transferred physical item instance.
+   */
+  for (const itemInstanceId of getCommittedItemInstanceIds(changes)) {
+    unavailableItemInstanceIds.add(itemInstanceId);
+  }
 }
 
 export function sequenceRoundEvents(state: GameState, round: RoundReference): ResolvedEvent[] {
@@ -182,42 +260,19 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
       definitionId: selected.definition.id,
       resolutionMode,
       round,
+
       participantTributeIds: selected.selection.participantTributeIds,
+
       text: resolution.text,
       changes: resolution.changes,
     });
 
-    for (const tributeId of selected.selection.participantTributeIds) {
-      unavailableTributeIds.add(tributeId);
-    }
-
-    /*
-     * A selected item may belong to a truce partner rather
-     * than the acting tribute. The event will still mutate
-     * that owner's inventory, so the owner must not appear
-     * in another event during this round.
-     */
-    for (const itemSelection of Object.values(selected.selection.itemsByRole).flat()) {
-      unavailableTributeIds.add(itemSelection.owner.id);
-    }
-
-    for (const itemInstanceId of selected.selection.selectedItemInstanceIds) {
-      unavailableItemInstanceIds.add(itemInstanceId);
-    }
-
-    /*
-     * Reserve opportunistically used items,
-     * whether the item is consumed or reusable.
-     *
-     * Reusable does not mean that two tributes
-     * can hold the same item simultaneously
-     * during one round.
-     */
-    for (const change of resolution.changes) {
-      if (change.type === "consume-item" || change.type === "use-item") {
-        unavailableItemInstanceIds.add(change.itemInstanceId);
-      }
-    }
+    reserveEventCommitments(
+      selected.selection,
+      resolution.changes,
+      unavailableTributeIds,
+      unavailableItemInstanceIds,
+    );
   }
 
   if (events.length === 0) {

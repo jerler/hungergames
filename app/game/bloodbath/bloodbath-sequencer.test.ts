@@ -15,11 +15,12 @@ import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { DistrictCount } from "~/game/types/game-config";
-import type { ResolvedEvent, GameChange, GameState } from "~/game/types/game-state";
+import type { ResolvedEvent, GameState } from "~/game/types/game-state";
 import { gameReducer } from "~/state/game-reducer";
 
 import { sequenceBloodbathEvents } from "./bloodbath-sequencer";
 import { assignBloodbathStrategies } from "./bloodbath-strategy";
+import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
 
 const DAY_ONE = {
   day: 1,
@@ -69,23 +70,6 @@ function countEventEliminations(events: readonly ResolvedEvent[]): number {
 
     0,
   );
-}
-
-function getCommittedItemInstanceIds(changes: readonly GameChange[]): string[] {
-  return changes.flatMap((change) => {
-    switch (change.type) {
-      case "acquire-item":
-        return [change.item.id];
-
-      case "use-item":
-      case "consume-item":
-      case "transfer-item":
-        return [change.itemInstanceId];
-
-      default:
-        return [];
-    }
-  });
 }
 
 function requireGameState(state: GameState | null): GameState {

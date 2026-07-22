@@ -9,6 +9,191 @@ import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import { createCombatantRole } from "~/game/events/participant-role-builders";
 import { createTruceInstance } from "~/game/truces/truce-engine";
+import type { ItemDefinitionId } from "~/game/items/item-schema";
+import type { GameState, GameTribute, InventoryItem } from "~/game/types/game-state";
+
+function createTestGame(seed = "participant-selection"): GameState {
+  const config = {
+    ...createDefaultGameConfig(),
+    districtCount: 6 as const,
+  };
+
+  let nextId = 0;
+
+  return createInitialGameState(
+    config,
+
+    createRandomTributeDrafts(6, DEFAULT_TRIBUTES, () => 0.5),
+
+    "random",
+
+    {
+      createId: () => {
+        nextId += 1;
+
+        return `${seed}-id-${nextId}`;
+      },
+
+      seed,
+
+      now: "2026-07-22T12:00:00.000Z",
+    },
+  );
+}
+
+interface ItemAccessFixture {
+  state: GameState;
+  user: GameTribute;
+  partner: GameTribute;
+  item: InventoryItem;
+}
+
+function createItemAccessDefinition(
+  definitionId: ItemDefinitionId,
+  itemAccess?: "accessible" | "owned",
+): EventDefinition {
+  return {
+    id: `test-${itemAccess ?? "default"}-` + `${definitionId}`,
+
+    category: "survival",
+
+    tags: ["survival", "item"],
+
+    periods: ["day", "night"],
+
+    baseWeight: 1,
+
+    roles: [
+      {
+        id: "tribute",
+        count: 1,
+
+        requiredItemDefinitionIds: [definitionId],
+
+        ...(itemAccess
+          ? {
+              itemAccess,
+            }
+          : {}),
+      },
+    ],
+
+    resolve: () => ({
+      text: "Test item-access event.",
+      changes: [],
+    }),
+  };
+}
+
+function createItemAccessFixture({
+  definitionId = "knife",
+  owner = "partner",
+  usesRemaining,
+}: {
+  definitionId?: ItemDefinitionId;
+  owner?: "user" | "partner";
+  usesRemaining?: number | null;
+} = {}): ItemAccessFixture {
+  const originalState = createTestGame(`item-access-${definitionId}-${owner}`);
+
+  const [originalUser, originalPartner] = originalState.tributes;
+
+  const originalOwner = owner === "user" ? originalUser : originalPartner;
+
+  const createdItem = createInventoryItemInstance(
+    "item-access-source",
+    originalOwner.id,
+    definitionId,
+
+    {
+      day: 1,
+      period: "night",
+    },
+  );
+
+  const item: InventoryItem =
+    usesRemaining === undefined
+      ? createdItem
+      : {
+          ...createdItem,
+          usesRemaining,
+        };
+
+  const truce = createTruceInstance(
+    "item-access-truce",
+    [originalUser.id, originalPartner.id],
+    {
+      day: 1,
+      period: "night",
+    },
+    {
+      day: 2,
+      period: "day",
+    },
+  );
+
+  const state: GameState = {
+    ...originalState,
+
+    tributes: originalState.tributes.map((tribute) =>
+      tribute.id === originalOwner.id
+        ? {
+            ...tribute,
+            inventory: [item],
+          }
+        : tribute,
+    ),
+
+    truces: [truce],
+  };
+
+  const user = state.tributes.find((tribute) => tribute.id === originalUser.id);
+
+  const partner = state.tributes.find((tribute) => tribute.id === originalPartner.id);
+
+  if (!user || !partner) {
+    throw new Error("Missing item-access test participants.");
+  }
+
+  return {
+    state,
+    user,
+    partner,
+    item,
+  };
+}
+
+function selectItemAccessParticipant(
+  fixture: ItemAccessFixture,
+  definition: EventDefinition,
+  unavailableItemInstanceIds: ReadonlySet<string> = new Set<string>(),
+) {
+  return selectEventParticipants(
+    definition,
+
+    {
+      state: fixture.state,
+
+      round: {
+        day: 1,
+        period: "night",
+      },
+
+      /*
+       * Restrict the candidate list to the intended user.
+       * Their truce partner remains in state so shared item
+       * access can still be tested.
+       */
+      livingTributes: [fixture.user],
+    },
+
+    () => 0,
+
+    new Set<string>(),
+
+    unavailableItemInstanceIds,
+  );
+}
 
 describe("item-based participant selection", () => {
   it("only selects an armed tribute for a weapon role", () => {
@@ -386,4 +571,128 @@ describe("item-based participant selection", () => {
 
     expect(secondSelection).toBeNull();
   });
+});
+
+describe("participant item-access modes", () => {
+  it("defaults to accessible shared-item selection", () => {
+    const fixture = createItemAccessFixture({
+      owner: "partner",
+    });
+
+    const selection = selectItemAccessParticipant(
+      fixture,
+
+      createItemAccessDefinition("knife"),
+    );
+
+    expect(selection).not.toBeNull();
+
+    expect(selection?.itemsByRole.tribute[0].owner.id).toBe(fixture.partner.id);
+
+    expect(selection?.itemsByRole.tribute[0].item.id).toBe(fixture.item.id);
+  });
+
+  it("allows accessible mode to select the tribute's own item", () => {
+    const fixture = createItemAccessFixture({
+      owner: "user",
+    });
+
+    const selection = selectItemAccessParticipant(
+      fixture,
+
+      createItemAccessDefinition("knife", "accessible"),
+    );
+
+    expect(selection).not.toBeNull();
+
+    expect(selection?.itemsByRole.tribute[0].owner.id).toBe(fixture.user.id);
+  });
+
+  it("allows accessible mode to select a truce partner's item", () => {
+    const fixture = createItemAccessFixture({
+      owner: "partner",
+    });
+
+    const selection = selectItemAccessParticipant(
+      fixture,
+
+      createItemAccessDefinition("knife", "accessible"),
+    );
+
+    expect(selection).not.toBeNull();
+
+    expect(selection?.itemsByRole.tribute[0].owner.id).toBe(fixture.partner.id);
+  });
+
+  it("allows owned mode to select the tribute's own item", () => {
+    const fixture = createItemAccessFixture({
+      owner: "user",
+    });
+
+    const selection = selectItemAccessParticipant(
+      fixture,
+
+      createItemAccessDefinition("knife", "owned"),
+    );
+
+    expect(selection).not.toBeNull();
+
+    expect(selection?.itemsByRole.tribute[0].owner.id).toBe(fixture.user.id);
+
+    expect(selection?.itemsByRole.tribute[0].item.id).toBe(fixture.item.id);
+  });
+
+  it("does not allow owned mode to select a truce partner's item", () => {
+    const fixture = createItemAccessFixture({
+      owner: "partner",
+    });
+
+    const selection = selectItemAccessParticipant(
+      fixture,
+
+      createItemAccessDefinition("knife", "owned"),
+    );
+
+    expect(selection).toBeNull();
+  });
+
+  it.each(["accessible", "owned"] as const)(
+    "does not select reserved items in %s mode",
+    (itemAccess) => {
+      const fixture = createItemAccessFixture({
+        owner: itemAccess === "owned" ? "user" : "partner",
+      });
+
+      const selection = selectItemAccessParticipant(
+        fixture,
+
+        createItemAccessDefinition("knife", itemAccess),
+
+        new Set([fixture.item.id]),
+      );
+
+      expect(selection).toBeNull();
+    },
+  );
+
+  it.each(["accessible", "owned"] as const)(
+    "does not select depleted items in %s mode",
+    (itemAccess) => {
+      const fixture = createItemAccessFixture({
+        definitionId: "medicine",
+
+        owner: itemAccess === "owned" ? "user" : "partner",
+
+        usesRemaining: 0,
+      });
+
+      const selection = selectItemAccessParticipant(
+        fixture,
+
+        createItemAccessDefinition("medicine", itemAccess),
+      );
+
+      expect(selection).toBeNull();
+    },
+  );
 });

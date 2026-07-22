@@ -24,12 +24,12 @@ import type {
 } from "~/game/events/event-schema";
 import { getEventDefinitionWeight } from "~/game/events/event-weighting";
 import type {
-  GameChange,
   GameState,
   GameTribute,
   ResolvedEvent,
   RoundReference,
 } from "~/game/types/game-state";
+import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
 
 function createEventId(round: RoundReference, eventIndex: number, definitionId: string): string {
   return ["bloodbath", round.period, round.day, eventIndex, definitionId].join("-");
@@ -55,23 +55,6 @@ function selectDefinition(
 
     random,
   );
-}
-
-function getCommittedItemInstanceIds(changes: readonly GameChange[]): string[] {
-  return changes.flatMap((change) => {
-    switch (change.type) {
-      case "acquire-item":
-        return [change.item.id];
-
-      case "use-item":
-      case "consume-item":
-      case "transfer-item":
-        return [change.itemInstanceId];
-
-      default:
-        return [];
-    }
-  });
 }
 
 interface ResolveBloodbathEventOptions {

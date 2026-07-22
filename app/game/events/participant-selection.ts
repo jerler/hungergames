@@ -8,6 +8,7 @@ import type {
   ParticipantsByRole,
 } from "~/game/events/event-schema";
 import {
+  findUsableInventoryItem,
   getAccessibleInventoryItems,
   type AccessibleInventoryItem,
 } from "~/game/items/inventory-engine";
@@ -42,14 +43,43 @@ function findAvailableRoleItem(
   reservedItemInstanceIds: ReadonlySet<string>,
   unavailableTributeIds: ReadonlySet<string>,
 ): AccessibleInventoryItem | null {
+  const requirements = {
+    definitionIds: role.requiredItemDefinitionIds,
+
+    requiredTags: role.requiredItemTags,
+
+    unavailableItemInstanceIds: reservedItemInstanceIds,
+  };
+
+  /*
+   * Owned-item roles may only select an item physically
+   * contained in the candidate tribute's own inventory.
+   *
+   * findUsableInventoryItem already rejects depleted and
+   * reserved item instances.
+   */
+  if (role.itemAccess === "owned") {
+    const item = findUsableInventoryItem(tribute, requirements);
+
+    return item
+      ? {
+          owner: tribute,
+          item,
+        }
+      : null;
+  }
+
+  /*
+   * Accessible is the default. Existing events therefore
+   * continue to search both the tribute's inventory and
+   * the inventories of their active truce partners.
+   *
+   * Owners already committed to another event are excluded.
+   */
   return (
-    getAccessibleInventoryItems(context.state, tribute, {
-      definitionIds: role.requiredItemDefinitionIds,
-
-      requiredTags: role.requiredItemTags,
-
-      unavailableItemInstanceIds: reservedItemInstanceIds,
-    }).find(({ owner }) => !unavailableTributeIds.has(owner.id)) ?? null
+    getAccessibleInventoryItems(context.state, tribute, requirements).find(
+      ({ owner }) => !unavailableTributeIds.has(owner.id),
+    ) ?? null
   );
 }
 

@@ -8,10 +8,22 @@ import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import type { DistrictCount } from "~/game/types/game-config";
 import { createDefaultGameConfig } from "~/game/types/game-config";
-import type { GameState } from "~/game/types/game-state";
 import { gameReducer } from "~/state/game-reducer";
+import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
+import type { GameChange, GameState, ResolvedEvent } from "~/game/types/game-state";
 
 const simulationCache = new Map<string, GameState>();
+
+type TransferItemChange = Extract<
+  GameChange,
+  {
+    type: "transfer-item";
+  }
+>;
+
+interface SimulateGameOptions {
+  useCache?: boolean;
+}
 
 function createSimulationGame(seed: string, districtCount: DistrictCount): GameState {
   const config = {
@@ -41,39 +53,82 @@ function createSimulationGame(seed: string, districtCount: DistrictCount): GameS
     },
   );
 }
+function expectNoCrossEventItemCommitments(events: readonly ResolvedEvent[], seed: string): void {
+  const eventIdByItemInstanceId = new Map<string, string>();
 
-function simulateGame(seed: string, districtCount: DistrictCount): GameState {
-  let state: GameState | null = createSimulationGame(seed, districtCount);
+  for (const event of events) {
+    /*
+     * One event may reference the same item more than once
+     * internally. The conflict being tested is commitment
+     * by two separate events in the same planned round.
+     */
+    const eventItemInstanceIds = new Set(getCommittedItemInstanceIds(event.changes));
 
+    for (const itemInstanceId of eventItemInstanceIds) {
+      const previousEventId = eventIdByItemInstanceId.get(itemInstanceId);
+
+      expect(
+        previousEventId,
+
+        `Simulation "${seed}" committed item ` +
+          `"${itemInstanceId}" in both ` +
+          `"${previousEventId}" and ` +
+          `"${event.id}".`,
+      ).toBeUndefined();
+
+      eventIdByItemInstanceId.set(itemInstanceId, event.id);
+    }
+  }
+}
+
+function simulateGame(
+  seed: string,
+  districtCount: DistrictCount,
+  { useCache = true }: SimulateGameOptions = {},
+): GameState {
   const cacheKey = `${districtCount}:${seed}`;
 
-  const cachedResult = simulationCache.get(cacheKey);
+  if (useCache) {
+    const cachedResult = simulationCache.get(cacheKey);
 
-  if (cachedResult) {
-    return cachedResult;
+    if (cachedResult) {
+      return cachedResult;
+    }
   }
+
+  let state: GameState | null = createSimulationGame(seed, districtCount);
 
   assertGameStateInvariants(state);
 
   for (let roundIndex = 0; roundIndex < 100; roundIndex += 1) {
     state = gameReducer(state, {
       type: "round/began",
+
       now: `round-${roundIndex}-start`,
     });
 
+    if (!state) {
+      throw new Error(`Simulation "${seed}" lost its GameState while beginning a round.`);
+    }
+
+    expectNoCrossEventItemCommitments(state.roundEvents, seed);
+
     state = gameReducer(state, {
       type: "round/revealed",
+
       now: `round-${roundIndex}-end`,
     });
 
     if (!state) {
-      throw new Error(`Simulation "${seed}" lost its GameState.`);
+      throw new Error(`Simulation "${seed}" lost its GameState while revealing a round.`);
     }
 
     assertGameStateInvariants(state);
 
     if (state.phase === "victory") {
-      simulationCache.set(cacheKey, state);
+      if (useCache) {
+        simulationCache.set(cacheKey, state);
+      }
 
       return state;
     }
@@ -142,6 +197,26 @@ function getRoundEliminationTotals(results: readonly GameState[]): Map<string, n
   return totals;
 }
 
+function getStressResults(): GameState[] {
+  return [
+    ...Array.from(
+      {
+        length: 200,
+      },
+
+      (_, index) => simulateGame(`half-game-${index}`, 6),
+    ),
+
+    ...Array.from(
+      {
+        length: 100,
+      },
+
+      (_, index) => simulateGame(`full-game-${index}`, 12),
+    ),
+  ];
+}
+
 describe("simulation stress tests", () => {
   it("completes 200 Half Games without violating invariants", () => {
     for (let index = 0; index < 200; index += 1) {
@@ -159,34 +234,26 @@ describe("simulation stress tests", () => {
     }
   });
 
-  it("replays the same seed identically", () => {
-    const firstResult = simulateGame("repeatable-game", 12);
+  it("independently replays the same seed identically", () => {
+    const firstResult = simulateGame("repeatable-game", 12, {
+      useCache: false,
+    });
 
-    const secondResult = simulateGame("repeatable-game", 12);
+    const secondResult = simulateGame("repeatable-game", 12, {
+      useCache: false,
+    });
 
-    expect(firstResult.eventHistory).toEqual(secondResult.eventHistory);
+    /*
+     * Prove these are two separately simulated objects,
+     * not the same cached result.
+     */
+    expect(firstResult).not.toBe(secondResult);
 
-    expect(firstResult.victoryOutcome).toEqual(secondResult.victoryOutcome);
+    expect(secondResult).toEqual(firstResult);
   });
 
   it("concentrates more than half of all eliminations in the Bloodbath", () => {
-    const results = [
-      ...Array.from(
-        {
-          length: 200,
-        },
-
-        (_, index) => simulateGame(`half-game-${index}`, 6),
-      ),
-
-      ...Array.from(
-        {
-          length: 100,
-        },
-
-        (_, index) => simulateGame(`full-game-${index}`, 12),
-      ),
-    ];
+    const results = getStressResults();
 
     const dayOneEliminations = results.reduce(
       (total, result) => total + getEliminationCount(result, 1, "day"),
@@ -212,6 +279,33 @@ describe("simulation stress tests", () => {
       }
 
       expect(dayOneAverage).toBeGreaterThan(eliminationTotal / results.length);
+    }
+  });
+
+  it("exercises ordinary theft during full-game simulations", () => {
+    const theftEvents = getStressResults().flatMap((result) =>
+      result.eventHistory.filter((event) => event.definitionId === "steal-from-stronger-tribute"),
+    );
+
+    expect(theftEvents.length).toBeGreaterThan(0);
+
+    for (const event of theftEvents) {
+      /*
+       * Day 1 daytime belongs exclusively to the
+       * Bloodbath sequencer.
+       */
+      expect(event.round.day === 1 && event.round.period === "day").toBe(false);
+
+      const theftTransfers = event.changes.filter(
+        (change): change is TransferItemChange =>
+          change.type === "transfer-item" && change.reason === "theft",
+      );
+
+      expect(theftTransfers.length).toBeLessThanOrEqual(2);
+
+      expect(new Set(theftTransfers.map((change) => change.itemInstanceId)).size).toBe(
+        theftTransfers.length,
+      );
     }
   });
 });

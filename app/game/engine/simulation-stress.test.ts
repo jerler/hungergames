@@ -10,7 +10,17 @@ import type { DistrictCount } from "~/game/types/game-config";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import { gameReducer } from "~/state/game-reducer";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
-import type { GameChange, GameState, ResolvedEvent } from "~/game/types/game-state";
+import type {
+  AcquiredInventoryTransaction,
+  GameChange,
+  GameState,
+  ResolvedEvent,
+  RoundReference,
+  TransferredInventoryTransaction,
+} from "~/game/types/game-state";
+import { CORNUCOPIA_EVENTS } from "~/game/events/catalogue/bloodbath";
+import { getRoundSequence } from "~/game/engine/rounds";
+import { getItemDefinition } from "~/game/items/item-catalogue";
 
 const simulationCache = new Map<string, GameState>();
 
@@ -20,6 +30,118 @@ type TransferItemChange = Extract<
     type: "transfer-item";
   }
 >;
+
+const CORNUCOPIA_EVENT_IDS = new Set(CORNUCOPIA_EVENTS.map((event) => event.id));
+
+interface ResolvedTransfer {
+  event: ResolvedEvent;
+  change: TransferItemChange;
+}
+
+function isDayOneDaytime(round: RoundReference): boolean {
+  return round.day === 1 && round.period === "day";
+}
+
+function roundsMatch(first: RoundReference, second: RoundReference): boolean {
+  return first.day === second.day && first.period === second.period;
+}
+
+function getAverage(values: readonly number[]): number {
+  if (values.length === 0) {
+    throw new Error("Cannot average an empty collection.");
+  }
+
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function getCornucopiaParticipationRate(state: GameState): number {
+  const participantIds = new Set(
+    state.eventHistory
+      .filter(
+        (event) => isDayOneDaytime(event.round) && CORNUCOPIA_EVENT_IDS.has(event.definitionId),
+      )
+      .flatMap((event) => event.participantTributeIds),
+  );
+
+  return participantIds.size / state.tributes.length;
+}
+
+function getGameLengthInRounds(state: GameState): number {
+  return Math.max(
+    0,
+
+    ...state.eventHistory.map((event) => getRoundSequence(event.round)),
+  );
+}
+
+function getAcquisitionTransactions(state: GameState): AcquiredInventoryTransaction[] {
+  return state.itemTransactions.filter(
+    (transaction): transaction is AcquiredInventoryTransaction => transaction.type === "acquired",
+  );
+}
+
+function getTransferTransactions(state: GameState): TransferredInventoryTransaction[] {
+  return state.itemTransactions.filter(
+    (transaction): transaction is TransferredInventoryTransaction =>
+      transaction.type === "transferred",
+  );
+}
+
+function getAcquisitionByItemInstanceId(
+  state: GameState,
+): Map<string, AcquiredInventoryTransaction> {
+  return new Map(
+    getAcquisitionTransactions(state).map((transaction) => [
+      transaction.itemInstanceId,
+      transaction,
+    ]),
+  );
+}
+
+function getPostDayOneManufacturedTransferChanges(state: GameState): ResolvedTransfer[] {
+  const acquisitionByItemInstanceId = getAcquisitionByItemInstanceId(state);
+
+  return state.eventHistory.flatMap((event): ResolvedTransfer[] => {
+    if (isDayOneDaytime(event.round)) {
+      return [];
+    }
+
+    return event.changes.flatMap((change): ResolvedTransfer[] => {
+      if (change.type !== "transfer-item") {
+        return [];
+      }
+
+      const acquisition = acquisitionByItemInstanceId.get(change.itemInstanceId);
+
+      if (!acquisition) {
+        throw new Error(
+          `Transferred item "${change.itemInstanceId}" ` + "has no acquisition transaction.",
+        );
+      }
+
+      if (getItemDefinition(acquisition.definitionId).origin !== "manufactured") {
+        return [];
+      }
+
+      return [
+        {
+          event,
+          change,
+        },
+      ];
+    });
+  });
+}
+
+function getPostDayOneManufacturedTransferTransactions(
+  state: GameState,
+): TransferredInventoryTransaction[] {
+  return getTransferTransactions(state).filter(
+    (transaction) =>
+      !isDayOneDaytime(transaction.round) &&
+      getItemDefinition(transaction.definitionId).origin === "manufactured",
+  );
+}
 
 interface SimulateGameOptions {
   useCache?: boolean;
@@ -307,5 +429,150 @@ describe("simulation stress tests", () => {
         theftTransfers.length,
       );
     }
+  });
+
+  it("keeps actual Cornucopia participation within its target range", () => {
+    const participationRates = getStressResults().map(getCornucopiaParticipationRate);
+
+    for (const participationRate of participationRates) {
+      expect(participationRate).toBeGreaterThanOrEqual(0.5);
+
+      expect(participationRate).toBeLessThanOrEqual(0.9);
+    }
+
+    expect(new Set(participationRates).size).toBeGreaterThan(1);
+
+    const meanParticipation = getAverage(participationRates);
+
+    /*
+     * The strategy-level test uses the tighter 72–78%
+     * range over 5,000 samples. Keep the complete-game
+     * assertion broader so it detects real balance drift
+     * without becoming unnecessarily brittle.
+     */
+    expect(meanParticipation).toBeGreaterThan(0.7);
+
+    expect(meanParticipation).toBeLessThan(0.8);
+  });
+  
+  it("creates manufactured items only through valid acquisition sources", () => {
+    let postDayOneNaturalAcquisitionCount = 0;
+
+    for (const result of getStressResults()) {
+      for (const transaction of getAcquisitionTransactions(result)) {
+        const definition = getItemDefinition(transaction.definitionId);
+
+        if (definition.origin === "manufactured") {
+          if (isDayOneDaytime(transaction.round)) {
+            expect(transaction.acquisitionSource).toBe("cornucopia");
+          } else {
+            /*
+             * This remains future-compatible with sponsor
+             * delivery. At present, central validation
+             * rejects sponsor acquisitions entirely.
+             */
+            expect(transaction.acquisitionSource).toBe("sponsor");
+          }
+
+          continue;
+        }
+
+        if (
+          !isDayOneDaytime(transaction.round) &&
+          transaction.acquisitionSource === "natural-foraging"
+        ) {
+          postDayOneNaturalAcquisitionCount += 1;
+        }
+      }
+    }
+
+    expect(postDayOneNaturalAcquisitionCount).toBeGreaterThan(0);
+  });
+
+  it("records every post-Day-1 manufactured ownership change as one transfer transaction", () => {
+    let theftTransferCount = 0;
+    let deathLootTransferCount = 0;
+
+    for (const result of getStressResults()) {
+      const resolvedTransfers = getPostDayOneManufacturedTransferChanges(result);
+
+      const ledgerTransfers = getPostDayOneManufacturedTransferTransactions(result);
+
+      expect(ledgerTransfers).toHaveLength(resolvedTransfers.length);
+
+      for (const { event, change } of resolvedTransfers) {
+        const matchingTransactions = ledgerTransfers.filter(
+          (transaction) =>
+            transaction.itemInstanceId === change.itemInstanceId &&
+            transaction.fromTributeId === change.fromTributeId &&
+            transaction.toTributeId === change.toTributeId &&
+            transaction.sourceId === change.reason &&
+            roundsMatch(transaction.round, event.round) &&
+            transaction.id.startsWith(`transfer:${event.id}:`),
+        );
+
+        expect(matchingTransactions).toHaveLength(1);
+
+        if (change.reason === "theft") {
+          theftTransferCount += 1;
+        }
+
+        if (change.reason === "death-loot") {
+          deathLootTransferCount += 1;
+        }
+      }
+    }
+
+    /*
+     * These assertions confirm that both mechanics are not
+     * merely valid in unit tests, but are exercised during
+     * complete seeded games after the Bloodbath.
+     */
+    expect(theftTransferCount).toBeGreaterThan(0);
+
+    expect(deathLootTransferCount).toBeGreaterThan(0);
+  });
+
+  it("records healthy game lengths and a complete victory rate", () => {
+    const halfGameResults = Array.from(
+      {
+        length: 200,
+      },
+
+      (_, index) => simulateGame(`half-game-${index}`, 6),
+    );
+
+    const fullGameResults = Array.from(
+      {
+        length: 100,
+      },
+
+      (_, index) => simulateGame(`full-game-${index}`, 12),
+    );
+
+    const halfGameAverageLength = getAverage(halfGameResults.map(getGameLengthInRounds));
+
+    const fullGameAverageLength = getAverage(fullGameResults.map(getGameLengthInRounds));
+
+    /*
+     * Broad guardrails only. The exact pacing may evolve,
+     * but games should take more than the Bloodbath alone
+     * and remain comfortably below the 100-round safety cap.
+     */
+    expect(halfGameAverageLength).toBeGreaterThan(1);
+
+    expect(halfGameAverageLength).toBeLessThan(50);
+
+    expect(fullGameAverageLength).toBeGreaterThan(1);
+
+    expect(fullGameAverageLength).toBeLessThan(50);
+
+    const allResults = [...halfGameResults, ...fullGameResults];
+
+    const completionRate =
+      allResults.filter((result) => result.phase === "victory" && result.victoryOutcome !== null)
+        .length / allResults.length;
+
+    expect(completionRate).toBe(1);
   });
 });

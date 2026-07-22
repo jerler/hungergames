@@ -3,10 +3,7 @@ import {
   createItemAcquisitionAndSurvivalChanges,
   createStatusChange,
 } from "~/game/events/event-change-builders";
-import {
-  getItemLabel,
-  resolveLuckAdjustedStatCheck,
-} from "~/game/events/event-resolution-helpers";
+import { getItemLabel, resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
 import {
   requireSingleParticipant,
   type EventDefinition,
@@ -42,21 +39,12 @@ function selectDistinctItems(
   const remainingItemIds = [...itemIds];
   const selectedItemIds: ItemDefinitionId[] = [];
 
-  while (
-    selectedItemIds.length < count &&
-    remainingItemIds.length > 0
-  ) {
-    const selectedItemId = selectRandomItem(
-      remainingItemIds,
-      random,
-    );
+  while (selectedItemIds.length < count && remainingItemIds.length > 0) {
+    const selectedItemId = selectRandomItem(remainingItemIds, random);
 
     selectedItemIds.push(selectedItemId);
 
-    remainingItemIds.splice(
-      remainingItemIds.indexOf(selectedItemId),
-      1,
-    );
+    remainingItemIds.splice(remainingItemIds.indexOf(selectedItemId), 1);
   }
 
   return selectedItemIds;
@@ -66,11 +54,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
   {
     id: "cornucopia-nearby-pack",
     category: "hazard",
-    tags: [
-      "hazard",
-      "item",
-      "resource",
-    ],
+    tags: ["hazard", "item", "resource"],
     periods: ["day"],
     baseWeight: 6,
 
@@ -81,23 +65,10 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
       },
     ],
 
-    resolve({
-      eventId,
-      round,
-      random,
-      participantsByRole,
-    }): EventResolution {
-      const tribute = requireSingleParticipant(
-        participantsByRole,
-        "tribute",
-      );
+    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+      const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const outcome = resolveLuckAdjustedStatCheck(
-        tribute,
-        "brawn",
-        3,
-        random,
-      );
+      const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, random);
 
       switch (outcome) {
         case "critical-failure":
@@ -107,15 +78,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
               "but is knocked violently against the Cornucopia " +
               "and escapes badly injured.",
 
-            changes: [
-              createStatusChange(
-                eventId,
-                tribute,
-                "injured",
-                2,
-                round,
-              ),
-            ],
+            changes: [createStatusChange(eventId, tribute, "injured", 2, round)],
           };
 
         case "failure":
@@ -125,45 +88,29 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
               "crowd toward a supply pack, but is forced to " +
               "retreat empty-handed and exhausted.",
 
-            changes: [
-              createStatusChange(
-                eventId,
-                tribute,
-                "exhausted",
-                1,
-                round,
-              ),
-            ],
+            changes: [createStatusChange(eventId, tribute, "exhausted", 1, round)],
           };
 
         case "success": {
-          const itemId = selectRandomItem(
-            PACK_ITEM_IDS,
-            random,
-          );
+          const itemId = selectRandomItem(PACK_ITEM_IDS, random);
 
           return {
             text:
               `${tribute.snapshot.name} grabs a nearby pack ` +
               `containing ${getItemLabel(itemId)} and escapes.`,
 
-            changes:
-              createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                tribute,
-                [itemId],
-                round,
-                "cornucopia",
-              ),
+            changes: createItemAcquisitionAndSurvivalChanges(
+              eventId,
+              tribute,
+              [itemId],
+              round,
+              "cornucopia",
+            ),
           };
         }
 
         case "exceptional-success": {
-          const itemIds = selectDistinctItems(
-            PACK_ITEM_IDS,
-            2,
-            random,
-          );
+          const itemIds = selectDistinctItems(PACK_ITEM_IDS, 2, random);
 
           const itemLabels = itemIds.map(getItemLabel);
 
@@ -173,14 +120,13 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
               `before the nearby tributes and escapes with ` +
               `${itemLabels.join(" and ")}.`,
 
-            changes:
-              createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                tribute,
-                itemIds,
-                round,
-                "cornucopia",
-              ),
+            changes: createItemAcquisitionAndSurvivalChanges(
+              eventId,
+              tribute,
+              itemIds,
+              round,
+              "cornucopia",
+            ),
           };
         }
       }
@@ -190,12 +136,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
   {
     id: "cornucopia-edge-weapon",
     category: "hazard",
-    tags: [
-      "hazard",
-      "combat",
-      "weapon",
-      "item",
-    ],
+    tags: ["hazard", "combat", "weapon", "item"],
     periods: ["day"],
     baseWeight: 5,
 
@@ -206,23 +147,10 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
       },
     ],
 
-    resolve({
-      eventId,
-      round,
-      random,
-      participantsByRole,
-    }): EventResolution {
-      const tribute = requireSingleParticipant(
-        participantsByRole,
-        "tribute",
-      );
+    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+      const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const outcome = resolveLuckAdjustedStatCheck(
-        tribute,
-        "brawn",
-        3,
-        random,
-      );
+      const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, random);
 
       switch (outcome) {
         case "critical-failure":
@@ -232,15 +160,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
               "near the Cornucopia's edge, but is trampled " +
               "and forced to crawl away.",
 
-            changes: [
-              createStatusChange(
-                eventId,
-                tribute,
-                "injured",
-                2,
-                round,
-              ),
-            ],
+            changes: [createStatusChange(eventId, tribute, "injured", 2, round)],
           };
 
         case "failure":
@@ -250,22 +170,11 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
               "the weapon pile, but abandons the attempt as " +
               "the fighting closes around them.",
 
-            changes: [
-              createStatusChange(
-                eventId,
-                tribute,
-                "exhausted",
-                1,
-                round,
-              ),
-            ],
+            changes: [createStatusChange(eventId, tribute, "exhausted", 1, round)],
           };
 
         case "success": {
-          const itemId = selectRandomItem(
-            EDGE_WEAPON_ITEM_IDS,
-            random,
-          );
+          const itemId = selectRandomItem(EDGE_WEAPON_ITEM_IDS, random);
 
           return {
             text:
@@ -273,22 +182,18 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
               `${getItemLabel(itemId)} from the edge of the ` +
               "Cornucopia and escapes.",
 
-            changes:
-              createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                tribute,
-                [itemId],
-                round,
-                "cornucopia",
-              ),
+            changes: createItemAcquisitionAndSurvivalChanges(
+              eventId,
+              tribute,
+              [itemId],
+              round,
+              "cornucopia",
+            ),
           };
         }
 
         case "exceptional-success": {
-          const itemId = selectRandomItem(
-            EDGE_WEAPON_ITEM_IDS,
-            random,
-          );
+          const itemId = selectRandomItem(EDGE_WEAPON_ITEM_IDS, random);
 
           return {
             text:
@@ -305,13 +210,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
                 "cornucopia",
               ),
 
-              createStatusChange(
-                eventId,
-                tribute,
-                "inspired",
-                1,
-                round,
-              ),
+              createStatusChange(eventId, tribute, "inspired", 1, round),
             ],
           };
         }

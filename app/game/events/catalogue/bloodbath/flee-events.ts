@@ -3,8 +3,7 @@ import {
   createStatusChange,
   createSurvivalChanges,
 } from "~/game/events/event-change-builders";
-import { resolveLuckAdjustedStatCheck } from
-  "~/game/events/event-resolution-helpers";
+import { resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
 import {
   requireSingleParticipant,
   type EventDefinition,
@@ -15,11 +14,7 @@ export const FLEE_EVENTS = [
   {
     id: "bloodbath-flee-woods",
     category: "survival",
-    tags: [
-      "survival",
-      "environment",
-      "status",
-    ],
+    tags: ["survival", "environment", "status"],
     periods: ["day"],
     baseWeight: 7,
 
@@ -30,23 +25,10 @@ export const FLEE_EVENTS = [
       },
     ],
 
-    resolve({
-      eventId,
-      round,
-      random,
-      participantsByRole,
-    }): EventResolution {
-      const tribute = requireSingleParticipant(
-        participantsByRole,
-        "tribute",
-      );
+    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+      const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const outcome = resolveLuckAdjustedStatCheck(
-        tribute,
-        "brawn",
-        3,
-        random,
-      );
+      const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, random);
 
       switch (outcome) {
         case "critical-failure":
@@ -57,21 +39,9 @@ export const FLEE_EVENTS = [
               "and escapes injured and exhausted.",
 
             changes: [
-              createStatusChange(
-                eventId,
-                tribute,
-                "injured",
-                1,
-                round,
-              ),
+              createStatusChange(eventId, tribute, "injured", 1, round),
 
-              createStatusChange(
-                eventId,
-                tribute,
-                "exhausted",
-                1,
-                round,
-              ),
+              createStatusChange(eventId, tribute, "exhausted", 1, round),
             ],
           };
 
@@ -82,15 +52,7 @@ export const FLEE_EVENTS = [
               "of the Bloodbath disappear, then collapses " +
               "from exhaustion.",
 
-            changes: [
-              createStatusChange(
-                eventId,
-                tribute,
-                "exhausted",
-                1,
-                round,
-              ),
-            ],
+            changes: [createStatusChange(eventId, tribute, "exhausted", 1, round)],
           };
 
         case "success":
@@ -111,13 +73,7 @@ export const FLEE_EVENTS = [
               "a concealed place to watch from safety.",
 
             changes: [
-              createStatusChange(
-                eventId,
-                tribute,
-                "concealed",
-                1,
-                round,
-              ),
+              createStatusChange(eventId, tribute, "concealed", 1, round),
 
               ...createSurvivalChanges([tribute]),
             ],
@@ -129,13 +85,7 @@ export const FLEE_EVENTS = [
   {
     id: "bloodbath-flee-stream",
     category: "survival",
-    tags: [
-      "survival",
-      "environment",
-      "item",
-      "resource",
-      "status",
-    ],
+    tags: ["survival", "environment", "item", "resource", "status"],
     periods: ["day"],
     baseWeight: 4,
 
@@ -146,23 +96,10 @@ export const FLEE_EVENTS = [
       },
     ],
 
-    resolve({
-      eventId,
-      round,
-      random,
-      participantsByRole,
-    }): EventResolution {
-      const tribute = requireSingleParticipant(
-        participantsByRole,
-        "tribute",
-      );
+    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+      const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const outcome = resolveLuckAdjustedStatCheck(
-        tribute,
-        "brains",
-        3,
-        random,
-      );
+      const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
       switch (outcome) {
         case "critical-failure":
@@ -172,15 +109,7 @@ export const FLEE_EVENTS = [
               "lost while searching for water after fleeing " +
               "the Cornucopia.",
 
-            changes: [
-              createStatusChange(
-                eventId,
-                tribute,
-                "disoriented",
-                2,
-                round,
-              ),
-            ],
+            changes: [createStatusChange(eventId, tribute, "disoriented", 2, round)],
           };
 
         case "failure":
@@ -189,15 +118,7 @@ export const FLEE_EVENTS = [
               `${tribute.snapshot.name} hears running water ` +
               "but becomes turned around while trying to find it.",
 
-            changes: [
-              createStatusChange(
-                eventId,
-                tribute,
-                "disoriented",
-                1,
-                round,
-              ),
-            ],
+            changes: [createStatusChange(eventId, tribute, "disoriented", 1, round)],
           };
 
         case "success":
@@ -206,14 +127,13 @@ export const FLEE_EVENTS = [
               `${tribute.snapshot.name} follows the terrain ` +
               "away from the Cornucopia and finds a clean stream.",
 
-            changes:
-              createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                tribute,
-                ["water"],
-                round,
-                "natural-foraging",
-              ),
+            changes: createItemAcquisitionAndSurvivalChanges(
+              eventId,
+              tribute,
+              ["water"],
+              round,
+              "natural-foraging",
+            ),
           };
 
         case "exceptional-success":
@@ -232,13 +152,7 @@ export const FLEE_EVENTS = [
                 "natural-foraging",
               ),
 
-              createStatusChange(
-                eventId,
-                tribute,
-                "concealed",
-                1,
-                round,
-              ),
+              createStatusChange(eventId, tribute, "concealed", 1, round),
             ],
           };
       }
@@ -248,13 +162,7 @@ export const FLEE_EVENTS = [
   {
     id: "bloodbath-flee-forage",
     category: "survival",
-    tags: [
-      "survival",
-      "environment",
-      "item",
-      "resource",
-      "status",
-    ],
+    tags: ["survival", "environment", "item", "resource", "status"],
     periods: ["day"],
     baseWeight: 4,
 
@@ -265,23 +173,10 @@ export const FLEE_EVENTS = [
       },
     ],
 
-    resolve({
-      eventId,
-      round,
-      random,
-      participantsByRole,
-    }): EventResolution {
-      const tribute = requireSingleParticipant(
-        participantsByRole,
-        "tribute",
-      );
+    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+      const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const outcome = resolveLuckAdjustedStatCheck(
-        tribute,
-        "brains",
-        3,
-        random,
-      );
+      const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
       switch (outcome) {
         case "critical-failure":
@@ -291,15 +186,7 @@ export const FLEE_EVENTS = [
               "wilderness and mistakes poisonous berries " +
               "for edible fruit.",
 
-            changes: [
-              createStatusChange(
-                eventId,
-                tribute,
-                "poisoned",
-                1,
-                round,
-              ),
-            ],
+            changes: [createStatusChange(eventId, tribute, "poisoned", 1, round)],
           };
 
         case "failure":
@@ -308,15 +195,7 @@ export const FLEE_EVENTS = [
               `${tribute.snapshot.name} eats an unfamiliar ` +
               "root after fleeing and quickly becomes sick.",
 
-            changes: [
-              createStatusChange(
-                eventId,
-                tribute,
-                "sick",
-                1,
-                round,
-              ),
-            ],
+            changes: [createStatusChange(eventId, tribute, "sick", 1, round)],
           };
 
         case "success":
@@ -325,14 +204,13 @@ export const FLEE_EVENTS = [
               `${tribute.snapshot.name} escapes the central ` +
               "Bloodbath and gathers edible plants.",
 
-            changes:
-              createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                tribute,
-                ["food"],
-                round,
-                "natural-foraging",
-              ),
+            changes: createItemAcquisitionAndSurvivalChanges(
+              eventId,
+              tribute,
+              ["food"],
+              round,
+              "natural-foraging",
+            ),
           };
 
         case "exceptional-success":
@@ -351,13 +229,7 @@ export const FLEE_EVENTS = [
                 "natural-foraging",
               ),
 
-              createStatusChange(
-                eventId,
-                tribute,
-                "inspired",
-                1,
-                round,
-              ),
+              createStatusChange(eventId, tribute, "inspired", 1, round),
             ],
           };
       }

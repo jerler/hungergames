@@ -6,8 +6,7 @@ import {
   createStatusChange,
   createSurvivalChanges,
 } from "~/game/events/event-change-builders";
-import { resolveLuckAdjustedStatCheck } from
-  "~/game/events/event-resolution-helpers";
+import { resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
 import {
   requireSingleParticipant,
   type EventDefinition,
@@ -44,21 +43,11 @@ interface CornucopiaConflictDefinitionOptions {
   resourceDescription: string;
 }
 
-function getConflictDifficulty(
-  defender: GameTribute,
-): TributeStatValue {
-  return Math.max(
-    1,
-    Math.min(
-      5,
-      Math.round(getCombatScore(defender)),
-    ),
-  ) as TributeStatValue;
+function getConflictDifficulty(defender: GameTribute): TributeStatValue {
+  return Math.max(1, Math.min(5, Math.round(getCombatScore(defender)))) as TributeStatValue;
 }
 
-function getBrainsDifficultyReduction(
-  tribute: GameTribute,
-): number {
+function getBrainsDifficultyReduction(tribute: GameTribute): number {
   if (tribute.snapshot.stats.brains === 5) {
     return 2;
   }
@@ -80,12 +69,7 @@ function createCornucopiaConflictEvent({
     id,
     category: "hazard",
 
-    tags: [
-      "hazard",
-      "combat",
-      "item",
-      "resource",
-    ],
+    tags: ["hazard", "combat", "item", "resource"],
 
     periods: ["day"],
     baseWeight,
@@ -103,21 +87,10 @@ function createCornucopiaConflictEvent({
       },
     ],
 
-    resolve({
-      eventId,
-      round,
-      random,
-      participantsByRole,
-    }): EventResolution {
-      const attacker = requireSingleParticipant(
-        participantsByRole,
-        "attacker",
-      );
+    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+      const attacker = requireSingleParticipant(participantsByRole, "attacker");
 
-      const defender = requireSingleParticipant(
-        participantsByRole,
-        "defender",
-      );
+      const defender = requireSingleParticipant(participantsByRole, "defender");
 
       const outcome = resolveLuckAdjustedStatCheck(
         attacker,
@@ -129,10 +102,7 @@ function createCornucopiaConflictEvent({
 
       switch (outcome) {
         case "critical-failure": {
-          const itemId = selectRandomItem(
-            itemIds,
-            random,
-          );
+          const itemId = selectRandomItem(itemIds, random);
 
           const text =
             `${attacker.snapshot.name} attacks ` +
@@ -145,13 +115,7 @@ function createCornucopiaConflictEvent({
             text,
 
             changes: [
-              ...createFatalChanges(
-                attacker,
-                id,
-                "Killed at the Cornucopia",
-                text,
-                defender,
-              ),
+              ...createFatalChanges(attacker, id, "Killed at the Cornucopia", text, defender),
 
               ...createItemAcquisitionAndSurvivalChanges(
                 eventId,
@@ -173,26 +137,14 @@ function createCornucopiaConflictEvent({
               "to retreat without claiming it.",
 
             changes: [
-              createStatusChange(
-                eventId,
-                attacker,
-                "injured",
-                1,
-                round,
-              ),
+              createStatusChange(eventId, attacker, "injured", 1, round),
 
-              ...createSurvivalChanges([
-                attacker,
-                defender,
-              ]),
+              ...createSurvivalChanges([attacker, defender]),
             ],
           };
 
         case "success": {
-          const itemId = selectRandomItem(
-            itemIds,
-            random,
-          );
+          const itemId = selectRandomItem(itemIds, random);
 
           return {
             text:
@@ -209,13 +161,7 @@ function createCornucopiaConflictEvent({
                 "cornucopia",
               ),
 
-              createStatusChange(
-                eventId,
-                defender,
-                "exhausted",
-                1,
-                round,
-              ),
+              createStatusChange(eventId, defender, "exhausted", 1, round),
 
               ...createSurvivalChanges([defender]),
             ],
@@ -223,10 +169,7 @@ function createCornucopiaConflictEvent({
         }
 
         case "exceptional-success": {
-          const itemId = selectRandomItem(
-            itemIds,
-            random,
-          );
+          const itemId = selectRandomItem(itemIds, random);
 
           const text =
             `${attacker.snapshot.name} kills ` +
@@ -237,13 +180,7 @@ function createCornucopiaConflictEvent({
             text,
 
             changes: [
-              ...createFatalChanges(
-                defender,
-                id,
-                "Killed at the Cornucopia",
-                text,
-                attacker,
-              ),
+              ...createFatalChanges(defender, id, "Killed at the Cornucopia", text, attacker),
 
               ...createItemAcquisitionAndSurvivalChanges(
                 eventId,

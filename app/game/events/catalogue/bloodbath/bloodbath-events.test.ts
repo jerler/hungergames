@@ -1,15 +1,8 @@
-import {
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { applyResolvedEvent } from
-  "~/game/engine/apply-game-change";
-import { createInitialGameState } from
-  "~/game/engine/create-initial-game-state";
-import { createSeededRandom } from
-  "~/game/engine/random";
+import { applyResolvedEvent } from "~/game/engine/apply-game-change";
+import { createInitialGameState } from "~/game/engine/create-initial-game-state";
+import { createSeededRandom } from "~/game/engine/random";
 import {
   BLOODBATH_EVENT_CATALOGUE,
   CORNUCOPIA_ACQUISITION_EVENTS,
@@ -17,28 +10,14 @@ import {
   CORNUCOPIA_EVENTS,
   FLEE_EVENTS,
 } from "~/game/events/catalogue/bloodbath";
-import type {
-  EventDefinition,
-  ParticipantsByRole,
-} from "~/game/events/event-schema";
-import { EVENT_CATALOGUE } from
-  "~/game/events/catalogue";
-import { getItemDefinition } from
-  "~/game/items/item-catalogue";
-import { createInventoryItemInstance } from
-  "~/game/items/inventory-engine";
-import { DEFAULT_TRIBUTES } from
-  "~/game/tributes/default-tributes";
-import { createRandomTributeDrafts } from
-  "~/game/tributes/tribute-drafts";
-import { createDefaultGameConfig } from
-  "~/game/types/game-config";
-import type {
-  GameChange,
-  GameState,
-  GameTribute,
-  ResolvedEvent,
-} from "~/game/types/game-state";
+import type { EventDefinition, ParticipantsByRole } from "~/game/events/event-schema";
+import { EVENT_CATALOGUE } from "~/game/events/catalogue";
+import { getItemDefinition } from "~/game/items/item-catalogue";
+import { createInventoryItemInstance } from "~/game/items/inventory-engine";
+import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
+import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
+import { createDefaultGameConfig } from "~/game/types/game-config";
+import type { GameChange, GameState, GameTribute, ResolvedEvent } from "~/game/types/game-state";
 
 const DAY_ONE = {
   day: 1,
@@ -50,11 +29,7 @@ function createParticipantsByRole(
   firstTribute: GameTribute,
   secondTribute: GameTribute,
 ): ParticipantsByRole {
-  if (
-    definition.roles.some(
-      (role) => role.id === "attacker",
-    )
-  ) {
+  if (definition.roles.some((role) => role.id === "attacker")) {
     return {
       attacker: [firstTribute],
       defender: [secondTribute],
@@ -66,9 +41,7 @@ function createParticipantsByRole(
   };
 }
 
-function createTestGame(
-  seed = "bloodbath-event-tests",
-): GameState {
+function createTestGame(seed = "bloodbath-event-tests"): GameState {
   const config = {
     ...createDefaultGameConfig(),
     districtCount: 6 as const,
@@ -79,13 +52,7 @@ function createTestGame(
   return createInitialGameState(
     config,
 
-    createRandomTributeDrafts(
-      6,
-      DEFAULT_TRIBUTES,
-      createSeededRandom(
-        `${seed}:reaping`,
-      ),
-    ),
+    createRandomTributeDrafts(6, DEFAULT_TRIBUTES, createSeededRandom(`${seed}:reaping`)),
 
     "random",
 
@@ -110,10 +77,7 @@ function resolveDefinition(
   return definition.resolve({
     state: game,
     round: DAY_ONE,
-    livingTributes:
-      game.tributes.filter(
-        (tribute) => tribute.isAlive,
-      ),
+    livingTributes: game.tributes.filter((tribute) => tribute.isAlive),
 
     eventId: `test-${definition.id}`,
     random: () => randomValue,
@@ -121,48 +85,70 @@ function resolveDefinition(
   });
 }
 
-function getStatuses(
-  changes: readonly GameChange[],
-) {
-  return changes.flatMap((change) =>
-    change.type === "apply-status"
-      ? [change.status]
-      : [],
-  );
+function getStatuses(changes: readonly GameChange[]) {
+  return changes.flatMap((change) => (change.type === "apply-status" ? [change.status] : []));
 }
 
-function getAcquisitions(
-  changes: readonly GameChange[],
-) {
-  return changes.filter(
-    (change) =>
-      change.type === "acquire-item",
-  );
+function getAcquisitions(changes: readonly GameChange[]) {
+  return changes.filter((change) => change.type === "acquire-item");
 }
 
-function getEliminations(
-  changes: readonly GameChange[],
-) {
-  return changes.filter(
-    (change) =>
-      change.type ===
-      "eliminate-tribute",
-  );
+function getEliminations(changes: readonly GameChange[]) {
+  return changes.filter((change) => change.type === "eliminate-tribute");
 }
 
-function findResolution(
+function getFleeOutcomeSignature(changes: readonly GameChange[]): string {
+  const statuses = getStatuses(changes);
+
+  const hasStatus = (definitionId: string, severity?: number) =>
+    statuses.some(
+      (status) =>
+        status.definitionId === definitionId &&
+        (severity === undefined || status.severity === severity),
+    );
+
+  /*
+   * Check exceptional outcomes first because the stream and
+   * foraging branches also include an item acquisition.
+   */
+  if (hasStatus("concealed") || hasStatus("inspired")) {
+    return "exceptional-success";
+  }
+
+  /*
+   * The woods critical failure also applies exhaustion, so
+   * critical conditions must be checked before failures.
+   */
+  if (hasStatus("injured") || hasStatus("poisoned") || hasStatus("disoriented", 2)) {
+    return "critical-failure";
+  }
+
+  if (hasStatus("exhausted") || hasStatus("sick") || hasStatus("disoriented", 1)) {
+    return "failure";
+  }
+
+  const acquiredItem = getAcquisitions(changes).length > 0;
+
+  const survivedEvent = changes.some(
+    (change) => change.type === "increment-statistic" && change.statistic === "eventsSurvived",
+  );
+
+  if (acquiredItem || survivedEvent) {
+    return "success";
+  }
+
+  return "unknown";
+}
+
+function sampleSignatures(
   definition: EventDefinition,
   game: GameState,
   participantsByRole: ParticipantsByRole,
-  predicate: (
-    changes: readonly GameChange[],
-  ) => boolean,
-) {
-  for (
-    let index = 0;
-    index < 1_000;
-    index += 1
-  ) {
+  getSignature: (changes: readonly GameChange[]) => string,
+): Set<string> {
+  const signatures = new Set<string>();
+
+  for (let index = 0; index < 1_000; index += 1) {
     const resolution = resolveDefinition(
       definition,
       game,
@@ -170,44 +156,7 @@ function findResolution(
       (index + 0.5) / 1_000,
     );
 
-    if (predicate(resolution.changes)) {
-      return resolution;
-    }
-  }
-
-  throw new Error(
-    `Could not reach the required outcome for "${definition.id}".`,
-  );
-}
-
-function sampleSignatures(
-  definition: EventDefinition,
-  game: GameState,
-  participantsByRole: ParticipantsByRole,
-  getSignature: (
-    changes: readonly GameChange[],
-  ) => string,
-): Set<string> {
-  const signatures = new Set<string>();
-
-  for (
-    let index = 0;
-    index < 1_000;
-    index += 1
-  ) {
-    const resolution =
-      resolveDefinition(
-        definition,
-        game,
-        participantsByRole,
-        (index + 0.5) / 1_000,
-      );
-
-    signatures.add(
-      getSignature(
-        resolution.changes,
-      ),
-    );
+    signatures.add(getSignature(resolution.changes));
   }
 
   return signatures;
@@ -215,82 +164,40 @@ function sampleSignatures(
 
 describe("Bloodbath event catalogue", () => {
   it("contains every Bloodbath event exactly once", () => {
-    const expectedIds = [
-      ...CORNUCOPIA_EVENTS,
-      ...FLEE_EVENTS,
-    ].map((event) => event.id);
+    const expectedIds = [...CORNUCOPIA_EVENTS, ...FLEE_EVENTS].map((event) => event.id);
 
-    const catalogueIds =
-      BLOODBATH_EVENT_CATALOGUE.map(
-        (event) => event.id,
-      );
+    const catalogueIds = BLOODBATH_EVENT_CATALOGUE.map((event) => event.id);
 
-    expect(catalogueIds).toEqual(
-      expectedIds,
-    );
+    expect(catalogueIds).toEqual(expectedIds);
 
-    expect(
-      new Set(catalogueIds).size,
-    ).toBe(catalogueIds.length);
+    expect(new Set(catalogueIds).size).toBe(catalogueIds.length);
   });
 
   it("keeps Bloodbath events outside the ordinary catalogue", () => {
-    const ordinaryIds = new Set(
-      EVENT_CATALOGUE.map(
-        (event) => event.id,
-      ),
-    );
+    const ordinaryIds = new Set(EVENT_CATALOGUE.map((event) => event.id));
 
-    for (
-      const event of
-      BLOODBATH_EVENT_CATALOGUE
-    ) {
-      expect(
-        ordinaryIds.has(event.id),
-      ).toBe(false);
+    for (const event of BLOODBATH_EVENT_CATALOGUE) {
+      expect(ordinaryIds.has(event.id)).toBe(false);
     }
   });
 
   it("uses Cornucopia provenance for every Cornucopia acquisition", () => {
     const game = createTestGame();
-    const [firstTribute, secondTribute] =
-      game.tributes;
+    const [firstTribute, secondTribute] = game.tributes;
 
-    for (
-      const definition of [
-        ...CORNUCOPIA_ACQUISITION_EVENTS,
-        ...CORNUCOPIA_CONFLICT_EVENTS,
-      ]
-    ) {
-      const participantsByRole =
-        createParticipantsByRole(
+    for (const definition of [...CORNUCOPIA_ACQUISITION_EVENTS, ...CORNUCOPIA_CONFLICT_EVENTS]) {
+      const participantsByRole = createParticipantsByRole(definition, firstTribute, secondTribute);
+
+      for (let index = 0; index < 100; index += 1) {
+        const resolution = resolveDefinition(
           definition,
-          firstTribute,
-          secondTribute,
+          game,
+          participantsByRole,
+          (index + 0.5) / 100,
         );
 
-      for (
-        let index = 0;
-        index < 100;
-        index += 1
-      ) {
-        const resolution =
-          resolveDefinition(
-            definition,
-            game,
-            participantsByRole,
-            (index + 0.5) / 100,
-          );
-
-        for (
-          const change of
-          getAcquisitions(
-            resolution.changes,
-          )
-        ) {
-          expect(
-            change.acquisitionSource,
-          ).toBe("cornucopia");
+        for (const change of getAcquisitions(resolution.changes)) {
+          expect(change.acquisitionSource).toBe("cornucopia");
         }
       }
     }
@@ -301,36 +208,20 @@ describe("Bloodbath event catalogue", () => {
     const tribute = game.tributes[0];
 
     for (const definition of FLEE_EVENTS) {
-      for (
-        let index = 0;
-        index < 100;
-        index += 1
-      ) {
-        const resolution =
-          resolveDefinition(
-            definition,
-            game,
-            {
-              tribute: [tribute],
-            },
-            (index + 0.5) / 100,
-          );
+      for (let index = 0; index < 100; index += 1) {
+        const resolution = resolveDefinition(
+          definition,
+          game,
+          {
+            tribute: [tribute],
+          },
+          (index + 0.5) / 100,
+        );
 
-        for (
-          const change of
-          getAcquisitions(
-            resolution.changes,
-          )
-        ) {
-          expect(
-            getItemDefinition(
-              change.item.definitionId,
-            ).origin,
-          ).toBe("natural-resource");
+        for (const change of getAcquisitions(resolution.changes)) {
+          expect(getItemDefinition(change.item.definitionId).origin).toBe("natural-resource");
 
-          expect(
-            change.acquisitionSource,
-          ).toBe("natural-foraging");
+          expect(change.acquisitionSource).toBe("natural-foraging");
         }
       }
     }
@@ -338,34 +229,13 @@ describe("Bloodbath event catalogue", () => {
 
   it("resolves every definition deterministically", () => {
     const game = createTestGame();
-    const [firstTribute, secondTribute] =
-      game.tributes;
+    const [firstTribute, secondTribute] = game.tributes;
 
-    for (
-      const definition of
-      BLOODBATH_EVENT_CATALOGUE
-    ) {
-      const participantsByRole =
-        createParticipantsByRole(
-          definition,
-          firstTribute,
-          secondTribute,
-        );
+    for (const definition of BLOODBATH_EVENT_CATALOGUE) {
+      const participantsByRole = createParticipantsByRole(definition, firstTribute, secondTribute);
 
-      expect(
-        resolveDefinition(
-          definition,
-          game,
-          participantsByRole,
-          0.73,
-        ),
-      ).toEqual(
-        resolveDefinition(
-          definition,
-          game,
-          participantsByRole,
-          0.73,
-        ),
+      expect(resolveDefinition(definition, game, participantsByRole, 0.73)).toEqual(
+        resolveDefinition(definition, game, participantsByRole, 0.73),
       );
     }
   });
@@ -376,132 +246,100 @@ describe("Bloodbath outcome coverage", () => {
     const game = createTestGame();
     const tribute = game.tributes[0];
 
-    for (
-      const definition of
-      CORNUCOPIA_ACQUISITION_EVENTS
-    ) {
-      const signatures =
-        sampleSignatures(
-          definition,
-          game,
-          {
-            tribute: [tribute],
-          },
-          (changes) => {
-            const statuses =
-              getStatuses(changes);
+    for (const definition of CORNUCOPIA_ACQUISITION_EVENTS) {
+      const signatures = sampleSignatures(
+        definition,
+        game,
+        {
+          tribute: [tribute],
+        },
+        (changes) => {
+          const statuses = getStatuses(changes);
 
-            const acquisitions =
-              getAcquisitions(changes);
+          const acquisitions = getAcquisitions(changes);
 
-            if (
-              statuses.some(
-                (status) =>
-                  status.definitionId ===
-                  "injured",
-              )
-            ) {
-              return "critical-failure";
-            }
+          if (statuses.some((status) => status.definitionId === "injured")) {
+            return "critical-failure";
+          }
 
-            if (
-              statuses.some(
-                (status) =>
-                  status.definitionId ===
-                  "exhausted",
-              )
-            ) {
-              return "failure";
-            }
+          if (statuses.some((status) => status.definitionId === "exhausted")) {
+            return "failure";
+          }
 
-            if (
-              acquisitions.length === 2 ||
-              statuses.some(
-                (status) =>
-                  status.definitionId ===
-                  "inspired",
-              )
-            ) {
-              return "exceptional-success";
-            }
+          if (
+            acquisitions.length === 2 ||
+            statuses.some((status) => status.definitionId === "inspired")
+          ) {
+            return "exceptional-success";
+          }
 
-            if (
-              acquisitions.length === 1
-            ) {
-              return "success";
-            }
+          if (acquisitions.length === 1) {
+            return "success";
+          }
 
-            return "unknown";
-          },
-        );
+          return "unknown";
+        },
+      );
 
       expect(signatures).toEqual(
-        new Set([
-          "critical-failure",
-          "failure",
-          "success",
-          "exceptional-success",
-        ]),
+        new Set(["critical-failure", "failure", "success", "exceptional-success"]),
       );
     }
   });
 
   it("reaches every conflict-event outcome", () => {
     const game = createTestGame();
-    const [attacker, defender] =
-      game.tributes;
+    const [attacker, defender] = game.tributes;
 
-    for (
-      const definition of
-      CORNUCOPIA_CONFLICT_EVENTS
-    ) {
-      const signatures =
-        sampleSignatures(
-          definition,
-          game,
-          {
-            attacker: [attacker],
-            defender: [defender],
-          },
-          (changes) => {
-            const elimination =
-              getEliminations(
-                changes,
-              )[0];
+    for (const definition of CORNUCOPIA_CONFLICT_EVENTS) {
+      const signatures = sampleSignatures(
+        definition,
+        game,
+        {
+          attacker: [attacker],
+          defender: [defender],
+        },
+        (changes) => {
+          const elimination = getEliminations(changes)[0];
 
-            if (
-              elimination?.tributeId ===
-              attacker.id
-            ) {
-              return "critical-failure";
-            }
+          if (elimination?.tributeId === attacker.id) {
+            return "critical-failure";
+          }
 
-            if (
-              elimination?.tributeId ===
-              defender.id
-            ) {
-              return "exceptional-success";
-            }
+          if (elimination?.tributeId === defender.id) {
+            return "exceptional-success";
+          }
 
-            if (
-              getAcquisitions(
-                changes,
-              ).length === 1
-            ) {
-              return "success";
-            }
+          if (getAcquisitions(changes).length === 1) {
+            return "success";
+          }
 
-            return "failure";
-          },
-        );
+          return "failure";
+        },
+      );
 
       expect(signatures).toEqual(
-        new Set([
-          "critical-failure",
-          "failure",
-          "success",
-          "exceptional-success",
-        ]),
+        new Set(["critical-failure", "failure", "success", "exceptional-success"]),
+      );
+    }
+  });
+
+  it("reaches every flee-event outcome", () => {
+    const game = createTestGame();
+    const tribute = game.tributes[0];
+
+    for (const definition of FLEE_EVENTS) {
+      const signatures = sampleSignatures(
+        definition,
+        game,
+        {
+          tribute: [tribute],
+        },
+        getFleeOutcomeSignature,
+      );
+
+      expect(signatures).toEqual(
+        new Set(["critical-failure", "failure", "success", "exceptional-success"]),
       );
     }
   });
@@ -509,91 +347,68 @@ describe("Bloodbath outcome coverage", () => {
 
 describe("Bloodbath conflict inventory", () => {
   it("credits the killer and transfers victim inventory once", () => {
-    const originalGame = createTestGame(
-      "conflict-death-loot",
+    const originalGame = createTestGame("conflict-death-loot");
+
+    const originalAttacker = originalGame.tributes[0];
+
+    const originalDefender = originalGame.tributes[1];
+
+    const eventId = "test-conflict-death-loot";
+
+    const item = createInventoryItemInstance(
+      "conflict-fixture",
+      originalDefender.id,
+      "rope",
+      DAY_ONE,
     );
-
-    const originalAttacker =
-      originalGame.tributes[0];
-
-    const originalDefender =
-      originalGame.tributes[1];
-
-    const eventId =
-      "test-conflict-death-loot";
-
-    const item =
-      createInventoryItemInstance(
-        "conflict-fixture",
-        originalDefender.id,
-        "rope",
-        DAY_ONE,
-      );
 
     const game: GameState = {
       ...originalGame,
 
-      tributes: originalGame.tributes.map(
-        (tribute) =>
-          tribute.id === originalDefender.id
-            ? {
-                ...tribute,
-                inventory: [item],
-              }
-            : tribute,
+      tributes: originalGame.tributes.map((tribute) =>
+        tribute.id === originalDefender.id
+          ? {
+              ...tribute,
+              inventory: [item],
+            }
+          : tribute,
       ),
     };
 
     /*
-    * Read both participants back from the final game fixture.
-    * This ensures resolution and application use the exact
-    * tribute objects contained in `game`.
-    */
-    const attacker = game.tributes.find(
-      (tribute) =>
-        tribute.id === originalAttacker.id,
-    );
+     * Read both participants back from the final game fixture.
+     * This ensures resolution and application use the exact
+     * tribute objects contained in `game`.
+     */
+    const attacker = game.tributes.find((tribute) => tribute.id === originalAttacker.id);
 
-    const defender = game.tributes.find(
-      (tribute) =>
-        tribute.id === originalDefender.id,
-    );
+    const defender = game.tributes.find((tribute) => tribute.id === originalDefender.id);
 
     if (!attacker || !defender) {
-      throw new Error(
-        "Missing conflict test participants.",
-      );
+      throw new Error("Missing conflict test participants.");
     }
 
-    const definition =
-      CORNUCOPIA_CONFLICT_EVENTS.find(
-        (event) =>
-          event.id ===
-          "cornucopia-contested-weapon",
-      );
+    const definition = CORNUCOPIA_CONFLICT_EVENTS.find(
+      (event) => event.id === "cornucopia-contested-weapon",
+    );
 
     if (!definition) {
-      throw new Error(
-        "Missing contested weapon event.",
-      );
+      throw new Error("Missing contested weapon event.");
     }
 
     const resolution = definition.resolve({
       state: game,
       round: DAY_ONE,
 
-      livingTributes:
-        game.tributes.filter(
-          (tribute) => tribute.isAlive,
-        ),
+      livingTributes: game.tributes.filter((tribute) => tribute.isAlive),
 
       eventId,
 
       /*
-      * Exceptional success is the final weighted outcome.
-      * A value immediately below 1 therefore selects that
-      * branch regardless of the participants' relative stats.
-      */
+       * Exceptional success is the final weighted outcome.
+       * A value immediately below 1 therefore selects that
+       * branch regardless of the participants' relative stats.
+       */
       random: () => 1 - Number.EPSILON,
 
       participantsByRole: {
@@ -603,16 +418,12 @@ describe("Bloodbath conflict inventory", () => {
     });
 
     /*
-    * Verify the event produced the outcome this test requires
-    * before testing application and death-loot behavior.
-    */
-    const eliminationChange =
-      resolution.changes.find(
-        (change) =>
-          change.type ===
-            "eliminate-tribute" &&
-          change.tributeId === defender.id,
-      );
+     * Verify the event produced the outcome this test requires
+     * before testing application and death-loot behavior.
+     */
+    const eliminationChange = resolution.changes.find(
+      (change) => change.type === "eliminate-tribute" && change.tributeId === defender.id,
+    );
 
     expect(eliminationChange).toEqual(
       expect.objectContaining({
@@ -628,79 +439,42 @@ describe("Bloodbath conflict inventory", () => {
       resolutionMode: "standard",
       round: DAY_ONE,
 
-      participantTributeIds: [
-        attacker.id,
-        defender.id,
-      ],
+      participantTributeIds: [attacker.id, defender.id],
 
       text: resolution.text,
       changes: resolution.changes,
     };
 
-    const nextState =
-      applyResolvedEvent(
-        game,
-        event,
-      );
+    const nextState = applyResolvedEvent(game, event);
 
-    const deadDefender =
-      nextState.tributes.find(
-        (tribute) =>
-          tribute.id === defender.id,
-      );
+    const deadDefender = nextState.tributes.find((tribute) => tribute.id === defender.id);
 
-    const survivingAttacker =
-      nextState.tributes.find(
-        (tribute) =>
-          tribute.id === attacker.id,
-      );
+    const survivingAttacker = nextState.tributes.find((tribute) => tribute.id === attacker.id);
 
-    if (
-      !deadDefender ||
-      !survivingAttacker
-    ) {
-      throw new Error(
-        "Conflict participants disappeared after event application.",
-      );
+    if (!deadDefender || !survivingAttacker) {
+      throw new Error("Conflict participants disappeared after event application.");
     }
 
     expect(deadDefender.isAlive).toBe(false);
 
-    expect(
-      deadDefender.death
-        ?.killerTributeIds,
-    ).toEqual([attacker.id]);
+    expect(deadDefender.death?.killerTributeIds).toEqual([attacker.id]);
 
     expect(
-      survivingAttacker.inventory.filter(
-        (candidate) =>
-          candidate.id === item.id,
-      ),
+      survivingAttacker.inventory.filter((candidate) => candidate.id === item.id),
     ).toHaveLength(1);
 
-    expect(
-      deadDefender.inventory.some(
-        (candidate) =>
-          candidate.id === item.id,
-      ),
-    ).toBe(false);
+    expect(deadDefender.inventory.some((candidate) => candidate.id === item.id)).toBe(false);
 
     expect(
       nextState.itemTransactions.filter(
         (transaction) =>
-          transaction.type ===
-            "transferred" &&
-          transaction.itemInstanceId ===
-            item.id,
+          transaction.type === "transferred" && transaction.itemInstanceId === item.id,
       ),
     ).toHaveLength(1);
 
-    const deathLootChanges =
-      resolution.changes.filter(
-        (change) =>
-          change.type === "transfer-item" &&
-          change.reason === "death-loot",
-      );
+    const deathLootChanges = resolution.changes.filter(
+      (change) => change.type === "transfer-item" && change.reason === "death-loot",
+    );
 
     expect(deathLootChanges).toEqual([
       {
@@ -715,46 +489,27 @@ describe("Bloodbath conflict inventory", () => {
 
   it("awards each contested item at most once", () => {
     const game = createTestGame();
-    const [attacker, defender] =
-      game.tributes;
+    const [attacker, defender] = game.tributes;
 
-    for (
-      const definition of
-      CORNUCOPIA_CONFLICT_EVENTS
-    ) {
-      for (
-        let index = 0;
-        index < 100;
-        index += 1
-      ) {
-        const resolution =
-          resolveDefinition(
-            definition,
-            game,
-            {
-              attacker: [attacker],
-              defender: [defender],
-            },
-            (index + 0.5) / 100,
-          );
+    for (const definition of CORNUCOPIA_CONFLICT_EVENTS) {
+      for (let index = 0; index < 100; index += 1) {
+        const resolution = resolveDefinition(
+          definition,
+          game,
+          {
+            attacker: [attacker],
+            defender: [defender],
+          },
+          (index + 0.5) / 100,
+        );
 
-        const acquisitions =
-          getAcquisitions(
-            resolution.changes,
-          );
+        const acquisitions = getAcquisitions(resolution.changes);
 
-        expect(
+        expect(acquisitions.length).toBeLessThanOrEqual(1);
+
+        expect(new Set(acquisitions.map((change) => change.item.id)).size).toBe(
           acquisitions.length,
-        ).toBeLessThanOrEqual(1);
-
-        expect(
-          new Set(
-            acquisitions.map(
-              (change) =>
-                change.item.id,
-            ),
-          ).size,
-        ).toBe(acquisitions.length);
+        );
       }
     }
   });

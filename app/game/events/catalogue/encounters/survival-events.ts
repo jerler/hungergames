@@ -1,16 +1,20 @@
 import { selectRandomItem } from "~/game/engine/random";
 import {
-  getAwarenessScore,
   getDefinitionPopulationMultiplier,
   getForagingScore,
   getSurvivalSelectionWeight,
 } from "~/game/engine/stat-formulas";
 import {
   createItemAcquisitionAndSurvivalChanges,
+  createItemUseChange,
   createStatusChange,
   createSurvivalChanges,
 } from "~/game/events/event-change-builders";
-import { getItemLabel, resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
+
+import {
+  requireEventItem,
+  resolveLuckAdjustedStatCheck,
+} from "~/game/events/event-resolution-helpers";
 import type { StatCheckOutcome } from "~/game/events/event-outcomes";
 import {
   requireParticipants,
@@ -23,31 +27,9 @@ import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getCooperativeTruceWeight } from "~/game/truces/truce-selection";
 import type { GameChange, GameTribute } from "~/game/types/game-state";
 
-const SUPPLY_ITEM_IDS = [
-  "water",
-  "food",
-  "medicine",
-  "blanket",
-  "matches",
-  "rope",
-  "map",
-  "trap-kit",
-  "camouflage-net",
-  "fishing-gear",
-  "shield",
-] satisfies readonly ItemDefinitionId[];
+const NATURAL_RESOURCE_ITEM_IDS = ["food", "water"] satisfies readonly ItemDefinitionId[];
 
-const WEAPON_ITEM_IDS = [
-  "knife",
-  "slingshot",
-  "spear",
-  "axe",
-  "bow",
-] satisfies readonly ItemDefinitionId[];
-
-const CACHE_ITEM_IDS = ["water", "food", "medicine"] satisfies readonly ItemDefinitionId[];
-
-function resolvePicnicParticipant(
+function resolveForagingParticipant(
   eventId: string,
   round: EventResolutionContext["round"],
   tribute: GameTribute,
@@ -59,35 +41,48 @@ function resolvePicnicParticipant(
   switch (outcome) {
     case "critical-failure":
       return {
-        sentence: `${tribute.snapshot.name} eats the fluorescent berries ` + "and is poisoned.",
+        sentence:
+          `${tribute.snapshot.name} mistakes poisonous ` +
+          "berries for edible fruit and is poisoned.",
 
         changes: [createStatusChange(eventId, tribute, "poisoned", 1, round)],
       };
 
     case "failure":
       return {
-        sentence: `${tribute.snapshot.name} trusts the custard ` + "and becomes sick.",
+        sentence: `${tribute.snapshot.name} misidentifies a ` + "bitter root and becomes sick.",
 
         changes: [createStatusChange(eventId, tribute, "sick", 1, round)],
       };
 
     case "success":
       return {
-        sentence: `${tribute.snapshot.name} identifies the safe dishes ` + "and pockets some food.",
+        sentence:
+          `${tribute.snapshot.name} identifies edible ` +
+          "plants and gathers enough food to keep going.",
 
-        changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
+        changes: createItemAcquisitionAndSurvivalChanges(
+          eventId,
+          tribute,
+          ["food"],
+          round,
+          "natural-foraging",
+        ),
       };
 
     case "exceptional-success":
       return {
         sentence:
-          `${tribute.snapshot.name} finds sealed food and water ` + "hidden beneath the table.",
+          `${tribute.snapshot.name} identifies edible ` +
+          "plants beside a clean spring and gathers both " +
+          "food and water.",
 
         changes: createItemAcquisitionAndSurvivalChanges(
           eventId,
           tribute,
           ["food", "water"],
           round,
+          "natural-foraging",
         ),
       };
   }
@@ -96,40 +91,7 @@ function resolvePicnicParticipant(
 export const SURVIVAL_EVENTS = [
   /* Day Only */
   {
-    id: "finds-water",
-    category: "survival",
-    tags: ["survival", "item", "resource"],
-    periods: ["day"],
-    baseWeight: 8,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-        getWeight: getSurvivalSelectionWeight,
-      },
-    ],
-
-    resolve({ eventId, round, participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
-      return {
-        text:
-          `${tribute.snapshot.name} finds a clean ` +
-          "stream and collects enough water to keep going.",
-
-        changes: createItemAcquisitionAndSurvivalChanges(
-          eventId,
-          tribute,
-          ["water"],
-          round,
-          "natural-foraging",
-        ),
-      };
-    },
-  },
-  {
-    id: "searches-for-supplies",
+    id: "forages-for-resources",
     category: "survival",
     tags: ["survival", "item", "resource"],
     periods: ["day"],
@@ -146,13 +108,25 @@ export const SURVIVAL_EVENTS = [
     resolve({ eventId, round, random, participantsByRole }): EventResolution {
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
 
-      const itemId = selectRandomItem(SUPPLY_ITEM_IDS, random);
+      const itemId = selectRandomItem(NATURAL_RESOURCE_ITEM_IDS, random);
+
+      const text =
+        itemId === "water"
+          ? `${tribute.snapshot.name} follows animal tracks ` +
+            "to a clean spring and collects water."
+          : `${tribute.snapshot.name} identifies edible ` +
+            "roots and plants and gathers enough for a meal.";
 
       return {
-        text:
-          `${tribute.snapshot.name} searches an abandoned ` + `supply crate and finds ${itemId}.`,
+        text,
 
-        changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, [itemId], round),
+        changes: createItemAcquisitionAndSurvivalChanges(
+          eventId,
+          tribute,
+          [itemId],
+          round,
+          "natural-foraging",
+        ),
       };
     },
   },
@@ -167,12 +141,21 @@ export const SURVIVAL_EVENTS = [
       {
         id: "tribute",
         count: 1,
+
+        requiredItemDefinitionIds: ["map"],
+
         getWeight: getForagingScore,
       },
     ],
 
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+    resolve(context): EventResolution {
+      const { eventId, round, random, participantsByRole } = context;
+
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
+
+      const map = requireEventItem(context, tribute, "map", "upside-down-map");
+
+      const useMap = createItemUseChange(map.owner, map.item, "upside-down-map");
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
@@ -180,52 +163,65 @@ export const SURVIVAL_EVENTS = [
         case "critical-failure":
           return {
             text:
-              `${tribute.snapshot.name} follows an arena map for hours ` +
-              "before realizing it was upside down.",
+              `${tribute.snapshot.name} follows their map ` +
+              "for hours before realizing they have been " +
+              "holding it upside down.",
 
-            changes: [createStatusChange(eventId, tribute, "disoriented", 2, round)],
+            changes: [createStatusChange(eventId, tribute, "disoriented", 2, round), useMap],
           };
 
         case "failure":
           return {
             text:
-              `${tribute.snapshot.name} attempts to follow a damaged map ` +
+              `${tribute.snapshot.name} misreads their map ` +
               "and becomes hopelessly turned around.",
 
-            changes: [createStatusChange(eventId, tribute, "disoriented", 1, round)],
+            changes: [createStatusChange(eventId, tribute, "disoriented", 1, round), useMap],
           };
 
-        case "success":
-          return {
-            text:
-              `${tribute.snapshot.name} corrects an upside-down arena map ` +
-              "and keeps it for later.",
+        case "success": {
+          const itemId = selectRandomItem(NATURAL_RESOURCE_ITEM_IDS, random);
 
-            changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["map"], round),
-          };
-
-        case "exceptional-success": {
-          const cacheItemId = selectRandomItem(CACHE_ITEM_IDS, random);
+          const destinationText =
+            itemId === "water" ? "a clean spring" : "a patch of edible plants";
 
           return {
             text:
-              `${tribute.snapshot.name} corrects an upside-down map ` +
-              `and follows it to a cache containing ${getItemLabel(cacheItemId)}.`,
+              `${tribute.snapshot.name} correctly reads ` +
+              `their map and follows it to ${destinationText}.`,
 
-            changes: createItemAcquisitionAndSurvivalChanges(
-              eventId,
-              tribute,
-              ["map", cacheItemId],
-              round,
-            ),
+            changes: [
+              ...createItemAcquisitionAndSurvivalChanges(
+                eventId,
+                tribute,
+                [itemId],
+                round,
+                "natural-foraging",
+              ),
+              useMap,
+            ],
           };
         }
+
+        case "exceptional-success":
+          return {
+            text:
+              `${tribute.snapshot.name} studies their map ` +
+              "and locates a secure natural shelter hidden " +
+              "from the rest of the arena.",
+
+            changes: [
+              createStatusChange(eventId, tribute, "concealed", 2, round),
+              ...createSurvivalChanges([tribute]),
+              useMap,
+            ],
+          };
       }
     },
   },
 
   {
-    id: "suspicious-picnic",
+    id: "unfamiliar-foraging-ground",
     category: "hazard",
     tags: ["hazard", "item", "status", "resource"],
     periods: ["day"],
@@ -252,9 +248,14 @@ export const SURVIVAL_EVENTS = [
 
       const secondOutcome = resolveLuckAdjustedStatCheck(secondTribute, "brains", 3, random);
 
-      const firstResolution = resolvePicnicParticipant(eventId, round, firstTribute, firstOutcome);
+      const firstResolution = resolveForagingParticipant(
+        eventId,
+        round,
+        firstTribute,
+        firstOutcome,
+      );
 
-      const secondResolution = resolvePicnicParticipant(
+      const secondResolution = resolveForagingParticipant(
         eventId,
         round,
         secondTribute,
@@ -263,38 +264,13 @@ export const SURVIVAL_EVENTS = [
 
       return {
         text:
-          `${firstTribute.snapshot.name} and ${secondTribute.snapshot.name} ` +
-          "discover a fully prepared picnic in the middle of the arena. " +
-          `${firstResolution.sentence} ${secondResolution.sentence}`,
+          `${firstTribute.snapshot.name} and ` +
+          `${secondTribute.snapshot.name} discover a lush ` +
+          "clearing filled with unfamiliar plants and a " +
+          `small spring. ${firstResolution.sentence} ` +
+          secondResolution.sentence,
 
         changes: [...firstResolution.changes, ...secondResolution.changes],
-      };
-    },
-  },
-
-  /* Night Only */
-  {
-    id: "keeps-watch",
-    category: "survival",
-    tags: ["survival", "resource"],
-    periods: ["night"],
-    baseWeight: 8,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-        getWeight: getAwarenessScore,
-      },
-    ],
-
-    resolve({ participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
-      return {
-        text: `${tribute.snapshot.name} stays awake ` + "through the night, listening for danger.",
-
-        changes: createSurvivalChanges([tribute]),
       };
     },
   },
@@ -322,33 +298,6 @@ export const SURVIVAL_EVENTS = [
         text: `${tribute.snapshot.name} finds ` + "a concealed place to rest.",
 
         changes: createSurvivalChanges([tribute]),
-      };
-    },
-  },
-  {
-    id: "finds-weapon",
-    category: "survival",
-    tags: ["survival", "item", "weapon"],
-    periods: ["day", "night"],
-    baseWeight: 6,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-        getWeight: getForagingScore,
-      },
-    ],
-
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
-      const itemId = selectRandomItem(WEAPON_ITEM_IDS, random);
-
-      return {
-        text: `${tribute.snapshot.name} discovers ` + `a discarded ${itemId}.`,
-
-        changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, [itemId], round),
       };
     },
   },

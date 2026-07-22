@@ -250,10 +250,10 @@ describe("truce selection", () => {
       truces: [truce],
     };
 
-    const picnic = SURVIVAL_EVENTS.find((event) => event.id === "suspicious-picnic");
+    const picnic = SURVIVAL_EVENTS.find((event) => event.id === "unfamiliar-foraging-ground");
 
     if (!picnic) {
-      throw new Error("Missing suspicious-picnic event.");
+      throw new Error("Missing unfamiliar-foraging-ground event.");
     }
 
     const selection = selectEventParticipants(

@@ -425,16 +425,14 @@ describe("status and inventory interactions", () => {
       period: "day" as const,
     };
 
+    const setupEventId = "medicine-priority-setup";
+
     const setupEvent: ResolvedEvent = {
-      id: "medicine-priority-setup",
-
+      id: setupEventId,
       definitionId: "medicine-priority-test",
-
       resolutionMode: "standard",
       round,
-
       participantTributeIds: [tribute.id],
-
       text: "Treatment priority setup.",
 
       changes: [
@@ -442,19 +440,20 @@ describe("status and inventory interactions", () => {
           type: "apply-status",
           tributeId: tribute.id,
 
-          status: createStatusEffectInstance("bleeding-setup", tribute.id, "bleeding", 1, round),
+          status: createStatusEffectInstance(setupEventId, tribute.id, "bleeding", 1, round),
         },
         {
           type: "apply-status",
           tributeId: tribute.id,
 
-          status: createStatusEffectInstance("injury-setup", tribute.id, "injured", 1, round),
+          status: createStatusEffectInstance(setupEventId, tribute.id, "injured", 1, round),
         },
         {
           type: "acquire-item",
           tributeId: tribute.id,
           acquisitionSource: "cornucopia",
-          item: createInventoryItemInstance("medicine-setup", tribute.id, "medicine", round),
+
+          item: createInventoryItemInstance(setupEventId, tribute.id, "medicine", round),
         },
       ],
     };
@@ -570,16 +569,14 @@ describe("status and inventory interactions", () => {
         period: "day" as const,
       };
 
+      const setupEventId = `setup-${itemId}-${statusId}`;
+
       const setupEvent: ResolvedEvent = {
-        id: `setup-${itemId}-` + statusId,
-
+        id: setupEventId,
         definitionId: "automatic-treatment-test",
-
         resolutionMode: "standard",
         round: appliedRound,
-
         participantTributeIds: [tribute.id],
-
         text: "Treatment setup.",
 
         changes: [
@@ -587,19 +584,14 @@ describe("status and inventory interactions", () => {
             type: "apply-status",
             tributeId: tribute.id,
 
-            status: createStatusEffectInstance(
-              `status-${statusId}`,
-              tribute.id,
-              statusId,
-              1,
-              appliedRound,
-            ),
+            status: createStatusEffectInstance(setupEventId, tribute.id, statusId, 1, appliedRound),
           },
           {
             type: "acquire-item",
             tributeId: tribute.id,
             acquisitionSource: "cornucopia",
-            item: createInventoryItemInstance(`item-${itemId}`, tribute.id, itemId, appliedRound),
+
+            item: createInventoryItemInstance(setupEventId, tribute.id, itemId, appliedRound),
           },
         ],
       };
@@ -769,7 +761,7 @@ describe("death loot", () => {
     const originalPartner = game.tributes[2];
 
     const knife = createInventoryItemInstance(
-      "death-loot-access-setup",
+      "death-loot-access-item",
       originalVictim.id,
       "knife",
       DAY_ONE,
@@ -886,7 +878,7 @@ describe("death loot", () => {
     const originalVictim = game.tributes[0];
 
     const knife = createInventoryItemInstance(
-      "uncredited-death-setup",
+      "uncredited-death-item",
       originalVictim.id,
       "knife",
       DAY_ONE,

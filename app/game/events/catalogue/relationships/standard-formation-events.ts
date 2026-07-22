@@ -52,6 +52,7 @@ function createSupplyChanges(
     return {
       type: "acquire-item",
       tributeId: tribute.id,
+      acquisitionSource: "natural-foraging",
       item: createInventoryItemInstance(eventId, tribute.id, itemId, round),
     };
   });
@@ -143,7 +144,7 @@ function createFormationEvent(
       const text = sharesShelter
         ? `${formatNameList(names)} discover a defensible shelter ` +
           "and agree to share it through the coming night."
-        : `${formatNameList(names)} divide an abandoned supply cache ` +
+        : `${formatNameList(names)} gather food and water together ` +
           "and agree to travel together temporarily.";
 
       return {

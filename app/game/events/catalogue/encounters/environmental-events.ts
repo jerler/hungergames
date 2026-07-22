@@ -7,7 +7,7 @@ import {
   createStatusChange,
   createSurvivalChanges,
 } from "~/game/events/event-change-builders";
-import { getItemLabel, resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
+import { resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
 import {
   requireSingleParticipant,
   type EventDefinition,
@@ -21,7 +21,7 @@ import {
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { GameChange, GameTribute, InventoryItem } from "~/game/types/game-state";
 
-const CACHE_ITEM_IDS = ["water", "food", "medicine"] satisfies readonly ItemDefinitionId[];
+const NATURAL_RESOURCE_ITEM_IDS = ["food", "water"] satisfies readonly ItemDefinitionId[];
 
 interface BrushfireProtection {
   accessibleItem: AccessibleInventoryItem;
@@ -279,10 +279,16 @@ export const ENVIRONMENTAL_EVENTS = [
           return {
             text:
               `${tribute.snapshot.name} befriends an ` +
-              "arena goose, which leads them to an " +
-              "abandoned package of food.",
+              "arena goose, which leads them to a patch " +
+              "of edible plants.",
 
-            changes: createItemAcquisitionAndSurvivalChanges(eventId, tribute, ["food"], round),
+            changes: createItemAcquisitionAndSurvivalChanges(
+              eventId,
+              tribute,
+              ["food"],
+              round,
+              "natural-foraging",
+            ),
           };
       }
     },
@@ -363,17 +369,24 @@ export const ENVIRONMENTAL_EVENTS = [
           };
 
         case "exceptional-success": {
-          const itemId = selectRandomItem(CACHE_ITEM_IDS, random);
+          const itemId = selectRandomItem(NATURAL_RESOURCE_ITEM_IDS, random);
+
+          const resourceText = itemId === "water" ? "a clean stream" : "a patch of edible plants";
 
           return {
             text:
-              `${protectionText}, reaches an abandoned ` +
-              "supply cache, and retrieves " +
-              `${getItemLabel(itemId)} before the fire ` +
-              "closes in.",
+              `${protectionText}, reaches safety, and ` +
+              `discovers ${resourceText} beyond the ` +
+              "burned ground.",
 
             changes: [
-              ...createItemAcquisitionAndSurvivalChanges(eventId, tribute, [itemId], round),
+              ...createItemAcquisitionAndSurvivalChanges(
+                eventId,
+                tribute,
+                [itemId],
+                round,
+                "natural-foraging",
+              ),
 
               ...protectionChanges,
             ],

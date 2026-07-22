@@ -142,25 +142,21 @@ function acquireItem(
   acquisitionSource: ItemAcquisitionSource,
   index: number,
 ): GameState {
-  const item = createInventoryItemInstance(`setup-item-${index}`, tribute.id, itemId, DAY_ONE);
+  const eventId = `setup-item-event-${index}`;
+
+  const item = createInventoryItemInstance(eventId, tribute.id, itemId, DAY_ONE);
 
   return applyResolvedEvent(game, {
-    id: `setup-item-event-${index}`,
-
+    id: eventId,
     definitionId: "setup-item",
-
     resolutionMode: "standard",
-
     round: DAY_ONE,
-
     participantTributeIds: [tribute.id],
-
     text: "A test item is acquired.",
 
     changes: [
       {
         type: "acquire-item",
-
         tributeId: tribute.id,
         acquisitionSource,
         item,

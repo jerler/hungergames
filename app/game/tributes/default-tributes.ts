@@ -24,6 +24,9 @@ function createTributeDefinition(
 }
 
 export const DEFAULT_TRIBUTES = [
+  createTributeDefinition("phoenix-wright", "Phoenix Wright", "he", 2, 3, 5),
+  createTributeDefinition("miles-edgeworth", "Miles Edgeworth", "he", 4, 4, 2),
+  createTributeDefinition("sora", "Sora", "he", 1, 3, 5),
   createTributeDefinition("kuzco", "Emperor Kuzco", "he", 1, 1, 5),
   createTributeDefinition("pacha", "Pacha", "he", 3, 4, 2),
   createTributeDefinition("kronk", "Kronk", "he", 1, 5, 5),
@@ -39,7 +42,6 @@ export const DEFAULT_TRIBUTES = [
   createTributeDefinition("odysseus", "Odysseus", "he", 5, 4, 1),
   createTributeDefinition("the-doctor", "The Doctor", "they", 5, 1, 3),
   createTributeDefinition("dora-the-explorer", "Dora the Explorer", "she", 3, 2, 3),
-
   createTributeDefinition("winnie-the-pooh", "Winnie the Pooh", "he", 2, 1, 5),
   createTributeDefinition("paddington-bear", "Paddington Bear", "he", 3, 2, 5),
   createTributeDefinition("kermit-the-frog", "Kermit the Frog", "he", 4, 1, 3),

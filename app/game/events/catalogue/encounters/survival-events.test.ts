@@ -7,6 +7,7 @@ import type {
   ParticipantsByRole,
 } from "~/game/events/event-schema";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
+import { createInventoryItemInstance } from "~/game/items/inventory-engine";
 import type { RandomSource } from "~/game/engine/random";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
@@ -127,9 +128,24 @@ describe("survival events", () => {
   });
 
   it("applies disoriented after a critical map failure", () => {
-    const game = createTestGame();
+    const originalGame = createTestGame();
 
-    const tribute = withStats(game.tributes[0], BALANCED_STATS);
+    const originalTribute = withStats(originalGame.tributes[0], BALANCED_STATS);
+
+    const map = createInventoryItemInstance("map-test-setup", originalTribute.id, "map", ROUND);
+
+    const tribute = {
+      ...originalTribute,
+      inventory: [map],
+    };
+
+    const game: GameState = {
+      ...originalGame,
+
+      tributes: originalGame.tributes.map((candidate) =>
+        candidate.id === tribute.id ? tribute : candidate,
+      ),
+    };
 
     const resolution = resolveEvent(
       requireEvent("upside-down-map"),
@@ -146,9 +162,16 @@ describe("survival events", () => {
         severity: 2,
       }),
     ]);
+
+    expect(resolution.changes).toContainEqual({
+      type: "use-item",
+      tributeId: tribute.id,
+      itemInstanceId: map.id,
+      reason: "upside-down-map",
+    });
   });
 
-  it("resolves picnic participants independently", () => {
+  it("resolves foraging participants independently", () => {
     const game = createTestGame();
 
     const firstTribute = withStats(game.tributes[0], BALANCED_STATS, "Careful");
@@ -156,7 +179,7 @@ describe("survival events", () => {
     const secondTribute = withStats(game.tributes[1], BALANCED_STATS, "Hungry");
 
     const resolution = resolveEvent(
-      requireEvent("suspicious-picnic"),
+      requireEvent("unfamiliar-foraging-ground"),
       game,
       {
         tributes: [firstTribute, secondTribute],
@@ -181,7 +204,7 @@ describe("survival events", () => {
     const secondTribute = withStats(game.tributes[1], BALANCED_STATS);
 
     const resolution = resolveEvent(
-      requireEvent("suspicious-picnic"),
+      requireEvent("unfamiliar-foraging-ground"),
       game,
       {
         tributes: [firstTribute, secondTribute],

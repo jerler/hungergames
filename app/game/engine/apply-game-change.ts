@@ -214,27 +214,14 @@ type AcquireItemChange = Extract<
   }
 >;
 
-function roundsMatch(
-  first: ResolvedEvent["round"],
-  second: ResolvedEvent["round"],
-): boolean {
-  return (
-    first.day === second.day &&
-    first.period === second.period
-  );
+function roundsMatch(first: ResolvedEvent["round"], second: ResolvedEvent["round"]): boolean {
+  return first.day === second.day && first.period === second.period;
 }
 
-function validateItemAcquisition(
-  change: AcquireItemChange,
-  event: ResolvedEvent,
-): void {
-  const definition = getItemDefinition(
-    change.item.definitionId,
-  );
+function validateItemAcquisition(change: AcquireItemChange, event: ResolvedEvent): void {
+  const definition = getItemDefinition(change.item.definitionId);
 
-  if (
-    change.item.sourceEventId !== event.id
-  ) {
+  if (change.item.sourceEventId !== event.id) {
     throw new Error(
       `Item "${change.item.id}" references ` +
         `source event "${change.item.sourceEventId}" ` +
@@ -242,12 +229,7 @@ function validateItemAcquisition(
     );
   }
 
-  if (
-    !roundsMatch(
-      change.item.acquiredRound,
-      event.round,
-    )
-  ) {
+  if (!roundsMatch(change.item.acquiredRound, event.round)) {
     throw new Error(
       `Item "${change.item.id}" records ` +
         "an acquisition round that does not " +
@@ -257,10 +239,7 @@ function validateItemAcquisition(
 
   switch (change.acquisitionSource) {
     case "natural-foraging": {
-      if (
-        definition.origin !==
-        "natural-resource"
-      ) {
+      if (definition.origin !== "natural-resource") {
         throw new Error(
           `Manufactured item "${definition.id}" ` +
             "cannot be acquired through " +
@@ -272,14 +251,9 @@ function validateItemAcquisition(
     }
 
     case "cornucopia": {
-      if (
-        event.round.day !== 1 ||
-        event.round.period !== "day"
-      ) {
+      if (event.round.day !== 1 || event.round.period !== "day") {
         throw new Error(
-          `Cornucopia item "${definition.id}" ` +
-            "can only be acquired during " +
-            "Day 1 daytime.",
+          `Cornucopia item "${definition.id}" ` + "can only be acquired during " + "Day 1 daytime.",
         );
       }
 
@@ -287,14 +261,10 @@ function validateItemAcquisition(
     }
 
     case "sponsor":
-      throw new Error(
-        "Sponsor item acquisition is not implemented.",
-      );
+      throw new Error("Sponsor item acquisition is not implemented.");
 
     default:
-      throw new Error(
-        "Unknown item acquisition source.",
-      );
+      throw new Error("Unknown item acquisition source.");
   }
 }
 
@@ -396,31 +366,21 @@ export function applyGameChange(
     case "acquire-item": {
       validateItemAcquisition(change, event);
 
-      const stateWithItem = updateTribute(
-        state,
-        change.tributeId,
-        (tribute) => ({
-          ...tribute,
+      const stateWithItem = updateTribute(state, change.tributeId, (tribute) => ({
+        ...tribute,
 
-          inventory: [
-            ...tribute.inventory,
-            change.item,
-          ],
-        }),
-      );
+        inventory: [...tribute.inventory, change.item],
+      }));
 
       const transaction: InventoryTransaction = {
-        id:
-          `acquire:${event.id}:` +
-          change.item.id,
+        id: `acquire:${event.id}:` + change.item.id,
 
         type: "acquired",
 
         tributeId: change.tributeId,
 
         itemInstanceId: change.item.id,
-        definitionId:
-          change.item.definitionId,
+        definitionId: change.item.definitionId,
 
         uses: change.item.usesRemaining,
 
@@ -429,17 +389,13 @@ export function applyGameChange(
         },
 
         sourceId: event.id,
-        acquisitionSource:
-          change.acquisitionSource,
+        acquisitionSource: change.acquisitionSource,
       };
 
       return {
         ...stateWithItem,
 
-        itemTransactions: [
-          ...stateWithItem.itemTransactions,
-          transaction,
-        ],
+        itemTransactions: [...stateWithItem.itemTransactions, transaction],
       };
     }
 

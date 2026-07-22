@@ -109,12 +109,6 @@ function resolveEvent(
   });
 }
 
-function getAcquiredItemIds(changes: EventResolution["changes"]): string[] {
-  return changes.flatMap((change) =>
-    change.type === "acquire-item" ? [change.item.definitionId] : [],
-  );
-}
-
 describe("high-Luck events", () => {
   it("includes every high-Luck event in the main catalogue", () => {
     expect(HIGH_LUCK_EVENTS.every((event) => EVENT_CATALOGUE.includes(event))).toBe(true);
@@ -134,33 +128,6 @@ describe("high-Luck events", () => {
 
       expect(role.isEligible?.(averageTribute)).toBe(false);
     }
-  });
-
-  it("gives an exceptionally lucky tribute a sponsor jackpot", () => {
-    const game = createTestGame();
-
-    const tribute = withLuck(game.tributes[0], 4, "Fortuna");
-
-    const resolution = resolveEvent(
-      requireHighLuckEvent("sponsor-drone-malfunction"),
-
-      game,
-
-      {
-        tribute: [tribute],
-      },
-
-      [0.95],
-    );
-
-    expect(getAcquiredItemIds(resolution.changes)).toEqual(["medicine", "bow"]);
-
-    expect(resolution.changes).toContainEqual({
-      type: "increment-statistic",
-      tributeId: tribute.id,
-      statistic: "giftsReceived",
-      amount: 2,
-    });
   });
 
   it("applies inspired after an exceptional pep talk", () => {

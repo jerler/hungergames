@@ -26,6 +26,7 @@ import {
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getCooperativeTruceWeight } from "~/game/truces/truce-selection";
 import type { GameChange, GameTribute } from "~/game/types/game-state";
+import { getTributePronouns } from "~/game/tributes/pronouns";
 
 const NATURAL_RESOURCE_ITEM_IDS = ["food", "water"] satisfies readonly ItemDefinitionId[];
 
@@ -152,7 +153,7 @@ export const SURVIVAL_EVENTS = [
       const { eventId, round, random, participantsByRole } = context;
 
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
+      const pronouns = getTributePronouns(tribute);
       const map = requireEventItem(context, tribute, "map", "upside-down-map");
 
       const useMap = createItemUseChange(map.owner, map.item, "upside-down-map");
@@ -163,9 +164,10 @@ export const SURVIVAL_EVENTS = [
         case "critical-failure":
           return {
             text:
-              `${tribute.snapshot.name} follows their map ` +
-              "for hours before realizing they have been " +
-              "holding it upside down.",
+              `${tribute.snapshot.name} follows ` +
+              `${pronouns.possessiveAdjective} map for hours ` +
+              `before realizing ${pronouns.subject} ` +
+              `${pronouns.havePresent} been holding it upside down.`,
 
             changes: [createStatusChange(eventId, tribute, "disoriented", 2, round), useMap],
           };
@@ -173,8 +175,9 @@ export const SURVIVAL_EVENTS = [
         case "failure":
           return {
             text:
-              `${tribute.snapshot.name} misreads their map ` +
-              "and becomes hopelessly turned around.",
+              `${tribute.snapshot.name} misreads ` +
+              `${pronouns.possessiveAdjective} map and becomes ` +
+              "hopelessly turned around.",
 
             changes: [createStatusChange(eventId, tribute, "disoriented", 1, round), useMap],
           };
@@ -188,7 +191,8 @@ export const SURVIVAL_EVENTS = [
           return {
             text:
               `${tribute.snapshot.name} correctly reads ` +
-              `their map and follows it to ${destinationText}.`,
+              `${pronouns.possessiveAdjective} map and follows ` +
+              `it to ${destinationText}.`,
 
             changes: [
               ...createItemAcquisitionAndSurvivalChanges(
@@ -206,7 +210,8 @@ export const SURVIVAL_EVENTS = [
         case "exceptional-success":
           return {
             text:
-              `${tribute.snapshot.name} studies their map ` +
+              `${tribute.snapshot.name} studies ` +
+              `${pronouns.possessiveAdjective} map ` +
               "and locates a secure natural shelter hidden " +
               "from the rest of the arena.",
 

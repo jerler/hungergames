@@ -7,6 +7,7 @@ import {
   type EventResolution,
 } from "~/game/events/event-schema";
 import { createCombatantRole } from "~/game/events/participant-role-builders";
+import { getTributePronouns } from "~/game/tributes/pronouns";
 
 const victimRole = {
   id: "victim",
@@ -79,6 +80,7 @@ export const COMBAT_EVENTS = [
       const { participantsByRole } = context;
 
       const victim = requireSingleParticipant(participantsByRole, "victim");
+      const victimPronouns = getTributePronouns(victim);
 
       const killer = requireSingleParticipant(participantsByRole, "killer");
 
@@ -87,7 +89,7 @@ export const COMBAT_EVENTS = [
       const text =
         `${killer.snapshot.name} catches ` +
         `${victim.snapshot.name} by surprise ` +
-        "and kills them with a knife.";
+        `and kills ${victimPronouns.object} with a knife.`;
 
       return {
         text,

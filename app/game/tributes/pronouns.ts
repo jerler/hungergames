@@ -1,3 +1,13 @@
+interface PronounBearingTribute {
+  snapshot: {
+    pronouns: PronounSetId;
+  };
+}
+
+export function getTributePronouns(tribute: PronounBearingTribute): PronounGrammar {
+  return getPronounGrammar(tribute.snapshot.pronouns);
+}
+
 export const PRONOUN_SET_IDS = ["they", "she", "he", "it"] as const;
 
 export type PronounSetId = (typeof PRONOUN_SET_IDS)[number];

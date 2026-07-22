@@ -14,6 +14,7 @@ import {
 } from "~/game/events/event-schema";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { GameTribute } from "~/game/types/game-state";
+import { getTributePronouns } from "~/game/tributes/pronouns";
 
 const CONTESTED_WEAPON_ITEM_IDS = [
   "knife",
@@ -179,6 +180,7 @@ function createPairConflictEvent({
 
     resolve({ eventId, round, random, participantsByRole }): EventResolution {
       const attacker = requireSingleParticipant(participantsByRole, "attacker");
+      const attackerPronouns = getTributePronouns(attacker);
 
       const defender = requireSingleParticipant(participantsByRole, "defender");
 
@@ -193,7 +195,7 @@ function createPairConflictEvent({
             `${defender.snapshot.name} over ` +
             `${resourceDescription}, but ` +
             `${defender.snapshot.name} turns the attack ` +
-            "against them and kills them.";
+            `against ${attackerPronouns.object} and kills ${attackerPronouns.object}.`;
 
           return {
             text,

@@ -454,7 +454,7 @@ describe("simulation stress tests", () => {
 
     expect(meanParticipation).toBeLessThan(0.8);
   });
-  
+
   it("creates manufactured items only through valid acquisition sources", () => {
     let postDayOneNaturalAcquisitionCount = 0;
 

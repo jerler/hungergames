@@ -10,6 +10,7 @@ import {
   type EventResolution,
 } from "~/game/events/event-schema";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
+import { getTributePronouns } from "~/game/tributes/pronouns";
 
 const PACK_ITEM_IDS = [
   "medicine",
@@ -149,7 +150,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
 
     resolve({ eventId, round, random, participantsByRole }): EventResolution {
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
+      const pronouns = getTributePronouns(tribute);
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, random);
 
       switch (outcome) {
@@ -168,7 +169,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
             text:
               `${tribute.snapshot.name} reaches the edge of ` +
               "the weapon pile, but abandons the attempt as " +
-              "the fighting closes around them.",
+              `the fighting closes around ${pronouns.object}.`,
 
             changes: [createStatusChange(eventId, tribute, "exhausted", 1, round)],
           };
@@ -199,7 +200,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
             text:
               `${tribute.snapshot.name} darts through the ` +
               `chaos, claims ${getItemLabel(itemId)}, and ` +
-              "escapes before anyone can challenge them.",
+              `escapes before anyone can challenge ${pronouns.object}.`,
 
             changes: [
               ...createItemAcquisitionAndSurvivalChanges(

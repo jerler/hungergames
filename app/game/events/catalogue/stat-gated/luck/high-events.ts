@@ -5,6 +5,7 @@ import {
   type EventDefinition,
   type EventResolution,
 } from "~/game/events/event-schema";
+import { getTributePronouns } from "~/game/tributes/pronouns";
 
 export const HIGH_LUCK_EVENTS = [
   /* Day Only */
@@ -35,7 +36,7 @@ export const HIGH_LUCK_EVENTS = [
 
     resolve({ eventId, round, random, participantsByRole }): EventResolution {
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
+      const pronouns = getTributePronouns(tribute);
       const outcome = resolveStatCheck({
         stats: tribute.snapshot.stats,
         stat: "luck",
@@ -48,9 +49,10 @@ export const HIGH_LUCK_EVENTS = [
           return {
             text:
               `${tribute.snapshot.name} receives an ` +
-              "arena message advising them to " +
+              `arena message advising ${pronouns.object} to ` +
               '"believe in the feet they can become." ' +
-              "They are left deeply confused.",
+              `${pronouns.Subject} ${pronouns.bePresent} left ` +
+              "deeply confused.",
 
             changes: [createStatusChange(eventId, tribute, "disoriented", 1, round)],
           };
@@ -79,7 +81,7 @@ export const HIGH_LUCK_EVENTS = [
           return {
             text:
               `${tribute.snapshot.name} receives ` +
-              "exactly the encouragement they needed " +
+              `exactly the encouragement ${pronouns.subject} needed ` +
               "and feels unstoppable.",
 
             changes: [createStatusChange(eventId, tribute, "inspired", 2, round)],

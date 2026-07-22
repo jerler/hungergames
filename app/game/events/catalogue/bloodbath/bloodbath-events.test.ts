@@ -171,6 +171,30 @@ function sampleSignatures(
   return signatures;
 }
 
+function resolveFleeOutcome(
+  definition: EventDefinition,
+  game: GameState,
+  tribute: GameTribute,
+  expectedOutcome: string,
+) {
+  for (let index = 0; index < 1_000; index += 1) {
+    const resolution = resolveDefinition(
+      definition,
+      game,
+      {
+        tribute: [tribute],
+      },
+      (index + 0.5) / 1_000,
+    );
+
+    if (getFleeOutcomeSignature(resolution.changes) === expectedOutcome) {
+      return resolution;
+    }
+  }
+
+  throw new Error(`Could not reach "${expectedOutcome}" ` + `for "${definition.id}".`);
+}
+
 describe("Bloodbath event catalogue", () => {
   it("contains every Bloodbath event exactly once", () => {
     const expectedIds = [...CORNUCOPIA_EVENTS, ...FLEE_EVENTS].map((event) => event.id);
@@ -180,6 +204,55 @@ describe("Bloodbath event catalogue", () => {
     expect(catalogueIds).toEqual(expectedIds);
 
     expect(new Set(catalogueIds).size).toBe(catalogueIds.length);
+  });
+
+  it.each([
+    {
+      pronouns: "they",
+      reflexive: "themself",
+    },
+    {
+      pronouns: "she",
+      reflexive: "herself",
+    },
+    {
+      pronouns: "he",
+      reflexive: "himself",
+    },
+    {
+      pronouns: "it",
+      reflexive: "itself",
+    },
+  ] as const)("uses $pronouns pronouns in flee-event text", ({ pronouns, reflexive }) => {
+    const game = createTestGame();
+
+    const originalTribute = game.tributes[0];
+
+    const tribute: GameTribute = {
+      ...originalTribute,
+
+      snapshot: {
+        ...originalTribute.snapshot,
+
+        name: "Harry Potter",
+        pronouns,
+      },
+    };
+
+    const definition = FLEE_EVENTS.find((event) => event.id === "bloodbath-flee-woods");
+
+    if (!definition) {
+      throw new Error("Missing woods flee event.");
+    }
+
+    const resolution = resolveFleeOutcome(definition, game, tribute, "success");
+
+    expect(resolution.text).toBe(
+      "Harry Potter runs directly into " +
+        "the woods and puts a safe " +
+        `distance between ${reflexive} ` +
+        "and the Cornucopia.",
+    );
   });
 
   it("keeps Bloodbath events outside the ordinary catalogue", () => {

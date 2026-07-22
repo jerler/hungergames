@@ -12,6 +12,7 @@ import type {
   ResolvedEvent,
   Truce,
 } from "~/game/types/game-state";
+import { getTributePronouns } from "~/game/tributes/pronouns";
 
 interface DeathResponse {
   changes: GameChange[];
@@ -88,9 +89,9 @@ function createAccidentalDissolutionText(
     .filter((tributeId) => eliminatedTributeIds.has(tributeId))
     .map((tributeId) => getTributeName(beforeState, tributeId));
 
-  const survivingMemberNames = getLivingTruceMembers(afterState, truce).map(
-    (tribute) => tribute.snapshot.name,
-  );
+  const survivingMembers = getLivingTruceMembers(afterState, truce);
+
+  const survivingMemberNames = survivingMembers.map((tribute) => tribute.snapshot.name);
 
   const eliminatedNames = formatNameList(eliminatedMemberNames);
 
@@ -98,11 +99,20 @@ function createAccidentalDissolutionText(
     return `The deaths of ${eliminatedNames} ` + "bring their truce to an abrupt end.";
   }
 
-  if (survivingMemberNames.length === 1) {
+  if (survivingMembers.length === 1) {
+    const survivor = survivingMembers[0];
+
+    if (!survivor) {
+      throw new Error("Missing surviving truce member.");
+    }
+
+    const survivorPronouns = getTributePronouns(survivor);
+
     return (
       `With ${eliminatedNames} dead, ` +
-      `${survivingMemberNames[0]} is left ` +
-      "on their own. Their truce ends abruptly."
+      `${survivor.snapshot.name} is left ` +
+      `on ${survivorPronouns.possessiveAdjective} own. ` +
+      "The truce ends abruptly."
     );
   }
 
@@ -213,12 +223,15 @@ function createVendettaResponse(
     ),
   }));
 
+  const hunterPronouns = getTributePronouns(hunter);
+
   return {
     changes,
 
     text:
-      `${hunter.snapshot.name} turns their ` +
-      "grief into vengeance and swears to hunt " +
+      `${hunter.snapshot.name} turns ` +
+      `${hunterPronouns.possessiveAdjective} grief into vengeance ` +
+      "and swears to hunt " +
       `${formatNameList(targets.map((target) => target.snapshot.name))} down.`,
 
     participantTributeIds: targets.map((target) => target.id),

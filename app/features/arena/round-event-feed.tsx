@@ -30,17 +30,40 @@ export function RoundEventFeed({ events, round, totalEventCount }: RoundEventFee
         </div>
       ) : (
         <ol className="event-feed__list" aria-live="polite">
-          {events.map((event, index) => (
-            <li className="event-card" key={event.id}>
-              <span className="event-card__number">{String(index + 1).padStart(2, "0")}</span>
+          {events.map((event, index) => {
+            const eliminations = event.changes.filter(
+              (change) => change.type === "eliminate-tribute",
+            );
 
-              <p>{event.text}</p>
+            const cannonAnnouncement =
+              eliminations.length === 1 ? "1 cannon fired" : `${eliminations.length} cannons fired`;
 
-              {event.changes.some((change) => change.type === "eliminate-tribute") ? (
-                <span className="event-card__fatal">Cannon fired</span>
-              ) : null}
-            </li>
-          ))}
+            return (
+              <li className="event-card" key={event.id}>
+                <span className="event-card__number">{String(index + 1).padStart(2, "0")}</span>
+
+                <p>{event.text}</p>
+
+                {eliminations.length > 0 ? (
+                  <div
+                    className="event-card__fatalities"
+                    role="group"
+                    aria-label={cannonAnnouncement}
+                  >
+                    {eliminations.map((elimination) => (
+                      <span
+                        className="event-card__fatal"
+                        key={elimination.tributeId}
+                        aria-hidden="true"
+                      >
+                        Cannon fired
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
         </ol>
       )}
     </section>

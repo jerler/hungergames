@@ -14,6 +14,7 @@ import {
   type EventDefinition,
   type EventResolution,
 } from "~/game/events/event-schema";
+import { getTributePronouns } from "~/game/tributes/pronouns";
 
 export const ITEM_USE_EVENTS = [
   /* Day Only */
@@ -38,6 +39,7 @@ export const ITEM_USE_EVENTS = [
     resolve(context): EventResolution {
       const { eventId, round, random, participantsByRole } = context;
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
+      const pronouns = getTributePronouns(tribute);
 
       const fishingGear = requireEventItem(
         context,
@@ -102,7 +104,8 @@ export const ITEM_USE_EVENTS = [
           return {
             text:
               `${tribute.snapshot.name} lands a legendary arena fish ` +
-              "and is briefly overwhelmed by their own competence.",
+              `and is briefly overwhelmed by ` +
+              `${pronouns.possessiveAdjective} own competence.`,
 
             changes: [
               ...createItemAcquisitionAndSurvivalChanges(
@@ -138,7 +141,7 @@ export const ITEM_USE_EVENTS = [
     resolve(context): EventResolution {
       const { eventId, round, random, participantsByRole } = context;
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
+      const pronouns = getTributePronouns(tribute);
       const axe = requireEventItem(context, tribute, "axe", "axe-based-shelter-renovation");
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
@@ -150,7 +153,8 @@ export const ITEM_USE_EVENTS = [
           return {
             text:
               `${tribute.snapshot.name} attempts an ambitious shelter renovation, ` +
-              "drops part of a tree on themself, and destroys the original shelter.",
+              `drops part of a tree on ${pronouns.reflexive}, ` +
+              "and destroys the original shelter.",
 
             changes: [
               createStatusChange(eventId, tribute, "injured", 2, round),
@@ -162,8 +166,9 @@ export const ITEM_USE_EVENTS = [
         case "failure":
           return {
             text:
-              `${tribute.snapshot.name} demolishes most of their shelter ` +
-              "before realizing they had no clear renovation plan.",
+              `${tribute.snapshot.name} demolishes most of ` +
+              `${pronouns.possessiveAdjective} shelter before realizing ` +
+              `${pronouns.subject} had no clear renovation plan.`,
 
             changes: [
               createStatusChange(eventId, tribute, "exhausted", 1, round),
@@ -220,6 +225,7 @@ export const ITEM_USE_EVENTS = [
     resolve(context): EventResolution {
       const { eventId, round, random, participantsByRole } = context;
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
+      const pronouns = getTributePronouns(tribute);
 
       const slingshot = requireEventItem(context, tribute, "slingshot", "slingshot-trick-shot");
 
@@ -245,7 +251,8 @@ export const ITEM_USE_EVENTS = [
           return {
             text:
               `${tribute.snapshot.name} misses a trick shot completely ` +
-              "and alerts something in the arena to their location.",
+              `and alerts something in the arena to ` +
+              `${pronouns.possessiveAdjective} location.`,
 
             changes: [createStatusChange(eventId, tribute, "hunted", 1, round), consumeSlingshot],
           };
@@ -272,7 +279,8 @@ export const ITEM_USE_EVENTS = [
           return {
             text:
               `${tribute.snapshot.name} performs an impossible-looking trick shot, ` +
-              "collects the fallen food, and feels extremely pleased with themself.",
+              "collects the fallen food, and feels extremely pleased with " +
+              `${pronouns.reflexive}.`,
 
             changes: [
               ...createItemAcquisitionAndSurvivalChanges(
@@ -314,6 +322,7 @@ export const ITEM_USE_EVENTS = [
     resolve(context): EventResolution {
       const { eventId, round, random, participantsByRole } = context;
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
+      const pronouns = getTributePronouns(tribute);
 
       const trapKit = requireEventItem(
         context,
@@ -335,7 +344,8 @@ export const ITEM_USE_EVENTS = [
           return {
             text:
               `${tribute.snapshot.name} tries to assemble a trap kit ` +
-              "without instructions and immediately catches themself.",
+              `without instructions and immediately catches ` +
+              `${pronouns.reflexive}.`,
 
             changes: [createStatusChange(eventId, tribute, "injured", 1, round), consumeTrapKit],
           };
@@ -409,6 +419,7 @@ export const ITEM_USE_EVENTS = [
     resolve(context): EventResolution {
       const { eventId, round, random, participantsByRole } = context;
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
+      const pronouns = getTributePronouns(tribute);
 
       const shield = requireEventItem(
         context,
@@ -429,7 +440,7 @@ export const ITEM_USE_EVENTS = [
         case "critical-failure":
           return {
             text:
-              `${tribute.snapshot.name} uses their shield as a sled, ` +
+              `${tribute.snapshot.name} uses ${pronouns.possessiveAdjective} shield as a sled, ` +
               "discovers an unexpected ravine, and loses all sense of direction.",
 
             changes: [
@@ -442,7 +453,7 @@ export const ITEM_USE_EVENTS = [
         case "failure":
           return {
             text:
-              `${tribute.snapshot.name} spends hours using their shield ` +
+              `${tribute.snapshot.name} spends hours using ${pronouns.possessiveAdjective} shield ` +
               "as a shovel before becoming firmly stuck in the mud.",
 
             changes: [createStatusChange(eventId, tribute, "exhausted", 1, round), consumeShield],
@@ -451,7 +462,7 @@ export const ITEM_USE_EVENTS = [
         case "success":
           return {
             text:
-              `${tribute.snapshot.name} uses their shield as a rain catcher ` +
+              `${tribute.snapshot.name} uses ${pronouns.possessiveAdjective} shield as a rain catcher ` +
               "and collects a clean supply of water.",
 
             changes: [
@@ -469,7 +480,7 @@ export const ITEM_USE_EVENTS = [
         case "exceptional-success":
           return {
             text:
-              `${tribute.snapshot.name} uses their shield as a sled ` +
+              `${tribute.snapshot.name} uses ${pronouns.possessiveAdjective} shield as a sled ` +
               "and glides into a sheltered hollow containing edible " +
               "plants and a clean spring.",
             changes: [
@@ -505,6 +516,7 @@ export const ITEM_USE_EVENTS = [
     resolve(context): EventResolution {
       const { eventId, round, random, participantsByRole } = context;
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
+      const pronouns = getTributePronouns(tribute);
 
       const net = requireEventItem(context, tribute, "camouflage-net", "camouflage-catastrophe");
 
@@ -517,7 +529,7 @@ export const ITEM_USE_EVENTS = [
           return {
             text:
               `${tribute.snapshot.name} becomes completely tangled ` +
-              "in their camouflage net and loses all sense of direction.",
+              `in ${pronouns.possessiveAdjective} camouflage net and loses all sense of direction.`,
 
             changes: [createStatusChange(eventId, tribute, "disoriented", 1, round), consumeNet],
           };
@@ -525,7 +537,7 @@ export const ITEM_USE_EVENTS = [
         case "failure":
           return {
             text:
-              `${tribute.snapshot.name} hangs their camouflage net backwards, ` +
+              `${tribute.snapshot.name} hangs ${pronouns.possessiveAdjective} camouflage net backwards, ` +
               "creating an extremely visible tribute-shaped landmark.",
 
             changes: [createStatusChange(eventId, tribute, "hunted", 1, round), consumeNet],
@@ -534,7 +546,7 @@ export const ITEM_USE_EVENTS = [
         case "success":
           return {
             text:
-              `${tribute.snapshot.name} uses their camouflage net ` +
+              `${tribute.snapshot.name} uses ${pronouns.possessiveAdjective} camouflage net ` +
               "to disappear into the surrounding terrain.",
 
             changes: [createStatusChange(eventId, tribute, "concealed", 1, round), consumeNet],
@@ -544,7 +556,7 @@ export const ITEM_USE_EVENTS = [
           return {
             text:
               `${tribute.snapshot.name} constructs an almost perfect hideout ` +
-              "with their camouflage net.",
+              `with ${pronouns.possessiveAdjective} camouflage net.`,
 
             changes: [createStatusChange(eventId, tribute, "concealed", 2, round), consumeNet],
           };

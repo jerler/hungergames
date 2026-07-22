@@ -25,6 +25,7 @@ import type {
   TransferInventoryItemChange,
   Truce,
 } from "~/game/types/game-state";
+import { getTributePronouns } from "~/game/tributes/pronouns";
 
 const BETRAYAL_TOTAL_WEIGHT = 1.5;
 
@@ -221,9 +222,13 @@ function createBetrayalEvent(groupSize: TruceGroupSize, groupSizeWeight: number)
 
     resolve({ state, eventId, round, random, participantsByRole }): EventResolution {
       const betrayer = requireSingleParticipant(participantsByRole, "betrayer");
-
       const partners = requireParticipants(participantsByRole, "partners");
 
+      const betrayerPronouns = getTributePronouns(betrayer);
+
+      const solePartner = partners.length === 1 ? partners[0] : null;
+
+      const partnerResponseSubject = solePartner ? getTributePronouns(solePartner).subject : "they";
       if (partners.length !== groupSize - 1) {
         throw new Error(
           `Truce betrayal expected ${groupSize - 1} ` + `partners but received ${partners.length}.`,
@@ -303,7 +308,8 @@ function createBetrayalEvent(groupSize: TruceGroupSize, groupSizeWeight: number)
           const text =
             `${betrayer.snapshot.name} betrays ${partnerNames}, ` +
             `${describeTheft(theftChanges.length)}, ` +
-            "and disappears into the arena before they can respond.";
+            `and disappears into the arena before ` +
+            `${partnerResponseSubject} can respond.`;
 
           return {
             text,
@@ -337,8 +343,8 @@ function createBetrayalEvent(groupSize: TruceGroupSize, groupSizeWeight: number)
           const text =
             `${betrayer.snapshot.name} launches a devastating ` +
             `betrayal against ${partnerNames}, kills ` +
-            `${defender.snapshot.name}, takes all the gear ` +
-            "they can find, and flees into the arena.";
+            `${defender.snapshot.name}, takes all the gear ${betrayerPronouns.subject}` +
+            "can find, and flees into the arena.";
 
           return {
             text,
@@ -432,7 +438,7 @@ const PROTECTS_TRUCE_PARTNER_EVENT: EventDefinition = {
 
   resolve({ state, eventId, round, random, participantsByRole }): EventResolution {
     const protector = requireSingleParticipant(participantsByRole, "protector");
-
+    const protectorPronouns = getTributePronouns(protector);
     const partner = requireSingleParticipant(participantsByRole, "partner");
 
     requireSharedStandardTruce(state, [protector, partner]);
@@ -448,7 +454,7 @@ const PROTECTS_TRUCE_PARTNER_EVENT: EventDefinition = {
     switch (outcome) {
       case "critical-failure": {
         const text =
-          `${protector.snapshot.name} throws themself ` +
+          `${protector.snapshot.name} throws ${protectorPronouns.reflexive} ` +
           `between ${partner.snapshot.name} and an arena threat. ` +
           `${partner.snapshot.name} survives, but ` +
           `${protector.snapshot.name} is killed.`;

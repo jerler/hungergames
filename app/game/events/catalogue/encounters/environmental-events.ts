@@ -20,6 +20,7 @@ import {
 } from "~/game/items/inventory-engine";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { GameChange, GameTribute, InventoryItem } from "~/game/types/game-state";
+import { getTributePronouns } from "~/game/tributes/pronouns";
 
 const NATURAL_RESOURCE_ITEM_IDS = ["food", "water"] satisfies readonly ItemDefinitionId[];
 
@@ -68,16 +69,19 @@ function findBrushfireProtection(
   return null;
 }
 
-function describeBrushfireProtection(item: InventoryItem): string {
+function describeBrushfireProtection(item: InventoryItem, tribute: GameTribute): string {
+  const pronouns = getTributePronouns(tribute);
   switch (item.definitionId) {
     case "water":
-      return "uses their water to clear a path " + "through the flames";
+      return `uses ${pronouns.possessiveAdjective} water ` + "to clear a path through the flames";
 
     case "blanket":
-      return "wraps themselves in a blanket " + "and smothers the embers";
+      return `wraps ${pronouns.reflexive} in a blanket ` + "and smothers the embers";
 
     case "shield":
-      return "uses their shield against the " + "sparks and falling debris";
+      return (
+        `uses ${pronouns.possessiveAdjective} shield ` + "against the sparks and falling debris"
+      );
 
     default:
       throw new Error(`Unsupported brushfire protection ` + `"${item.definitionId}".`);
@@ -225,6 +229,7 @@ export const ENVIRONMENTAL_EVENTS = [
       const { eventId, round, random, participantsByRole } = context;
 
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
+      const pronouns = getTributePronouns(tribute);
 
       const food = findAccessibleInventoryItem(context.state, tribute, {
         definitionIds: ["food"],
@@ -246,10 +251,10 @@ export const ENVIRONMENTAL_EVENTS = [
             text: food
               ? `${tribute.snapshot.name} loses some ` +
                 "food to an arena goose, which then " +
-                "decides to pursue them across the arena."
+                `decides to pursue ${pronouns.object} across the arena.`
               : `An arena goose decides ` +
                 `${tribute.snapshot.name} owes it food ` +
-                "and begins relentlessly tracking them.",
+                `and begins relentlessly tracking ${pronouns.object}.`,
 
             changes,
           };
@@ -268,7 +273,8 @@ export const ENVIRONMENTAL_EVENTS = [
         case "success":
           return {
             text:
-              `${tribute.snapshot.name} stands their ` +
+              `${tribute.snapshot.name} stands ` +
+              `${pronouns.possessiveAdjective} ` +
               "ground against an arena goose. After a " +
               "tense silence, both parties retreat.",
 
@@ -279,7 +285,7 @@ export const ENVIRONMENTAL_EVENTS = [
           return {
             text:
               `${tribute.snapshot.name} befriends an ` +
-              "arena goose, which leads them to a patch " +
+              `arena goose, which leads ${pronouns.object} to a patch ` +
               "of edible plants.",
 
             changes: createItemAcquisitionAndSurvivalChanges(
@@ -335,7 +341,8 @@ export const ENVIRONMENTAL_EVENTS = [
         : [];
 
       const protectionText = protection
-        ? `${tribute.snapshot.name} ` + describeBrushfireProtection(protection.accessibleItem.item)
+        ? `${tribute.snapshot.name} ` +
+          describeBrushfireProtection(protection.accessibleItem.item, tribute)
         : `${tribute.snapshot.name} runs ` + "through the brushfire without protection";
 
       switch (outcome) {

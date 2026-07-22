@@ -27,6 +27,7 @@ import { findUsableInventoryItem } from "~/game/items/inventory-engine";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { GameChange, GameTribute, InventoryItem } from "~/game/types/game-state";
 import type { TributeStatValue } from "~/game/types/tribute";
+import { getTributePronouns } from "~/game/tributes/pronouns";
 
 const THEFT_EVENT_ID = "steal-from-stronger-tribute";
 
@@ -197,6 +198,7 @@ export const STEAL_FROM_STRONGER_TRIBUTE_EVENT = {
     const { eventId, round, random, participantsByRole } = context;
 
     const thief = requireSingleParticipant(participantsByRole, "thief");
+    const thiefPronouns = getTributePronouns(thief);
 
     const target = requireSingleParticipant(participantsByRole, "target");
 
@@ -245,7 +247,7 @@ export const STEAL_FROM_STRONGER_TRIBUTE_EVENT = {
           `${thief.snapshot.name} trying to steal ` +
           `the ${primaryItemLabel}. ` +
           `${thief.snapshot.name} escapes, but ` +
-          `${target.snapshot.name} begins hunting them.`;
+          `${target.snapshot.name} begins hunting ${thiefPronouns.object}.`;
 
         return {
           text,

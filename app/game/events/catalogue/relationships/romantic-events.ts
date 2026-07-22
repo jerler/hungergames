@@ -15,6 +15,7 @@ import {
 import { getAverageDistrictAffinityWeight } from "~/game/truces/truce-selection";
 import type { GameState } from "~/game/types/game-state";
 import { createJointVictoryOutcome } from "~/game/victory/victory-outcome";
+import { getTributePronouns } from "~/game/tributes/pronouns";
 
 const ROMANTIC_FORMATION_WEIGHT = 0.2;
 
@@ -170,7 +171,8 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
   resolve({ state, eventId, round, random, participantsByRole }): EventResolution {
     const protector = requireSingleParticipant(participantsByRole, "protector");
     const partner = requireSingleParticipant(participantsByRole, "partner");
-
+    const protectorPronouns = getTributePronouns(protector);
+    const partnerPronouns = getTributePronouns(partner);
     const truce = getActiveTruceForTribute(state, protector.id);
 
     if (truce?.kind !== "romantic" || !truce.tributeIds.includes(partner.id)) {
@@ -190,7 +192,8 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
     switch (outcome) {
       case "critical-failure": {
         const text =
-          `${protector.snapshot.name} throws themself between ` +
+          `${protector.snapshot.name} throws ` +
+          `${protectorPronouns.reflexive} between ` +
           `${partner.snapshot.name} and an arena threat. ` +
           `${partner.snapshot.name} survives, but ` +
           `${protector.snapshot.name} is killed.`;
@@ -208,7 +211,7 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
               type: "eliminate-tribute",
               tributeId: protector.id,
               causeId: "protecting-romantic-partner",
-              causeLabel: "Died protecting their partner",
+              causeLabel: `Died protecting ` + `${protectorPronouns.possessiveAdjective} partner`,
               summary: text,
               killerTributeIds: [],
             },
@@ -223,7 +226,7 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
           text:
             `${protector.snapshot.name} shields ` +
             `${partner.snapshot.name} from an arena threat ` +
-            "and is badly injured protecting them.",
+            `and is badly injured protecting ${partnerPronouns.object}.`,
 
           changes: [
             createStatusChange(eventId, protector, "injured", 2, round),

@@ -9,6 +9,7 @@ import {
   type EventDefinition,
   type EventResolution,
 } from "~/game/events/event-schema";
+import { getTributePronouns } from "~/game/tributes/pronouns";
 
 export const FLEE_EVENTS = [
   {
@@ -27,6 +28,7 @@ export const FLEE_EVENTS = [
 
     resolve({ eventId, round, random, participantsByRole }): EventResolution {
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
+      const pronouns = getTributePronouns(tribute);
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, random);
 
@@ -60,7 +62,7 @@ export const FLEE_EVENTS = [
             text:
               `${tribute.snapshot.name} runs directly into ` +
               "the woods and puts a safe distance between " +
-              "themself and the Cornucopia.",
+              `${pronouns.reflexive} and the Cornucopia.`,
 
             changes: createSurvivalChanges([tribute]),
           };
@@ -98,7 +100,6 @@ export const FLEE_EVENTS = [
 
     resolve({ eventId, round, random, participantsByRole }): EventResolution {
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
       switch (outcome) {
@@ -175,6 +176,7 @@ export const FLEE_EVENTS = [
 
     resolve({ eventId, round, random, participantsByRole }): EventResolution {
       const tribute = requireSingleParticipant(participantsByRole, "tribute");
+      const pronouns = getTributePronouns(tribute);
 
       const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
 
@@ -218,7 +220,7 @@ export const FLEE_EVENTS = [
             text:
               `${tribute.snapshot.name} quickly identifies ` +
               "a patch of edible plants and feels confident " +
-              "about their decision to flee.",
+              `about ${pronouns.possessiveAdjective} decision to flee.`,
 
             changes: [
               ...createItemAcquisitionAndSurvivalChanges(

@@ -571,6 +571,87 @@ describe("item-based participant selection", () => {
 
     expect(secondSelection).toBeNull();
   });
+
+  it("retries an earlier role candidate when a later role cannot be filled", () => {
+    const state = createTestGame("participant-backtracking");
+
+    const [blockedThief, viableThief, target] = state.tributes;
+
+    if (!blockedThief || !viableThief || !target) {
+      throw new Error("Expected three test tributes.");
+    }
+
+    const definition: EventDefinition = {
+      id: "participant-backtracking",
+
+      category: "hazard",
+
+      tags: ["hazard"],
+
+      periods: ["day", "night"],
+
+      baseWeight: 1,
+
+      roles: [
+        {
+          id: "thief",
+          count: 1,
+
+          isEligible: (tribute) => tribute.id === blockedThief.id || tribute.id === viableThief.id,
+        },
+
+        {
+          id: "target",
+          count: 1,
+
+          isEligible: (tribute, context) =>
+            context.participantsByRole.thief?.[0]?.id === viableThief.id &&
+            tribute.id === target.id,
+        },
+      ],
+
+      resolve: () => ({
+        text: "Participant backtracking test.",
+
+        changes: [],
+      }),
+    };
+
+    /*
+     * Zero selects the first candidate initially:
+     * blockedThief.
+     *
+     * That path cannot fill the target role, so the selector
+     * must retry and choose viableThief.
+     */
+    const selection = selectEventParticipants(
+      definition,
+
+      {
+        state,
+
+        round: {
+          day: 2,
+          period: "day",
+        },
+
+        livingTributes: [blockedThief, viableThief, target],
+      },
+
+      () => 0,
+
+      new Set(),
+      new Set(),
+    );
+
+    expect(selection).not.toBeNull();
+
+    expect(selection?.participantsByRole.thief).toEqual([viableThief]);
+
+    expect(selection?.participantsByRole.target).toEqual([target]);
+
+    expect(selection?.participantTributeIds).toEqual([viableThief.id, target.id]);
+  });
 });
 
 describe("participant item-access modes", () => {

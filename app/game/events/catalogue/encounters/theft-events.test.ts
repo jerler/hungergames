@@ -633,6 +633,75 @@ describe("theft participant selection", () => {
 
     expect(itemSelection?.item.id).toBe(fixture.targetItems[0].id);
   });
+
+  it("retries another thief when the first candidate has no valid target", () => {
+    /*
+     * The intended first thief and target share a truce.
+     * The partner is not part of that truce and can form a
+     * valid theft pairing with the same target.
+     */
+    const fixture = createTheftFixture({
+      thiefAndTargetShareTruce: true,
+    });
+
+    const alternativeThief: GameTribute = {
+      ...fixture.partner,
+
+      snapshot: {
+        ...fixture.partner.snapshot,
+
+        name: "Alternative Thief",
+
+        stats: {
+          brains: 2,
+          brawn: 1,
+          luck: 2,
+        },
+      },
+
+      inventory: [],
+      statuses: [],
+    };
+
+    const state: GameState = {
+      ...fixture.state,
+
+      tributes: fixture.state.tributes.map((tribute) =>
+        tribute.id === alternativeThief.id ? alternativeThief : tribute,
+      ),
+    };
+
+    const selection = selectEventParticipants(
+      STEAL_FROM_STRONGER_TRIBUTE_EVENT,
+
+      {
+        state,
+        round: TEST_ROUND,
+
+        /*
+         * Zero initially selects fixture.thief.
+         * Their only worthwhile target is protected by
+         * their truce, forcing a retry.
+         */
+        livingTributes: [fixture.thief, alternativeThief, fixture.target],
+      },
+
+      () => 0,
+
+      new Set(),
+      new Set(),
+    );
+
+    expect(selection).not.toBeNull();
+
+    expect(selection?.participantsByRole.thief).toEqual([alternativeThief]);
+
+    expect(selection?.participantsByRole.target).toEqual([fixture.target]);
+
+    expect(selection?.itemsByRole.target[0]?.owner.id).toBe(fixture.target.id);
+
+    expect(selection?.itemsByRole.target[0]?.item.id).toBe(fixture.targetItems[0].id);
+  });
 });
 
 describe("theft resolution", () => {

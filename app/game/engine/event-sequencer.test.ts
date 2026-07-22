@@ -244,7 +244,7 @@ function createSharedItemFixture(definitionId: ItemDefinitionId): SharedItemFixt
           ...FIRST_ROUND,
         },
 
-        expiresAfterRound: null,
+        expiresAfterRound: { ...NEXT_ROUND },
       },
     ],
   };

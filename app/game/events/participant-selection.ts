@@ -91,6 +91,32 @@ export interface ParticipantSelection {
   selectedItemInstanceIds: string[];
 }
 
+interface ParticipantSelectionState {
+  participantsByRole: Record<string, GameTribute[]>;
+
+  itemsByRole: Record<string, EventItemSelection[]>;
+
+  selectedTributeIds: Set<string>;
+
+  reservedItemInstanceIds: Set<string>;
+
+  selectedItemInstanceIds: string[];
+}
+
+interface RoleCandidate {
+  tribute: GameTribute;
+
+  accessibleItem: AccessibleInventoryItem | null;
+}
+
+/**
+ * Selects a complete participant assignment for an event.
+ *
+ * Role candidates are selected using their configured weights.
+ * When a selected candidate makes a later role impossible to
+ * fill, the selector retries another candidate for the earlier
+ * role before rejecting the event definition.
+ */
 export function selectEventParticipants(
   definition: EventDefinition,
   context: EventSelectionContext,
@@ -98,129 +124,213 @@ export function selectEventParticipants(
   unavailableTributeIds: ReadonlySet<string>,
   unavailableItemInstanceIds: ReadonlySet<string> = new Set<string>(),
 ): ParticipantSelection | null {
-  const selectedTributeIds = new Set(unavailableTributeIds);
-
   /*
-   * Include items claimed by earlier events,
-   * then add items selected within this event.
+   * Expand role counts into sequential assignment slots.
+   *
+   * A role with count 3 therefore appears in three adjacent
+   * slots while continuing to share one participantsByRole
+   * collection.
    */
-  const reservedItemInstanceIds = new Set(unavailableItemInstanceIds);
+  const roleSlots = definition.roles.flatMap((role) =>
+    Array.from(
+      {
+        length: role.count,
+      },
 
-  const participantsByRole: Record<string, GameTribute[]> = {};
+      () => role,
+    ),
+  );
 
-  const itemsByRole: Record<string, EventItemSelection[]> = {};
+  function selectRoleSlot(
+    slotIndex: number,
+    state: ParticipantSelectionState,
+  ): ParticipantSelection | null {
+    if (slotIndex >= roleSlots.length) {
+      const participantTributeIds = definition.roles.flatMap((role) =>
+        (state.participantsByRole[role.id] ?? []).map((tribute) => tribute.id),
+      );
 
-  const selectedItemInstanceIds: string[] = [];
+      return {
+        participantsByRole: state.participantsByRole,
 
-  for (const role of definition.roles) {
-    const roleParticipants: GameTribute[] = [];
-    const roleItems: EventItemSelection[] = [];
+        participantTributeIds,
+
+        itemsByRole: state.itemsByRole,
+
+        selectedItemInstanceIds: state.selectedItemInstanceIds,
+      };
+    }
+
+    const role = roleSlots[slotIndex];
 
     /*
-     * Assign these before selection so callbacks
-     * may inspect participants already chosen for
-     * this same role.
+     * Make the current role visible to its callbacks before
+     * selecting its next participant. This preserves the
+     * existing same-role participant-context behaviour.
      */
-    participantsByRole[role.id] = roleParticipants;
+    const participantsByRole =
+      state.participantsByRole[role.id] === undefined
+        ? {
+            ...state.participantsByRole,
 
-    itemsByRole[role.id] = roleItems;
+            [role.id]: [],
+          }
+        : state.participantsByRole;
+
+    const itemsByRole =
+      state.itemsByRole[role.id] === undefined
+        ? {
+            ...state.itemsByRole,
+
+            [role.id]: [],
+          }
+        : state.itemsByRole;
 
     const roleContext = {
       ...context,
       participantsByRole,
     };
 
-    for (let roleIndex = 0; roleIndex < role.count; roleIndex += 1) {
-      const candidates = context.livingTributes.filter(
-        (tribute) =>
-          !selectedTributeIds.has(tribute.id) &&
-          !isProtectedFromRoleByTruce(tribute, role, participantsByRole, context) &&
-          (!roleRequiresItem(role) ||
-            Boolean(
-              findAvailableRoleItem(
-                context,
-                tribute,
-                role,
-                reservedItemInstanceIds,
-                selectedTributeIds,
-              ),
-            )) &&
-          (role.isEligible ? role.isEligible(tribute, roleContext) : true),
-      );
+    const requiresItem = roleRequiresItem(role);
 
-      if (candidates.length === 0) {
-        return null;
-      }
+    let remainingCandidates: RoleCandidate[] = context.livingTributes.flatMap(
+      (tribute): RoleCandidate[] => {
+        if (state.selectedTributeIds.has(tribute.id)) {
+          return [];
+        }
 
-      const selectedTribute = selectWeightedItem(
-        candidates,
+        if (isProtectedFromRoleByTruce(tribute, role, participantsByRole, context)) {
+          return [];
+        }
 
-        (tribute) => role.getWeight?.(tribute, roleContext) ?? 1,
+        const accessibleItem = requiresItem
+          ? findAvailableRoleItem(
+              context,
+              tribute,
+              role,
+
+              state.reservedItemInstanceIds,
+
+              state.selectedTributeIds,
+            )
+          : null;
+
+        if (requiresItem && !accessibleItem) {
+          return [];
+        }
+
+        if (role.isEligible && !role.isEligible(tribute, roleContext)) {
+          return [];
+        }
+
+        return [
+          {
+            tribute,
+            accessibleItem,
+          },
+        ];
+      },
+    );
+
+    while (remainingCandidates.length > 0) {
+      const selectedCandidate = selectWeightedItem(
+        remainingCandidates,
+
+        ({ tribute }) => role.getWeight?.(tribute, roleContext) ?? 1,
 
         random,
       );
 
-      let accessibleItem: AccessibleInventoryItem | null = null;
+      const {
+        tribute: selectedTribute,
+
+        accessibleItem,
+      } = selectedCandidate;
 
       /*
-       * Find the item before reserving the acting tribute.
-       * Otherwise their own inventory would be incorrectly
-       * excluded by the unavailable-owner check.
+       * Each attempted path receives its own reservation
+       * state. Failed paths therefore cannot leak tribute
+       * or item reservations into later retries.
        */
-      if (roleRequiresItem(role)) {
-        accessibleItem = findAvailableRoleItem(
-          context,
-          selectedTribute,
-          role,
-          reservedItemInstanceIds,
-          selectedTributeIds,
-        );
+      const nextSelectedTributeIds = new Set(state.selectedTributeIds);
 
-        if (!accessibleItem) {
-          /*
-           * This should be impossible because the same
-           * requirements were checked while building
-           * the candidate list.
-           */
-          return null;
-        }
-      }
+      nextSelectedTributeIds.add(selectedTribute.id);
 
-      selectedTributeIds.add(selectedTribute.id);
+      const nextReservedItemInstanceIds = new Set(state.reservedItemInstanceIds);
 
-      roleParticipants.push(selectedTribute);
+      const nextItemsByRole = {
+        ...itemsByRole,
+
+        [role.id]: [...(itemsByRole[role.id] ?? [])],
+      };
+
+      const nextSelectedItemInstanceIds = [...state.selectedItemInstanceIds];
 
       if (accessibleItem) {
-        roleItems.push({
+        nextItemsByRole[role.id].push({
           userTributeId: selectedTribute.id,
 
           owner: accessibleItem.owner,
+
           item: accessibleItem.item,
         });
 
         /*
-         * The owner is not necessarily a visible participant,
-         * but this event mutates their inventory. Reserve them
-         * so they cannot be killed or otherwise changed by a
-         * second event in the same round.
+         * The physical owner may be a hidden truce partner.
+         * Reserve them as part of this attempted branch.
          */
-        selectedTributeIds.add(accessibleItem.owner.id);
+        nextSelectedTributeIds.add(accessibleItem.owner.id);
 
-        reservedItemInstanceIds.add(accessibleItem.item.id);
+        nextReservedItemInstanceIds.add(accessibleItem.item.id);
 
-        selectedItemInstanceIds.push(accessibleItem.item.id);
+        nextSelectedItemInstanceIds.push(accessibleItem.item.id);
       }
+
+      const completedSelection = selectRoleSlot(
+        slotIndex + 1,
+
+        {
+          participantsByRole: {
+            ...participantsByRole,
+
+            [role.id]: [...(participantsByRole[role.id] ?? []), selectedTribute],
+          },
+
+          itemsByRole: nextItemsByRole,
+
+          selectedTributeIds: nextSelectedTributeIds,
+
+          reservedItemInstanceIds: nextReservedItemInstanceIds,
+
+          selectedItemInstanceIds: nextSelectedItemInstanceIds,
+        },
+      );
+
+      if (completedSelection) {
+        return completedSelection;
+      }
+
+      /*
+       * This candidate led to an impossible later role.
+       * Retry the current role without selecting the same
+       * tribute again.
+       */
+      remainingCandidates = remainingCandidates.filter(
+        ({ tribute }) => tribute.id !== selectedTribute.id,
+      );
     }
+
+    return null;
   }
 
-  const participantTributeIds = definition.roles.flatMap((role) =>
-    participantsByRole[role.id].map((tribute) => tribute.id),
-  );
+  return selectRoleSlot(0, {
+    participantsByRole: {},
+    itemsByRole: {},
 
-  return {
-    participantsByRole,
-    participantTributeIds,
-    itemsByRole,
-    selectedItemInstanceIds,
-  };
+    selectedTributeIds: new Set(unavailableTributeIds),
+
+    reservedItemInstanceIds: new Set(unavailableItemInstanceIds),
+
+    selectedItemInstanceIds: [],
+  });
 }

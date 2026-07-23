@@ -43,6 +43,10 @@ const EVENT_ITEM_CASES = [
     itemId: "fishing-gear",
   },
   {
+    eventId: "camouflage-catastrophe",
+    itemId: "camouflage-net",
+  },
+  {
     eventId: "axe-based-shelter-renovation",
     itemId: "axe",
   },

@@ -1,4 +1,3 @@
-import { selectRandomItem } from "~/game/engine/random";
 import {
   getDefinitionPopulationMultiplier,
   getForagingScore,
@@ -9,13 +8,14 @@ import {
   applyStatus,
   brains,
   createEvent,
+  createNaturalResourceEvent,
   hasItem,
   randomResult,
+  recordRequiredItemUse,
   result,
   soloRole,
   statCheck,
   survived,
-  recordRequiredItemUse,
 } from "~/game/events/authoring";
 import {
   createItemAcquisitionAndSurvivalChanges,
@@ -31,10 +31,8 @@ import {
   type EventResolution,
   type EventResolutionContext,
 } from "~/game/events/event-schema";
-import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getCooperativeTruceWeight } from "~/game/truces/truce-selection";
 import type { GameChange, GameTribute } from "~/game/types/game-state";
-const NATURAL_RESOURCE_ITEM_IDS = ["food", "water"] satisfies readonly ItemDefinitionId[];
 
 function resolveForagingParticipant(
   eventId: string,
@@ -97,46 +95,13 @@ function resolveForagingParticipant(
 
 export const SURVIVAL_EVENTS = [
   /* Day Only */
-  {
-    id: "forages-for-resources",
-    category: "survival",
-    tags: ["survival", "item", "resource"],
-    periods: ["day"],
-    baseWeight: 8,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-        getWeight: getForagingScore,
-      },
-    ],
-
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
-      const itemId = selectRandomItem(NATURAL_RESOURCE_ITEM_IDS, random);
-
-      const text =
-        itemId === "water"
-          ? `${tribute.snapshot.name} follows animal tracks ` +
-            "to a clean spring and collects water."
-          : `${tribute.snapshot.name} identifies edible ` +
-            "roots and plants and gathers enough for a meal.";
-
-      return {
-        text,
-
-        changes: createItemAcquisitionAndSurvivalChanges(
-          eventId,
-          tribute,
-          [itemId],
-          round,
-          "natural-foraging",
-        ),
-      };
-    },
-  },
+  createNaturalResourceEvent("forages-for-resources", {
+    resources: ["food", "water"],
+    text: ({ tribute }, itemId) =>
+      itemId === "water"
+        ? `${tribute.name} follows animal tracks to a clean spring and collects water.`
+        : `${tribute.name} identifies edible roots and plants and gathers enough for a meal.`,
+  }),
   createEvent("upside-down-map")
     .roles(soloRole("tribute", { getWeight: getForagingScore }))
     .when(hasItem("tribute", { definitionIds: ["map"] }))

@@ -85,3 +85,20 @@ export type { RequiredItemEffectOptions } from "./effects/required-item-effects"
 
 export { acquireNaturalResource } from "./effects/natural-resource-effects";
 export { randomResult } from "./outcomes/random-result";
+
+/* Event families */
+
+export { createNaturalResourceEvent } from "./families/natural-resource-event";
+export type {
+  NaturalResourceEventOptions,
+  NaturalResourceEventText,
+} from "./families/natural-resource-event";
+
+export { createSoloStatEvent } from "./families/solo-stat-event";
+export type { SoloStatEventOptions } from "./families/solo-stat-event";
+
+export { createItemStatEvent } from "./families/item-stat-event";
+export type { ItemStatEventOptions } from "./families/item-stat-event";
+
+export type { EventFamilyMetadata } from "./families/family-types";
+export type { StatOutcomeKey } from "./families/family-outcomes";

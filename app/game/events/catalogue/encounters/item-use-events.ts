@@ -18,65 +18,49 @@ import { getTributePronouns } from "~/game/tributes/pronouns";
 import {
   acquireNaturalResource,
   applyStatus,
+  brains,
   brawn,
-  consumeRequiredItem,
-  createEvent,
-  hasItem,
+  createItemStatEvent,
   result,
-  soloRole,
-  statCheck,
   survived,
 } from "~/game/events/authoring";
 
 export const ITEM_USE_EVENTS = [
   /* Day Only */
-  createEvent("fishing-gear-enormous-fish")
-    .roles(soloRole("tribute", { getWeight: getForagingScore }))
-    .when(hasItem("tribute", { definitionIds: ["fishing-gear"] }))
-    .category("hazard")
-    .tags("hazard", "tool", "item", "status", "resource")
-    .during("day")
-    .weight(3.5)
-    .resolve(
-      statCheck("tribute", brawn(3), {
-        criticalFailure: result({
-          text: ({ tribute }) =>
-            `${tribute.name} hooks an enormous fish and is dragged violently through the water before cutting the line.`,
-          effects: [
-            applyStatus("tribute", "injured", 1),
-            applyStatus("tribute", "exhausted", 2),
-            consumeRequiredItem("tribute", { reason: "fishing-gear-enormous-fish" }),
-          ],
-        }),
-        failure: result({
-          text: ({ tribute }) =>
-            `${tribute.name} battles an enormous fish for hours, only for it to escape at the last possible moment.`,
-          effects: [
-            applyStatus("tribute", "exhausted", 1),
-            consumeRequiredItem("tribute", { reason: "fishing-gear-enormous-fish" }),
-          ],
-        }),
-        success: result({
-          text: ({ tribute }) =>
-            `${tribute.name} lands an enormous fish and prepares enough food to keep going.`,
-          effects: [
-            acquireNaturalResource("tribute", "food"),
-            survived("tribute"),
-            consumeRequiredItem("tribute", { reason: "fishing-gear-enormous-fish" }),
-          ],
-        }),
-        exceptionalSuccess: result({
-          text: ({ tribute }) =>
-            `${tribute.name} lands a legendary arena fish and is briefly overwhelmed by ${tribute.pronouns.possessiveAdjective} own competence.`,
-          effects: [
-            acquireNaturalResource("tribute", "food"),
-            survived("tribute"),
-            applyStatus("tribute", "inspired", 2),
-            consumeRequiredItem("tribute", { reason: "fishing-gear-enormous-fish" }),
-          ],
-        }),
+  createItemStatEvent("fishing-gear-enormous-fish", {
+    itemId: "fishing-gear",
+    check: brawn(3),
+    tags: ["tool", "item", "status", "resource"],
+    periods: ["day"],
+    weight: 3.5,
+    roleOptions: { getWeight: getForagingScore },
+    outcomes: {
+      criticalFailure: result({
+        text: ({ tribute }) =>
+          `${tribute.name} hooks an enormous fish and is dragged violently through the water before cutting the line.`,
+        effects: [applyStatus("tribute", "injured", 1), applyStatus("tribute", "exhausted", 2)],
       }),
-    ),
+      failure: result({
+        text: ({ tribute }) =>
+          `${tribute.name} battles an enormous fish for hours, only for it to escape at the last possible moment.`,
+        effects: [applyStatus("tribute", "exhausted", 1)],
+      }),
+      success: result({
+        text: ({ tribute }) =>
+          `${tribute.name} lands an enormous fish and prepares enough food to keep going.`,
+        effects: [acquireNaturalResource("tribute", "food"), survived("tribute")],
+      }),
+      exceptionalSuccess: result({
+        text: ({ tribute }) =>
+          `${tribute.name} lands a legendary arena fish and is briefly overwhelmed by ${tribute.pronouns.possessiveAdjective} own competence.`,
+        effects: [
+          acquireNaturalResource("tribute", "food"),
+          survived("tribute"),
+          applyStatus("tribute", "inspired", 2),
+        ],
+      }),
+    },
+  }),
   {
     id: "axe-based-shelter-renovation",
     category: "hazard",
@@ -256,103 +240,40 @@ export const ITEM_USE_EVENTS = [
   /* Night Only */
 
   /* Day and Night */
-  {
-    id: "trap-kit-instructions-missing",
-    category: "hazard",
-    tags: ["hazard", "tool", "item", "status", "resource"],
+  createItemStatEvent("trap-kit-instructions-missing", {
+    itemId: "trap-kit",
+    check: brains(3),
+    tags: ["tool", "item", "status", "resource"],
     periods: ["day", "night"],
-    baseWeight: 3.5,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-
-        requiredItemDefinitionIds: ["trap-kit"],
-
-        getWeight: getForagingScore,
-      },
-    ],
-
-    resolve(context): EventResolution {
-      const { eventId, round, random, participantsByRole } = context;
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-      const pronouns = getTributePronouns(tribute);
-
-      const trapKit = requireEventItem(
-        context,
-        tribute,
-        "trap-kit",
-        "trap-kit-instructions-missing",
-      );
-
-      const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
-
-      const consumeTrapKit = createItemUseChange(
-        trapKit.owner,
-        trapKit.item,
-        "trap-kit-instructions-missing",
-      );
-
-      switch (outcome) {
-        case "critical-failure":
-          return {
-            text:
-              `${tribute.snapshot.name} tries to assemble a trap kit ` +
-              `without instructions and immediately catches ` +
-              `${pronouns.reflexive}.`,
-
-            changes: [createStatusChange(eventId, tribute, "injured", 1, round), consumeTrapKit],
-          };
-
-        case "failure":
-          return {
-            text:
-              `${tribute.snapshot.name} spends hours constructing a trap ` +
-              "that repeatedly springs before anything approaches it.",
-
-            changes: [createStatusChange(eventId, tribute, "exhausted", 1, round), consumeTrapKit],
-          };
-
-        case "success":
-          return {
-            text:
-              `${tribute.snapshot.name} successfully assembles a trap ` +
-              "and catches enough game for a meal.",
-
-            changes: [
-              ...createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                tribute,
-                ["food"],
-                round,
-                "natural-foraging",
-              ),
-              consumeTrapKit,
-            ],
-          };
-
-        case "exceptional-success":
-          return {
-            text:
-              `${tribute.snapshot.name} constructs an ingenious trap, ` +
-              "secures food, and feels considerably more capable than before.",
-
-            changes: [
-              ...createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                tribute,
-                ["food"],
-                round,
-                "natural-foraging",
-              ),
-              createStatusChange(eventId, tribute, "inspired", 1, round),
-              consumeTrapKit,
-            ],
-          };
-      }
+    weight: 3.5,
+    roleOptions: { getWeight: getForagingScore },
+    outcomes: {
+      criticalFailure: result({
+        text: ({ tribute }) =>
+          `${tribute.name} tries to assemble a trap kit without instructions and immediately catches ${tribute.pronouns.reflexive}.`,
+        effects: [applyStatus("tribute", "injured", 1)],
+      }),
+      failure: result({
+        text: ({ tribute }) =>
+          `${tribute.name} spends hours constructing a trap that repeatedly springs before anything approaches it.`,
+        effects: [applyStatus("tribute", "exhausted", 1)],
+      }),
+      success: result({
+        text: ({ tribute }) =>
+          `${tribute.name} successfully assembles a trap and catches enough game for a meal.`,
+        effects: [acquireNaturalResource("tribute", "food"), survived("tribute")],
+      }),
+      exceptionalSuccess: result({
+        text: ({ tribute }) =>
+          `${tribute.name} constructs an ingenious trap, secures food, and feels considerably more capable than before.`,
+        effects: [
+          acquireNaturalResource("tribute", "food"),
+          survived("tribute"),
+          applyStatus("tribute", "inspired", 1),
+        ],
+      }),
     },
-  },
+  }),
   {
     id: "shield-used-for-everything-else",
     category: "hazard",
@@ -452,70 +373,38 @@ export const ITEM_USE_EVENTS = [
       }
     },
   },
-  {
-    id: "camouflage-catastrophe",
-    category: "hazard",
-    tags: ["hazard", "item", "tool", "status"],
+  createItemStatEvent("camouflage-catastrophe", {
+    itemId: "camouflage-net",
+    check: brains(3),
+
+    tags: ["item", "tool", "status"],
     periods: ["day", "night"],
-    baseWeight: 3.5,
+    weight: 3.5,
 
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
+    outcomes: {
+      criticalFailure: result({
+        text: ({ tribute }) =>
+          `${tribute.name} becomes completely tangled in ${tribute.pronouns.possessiveAdjective} camouflage net and loses all sense of direction.`,
+        effects: [applyStatus("tribute", "disoriented", 1)],
+      }),
 
-        requiredItemDefinitionIds: ["camouflage-net"],
-      },
-    ],
+      failure: result({
+        text: ({ tribute }) =>
+          `${tribute.name} hangs ${tribute.pronouns.possessiveAdjective} camouflage net backwards, creating an extremely visible tribute-shaped landmark.`,
+        effects: [applyStatus("tribute", "hunted", 1)],
+      }),
 
-    resolve(context): EventResolution {
-      const { eventId, round, random, participantsByRole } = context;
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-      const pronouns = getTributePronouns(tribute);
+      success: result({
+        text: ({ tribute }) =>
+          `${tribute.name} uses ${tribute.pronouns.possessiveAdjective} camouflage net to disappear into the surrounding terrain.`,
+        effects: [applyStatus("tribute", "concealed", 1)],
+      }),
 
-      const net = requireEventItem(context, tribute, "camouflage-net", "camouflage-catastrophe");
-
-      const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
-
-      const consumeNet = createItemUseChange(net.owner, net.item, "camouflage-catastrophe");
-
-      switch (outcome) {
-        case "critical-failure":
-          return {
-            text:
-              `${tribute.snapshot.name} becomes completely tangled ` +
-              `in ${pronouns.possessiveAdjective} camouflage net and loses all sense of direction.`,
-
-            changes: [createStatusChange(eventId, tribute, "disoriented", 1, round), consumeNet],
-          };
-
-        case "failure":
-          return {
-            text:
-              `${tribute.snapshot.name} hangs ${pronouns.possessiveAdjective} camouflage net backwards, ` +
-              "creating an extremely visible tribute-shaped landmark.",
-
-            changes: [createStatusChange(eventId, tribute, "hunted", 1, round), consumeNet],
-          };
-
-        case "success":
-          return {
-            text:
-              `${tribute.snapshot.name} uses ${pronouns.possessiveAdjective} camouflage net ` +
-              "to disappear into the surrounding terrain.",
-
-            changes: [createStatusChange(eventId, tribute, "concealed", 1, round), consumeNet],
-          };
-
-        case "exceptional-success":
-          return {
-            text:
-              `${tribute.snapshot.name} constructs an almost perfect hideout ` +
-              `with ${pronouns.possessiveAdjective} camouflage net.`,
-
-            changes: [createStatusChange(eventId, tribute, "concealed", 2, round), consumeNet],
-          };
-      }
+      exceptionalSuccess: result({
+        text: ({ tribute }) =>
+          `${tribute.name} constructs an almost perfect hideout with ${tribute.pronouns.possessiveAdjective} camouflage net.`,
+        effects: [applyStatus("tribute", "concealed", 2)],
+      }),
     },
-  },
+  }),
 ] satisfies readonly EventDefinition[];

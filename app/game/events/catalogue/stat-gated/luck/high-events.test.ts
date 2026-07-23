@@ -187,7 +187,7 @@ describe("high-Luck events", () => {
       expectedSeverity: 2,
     },
   ] as const)(
-    "preserves the legacy outcome for random value $randomValue",
+    "resolves the expected outcome for random value $randomValue",
     ({ randomValue, expectedText, expectedChangeType, expectedStatus, expectedSeverity }) => {
       const game = createTestGame();
 

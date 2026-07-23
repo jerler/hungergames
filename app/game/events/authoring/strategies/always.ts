@@ -4,7 +4,11 @@ import {
   type EventText,
 } from "~/game/events/authoring/characters/event-text-context";
 import { compileEffects, validateEffects } from "~/game/events/authoring/effects/compile-effects";
-import type { EventResult } from "~/game/events/authoring/outcomes/outcome-schema";
+import type { AuthoredOutcome } from "~/game/events/authoring/outcomes/outcome-schema";
+import {
+  getConcreteEventResults,
+  resolveAuthoredOutcome,
+} from "~/game/events/authoring/outcomes/random-result";
 import { resolveOutcomeText } from "~/game/events/authoring/outcomes/resolve-outcome";
 
 interface AlwaysStrategyOptions {
@@ -12,21 +16,23 @@ interface AlwaysStrategyOptions {
 }
 
 export function always(
-  result: EventResult,
+  outcome: AuthoredOutcome,
   { intro }: AlwaysStrategyOptions = {},
 ): EventResolutionStrategy {
   return {
     validate(eventId, roleIds, requiredItemRoleIds): void {
-      validateEffects(eventId, result.effects, roleIds, requiredItemRoleIds);
+      for (const eventResult of getConcreteEventResults(outcome)) {
+        validateEffects(eventId, eventResult.effects, roleIds, requiredItemRoleIds);
+      }
     },
 
     resolve(context, roleIds) {
+      const eventResult = resolveAuthoredOutcome(outcome, context.random);
       const textContext = createEventTextContext(context, roleIds);
 
       return {
-        text: resolveOutcomeText(context.eventId, result, textContext, intro),
-
-        changes: compileEffects(result.effects, context),
+        text: resolveOutcomeText(context.eventId, eventResult, textContext, intro),
+        changes: compileEffects(eventResult.effects, context),
       };
     },
   };

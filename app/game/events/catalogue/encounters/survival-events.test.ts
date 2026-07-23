@@ -236,4 +236,53 @@ describe("survival events", () => {
       "sick",
     ]);
   });
+
+  it.each([
+    {
+      randomValue: 0,
+      expectedItemId: "food",
+      expectedTextFragment: "gathers enough for a meal",
+    },
+    {
+      randomValue: 0.999,
+      expectedItemId: "water",
+      expectedTextFragment: "collects water",
+    },
+  ] as const)(
+    "forages-for-resources gathers $expectedItemId",
+    ({ randomValue, expectedItemId, expectedTextFragment }) => {
+      const game = createTestGame();
+      const tribute = withStats(game.tributes[0], BALANCED_STATS);
+
+      const resolution = resolveEvent(
+        requireEvent("forages-for-resources"),
+        game,
+        {
+          tribute: [tribute],
+        },
+        [randomValue],
+      );
+
+      expect(resolution.text).toContain(expectedTextFragment);
+
+      expect(resolution.changes).toContainEqual(
+        expect.objectContaining({
+          type: "acquire-item",
+          tributeId: tribute.id,
+          acquisitionSource: "natural-foraging",
+
+          item: expect.objectContaining({
+            definitionId: expectedItemId,
+          }),
+        }),
+      );
+
+      expect(resolution.changes).toContainEqual({
+        type: "increment-statistic",
+        tributeId: tribute.id,
+        statistic: "eventsSurvived",
+        amount: 1,
+      });
+    },
+  );
 });

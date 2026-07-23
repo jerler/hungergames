@@ -6,7 +6,11 @@ import {
   type EventResolution,
   type EventResolutionContext,
 } from "~/game/events/event-schema";
-import { createStatusChange, createSurvivalChanges } from "~/game/events/event-change-builders";
+import {
+  createFatalChanges,
+  createStatusChange,
+  createSurvivalChanges,
+} from "~/game/events/event-change-builders";
 import {
   createTruceInstance,
   getActiveTruceForTribute,
@@ -200,22 +204,13 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
 
         return {
           text,
-
-          /*
-           * Do not break the truce explicitly.
-           * The accidental-dissolution engine
-           * will create the emotional aftermath.
-           */
           changes: [
-            {
-              type: "eliminate-tribute",
-              tributeId: protector.id,
-              causeId: "protecting-romantic-partner",
-              causeLabel: `Died protecting ` + `${protectorPronouns.possessiveAdjective} partner`,
-              summary: text,
-              killerTributeIds: [],
-            },
-
+            ...createFatalChanges(
+              protector,
+              "protecting-romantic-partner",
+              `Died protecting ${protectorPronouns.possessiveAdjective} partner`,
+              text,
+            ),
             ...createSurvivalChanges([partner]),
           ],
         };

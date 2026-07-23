@@ -245,6 +245,31 @@ Within one planned round:
 
 ---
 
+# Complex Event Authoring Assessment
+
+The authoring layer is the default for straightforward weighted catalogue content. Complex subsystems remain direct when their selection, sequencing, state derivation, or change ordering would become less clear inside a generic builder.
+
+| Family                          | Decision                       | Rationale                                                                                                                                                                                                                             |
+| ------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Non-truce theft                 | Retain direct                  | Target eligibility and weighting depend on the previously selected thief. The target must personally own a usable item, participant backtracking must remain visible, and exceptional success may dynamically transfer a second item. |
+| Standard truce formation        | Retain domain factory          | The existing formation factory generates group-size variants, affinity-weighted participant selection, population weighting, truce construction, expiry, natural supplies, and survival credit.                                       |
+| Standard truce interaction      | Retain direct                  | Betrayal combines group-size-specific eligibility, dynamic stat selection, defender selection, theft, fatalities, statuses, survival credit, and explicit truce dissolution.                                                          |
+| Standard truce dissolution      | Retain domain factory          | Amicable separation requires complete active-truce validation and state-aware randomized inventory redistribution before dissolution.                                                                                                 |
+| Romantic formation              | Retain direct                  | Permanent romantic truces have specialized eligibility, formation rules, and joint-victory implications.                                                                                                                              |
+| Romantic protection             | Partial helper adoption        | Keep relationship-specific roles and outcomes direct, but use the central fatal-change builder for the fatal branch.                                                                                                                  |
+| Truce aftermath                 | Retain state-derived subsystem | Aftermath events are generated from applied eliminations rather than selected from a weighted catalogue. Use central status helpers where practical.                                                                                  |
+| Cornucopia acquisition          | Retain direct                  | Manufactured acquisition must explicitly preserve `cornucopia` provenance and may select one or two distinct items after resolving an outcome.                                                                                        |
+| Bloodbath flee events           | Full authoring migration       | These are ordinary solo four-outcome stat checks whose statuses, natural acquisition, pronouns, and survival credit already fit the authoring API.                                                                                    |
+| Cornucopia pair conflicts       | Retain direct                  | Outcome probabilities compare both combatants and may reverse the killer, produce no death, or award a contested item.                                                                                                                |
+| Cornucopia group conflicts      | Retain direct                  | These events contain specialized multi-kill, no-credit mutual death, sole-survivor, and soft-lethality behaviour.                                                                                                                     |
+| Bloodbath sequencing            | Retain specialized subsystem   | Strategy assignment, Cornucopia grouping, fatality planning, random-stream order, and exactly-once participation remain outside the generic authoring layer.                                                                          |
+| Poisonous-berries joint victory | Retain direct                  | The ordinary sequencer forces this state-dependent finale and the victory engine validates its exact definition and source event.                                                                                                     |
+| Status-resolution events        | Retain state-derived subsystem | Fatal status events are generated from expiring active statuses rather than selected from the weighted catalogue. Use the central fatal-change builder.                                                                               |
+| Safety resolution               | Retain sequencer behaviour     | Safety resolution selects guaranteed-fatal definitions by category. No separate safety-only event abstraction is needed.                                                                                                              |
+| Dynamic inventory transfers     | Retain local helpers           | Theft, betrayal, redistribution, and death loot select different item sets with different provenance and ordering rules. A single authored transfer effect would obscure those distinctions.                                          |
+
+---
+
 # Notable Implemented Definitions
 
 These entries clarify previously documented events whose mechanics changed during the provenance and Bloodbath work.

@@ -1,5 +1,5 @@
 import { createSeededRandom } from "~/game/engine/random";
-import { createStatusEffectInstance } from "~/game/statuses/status-engine";
+import { createStatusChange } from "~/game/events/event-change-builders";
 import {
   createVendettaInstance,
   ROMANTIC_VENDETTA_CHANCE,
@@ -182,21 +182,7 @@ function createDisorientedResponse(
   primaryEvent: ResolvedEvent,
 ): DeathResponse {
   return {
-    changes: [
-      {
-        type: "apply-status",
-
-        tributeId: survivor.id,
-
-        status: createStatusEffectInstance(
-          aftermathEventId,
-          survivor.id,
-          "disoriented",
-          2,
-          primaryEvent.round,
-        ),
-      },
-    ],
+    changes: [createStatusChange(aftermathEventId, survivor, "disoriented", 2, primaryEvent.round)],
 
     text: `${survivor.snapshot.name} is overcome ` + "by grief and becomes disoriented.",
 

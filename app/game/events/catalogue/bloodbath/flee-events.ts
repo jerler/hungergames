@@ -1,240 +1,110 @@
 import {
-  createItemAcquisitionAndSurvivalChanges,
-  createStatusChange,
-  createSurvivalChanges,
-} from "~/game/events/event-change-builders";
-import { resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
-import {
-  requireSingleParticipant,
-  type EventDefinition,
-  type EventResolution,
-} from "~/game/events/event-schema";
-import { getTributePronouns } from "~/game/tributes/pronouns";
+  acquireNaturalResource,
+  applyStatus,
+  brains,
+  brawn,
+  createSoloStatEvent,
+  result,
+  survived,
+} from "~/game/events/authoring";
+import type { EventDefinition } from "~/game/events/event-schema";
 
 export const FLEE_EVENTS = [
-  {
-    id: "bloodbath-flee-woods",
+  createSoloStatEvent("bloodbath-flee-woods", {
+    check: brawn(3),
     category: "survival",
-    tags: ["survival", "environment", "status"],
+    tags: ["environment", "status"],
     periods: ["day"],
-    baseWeight: 7,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-      },
-    ],
-
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-      const pronouns = getTributePronouns(tribute);
-
-      const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, random);
-
-      switch (outcome) {
-        case "critical-failure":
-          return {
-            text:
-              `${tribute.snapshot.name} runs blindly from ` +
-              "the Cornucopia, crashes through the undergrowth, " +
-              "and escapes injured and exhausted.",
-
-            changes: [
-              createStatusChange(eventId, tribute, "injured", 1, round),
-
-              createStatusChange(eventId, tribute, "exhausted", 1, round),
-            ],
-          };
-
-        case "failure":
-          return {
-            text:
-              `${tribute.snapshot.name} runs until the sounds ` +
-              "of the Bloodbath disappear, then collapses " +
-              "from exhaustion.",
-
-            changes: [createStatusChange(eventId, tribute, "exhausted", 1, round)],
-          };
-
-        case "success":
-          return {
-            text:
-              `${tribute.snapshot.name} runs directly into ` +
-              "the woods and puts a safe distance between " +
-              `${pronouns.reflexive} and the Cornucopia.`,
-
-            changes: createSurvivalChanges([tribute]),
-          };
-
-        case "exceptional-success":
-          return {
-            text:
-              `${tribute.snapshot.name} disappears into the ` +
-              "woods before the fighting begins and finds " +
-              "a concealed place to watch from safety.",
-
-            changes: [
-              createStatusChange(eventId, tribute, "concealed", 1, round),
-
-              ...createSurvivalChanges([tribute]),
-            ],
-          };
-      }
+    weight: 7,
+    outcomes: {
+      criticalFailure: result({
+        text: ({ tribute }) =>
+          `${tribute.name} runs blindly from the Cornucopia, crashes through the undergrowth, and escapes injured and exhausted.`,
+        effects: [applyStatus("tribute", "injured", 1), applyStatus("tribute", "exhausted", 1)],
+      }),
+      failure: result({
+        text: ({ tribute }) =>
+          `${tribute.name} runs until the sounds of the Bloodbath disappear, then collapses from exhaustion.`,
+        effects: [applyStatus("tribute", "exhausted", 1)],
+      }),
+      success: result({
+        text: ({ tribute }) =>
+          `${tribute.name} runs directly into the woods and puts a safe distance between ${tribute.pronouns.reflexive} and the Cornucopia.`,
+        effects: [survived("tribute")],
+      }),
+      exceptionalSuccess: result({
+        text: ({ tribute }) =>
+          `${tribute.name} disappears into the woods before the fighting begins and finds a concealed place to watch from safety.`,
+        effects: [applyStatus("tribute", "concealed", 1), survived("tribute")],
+      }),
     },
-  },
+  }),
 
-  {
-    id: "bloodbath-flee-stream",
+  createSoloStatEvent("bloodbath-flee-stream", {
+    check: brains(3),
     category: "survival",
-    tags: ["survival", "environment", "item", "resource", "status"],
+    tags: ["environment", "item", "resource", "status"],
     periods: ["day"],
-    baseWeight: 4,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-      },
-    ],
-
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-      const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
-
-      switch (outcome) {
-        case "critical-failure":
-          return {
-            text:
-              `${tribute.snapshot.name} becomes hopelessly ` +
-              "lost while searching for water after fleeing " +
-              "the Cornucopia.",
-
-            changes: [createStatusChange(eventId, tribute, "disoriented", 2, round)],
-          };
-
-        case "failure":
-          return {
-            text:
-              `${tribute.snapshot.name} hears running water ` +
-              "but becomes turned around while trying to find it.",
-
-            changes: [createStatusChange(eventId, tribute, "disoriented", 1, round)],
-          };
-
-        case "success":
-          return {
-            text:
-              `${tribute.snapshot.name} follows the terrain ` +
-              "away from the Cornucopia and finds a clean stream.",
-
-            changes: createItemAcquisitionAndSurvivalChanges(
-              eventId,
-              tribute,
-              ["water"],
-              round,
-              "natural-foraging",
-            ),
-          };
-
-        case "exceptional-success":
-          return {
-            text:
-              `${tribute.snapshot.name} finds a clean stream ` +
-              "beside a sheltered hiding place far from the " +
-              "Cornucopia.",
-
-            changes: [
-              ...createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                tribute,
-                ["water"],
-                round,
-                "natural-foraging",
-              ),
-
-              createStatusChange(eventId, tribute, "concealed", 1, round),
-            ],
-          };
-      }
+    weight: 4,
+    outcomes: {
+      criticalFailure: result({
+        text: ({ tribute }) =>
+          `${tribute.name} becomes hopelessly lost while searching for water after fleeing the Cornucopia.`,
+        effects: [applyStatus("tribute", "disoriented", 2)],
+      }),
+      failure: result({
+        text: ({ tribute }) =>
+          `${tribute.name} hears running water but becomes turned around while trying to find it.`,
+        effects: [applyStatus("tribute", "disoriented", 1)],
+      }),
+      success: result({
+        text: ({ tribute }) =>
+          `${tribute.name} follows the terrain away from the Cornucopia and finds a clean stream.`,
+        effects: [acquireNaturalResource("tribute", "water"), survived("tribute")],
+      }),
+      exceptionalSuccess: result({
+        text: ({ tribute }) =>
+          `${tribute.name} finds a clean stream beside a sheltered hiding place far from the Cornucopia.`,
+        effects: [
+          acquireNaturalResource("tribute", "water"),
+          applyStatus("tribute", "concealed", 1),
+          survived("tribute"),
+        ],
+      }),
     },
-  },
+  }),
 
-  {
-    id: "bloodbath-flee-forage",
+  createSoloStatEvent("bloodbath-flee-forage", {
+    check: brains(3),
     category: "survival",
-    tags: ["survival", "environment", "item", "resource", "status"],
+    tags: ["environment", "item", "resource", "status"],
     periods: ["day"],
-    baseWeight: 4,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-      },
-    ],
-
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-      const pronouns = getTributePronouns(tribute);
-
-      const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
-
-      switch (outcome) {
-        case "critical-failure":
-          return {
-            text:
-              `${tribute.snapshot.name} flees into the ` +
-              "wilderness and mistakes poisonous berries " +
-              "for edible fruit.",
-
-            changes: [createStatusChange(eventId, tribute, "poisoned", 1, round)],
-          };
-
-        case "failure":
-          return {
-            text:
-              `${tribute.snapshot.name} eats an unfamiliar ` +
-              "root after fleeing and quickly becomes sick.",
-
-            changes: [createStatusChange(eventId, tribute, "sick", 1, round)],
-          };
-
-        case "success":
-          return {
-            text:
-              `${tribute.snapshot.name} escapes the central ` +
-              "Bloodbath and gathers edible plants.",
-
-            changes: createItemAcquisitionAndSurvivalChanges(
-              eventId,
-              tribute,
-              ["food"],
-              round,
-              "natural-foraging",
-            ),
-          };
-
-        case "exceptional-success":
-          return {
-            text:
-              `${tribute.snapshot.name} quickly identifies ` +
-              "a patch of edible plants and feels confident " +
-              `about ${pronouns.possessiveAdjective} decision to flee.`,
-
-            changes: [
-              ...createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                tribute,
-                ["food"],
-                round,
-                "natural-foraging",
-              ),
-
-              createStatusChange(eventId, tribute, "inspired", 1, round),
-            ],
-          };
-      }
+    weight: 4,
+    outcomes: {
+      criticalFailure: result({
+        text: ({ tribute }) =>
+          `${tribute.name} flees into the wilderness and mistakes poisonous berries for edible fruit.`,
+        effects: [applyStatus("tribute", "poisoned", 1)],
+      }),
+      failure: result({
+        text: ({ tribute }) =>
+          `${tribute.name} eats an unfamiliar root after fleeing and quickly becomes sick.`,
+        effects: [applyStatus("tribute", "sick", 1)],
+      }),
+      success: result({
+        text: ({ tribute }) =>
+          `${tribute.name} escapes the central Bloodbath and gathers edible plants.`,
+        effects: [acquireNaturalResource("tribute", "food"), survived("tribute")],
+      }),
+      exceptionalSuccess: result({
+        text: ({ tribute }) =>
+          `${tribute.name} quickly identifies a patch of edible plants and feels confident about ${tribute.pronouns.possessiveAdjective} decision to flee.`,
+        effects: [
+          acquireNaturalResource("tribute", "food"),
+          applyStatus("tribute", "inspired", 1),
+          survived("tribute"),
+        ],
+      }),
     },
-  },
+  }),
 ] satisfies readonly EventDefinition[];

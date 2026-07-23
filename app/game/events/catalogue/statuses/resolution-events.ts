@@ -1,4 +1,5 @@
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
+import { createFatalChanges } from "~/game/events/event-change-builders";
 import type {
   GameChange,
   GameTribute,
@@ -59,19 +60,7 @@ export function createFatalStatusResolutionEvent(
     text,
 
     changes: [
-      {
-        type: "eliminate-tribute",
-        tributeId: tribute.id,
-
-        causeId: `status:${definition.id}`,
-
-        causeLabel: definition.fatalCauseLabel,
-
-        summary: text,
-
-        killerTributeIds: [],
-      },
-
+      ...createFatalChanges(tribute, `status:${definition.id}`, definition.fatalCauseLabel, text),
       ...removeStatusChanges,
     ],
   };

@@ -2,11 +2,12 @@ import {
   applyStatus,
   createEvent,
   luck,
+  minimumStat,
   result,
+  soloRole,
   statCheck,
   survived,
 } from "~/game/events/authoring";
-import { isStatAtLeast } from "~/game/events/event-outcomes";
 import type { EventDefinition } from "~/game/events/event-schema";
 
 export const HIGH_LUCK_EVENTS = [
@@ -17,15 +18,16 @@ export const HIGH_LUCK_EVENTS = [
   /* Day and Night */
 
   createEvent("unexpected-pep-talk")
+    .roles(
+      soloRole("tribute", {
+        getWeight: (tribute) => tribute.snapshot.stats.luck,
+      }),
+    )
+    .when(minimumStat("tribute", "luck", 4))
     .category("survival")
     .tags("survival", "status")
     .during("day", "night")
     .weight(3.5)
-    .solo("tribute", {
-      isEligible: (tribute) => isStatAtLeast(tribute.snapshot.stats, "luck", 4),
-
-      getWeight: (tribute) => tribute.snapshot.stats.luck,
-    })
     .resolve(
       statCheck("tribute", luck(3), {
         criticalFailure: result({
@@ -61,7 +63,7 @@ export const HIGH_LUCK_EVENTS = [
         exceptionalSuccess: result({
           text: ({ tribute }) =>
             `${tribute.name} receives ` +
-            `exactly the encouragement ` +
+            "exactly the encouragement " +
             `${tribute.pronouns.subject} needed ` +
             "and feels unstoppable.",
 

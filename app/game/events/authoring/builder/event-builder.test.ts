@@ -1,21 +1,49 @@
 import { describe, expect, it } from "vitest";
 
-import { always, applyStatus, createEvent, result, survived } from "~/game/events/authoring";
 import {
   createAuthoringTestGame,
   createAuthoringTestTribute,
 } from "~/game/events/authoring/testing/authoring-test-fixtures";
 import { resolveAuthoredEvent } from "~/game/events/authoring/testing/resolve-authored-event";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
+import {
+  always,
+  applyStatus,
+  createEvent,
+  groupRole,
+  maximumStat,
+  minimumStat,
+  notInSameTruce,
+  result,
+  soloRole,
+  survived,
+} from "~/game/events/authoring";
+
+import type { ParticipantSelectionContext } from "~/game/events/event-schema";
+import type { GameState } from "~/game/types/game-state";
+
+const ROUND = {
+  day: 2,
+  period: "day",
+} as const;
 
 function createStaticStrategy() {
   return always(
     result({
-      text: ({ tribute }) => `${tribute.name} survives.`,
-
-      effects: [survived("tribute")],
+      text: "The event resolves.",
     }),
   );
+}
+
+function createSelectionContext(state: GameState): ParticipantSelectionContext {
+  return {
+    state,
+    round: ROUND,
+
+    livingTributes: state.tributes.filter((tribute) => tribute.isAlive),
+
+    participantsByRole: {},
+  };
 }
 
 describe("EventBuilder", () => {
@@ -209,5 +237,221 @@ describe("EventBuilder", () => {
         append: " Additional text.",
       }),
     ).toThrow('An event result cannot define both "text" and "append".');
+  });
+});
+
+describe("EventBuilder participant roles", () => {
+  it("compiles roles in their authored order", () => {
+    const firstWeight = () => 7;
+
+    const definition = createEvent("ordered-authored-roles")
+      .roles(
+        soloRole("first", {
+          getWeight: firstWeight,
+        }),
+
+        groupRole("second", 2),
+
+        soloRole("third"),
+      )
+      .during("day")
+      .resolve(createStaticStrategy());
+
+    expect(definition.roles.map((role) => role.id)).toEqual(["first", "second", "third"]);
+
+    expect(definition.roles[0]).toMatchObject({
+      id: "first",
+      count: 1,
+    });
+
+    expect(definition.roles[0]?.getWeight).toBe(firstWeight);
+
+    expect(definition.roles[1]).toMatchObject({
+      id: "second",
+      count: 2,
+    });
+
+    expect(definition.roles[2]).toMatchObject({
+      id: "third",
+      count: 1,
+    });
+  });
+
+  it("appends roles across repeated roles calls", () => {
+    const definition = createEvent("repeated-roles-calls")
+      .roles(soloRole("first"))
+      .roles(
+        soloRole("second"),
+
+        soloRole("third"),
+      )
+      .during("day")
+      .resolve(createStaticStrategy());
+
+    expect(definition.roles.map((role) => role.id)).toEqual(["first", "second", "third"]);
+  });
+
+  it("keeps builder branches immutable", () => {
+    const base = createEvent("immutable-role-builder").during("day");
+
+    const soloDefinition = base.roles(soloRole("tribute")).resolve(createStaticStrategy());
+
+    const pairDefinition = base
+      .pair(
+        soloRole("first"),
+
+        soloRole("second"),
+      )
+      .resolve(createStaticStrategy());
+
+    expect(soloDefinition.roles.map((role) => role.id)).toEqual(["tribute"]);
+
+    expect(pairDefinition.roles.map((role) => role.id)).toEqual(["first", "second"]);
+  });
+
+  it("adds a pair in the supplied order", () => {
+    const definition = createEvent("builder-pair")
+      .pair(
+        soloRole("attacker"),
+
+        soloRole("victim"),
+      )
+      .during("day")
+      .resolve(createStaticStrategy());
+
+    expect(definition.roles).toEqual([
+      expect.objectContaining({
+        id: "attacker",
+        count: 1,
+      }),
+
+      expect.objectContaining({
+        id: "victim",
+        count: 1,
+      }),
+    ]);
+  });
+
+  it("adds a repeated same-role group", () => {
+    const definition = createEvent("builder-group")
+      .group("tributes", 4)
+      .during("night")
+      .resolve(createStaticStrategy());
+
+    expect(definition.roles).toEqual([
+      expect.objectContaining({
+        id: "tributes",
+        count: 4,
+      }),
+    ]);
+  });
+});
+
+describe("EventBuilder requirements", () => {
+  it("combines requirements added through repeated when calls", () => {
+    const tooLow = createAuthoringTestTribute({
+      id: "too-low",
+
+      stats: {
+        brains: 3,
+        brawn: 3,
+        luck: 2,
+      },
+    });
+
+    const eligible = createAuthoringTestTribute({
+      id: "eligible",
+
+      stats: {
+        brains: 3,
+        brawn: 3,
+        luck: 4,
+      },
+    });
+
+    const tooHigh = createAuthoringTestTribute({
+      id: "too-high",
+
+      stats: {
+        brains: 3,
+        brawn: 3,
+        luck: 5,
+      },
+    });
+
+    const state = createAuthoringTestGame([tooLow, eligible, tooHigh]);
+
+    const context = createSelectionContext(state);
+
+    const definition = createEvent("repeated-when-calls")
+      .roles(soloRole("tribute"))
+      .when(minimumStat("tribute", "luck", 3))
+      .when(maximumStat("tribute", "luck", 4))
+      .during("day")
+      .resolve(createStaticStrategy());
+
+    const [role] = definition.roles;
+
+    expect(role?.isEligible?.(tooLow, context)).toBe(false);
+
+    expect(role?.isEligible?.(eligible, context)).toBe(true);
+
+    expect(role?.isEligible?.(tooHigh, context)).toBe(false);
+  });
+
+  it("allows requirements to be declared before roles", () => {
+    const definition = createEvent("requirements-before-roles")
+      .when(minimumStat("tribute", "luck", 4))
+      .roles(soloRole("tribute"))
+      .during("day")
+      .resolve(createStaticStrategy());
+
+    expect(definition.roles[0]?.isEligible).toBeTypeOf("function");
+  });
+
+  it("compiles notInSameTruce into symmetric opposition", () => {
+    const definition = createEvent("builder-truce-opposition")
+      .pair(
+        soloRole("attacker"),
+
+        soloRole("victim"),
+      )
+      .when(notInSameTruce("attacker", "victim"))
+      .during("day")
+      .resolve(createStaticStrategy());
+
+    expect(definition.roles[0]?.opposesRoleIds).toEqual(["victim"]);
+
+    expect(definition.roles[1]?.opposesRoleIds).toEqual(["attacker"]);
+  });
+
+  it("produces equivalent roles regardless of builder method order", () => {
+    const first = createEvent("method-order-first")
+      .roles(soloRole("tribute"))
+      .when(minimumStat("tribute", "brains", 3))
+      .during("day")
+      .resolve(createStaticStrategy());
+
+    const second = createEvent("method-order-second")
+      .during("day")
+      .when(minimumStat("tribute", "brains", 3))
+      .roles(soloRole("tribute"))
+      .resolve(createStaticStrategy());
+
+    expect(
+      first.roles.map(({ id, count }) => ({
+        id,
+        count,
+      })),
+    ).toEqual(
+      second.roles.map(({ id, count }) => ({
+        id,
+        count,
+      })),
+    );
+
+    expect(first.roles[0]?.isEligible).toBeTypeOf("function");
+
+    expect(second.roles[0]?.isEligible).toBeTypeOf("function");
   });
 });

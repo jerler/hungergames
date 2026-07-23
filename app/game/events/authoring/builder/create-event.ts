@@ -5,13 +5,12 @@ export function createEvent(id: string): EventBuilder {
     id,
 
     category: "survival",
-
     tags: [],
 
     periods: [],
-
     baseWeight: 1,
 
     roles: [],
+    requirements: [],
   });
 }

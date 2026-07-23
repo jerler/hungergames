@@ -238,6 +238,27 @@ describe("EventBuilder", () => {
       }),
     ).toThrow('An event result cannot define both "text" and "append".');
   });
+
+  it("compiles an event weight multiplier", () => {
+    const getWeightMultiplier = () => 2;
+
+    const definition = createEvent("weighted-by-population")
+      .solo()
+      .category("survival")
+      .tags("survival")
+      .during("day")
+      .weight(3)
+      .weightMultiplier(getWeightMultiplier)
+      .resolve(
+        always(
+          result({
+            text: "Population-weighted event.",
+          }),
+        ),
+      );
+
+    expect(definition.getWeightMultiplier).toBe(getWeightMultiplier);
+  });
 });
 
 describe("EventBuilder participant roles", () => {

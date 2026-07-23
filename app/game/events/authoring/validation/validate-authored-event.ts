@@ -35,6 +35,60 @@ const ITEM_TAGS = new Set<ItemTag>([
   "fishing",
 ]);
 
+function validateOptionalItemSelection(eventId: string, role: AuthoredRoleSpecification): void {
+  const definitionIds = role.optionalItemDefinitionIds ?? [];
+  const tags = role.optionalItemTags ?? [];
+
+  const declaresOptionalItem =
+    role.optionalItemAccess !== undefined || definitionIds.length > 0 || tags.length > 0;
+
+  if (!declaresOptionalItem) {
+    return;
+  }
+
+  if (definitionIds.length === 0 && tags.length === 0) {
+    throw new Error(
+      `Event "${eventId}" role "${role.id}" declares optional item selection without item definitions or tags.`,
+    );
+  }
+
+  if (role.optionalItemAccess !== "accessible" && role.optionalItemAccess !== "owned") {
+    throw new Error(
+      `Event "${eventId}" role "${role.id}" has invalid optional item access "${String(
+        role.optionalItemAccess,
+      )}".`,
+    );
+  }
+
+  if (new Set(definitionIds).size !== definitionIds.length) {
+    throw new Error(
+      `Event "${eventId}" role "${role.id}" declares duplicate optional item definitions.`,
+    );
+  }
+
+  for (const itemId of definitionIds) {
+    try {
+      getItemDefinition(itemId);
+    } catch {
+      throw new Error(
+        `Event "${eventId}" role "${role.id}" references unknown optional item "${itemId}".`,
+      );
+    }
+  }
+
+  if (new Set(tags).size !== tags.length) {
+    throw new Error(`Event "${eventId}" role "${role.id}" declares duplicate optional item tags.`);
+  }
+
+  for (const tag of tags) {
+    if (!ITEM_TAGS.has(tag)) {
+      throw new Error(
+        `Event "${eventId}" role "${role.id}" references unknown optional item tag "${tag}".`,
+      );
+    }
+  }
+}
+
 function validateRole(
   eventId: string,
   role: AuthoredRoleSpecification,
@@ -59,6 +113,8 @@ function validateRole(
       );
     }
   }
+
+  validateOptionalItemSelection(eventId, role);
 }
 
 function validateItemRequirement(eventId: string, requirement: ItemRequirement): void {
@@ -189,6 +245,29 @@ function validateRequiredItemCounts(
   }
 }
 
+function validateItemSelectionKinds(
+  eventId: string,
+  roles: readonly AuthoredRoleSpecification[],
+  requirements: readonly AuthoredRequirement[],
+): void {
+  const requiredItemRoleIds = new Set(
+    requirements.filter(isItemRequirement).map((requirement) => requirement.roleId),
+  );
+
+  for (const role of roles) {
+    const hasOptionalItem =
+      role.optionalItemAccess !== undefined ||
+      (role.optionalItemDefinitionIds?.length ?? 0) > 0 ||
+      (role.optionalItemTags?.length ?? 0) > 0;
+
+    if (hasOptionalItem && requiredItemRoleIds.has(role.id)) {
+      throw new Error(
+        `Event "${eventId}" role "${role.id}" cannot declare both required and optional item selection.`,
+      );
+    }
+  }
+}
+
 export function validateAuthoredEvent(
   configuration: AuthoredEventConfiguration,
   strategy: EventResolutionStrategy,
@@ -232,6 +311,7 @@ export function validateAuthoredEvent(
   }
 
   validateRequiredItemCounts(id, requirements);
+  validateItemSelectionKinds(id, roles, requirements);
 
   const requiredItemRoleIds = [
     ...new Set(requirements.filter(isItemRequirement).map((requirement) => requirement.roleId)),

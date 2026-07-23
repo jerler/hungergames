@@ -14,8 +14,10 @@ export {
 } from "./roles/role-presets";
 
 export type {
+  AuthoredOptionalItemSelection,
   AuthoredRoleOptions,
   AuthoredRoleSpecification,
+  RoleItemAccess,
   RoleWeight,
 } from "./roles/role-schema";
 
@@ -55,6 +57,19 @@ export { brains, brawn, luck } from "./checks/stat-checks";
 
 export { applyStatus } from "./effects/status-effects";
 export { survived } from "./effects/statistic-effects";
+
+export { eliminate } from "./effects/fatal-effects";
+export type { EliminateOptions } from "./effects/fatal-effects";
+
+export { customResolution } from "./strategies/custom-resolution";
+
+export type {
+  CustomEventResolver,
+  CustomResolutionHelpers,
+  CustomResolutionOptions,
+} from "./strategies/custom-resolution";
+
+export { createSelectedRoleItemUseChanges, getSelectedRoleItem } from "./items/selected-role-item";
 
 /* Outcomes */
 

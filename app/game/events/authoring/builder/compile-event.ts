@@ -23,6 +23,12 @@ export function compileEvent(
     periods: [...configuration.periods],
     baseWeight: configuration.baseWeight,
 
+    ...(configuration.getWeightMultiplier
+      ? {
+          getWeightMultiplier: configuration.getWeightMultiplier,
+        }
+      : {}),
+
     roles,
 
     resolve: (context) => strategy.resolve(context, roleIds),

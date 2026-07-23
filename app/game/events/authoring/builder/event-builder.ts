@@ -7,7 +7,11 @@ import type {
 } from "~/game/events/authoring/roles/role-schema";
 
 import { compileEvent } from "./compile-event";
-import type { AuthoredEventConfiguration, EventResolutionStrategy } from "./event-builder-types";
+import type {
+  AuthoredEventConfiguration,
+  EventResolutionStrategy,
+  EventWeightMultiplier,
+} from "./event-builder-types";
 
 export class EventBuilder {
   public constructor(private readonly configuration: AuthoredEventConfiguration) {}
@@ -33,6 +37,12 @@ export class EventBuilder {
   public weight(baseWeight: number): EventBuilder {
     return this.with({
       baseWeight,
+    });
+  }
+
+  public weightMultiplier(getWeightMultiplier: EventWeightMultiplier): EventBuilder {
+    return this.with({
+      getWeightMultiplier,
     });
   }
 

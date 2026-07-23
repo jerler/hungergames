@@ -17,6 +17,8 @@ import type { TributeStats } from "~/game/types/tribute";
 import { SURVIVAL_EVENTS } from "./survival-events";
 import { selectEventParticipants } from "~/game/events/participant-selection";
 import { getSurvivalSelectionWeight } from "~/game/engine/stat-formulas";
+import { getDefinitionPopulationMultiplier } from "~/game/engine/stat-formulas";
+import { createTruceInstance } from "~/game/truces/truce-engine";
 
 const ROUND = {
   day: 1,
@@ -286,6 +288,115 @@ describe("survival events", () => {
       });
     },
   );
+
+  it("unfamiliar-foraging-ground preserves its cooperative metadata", () => {
+    const definition = requireEvent("unfamiliar-foraging-ground");
+
+    expect(definition).toMatchObject({
+      id: "unfamiliar-foraging-ground",
+      category: "hazard",
+
+      tags: ["hazard", "item", "status", "resource"],
+
+      periods: ["day"],
+      baseWeight: 4,
+
+      roles: [
+        {
+          id: "tributes",
+          count: 2,
+        },
+      ],
+    });
+
+    expect(definition.getWeightMultiplier).toBe(getDefinitionPopulationMultiplier);
+  });
+
+  it("unfamiliar-foraging-ground preserves truce-aware cooperative weighting", () => {
+    const originalGame = createTestGame();
+
+    const firstTribute = originalGame.tributes[0];
+
+    const partner = originalGame.tributes[1];
+
+    const stranger = originalGame.tributes[2];
+
+    const truce = createTruceInstance(
+      "cooperative-foraging-truce",
+      [firstTribute.id, partner.id],
+      ROUND,
+      {
+        day: 1,
+        period: "night",
+      },
+    );
+
+    const game = {
+      ...originalGame,
+      truces: [truce],
+    };
+
+    const role = requireEvent("unfamiliar-foraging-ground").roles[0];
+
+    const context = {
+      state: game,
+      round: ROUND,
+
+      livingTributes: [firstTribute, partner, stranger],
+
+      participantsByRole: {
+        tributes: [firstTribute],
+      },
+    };
+
+    expect(role.getWeight?.(partner, context)).toBe(5);
+
+    expect(role.getWeight?.(stranger, context)).toBe(1);
+  });
+
+  it("unfamiliar-foraging-ground resolves both participants through central natural acquisition", () => {
+    const game = createTestGame();
+
+    const firstTribute = withStats(game.tributes[0], BALANCED_STATS, "Fern");
+
+    const secondTribute = withStats(game.tributes[1], BALANCED_STATS, "Moss");
+
+    const resolution = resolveEvent(
+      requireEvent("unfamiliar-foraging-ground"),
+      game,
+      {
+        tributes: [firstTribute, secondTribute],
+      },
+      [0.6, 0.6],
+    );
+
+    expect(resolution.text).toContain("Fern and Moss discover a lush clearing");
+
+    expect(
+      resolution.changes.filter(
+        (change) =>
+          change.type === "acquire-item" &&
+          change.item.definitionId === "food" &&
+          change.acquisitionSource === "natural-foraging",
+      ),
+    ).toHaveLength(2);
+
+    expect(
+      resolution.changes.filter(
+        (change) => change.type === "increment-statistic" && change.statistic === "eventsSurvived",
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        tributeId: firstTribute.id,
+        amount: 1,
+      }),
+
+      expect.objectContaining({
+        tributeId: secondTribute.id,
+        amount: 1,
+      }),
+    ]);
+  });
 
   it("finds-hiding-place preserves its authored catalogue contract", () => {
     const game = createTestGame();

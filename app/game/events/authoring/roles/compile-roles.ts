@@ -127,6 +127,24 @@ export function compileAuthoredRoles(
           }
         : {}),
 
+      ...(role.optionalItemDefinitionIds
+        ? {
+            optionalItemDefinitionIds: [...role.optionalItemDefinitionIds],
+          }
+        : {}),
+
+      ...(role.optionalItemTags
+        ? {
+            optionalItemTags: [...role.optionalItemTags],
+          }
+        : {}),
+
+      ...(role.optionalItemAccess
+        ? {
+            optionalItemAccess: role.optionalItemAccess,
+          }
+        : {}),
+
       ...compileItemRequirement(itemRequirement),
 
       ...(roleRequirements.length > 0

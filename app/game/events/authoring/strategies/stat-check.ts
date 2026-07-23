@@ -1,16 +1,13 @@
 import type { EventResolutionStrategy } from "~/game/events/authoring/builder/event-builder-types";
-import {
-  createEventTextContext,
-  type EventText,
-} from "~/game/events/authoring/characters/event-text-context";
+import type { EventText } from "~/game/events/authoring/characters/event-text-context";
 import type { AuthoredStatCheck } from "~/game/events/authoring/checks/check-schema";
-import { compileEffects, validateEffects } from "~/game/events/authoring/effects/compile-effects";
+import { validateEffects } from "~/game/events/authoring/effects/compile-effects";
 import type { StatCheckResults } from "~/game/events/authoring/outcomes/outcome-schema";
 import {
   getConcreteEventResults,
   resolveAuthoredOutcome,
 } from "~/game/events/authoring/outcomes/random-result";
-import { resolveOutcomeText } from "~/game/events/authoring/outcomes/resolve-outcome";
+import { resolveAuthoredResult } from "~/game/events/authoring/outcomes/resolve-authored-result";
 import { resolveStatCheck, type StatCheckOutcome } from "~/game/events/event-outcomes";
 import { resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
 import { requireSingleParticipant } from "~/game/events/event-schema";
@@ -102,13 +99,7 @@ export function statCheck(
 
       const eventResult = resolveAuthoredOutcome(authoredOutcome, context.random);
 
-      const textContext = createEventTextContext(context, roleIds);
-
-      return {
-        text: resolveOutcomeText(context.eventId, eventResult, textContext, intro),
-
-        changes: compileEffects(eventResult.effects, context),
-      };
+      return resolveAuthoredResult(eventResult, context, roleIds, intro);
     },
   };
 }

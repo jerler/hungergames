@@ -83,6 +83,23 @@ export interface ParticipantRoleDefinition {
    */
   itemAccess?: "accessible" | "owned";
 
+  /**
+   * Optionally selects and reserves an item for this role.
+   *
+   * Unlike required-item fields, the participant remains eligible
+   * when no matching item is available.
+   */
+  optionalItemTags?: readonly ItemTag[];
+
+  optionalItemDefinitionIds?: readonly ItemDefinitionId[];
+
+  /**
+   * Controls where an optional item may come from.
+   *
+   * Defaults to "accessible".
+   */
+  optionalItemAccess?: "accessible" | "owned";
+
   opposesRoleIds?: readonly string[];
 }
 

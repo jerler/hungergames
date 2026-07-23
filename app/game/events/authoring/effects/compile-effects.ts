@@ -1,4 +1,5 @@
 import {
+  createFatalChanges,
   createItemUseChange,
   createStatusChange,
   createSurvivalChanges,
@@ -140,12 +141,27 @@ export function validateEffects(
     if (effect.type === "acquire-natural-resource") {
       validateNaturalResourceEffect(eventId, effect);
     }
+
+    if (effect.type === "eliminate") {
+      if (!effect.causeId.trim()) {
+        throw new Error(
+          `Event "${eventId}": effect "eliminate" must declare a non-empty cause ID.`,
+        );
+      }
+
+      if (!effect.causeLabel.trim()) {
+        throw new Error(
+          `Event "${eventId}": effect "eliminate" must declare a non-empty cause label.`,
+        );
+      }
+    }
   }
 }
 
 export function compileEffects(
   effects: readonly EventEffect[],
   context: EventResolutionContext,
+  resolvedText?: string,
 ): GameChange[] {
   return effects.flatMap((effect): GameChange[] => {
     switch (effect.type) {
@@ -187,6 +203,18 @@ export function compileEffects(
             ),
           },
         ];
+      }
+
+      case "eliminate": {
+        if (resolvedText === undefined) {
+          throw new Error(
+            `Event "${context.eventId}": effect "eliminate" requires resolved event text for its death summary.`,
+          );
+        }
+
+        const tribute = requireSingleParticipant(context.participantsByRole, effect.roleId);
+
+        return createFatalChanges(tribute, effect.causeId, effect.causeLabel, resolvedText);
       }
 
       case "use-required-item":

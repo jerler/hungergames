@@ -19,6 +19,7 @@ import type { TributeStats } from "~/game/types/tribute";
 import { getVulnerabilityWeight } from "~/game/engine/stat-formulas";
 
 import { ENVIRONMENTAL_EVENTS } from "./environmental-events";
+import { selectEventParticipants } from "~/game/events/participant-selection";
 
 const ROUND = {
   day: 1,
@@ -72,6 +73,37 @@ const SIMPLE_STATUS_EVENT_CASES = [
     text: "suffers a deep cut and begins bleeding.",
     statusId: "bleeding",
     severity: 2,
+  },
+] as const;
+
+const FATAL_EVENT_CASES = [
+  {
+    eventId: "poisonous-berries",
+    periods: ["day"],
+    weight: 2,
+    causeLabel: "Poisoned",
+    expectedText: "Hazel mistakes poisonous berries for food.",
+  },
+  {
+    eventId: "river-current",
+    periods: ["day"],
+    weight: 2,
+    causeLabel: "Drowned",
+    expectedText: "Hazel is swept away while crossing a violent river.",
+  },
+  {
+    eventId: "freezing-night",
+    periods: ["night"],
+    weight: 2.25,
+    causeLabel: "Froze",
+    expectedText: "Hazel is unable to find shelter and freezes during the night.",
+  },
+  {
+    eventId: "fallen-cliff",
+    periods: ["day", "night"],
+    weight: 2,
+    causeLabel: "Fell",
+    expectedText: "Hazel loses their footing near a cliff and falls to their death.",
   },
 ] as const;
 
@@ -182,20 +214,34 @@ function resolveEvent(
   game: GameState,
   participantsByRole: ParticipantsByRole,
   randomValues: readonly number[],
-  unavailableItemInstanceIds: ReadonlySet<string> = new Set<string>(),
+  unavailableItemInstanceIds: ReadonlySet<string> = new Set(),
 ): EventResolution {
+  const livingTributes = Object.values(participantsByRole).flat();
+
+  const selection = selectEventParticipants(
+    definition,
+    {
+      state: game,
+      round: ROUND,
+      livingTributes,
+    },
+    () => 0,
+    new Set(),
+    unavailableItemInstanceIds,
+  );
+
+  if (!selection) {
+    throw new Error(`Could not select participants for "${definition.id}".`);
+  }
+
   return definition.resolve({
     state: game,
     round: ROUND,
-
-    livingTributes: game.tributes.filter((tribute) => tribute.isAlive),
-
+    livingTributes,
     eventId: `test:${definition.id}`,
-
     random: createSequenceRandom(randomValues),
-
     participantsByRole,
-
+    itemsByRole: selection.itemsByRole,
     unavailableItemInstanceIds,
   });
 }
@@ -241,6 +287,97 @@ describe("environmental events", () => {
       ]);
     },
   );
+
+  it.each(FATAL_EVENT_CASES)(
+    "$eventId preserves its environmental fatality contract",
+    ({ eventId, periods, weight, causeLabel, expectedText }) => {
+      const game = createTestGame();
+
+      const victim = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
+
+      const definition = requireEvent(eventId);
+
+      expect(definition).toMatchObject({
+        id: eventId,
+        category: "fatal",
+        tags: ["fatal", "hazard"],
+        periods,
+        baseWeight: weight,
+
+        roles: [
+          {
+            id: "victim",
+            count: 1,
+          },
+        ],
+      });
+
+      const resolution = resolveEvent(
+        definition,
+        game,
+        {
+          victim: [victim],
+        },
+        [0.5],
+      );
+
+      expect(resolution).toEqual({
+        text: expectedText,
+
+        changes: [
+          {
+            type: "eliminate-tribute",
+            tributeId: victim.id,
+            causeId: eventId,
+            causeLabel,
+            summary: expectedText,
+            killerTributeIds: [],
+          },
+        ],
+      });
+    },
+  );
+
+  it.each([
+    {
+      eventId: "poisonous-berries",
+      stat: "brains",
+    },
+    {
+      eventId: "river-current",
+      stat: "brawn",
+    },
+    {
+      eventId: "freezing-night",
+      stat: "brawn",
+    },
+  ] as const)("$eventId retains its maximum-$stat eligibility", ({ eventId, stat }) => {
+    const game = createTestGame();
+    const definition = requireEvent(eventId);
+    const role = definition.roles[0];
+
+    const eligible = withStats(game.tributes[0], {
+      ...BALANCED_STATS,
+      [stat]: 4,
+    });
+
+    const ineligible = withStats(game.tributes[1], {
+      ...BALANCED_STATS,
+      [stat]: 5,
+    });
+
+    const context = {
+      state: game,
+      round: ROUND,
+      livingTributes: [eligible, ineligible],
+      participantsByRole: {},
+    };
+
+    expect(role.isEligible?.(eligible, context)).toBe(true);
+
+    expect(role.isEligible?.(ineligible, context)).toBe(false);
+  });
+
   it("includes every event in the main catalogue", () => {
     expect(
       ENVIRONMENTAL_EVENTS.every((event) =>
@@ -450,5 +587,53 @@ describe("environmental events", () => {
       itemInstanceId: shield?.id,
       reason: "brushfire-protection",
     });
+  });
+
+  it("brushfire prefers water over lower-priority protection", () => {
+    const originalGame = createTestGame();
+
+    const tribute = withItem(
+      withItem(withStats(originalGame.tributes[0], BALANCED_STATS), "shield"),
+      "water",
+    );
+
+    const game = replaceTributes(originalGame, [tribute]);
+
+    const selection = selectEventParticipants(
+      requireEvent("brushfire-supply-run"),
+      {
+        state: game,
+        round: ROUND,
+        livingTributes: [tribute],
+      },
+      () => 0,
+      new Set(),
+      new Set(),
+    );
+
+    expect(selection?.itemsByRole.tribute?.[0]?.item.definitionId).toBe("water");
+  });
+
+  it("brushfire records natural acquisition provenance", () => {
+    const game = createTestGame();
+    const tribute = withStats(game.tributes[0], BALANCED_STATS);
+
+    const resolution = resolveEvent(
+      requireEvent("brushfire-supply-run"),
+      game,
+      { tribute: [tribute] },
+      [0.999, 0.999],
+    );
+
+    expect(resolution.changes).toContainEqual(
+      expect.objectContaining({
+        type: "acquire-item",
+        tributeId: tribute.id,
+        acquisitionSource: "natural-foraging",
+        item: expect.objectContaining({
+          definitionId: "water",
+        }),
+      }),
+    );
   });
 });

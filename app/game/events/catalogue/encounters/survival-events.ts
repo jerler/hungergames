@@ -10,6 +10,7 @@ import {
   brains,
   createEvent,
   createNaturalResourceEvent,
+  customResolution,
   hasItem,
   randomResult,
   recordRequiredItemUse,
@@ -17,77 +18,57 @@ import {
   statCheck,
   survived,
 } from "~/game/events/authoring";
-import {
-  createItemAcquisitionAndSurvivalChanges,
-  createStatusChange,
-} from "~/game/events/event-change-builders";
 import { resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
 import type { StatCheckOutcome } from "~/game/events/event-outcomes";
-import {
-  requireParticipants,
-  type EventDefinition,
-  type EventResolution,
-  type EventResolutionContext,
-} from "~/game/events/event-schema";
+import { requireParticipants, type EventDefinition } from "~/game/events/event-schema";
 import { getCooperativeTruceWeight } from "~/game/truces/truce-selection";
-import type { GameChange, GameTribute } from "~/game/types/game-state";
 
-function resolveForagingParticipant(
-  eventId: string,
-  round: EventResolutionContext["round"],
-  tribute: GameTribute,
-  outcome: StatCheckOutcome,
-): {
-  sentence: string;
-  changes: GameChange[];
-} {
+const UNFAMILIAR_FORAGING_RESULTS = {
+  criticalFailure: result({
+    text: ({ tributes }) =>
+      `${tributes.name} mistakes poisonous berries for edible fruit and is poisoned.`,
+
+    effects: [applyStatus("tributes", "poisoned", 1)],
+  }),
+
+  failure: result({
+    text: ({ tributes }) => `${tributes.name} misidentifies a bitter root and becomes sick.`,
+
+    effects: [applyStatus("tributes", "sick", 1)],
+  }),
+
+  success: result({
+    text: ({ tributes }) =>
+      `${tributes.name} identifies edible plants and gathers enough food to keep going.`,
+
+    effects: [acquireNaturalResource("tributes", "food"), survived("tributes")],
+  }),
+
+  exceptionalSuccess: result({
+    text: ({ tributes }) =>
+      `${tributes.name} identifies edible plants beside a clean spring and gathers both food and water.`,
+
+    effects: [
+      acquireNaturalResource("tributes", "food"),
+      acquireNaturalResource("tributes", "water"),
+      survived("tributes"),
+    ],
+  }),
+} as const;
+
+function getUnfamiliarForagingResult(outcome: StatCheckOutcome) {
   switch (outcome) {
     case "critical-failure":
-      return {
-        sentence:
-          `${tribute.snapshot.name} mistakes poisonous ` +
-          "berries for edible fruit and is poisoned.",
-
-        changes: [createStatusChange(eventId, tribute, "poisoned", 1, round)],
-      };
+      return UNFAMILIAR_FORAGING_RESULTS.criticalFailure;
 
     case "failure":
-      return {
-        sentence: `${tribute.snapshot.name} misidentifies a ` + "bitter root and becomes sick.",
-
-        changes: [createStatusChange(eventId, tribute, "sick", 1, round)],
-      };
+      return UNFAMILIAR_FORAGING_RESULTS.failure;
 
     case "success":
-      return {
-        sentence:
-          `${tribute.snapshot.name} identifies edible ` +
-          "plants and gathers enough food to keep going.",
-
-        changes: createItemAcquisitionAndSurvivalChanges(
-          eventId,
-          tribute,
-          ["food"],
-          round,
-          "natural-foraging",
-        ),
-      };
+      return UNFAMILIAR_FORAGING_RESULTS.success;
 
     case "exceptional-success":
-      return {
-        sentence:
-          `${tribute.snapshot.name} identifies edible ` +
-          "plants beside a clean spring and gathers both " +
-          "food and water.",
-
-        changes: createItemAcquisitionAndSurvivalChanges(
-          eventId,
-          tribute,
-          ["food", "water"],
-          round,
-          "natural-foraging",
-        ),
-      };
+      return UNFAMILIAR_FORAGING_RESULTS.exceptionalSuccess;
   }
 }
 
@@ -157,60 +138,71 @@ export const SURVIVAL_EVENTS = [
       }),
     ),
 
-  {
-    id: "unfamiliar-foraging-ground",
-    category: "hazard",
-    tags: ["hazard", "item", "status", "resource"],
-    periods: ["day"],
-    baseWeight: 4,
+  createEvent("unfamiliar-foraging-ground")
+    .group("tributes", 2, {
+      getWeight: (tribute, { state, participantsByRole }) =>
+        getCooperativeTruceWeight(state, tribute, participantsByRole.tributes ?? []),
+    })
+    .category("hazard")
+    .tags("hazard", "item", "status", "resource")
+    .during("day")
+    .weight(4)
+    .weightMultiplier(getDefinitionPopulationMultiplier)
+    .resolve(
+      customResolution(
+        (context, { resolveResult }) => {
+          const tributes = requireParticipants(context.participantsByRole, "tributes");
 
-    roles: [
-      {
-        id: "tributes",
-        count: 2,
+          const firstTribute = tributes[0];
+          const secondTribute = tributes[1];
 
-        getWeight: (tribute, { state, participantsByRole }) =>
-          getCooperativeTruceWeight(state, tribute, participantsByRole.tributes ?? []),
-      },
-    ],
+          if (!firstTribute || !secondTribute || tributes.length !== 2) {
+            throw new Error(
+              `Event "${context.eventId}" requires exactly two participants in role "tributes".`,
+            );
+          }
 
-    isEligible: ({ livingTributes }) => livingTributes.length >= 2,
+          const resolveParticipant = (tribute: typeof firstTribute) => {
+            const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, context.random);
 
-    getWeightMultiplier: getDefinitionPopulationMultiplier,
+            return resolveResult(
+              getUnfamiliarForagingResult(outcome),
 
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
-      const [firstTribute, secondTribute] = requireParticipants(participantsByRole, "tributes");
+              {
+                ...context,
 
-      const firstOutcome = resolveLuckAdjustedStatCheck(firstTribute, "brains", 3, random);
+                /*
+                 * Resolve this participant independently while
+                 * retaining the authored "tributes" role ID.
+                 */
+                participantsByRole: {
+                  tributes: [tribute],
+                },
+              },
+            );
+          };
 
-      const secondOutcome = resolveLuckAdjustedStatCheck(secondTribute, "brains", 3, random);
+          const firstResolution = resolveParticipant(firstTribute);
 
-      const firstResolution = resolveForagingParticipant(
-        eventId,
-        round,
-        firstTribute,
-        firstOutcome,
-      );
+          const secondResolution = resolveParticipant(secondTribute);
 
-      const secondResolution = resolveForagingParticipant(
-        eventId,
-        round,
-        secondTribute,
-        secondOutcome,
-      );
+          return {
+            text:
+              `${firstTribute.snapshot.name} and ` +
+              `${secondTribute.snapshot.name} discover a lush ` +
+              "clearing filled with unfamiliar plants and a " +
+              `small spring. ${firstResolution.text} ` +
+              `${secondResolution.text}`,
 
-      return {
-        text:
-          `${firstTribute.snapshot.name} and ` +
-          `${secondTribute.snapshot.name} discover a lush ` +
-          "clearing filled with unfamiliar plants and a " +
-          `small spring. ${firstResolution.sentence} ` +
-          secondResolution.sentence,
+            changes: [...firstResolution.changes, ...secondResolution.changes],
+          };
+        },
 
-        changes: [...firstResolution.changes, ...secondResolution.changes],
-      };
-    },
-  },
+        {
+          possibleResults: Object.values(UNFAMILIAR_FORAGING_RESULTS),
+        },
+      ),
+    ),
 
   /* Day and Night */
   createEvent("finds-hiding-place")

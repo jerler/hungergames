@@ -8,7 +8,6 @@ import type {
   ParticipantsByRole,
 } from "~/game/events/event-schema";
 import {
-  findUsableInventoryItem,
   getAccessibleInventoryItems,
   type AccessibleInventoryItem,
 } from "~/game/items/inventory-engine";
@@ -36,6 +35,12 @@ function roleRequiresItem(role: ParticipantRoleDefinition): boolean {
   );
 }
 
+function roleSelectsOptionalItem(role: ParticipantRoleDefinition): boolean {
+  return (
+    (role.optionalItemTags?.length ?? 0) > 0 || (role.optionalItemDefinitionIds?.length ?? 0) > 0
+  );
+}
+
 function findAvailableRoleItem(
   context: EventSelectionContext,
   tribute: GameTribute,
@@ -43,43 +48,33 @@ function findAvailableRoleItem(
   reservedItemInstanceIds: ReadonlySet<string>,
   unavailableTributeIds: ReadonlySet<string>,
 ): AccessibleInventoryItem | null {
+  const required = roleRequiresItem(role);
+
+  const definitionIds = required ? role.requiredItemDefinitionIds : role.optionalItemDefinitionIds;
+
   const requirements = {
-    definitionIds: role.requiredItemDefinitionIds,
-
-    requiredTags: role.requiredItemTags,
-
+    definitionIds,
+    requiredTags: required ? role.requiredItemTags : role.optionalItemTags,
     unavailableItemInstanceIds: reservedItemInstanceIds,
   };
 
-  /*
-   * Owned-item roles may only select an item physically
-   * contained in the candidate tribute's own inventory.
-   *
-   * findUsableInventoryItem already rejects depleted and
-   * reserved item instances.
-   */
-  if (role.itemAccess === "owned") {
-    const item = findUsableInventoryItem(tribute, requirements);
+  const access = required ? role.itemAccess : role.optionalItemAccess;
 
-    return item
-      ? {
-          owner: tribute,
-          item,
-        }
-      : null;
+  const candidates = getAccessibleInventoryItems(context.state, tribute, requirements).filter(
+    ({ owner }) =>
+      !unavailableTributeIds.has(owner.id) && (access !== "owned" || owner.id === tribute.id),
+  );
+
+  if (required || !definitionIds?.length) {
+    return candidates[0] ?? null;
   }
 
-  /*
-   * Accessible is the default. Existing events therefore
-   * continue to search both the tribute's inventory and
-   * the inventories of their active truce partners.
-   *
-   * Owners already committed to another event are excluded.
-   */
   return (
-    getAccessibleInventoryItems(context.state, tribute, requirements).find(
-      ({ owner }) => !unavailableTributeIds.has(owner.id),
-    ) ?? null
+    [...candidates].sort(
+      (first, second) =>
+        definitionIds.indexOf(first.item.definitionId) -
+        definitionIds.indexOf(second.item.definitionId),
+    )[0] ?? null
   );
 }
 
@@ -192,6 +187,8 @@ export function selectEventParticipants(
     };
 
     const requiresItem = roleRequiresItem(role);
+    const selectsOptionalItem = roleSelectsOptionalItem(role);
+    const selectsItem = requiresItem || selectsOptionalItem;
 
     let remainingCandidates: RoleCandidate[] = context.livingTributes.flatMap(
       (tribute): RoleCandidate[] => {
@@ -203,14 +200,12 @@ export function selectEventParticipants(
           return [];
         }
 
-        const accessibleItem = requiresItem
+        const accessibleItem = selectsItem
           ? findAvailableRoleItem(
               context,
               tribute,
               role,
-
               state.reservedItemInstanceIds,
-
               state.selectedTributeIds,
             )
           : null;

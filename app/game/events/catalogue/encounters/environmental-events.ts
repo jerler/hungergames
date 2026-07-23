@@ -1,163 +1,184 @@
-import { selectRandomItem } from "~/game/engine/random";
+import { selectRandomItem, type RandomSource } from "~/game/engine/random";
 import { getVulnerabilityWeight } from "~/game/engine/stat-formulas";
 import {
-  createFatalChanges,
-  createItemAcquisitionAndSurvivalChanges,
-  createItemUseChange,
-  createStatusChange,
-  createSurvivalChanges,
-} from "~/game/events/event-change-builders";
+  acquireNaturalResource,
+  always,
+  applyStatus,
+  createEvent,
+  createSelectedRoleItemUseChanges,
+  customResolution,
+  eliminate,
+  getSelectedRoleItem,
+  maximumStat,
+  result,
+  survived,
+} from "~/game/events/authoring";
+import type { EventResult } from "~/game/events/authoring/outcomes/outcome-schema";
+import type { StatCheckOutcome } from "~/game/events/event-outcomes";
 import { resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
-import {
-  requireSingleParticipant,
-  type EventDefinition,
-  type EventResolution,
-  type EventResolutionContext,
-} from "~/game/events/event-schema";
-import {
-  findAccessibleInventoryItem,
-  type AccessibleInventoryItem,
-} from "~/game/items/inventory-engine";
+import { requireSingleParticipant, type EventDefinition } from "~/game/events/event-schema";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
-import type { GameChange, GameTribute, InventoryItem } from "~/game/types/game-state";
 import { getTributePronouns } from "~/game/tributes/pronouns";
-import { always, applyStatus, createEvent, result } from "~/game/events/authoring";
+import type { GameTribute } from "~/game/types/game-state";
 
-const NATURAL_RESOURCE_ITEM_IDS = ["food", "water"] satisfies readonly ItemDefinitionId[];
+const ARENA_GOOSE_RESULTS = {
+  criticalWithFood: result({
+    text: ({ tribute }) =>
+      `${tribute.name} loses some food to an arena goose, which then decides to pursue ${tribute.pronouns.object} across the arena.`,
+    effects: [applyStatus("tribute", "hunted", 2)],
+  }),
 
-interface BrushfireProtection {
-  accessibleItem: AccessibleInventoryItem;
-  difficultyReduction: number;
-}
+  criticalWithoutFood: result({
+    text: ({ tribute }) =>
+      `An arena goose decides ${tribute.name} owes it food and begins relentlessly tracking ${tribute.pronouns.object}.`,
+    effects: [applyStatus("tribute", "hunted", 2)],
+  }),
 
-function findBrushfireProtection(
-  context: EventResolutionContext,
-  tribute: GameTribute,
-): BrushfireProtection | null {
-  const candidates = [
-    {
-      itemId: "water",
-      difficultyReduction: 2,
-    },
-    {
-      itemId: "blanket",
-      difficultyReduction: 1,
-    },
-    {
-      itemId: "shield",
-      difficultyReduction: 1,
-    },
-  ] satisfies readonly {
-    itemId: ItemDefinitionId;
-    difficultyReduction: number;
-  }[];
+  failure: result({
+    text: ({ tribute }) =>
+      `${tribute.name} spends hours fleeing an arena goose and collapses from exhaustion.`,
+    effects: [applyStatus("tribute", "exhausted", 1)],
+  }),
 
-  for (const candidate of candidates) {
-    const accessibleItem = findAccessibleInventoryItem(context.state, tribute, {
-      definitionIds: [candidate.itemId],
+  success: result({
+    text: ({ tribute }) =>
+      `${tribute.name} stands ${tribute.pronouns.possessiveAdjective} ground against an arena goose. After a tense silence, both parties retreat.`,
+    effects: [survived("tribute")],
+  }),
 
-      unavailableItemInstanceIds: context.unavailableItemInstanceIds,
-    });
-
-    if (accessibleItem) {
-      return {
-        accessibleItem,
-        difficultyReduction: candidate.difficultyReduction,
-      };
-    }
-  }
-
-  return null;
-}
-
-function describeBrushfireProtection(item: InventoryItem, tribute: GameTribute): string {
-  const pronouns = getTributePronouns(tribute);
-  switch (item.definitionId) {
-    case "water":
-      return `uses ${pronouns.possessiveAdjective} water ` + "to clear a path through the flames";
-
-    case "blanket":
-      return `wraps ${pronouns.reflexive} in a blanket ` + "and smothers the embers";
-
-    case "shield":
-      return (
-        `uses ${pronouns.possessiveAdjective} shield ` + "against the sparks and falling debris"
-      );
-
-    default:
-      throw new Error(`Unsupported brushfire protection ` + `"${item.definitionId}".`);
-  }
-}
-
-const victimRole = {
-  id: "victim",
-  count: 1,
-  getWeight: getVulnerabilityWeight,
+  exceptionalSuccess: result({
+    text: ({ tribute }) =>
+      `${tribute.name} befriends an arena goose, which leads ${tribute.pronouns.object} to a patch of edible plants.`,
+    effects: [acquireNaturalResource("tribute", "food"), survived("tribute")],
+  }),
 } as const;
+
+const BRUSHFIRE_RESULTS = {
+  criticalFailure: result({
+    append: ", but is badly burned before reaching safety.",
+    effects: [applyStatus("tribute", "burned", 2)],
+  }),
+
+  failure: result({
+    append: " and escapes with painful burns.",
+    effects: [applyStatus("tribute", "burned", 1)],
+  }),
+
+  success: result({
+    append: " and successfully reaches the far side.",
+    effects: [survived("tribute")],
+  }),
+
+  exceptionalFood: result({
+    append: ", reaches safety, and discovers a patch of edible plants beyond the burned ground.",
+    effects: [acquireNaturalResource("tribute", "food"), survived("tribute")],
+  }),
+
+  exceptionalWater: result({
+    append: ", reaches safety, and discovers a clean stream beyond the burned ground.",
+    effects: [acquireNaturalResource("tribute", "water"), survived("tribute")],
+  }),
+} as const;
+
+function getArenaGooseResult(outcome: StatCheckOutcome, hasFood: boolean): EventResult {
+  switch (outcome) {
+    case "critical-failure":
+      return hasFood
+        ? ARENA_GOOSE_RESULTS.criticalWithFood
+        : ARENA_GOOSE_RESULTS.criticalWithoutFood;
+    case "failure":
+      return ARENA_GOOSE_RESULTS.failure;
+    case "success":
+      return ARENA_GOOSE_RESULTS.success;
+    case "exceptional-success":
+      return ARENA_GOOSE_RESULTS.exceptionalSuccess;
+  }
+}
+
+function getBrushfireResult(outcome: StatCheckOutcome, random: RandomSource): EventResult {
+  switch (outcome) {
+    case "critical-failure":
+      return BRUSHFIRE_RESULTS.criticalFailure;
+    case "failure":
+      return BRUSHFIRE_RESULTS.failure;
+    case "success":
+      return BRUSHFIRE_RESULTS.success;
+    case "exceptional-success":
+      return selectRandomItem(
+        [BRUSHFIRE_RESULTS.exceptionalFood, BRUSHFIRE_RESULTS.exceptionalWater],
+        random,
+      );
+  }
+}
+
+function getBrushfireDifficultyReduction(itemId?: ItemDefinitionId): number {
+  return itemId === "water" ? 2 : itemId ? 1 : 0;
+}
+
+function getBrushfireIntro(tribute: GameTribute, itemId?: ItemDefinitionId): string {
+  const pronouns = getTributePronouns(tribute);
+
+  switch (itemId) {
+    case "water":
+      return `${tribute.snapshot.name} uses ${pronouns.possessiveAdjective} water to clear a path through the flames`;
+    case "blanket":
+      return `${tribute.snapshot.name} wraps ${pronouns.reflexive} in a blanket and smothers the embers`;
+    case "shield":
+      return `${tribute.snapshot.name} uses ${pronouns.possessiveAdjective} shield against the sparks and falling debris`;
+    default:
+      return `${tribute.snapshot.name} runs through the brushfire without protection`;
+  }
+}
 
 export const ENVIRONMENTAL_EVENTS = [
   /* Day Only */
-  {
-    id: "poisonous-berries",
-    category: "fatal",
-    tags: ["fatal", "hazard"],
-    periods: ["day"],
-    baseWeight: 2,
+  createEvent("poisonous-berries")
+    .solo("victim", {
+      getWeight: (tribute) => Math.max(0.25, 6 - tribute.snapshot.stats.brains),
+    })
+    .when(maximumStat("victim", "brains", 4))
+    .category("fatal")
+    .tags("fatal", "hazard")
+    .during("day")
+    .weight(2)
+    .resolve(
+      always(
+        result({
+          text: ({ victim }) => `${victim.name} mistakes poisonous berries for food.`,
 
-    roles: [
-      {
-        id: "victim",
-        count: 1,
+          effects: [
+            eliminate("victim", {
+              causeId: "poisonous-berries",
+              causeLabel: "Poisoned",
+            }),
+          ],
+        }),
+      ),
+    ),
 
-        isEligible: (tribute) => tribute.snapshot.stats.brains <= 4,
+  createEvent("river-current")
+    .solo("victim", {
+      getWeight: (tribute) => Math.max(0.25, 6 - tribute.snapshot.stats.brawn),
+    })
+    .when(maximumStat("victim", "brawn", 4))
+    .category("fatal")
+    .tags("fatal", "hazard")
+    .during("day")
+    .weight(2)
+    .resolve(
+      always(
+        result({
+          text: ({ victim }) => `${victim.name} is swept away while crossing a violent river.`,
 
-        getWeight: (tribute) => Math.max(0.25, 6 - tribute.snapshot.stats.brains),
-      },
-    ],
-
-    resolve({ participantsByRole }): EventResolution {
-      const victim = requireSingleParticipant(participantsByRole, "victim");
-
-      const text = `${victim.snapshot.name} mistakes ` + "poisonous berries for food.";
-
-      return {
-        text,
-
-        changes: createFatalChanges(victim, "poisonous-berries", "Poisoned", text),
-      };
-    },
-  },
-
-  {
-    id: "river-current",
-    category: "fatal",
-    tags: ["fatal", "hazard"],
-    periods: ["day"],
-    baseWeight: 2,
-
-    roles: [
-      {
-        id: "victim",
-        count: 1,
-
-        isEligible: (tribute) => tribute.snapshot.stats.brawn <= 4,
-
-        getWeight: (tribute) => Math.max(0.25, 6 - tribute.snapshot.stats.brawn),
-      },
-    ],
-
-    resolve({ participantsByRole }): EventResolution {
-      const victim = requireSingleParticipant(participantsByRole, "victim");
-
-      const text = `${victim.snapshot.name} is swept away ` + "while crossing a violent river.";
-
-      return {
-        text,
-
-        changes: createFatalChanges(victim, "river-current", "Drowned", text),
-      };
-    },
-  },
+          effects: [
+            eliminate("victim", {
+              causeId: "river-current",
+              causeLabel: "Drowned",
+            }),
+          ],
+        }),
+      ),
+    ),
 
   createEvent("rough-terrain")
     .solo("tribute", { getWeight: getVulnerabilityWeight })
@@ -190,228 +211,108 @@ export const ENVIRONMENTAL_EVENTS = [
       ),
     ),
 
-  {
-    id: "arena-goose",
-    category: "hazard",
-    tags: ["hazard", "status", "resource"],
-    periods: ["day"],
-    baseWeight: 4.5,
+  createEvent("arena-goose")
+    .solo("tribute", {
+      getWeight: getVulnerabilityWeight,
+      optionalItem: { definitionIds: ["food"] },
+    })
+    .category("hazard")
+    .tags("hazard", "status", "resource")
+    .during("day")
+    .weight(4.5)
+    .resolve(
+      customResolution(
+        (context, { resolveResult }) => {
+          const tribute = requireSingleParticipant(context.participantsByRole, "tribute");
+          const food = getSelectedRoleItem(context, "tribute");
+          const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, context.random);
+          const resolution = resolveResult(getArenaGooseResult(outcome, Boolean(food)));
 
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-        getWeight: getVulnerabilityWeight,
+          return outcome === "critical-failure"
+            ? {
+                ...resolution,
+                changes: [
+                  ...resolution.changes,
+                  ...createSelectedRoleItemUseChanges(context, "tribute", "arena-goose-theft"),
+                ],
+              }
+            : resolution;
+        },
+        {
+          possibleResults: Object.values(ARENA_GOOSE_RESULTS),
+        },
+      ),
+    ),
+
+  createEvent("brushfire-supply-run")
+    .solo("tribute", {
+      getWeight: getVulnerabilityWeight,
+      optionalItem: {
+        definitionIds: ["water", "blanket", "shield"],
       },
-    ],
+    })
+    .category("hazard")
+    .tags("hazard", "environment", "item", "status", "resource")
+    .during("day")
+    .weight(4)
+    .resolve(
+      customResolution(
+        (context, { resolveResult }) => {
+          const tribute = requireSingleParticipant(context.participantsByRole, "tribute");
+          const protection = getSelectedRoleItem(context, "tribute");
+          const itemId = protection?.item.definitionId;
+          const outcome = resolveLuckAdjustedStatCheck(
+            tribute,
+            "brawn",
+            4,
+            context.random,
+            getBrushfireDifficultyReduction(itemId),
+          );
 
-    resolve(context): EventResolution {
-      const { eventId, round, random, participantsByRole } = context;
-
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-      const pronouns = getTributePronouns(tribute);
-
-      const food = findAccessibleInventoryItem(context.state, tribute, {
-        definitionIds: ["food"],
-
-        unavailableItemInstanceIds: context.unavailableItemInstanceIds,
-      });
-
-      const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, random);
-
-      switch (outcome) {
-        case "critical-failure": {
-          const changes: GameChange[] = [createStatusChange(eventId, tribute, "hunted", 2, round)];
-
-          if (food) {
-            changes.push(createItemUseChange(food.owner, food.item, "arena-goose-theft"));
-          }
+          const resolution = resolveResult(
+            getBrushfireResult(outcome, context.random),
+            undefined,
+            getBrushfireIntro(tribute, itemId),
+          );
 
           return {
-            text: food
-              ? `${tribute.snapshot.name} loses some ` +
-                "food to an arena goose, which then " +
-                `decides to pursue ${pronouns.object} across the arena.`
-              : `An arena goose decides ` +
-                `${tribute.snapshot.name} owes it food ` +
-                `and begins relentlessly tracking ${pronouns.object}.`,
-
-            changes,
-          };
-        }
-
-        case "failure":
-          return {
-            text:
-              `${tribute.snapshot.name} spends hours ` +
-              "fleeing an arena goose and collapses " +
-              "from exhaustion.",
-
-            changes: [createStatusChange(eventId, tribute, "exhausted", 1, round)],
-          };
-
-        case "success":
-          return {
-            text:
-              `${tribute.snapshot.name} stands ` +
-              `${pronouns.possessiveAdjective} ` +
-              "ground against an arena goose. After a " +
-              "tense silence, both parties retreat.",
-
-            changes: createSurvivalChanges([tribute]),
-          };
-
-        case "exceptional-success":
-          return {
-            text:
-              `${tribute.snapshot.name} befriends an ` +
-              `arena goose, which leads ${pronouns.object} to a patch ` +
-              "of edible plants.",
-
-            changes: createItemAcquisitionAndSurvivalChanges(
-              eventId,
-              tribute,
-              ["food"],
-              round,
-              "natural-foraging",
-            ),
-          };
-      }
-    },
-  },
-
-  {
-    id: "brushfire-supply-run",
-    category: "hazard",
-    tags: ["hazard", "environment", "item", "status", "resource"],
-    periods: ["day"],
-    baseWeight: 4,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-        getWeight: getVulnerabilityWeight,
-      },
-    ],
-
-    resolve(context): EventResolution {
-      const { eventId, round, random, participantsByRole } = context;
-
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
-      const protection = findBrushfireProtection(context, tribute);
-
-      const outcome = resolveLuckAdjustedStatCheck(
-        tribute,
-        "brawn",
-        4,
-        random,
-        protection?.difficultyReduction ?? 0,
-      );
-
-      const protectionChanges = protection
-        ? [
-            createItemUseChange(
-              protection.accessibleItem.owner,
-              protection.accessibleItem.item,
-              "brushfire-protection",
-            ),
-          ]
-        : [];
-
-      const protectionText = protection
-        ? `${tribute.snapshot.name} ` +
-          describeBrushfireProtection(protection.accessibleItem.item, tribute)
-        : `${tribute.snapshot.name} runs ` + "through the brushfire without protection";
-
-      switch (outcome) {
-        case "critical-failure":
-          return {
-            text: `${protectionText}, but is badly ` + "burned before reaching safety.",
-
+            ...resolution,
             changes: [
-              createStatusChange(eventId, tribute, "burned", 2, round),
-
-              ...protectionChanges,
+              ...resolution.changes,
+              ...createSelectedRoleItemUseChanges(context, "tribute", "brushfire-protection"),
             ],
           };
-
-        case "failure":
-          return {
-            text: `${protectionText} and escapes with ` + "painful burns.",
-
-            changes: [
-              createStatusChange(eventId, tribute, "burned", 1, round),
-
-              ...protectionChanges,
-            ],
-          };
-
-        case "success":
-          return {
-            text: `${protectionText} and successfully ` + "reaches the far side.",
-
-            changes: [...createSurvivalChanges([tribute]), ...protectionChanges],
-          };
-
-        case "exceptional-success": {
-          const itemId = selectRandomItem(NATURAL_RESOURCE_ITEM_IDS, random);
-
-          const resourceText = itemId === "water" ? "a clean stream" : "a patch of edible plants";
-
-          return {
-            text:
-              `${protectionText}, reaches safety, and ` +
-              `discovers ${resourceText} beyond the ` +
-              "burned ground.",
-
-            changes: [
-              ...createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                tribute,
-                [itemId],
-                round,
-                "natural-foraging",
-              ),
-
-              ...protectionChanges,
-            ],
-          };
-        }
-      }
-    },
-  },
-
+        },
+        {
+          possibleResults: Object.values(BRUSHFIRE_RESULTS),
+        },
+      ),
+    ),
   /* Night Only */
-  {
-    id: "freezing-night",
-    category: "fatal",
-    tags: ["fatal", "hazard"],
-    periods: ["night"],
-    baseWeight: 2.25,
+  createEvent("freezing-night")
+    .solo("victim", {
+      getWeight: getVulnerabilityWeight,
+    })
+    .when(maximumStat("victim", "brawn", 4))
+    .category("fatal")
+    .tags("fatal", "hazard")
+    .during("night")
+    .weight(2.25)
+    .resolve(
+      always(
+        result({
+          text: ({ victim }) =>
+            `${victim.name} is unable to find shelter and freezes during the night.`,
 
-    roles: [
-      {
-        ...victimRole,
-
-        isEligible: (tribute) => tribute.snapshot.stats.brawn <= 4,
-      },
-    ],
-
-    resolve({ participantsByRole }): EventResolution {
-      const victim = requireSingleParticipant(participantsByRole, "victim");
-
-      const text =
-        `${victim.snapshot.name} is unable to find ` + "shelter and freezes during the night.";
-
-      return {
-        text,
-
-        changes: createFatalChanges(victim, "freezing-night", "Froze", text),
-      };
-    },
-  },
+          effects: [
+            eliminate("victim", {
+              causeId: "freezing-night",
+              causeLabel: "Froze",
+            }),
+          ],
+        }),
+      ),
+    ),
 
   createEvent("cold-rain")
     .solo("tribute", { getWeight: getVulnerabilityWeight })
@@ -429,34 +330,29 @@ export const ENVIRONMENTAL_EVENTS = [
     ),
 
   /* Day and Night */
-  {
-    id: "fallen-cliff",
-    category: "fatal",
-    tags: ["fatal", "hazard"],
-    periods: ["day", "night"],
-    baseWeight: 2,
+  createEvent("fallen-cliff")
+    .solo("victim", {
+      getWeight: (tribute) => Math.max(0.25, 6 - tribute.snapshot.stats.luck),
+    })
+    .category("fatal")
+    .tags("fatal", "hazard")
+    .during("day", "night")
+    .weight(2)
+    .resolve(
+      always(
+        result({
+          text: ({ victim }) =>
+            `${victim.name} loses their footing near a cliff and falls to their death.`,
 
-    roles: [
-      {
-        ...victimRole,
-
-        getWeight: (tribute) => Math.max(0.25, 6 - tribute.snapshot.stats.luck),
-      },
-    ],
-
-    resolve({ participantsByRole }): EventResolution {
-      const victim = requireSingleParticipant(participantsByRole, "victim");
-
-      const text =
-        `${victim.snapshot.name} loses their ` + "footing near a cliff and falls to their death.";
-
-      return {
-        text,
-
-        changes: createFatalChanges(victim, "fallen-cliff", "Fell", text),
-      };
-    },
-  },
+          effects: [
+            eliminate("victim", {
+              causeId: "fallen-cliff",
+              causeLabel: "Fell",
+            }),
+          ],
+        }),
+      ),
+    ),
 
   createEvent("deep-cut")
     .solo("tribute", { getWeight: getVulnerabilityWeight })

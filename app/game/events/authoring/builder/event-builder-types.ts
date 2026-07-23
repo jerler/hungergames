@@ -1,5 +1,6 @@
 import type {
   EventCategory,
+  EventDefinition,
   EventResolution,
   EventResolutionContext,
   EventTag,
@@ -7,6 +8,8 @@ import type {
 import type { AuthoredRequirement } from "~/game/events/authoring/requirements/requirement-schema";
 import type { AuthoredRoleSpecification } from "~/game/events/authoring/roles/role-schema";
 import type { RoundReference } from "~/game/types/game-state";
+
+export type EventWeightMultiplier = NonNullable<EventDefinition["getWeightMultiplier"]>;
 
 export interface AuthoredEventConfiguration {
   id: string;
@@ -16,6 +19,8 @@ export interface AuthoredEventConfiguration {
 
   periods: readonly RoundReference["period"][];
   baseWeight: number;
+
+  getWeightMultiplier?: EventWeightMultiplier;
 
   roles: readonly AuthoredRoleSpecification[];
   requirements: readonly AuthoredRequirement[];

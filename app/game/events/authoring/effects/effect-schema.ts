@@ -44,4 +44,16 @@ export interface ConsumeRequiredItemEffect {
 export type RequiredItemEffect = RecordRequiredItemUseEffect | ConsumeRequiredItemEffect;
 
 export type EventEffect =
-  SurvivedEffect | ApplyStatusEffect | AcquireNaturalResourceEffect | RequiredItemEffect;
+  | SurvivedEffect
+  | ApplyStatusEffect
+  | AcquireNaturalResourceEffect
+  | RequiredItemEffect
+  | EliminateEffect;
+
+export interface EliminateEffect {
+  type: "eliminate";
+  roleId: string;
+
+  causeId: string;
+  causeLabel: string;
+}

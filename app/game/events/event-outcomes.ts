@@ -1,7 +1,13 @@
 import { selectWeightedItem, type RandomSource } from "~/game/engine/random";
 import type { TributeStats, TributeStatValue } from "~/game/types/tribute";
 
-export type EventStat = keyof TributeStats;
+export const EVENT_STATS = [
+  "brains",
+  "brawn",
+  "luck",
+] as const satisfies readonly (keyof TributeStats)[];
+
+export type EventStat = (typeof EVENT_STATS)[number];
 
 export type StatCheckDifficulty = TributeStatValue;
 

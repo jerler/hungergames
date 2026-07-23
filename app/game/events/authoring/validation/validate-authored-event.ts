@@ -13,27 +13,12 @@ import {
 } from "~/game/events/authoring/requirements/requirement-schema";
 import type { AuthoredRoleSpecification } from "~/game/events/authoring/roles/role-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
-import type { ItemTag } from "~/game/items/item-schema";
+import { ITEM_TAGS, type ItemTag } from "~/game/items/item-schema";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 
 const EVENT_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-const ITEM_TAGS = new Set<ItemTag>([
-  "consumable",
-  "water",
-  "food",
-  "medicine",
-  "shelter",
-  "fire",
-  "tool",
-  "weapon",
-  "defense",
-  "navigation",
-  "trap",
-  "camouflage",
-  "hunting",
-  "fishing",
-]);
+const ITEM_TAG_SET = new Set<ItemTag>(ITEM_TAGS);
 
 function validateOptionalItemSelection(eventId: string, role: AuthoredRoleSpecification): void {
   const definitionIds = role.optionalItemDefinitionIds ?? [];
@@ -81,7 +66,7 @@ function validateOptionalItemSelection(eventId: string, role: AuthoredRoleSpecif
   }
 
   for (const tag of tags) {
-    if (!ITEM_TAGS.has(tag)) {
+    if (!ITEM_TAG_SET.has(tag)) {
       throw new Error(
         `Event "${eventId}" role "${role.id}" references unknown optional item tag "${tag}".`,
       );
@@ -167,7 +152,7 @@ function validateItemRequirement(eventId: string, requirement: ItemRequirement):
       }
 
       for (const tag of requirement.tags) {
-        if (!ITEM_TAGS.has(tag)) {
+        if (!ITEM_TAG_SET.has(tag)) {
           throw new Error(
             `Event "${eventId}": requirement "has-item-tag" references unknown item tag "${tag}".`,
           );

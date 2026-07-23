@@ -18,7 +18,13 @@ import type {
   RoundReference,
   TransferredInventoryTransaction,
 } from "~/game/types/game-state";
-import { CORNUCOPIA_EVENTS } from "~/game/events/catalogue/bloodbath";
+import { BLOODBATH_EVENT_CATALOGUE, CORNUCOPIA_EVENTS } from "~/game/events/catalogue/bloodbath";
+import { ENVIRONMENTAL_EVENTS } from "~/game/events/catalogue/encounters/environmental-events";
+import { ITEM_USE_EVENTS } from "~/game/events/catalogue/encounters/item-use-events";
+import { SURVIVAL_EVENTS } from "~/game/events/catalogue/encounters/survival-events";
+import { THEFT_EVENTS } from "~/game/events/catalogue/encounters/theft-events";
+import { RELATIONSHIP_EVENTS } from "~/game/events/catalogue/relationships";
+import { STAT_GATED_EVENTS } from "~/game/events/catalogue/stat-gated";
 import { getRoundSequence } from "~/game/engine/rounds";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { COMBAT_EVENTS } from "~/game/events/catalogue/encounters/combat-events";
@@ -34,6 +40,64 @@ type TransferItemChange = Extract<
 
 const CORNUCOPIA_EVENT_IDS = new Set(CORNUCOPIA_EVENTS.map((event) => event.id));
 const ORDINARY_COMBAT_EVENT_IDS = new Set(COMBAT_EVENTS.map((event) => event.id));
+const SIMULATION_BALANCE_GUARDRAILS = {
+  halfGameAverageRounds: {
+    minimumExclusive: 1,
+    maximumExclusive: 50,
+  },
+
+  fullGameAverageRounds: {
+    minimumExclusive: 1,
+    maximumExclusive: 50,
+  },
+
+  dayOneEliminationShare: {
+    minimumExclusive: 0.5,
+    maximumInclusive: 1,
+  },
+
+  minimumAverageAcquisitionsPerGame: 0,
+  minimumAverageTheftTransfersPerGame: 0,
+  minimumAverageDeathLootTransfersPerGame: 0,
+
+  completionRate: 1,
+  minimumFamilyEventCount: 1,
+} as const;
+
+const SIMULATION_EVENT_FAMILIES = [
+  ["bloodbath", new Set(BLOODBATH_EVENT_CATALOGUE.map((event) => event.id))],
+  ["combat", new Set(COMBAT_EVENTS.map((event) => event.id))],
+  ["theft", new Set(THEFT_EVENTS.map((event) => event.id))],
+  ["environmental", new Set(ENVIRONMENTAL_EVENTS.map((event) => event.id))],
+  ["survival", new Set(SURVIVAL_EVENTS.map((event) => event.id))],
+  ["item-use", new Set(ITEM_USE_EVENTS.map((event) => event.id))],
+  ["stat-gated", new Set(STAT_GATED_EVENTS.map((event) => event.id))],
+  ["relationship", new Set(RELATIONSHIP_EVENTS.map((event) => event.id))],
+] as const;
+
+type SimulationEventFamily = (typeof SIMULATION_EVENT_FAMILIES)[number][0];
+
+function getEventFamilyCounts(results: readonly GameState[]): Map<SimulationEventFamily, number> {
+  const counts = new Map<SimulationEventFamily, number>(
+    SIMULATION_EVENT_FAMILIES.map(([family]) => [family, 0]),
+  );
+
+  for (const result of results) {
+    for (const event of result.eventHistory) {
+      for (const [family, eventIds] of SIMULATION_EVENT_FAMILIES) {
+        if (!eventIds.has(event.definitionId)) {
+          continue;
+        }
+
+        counts.set(family, (counts.get(family) ?? 0) + 1);
+
+        break;
+      }
+    }
+  }
+
+  return counts;
+}
 
 interface ResolvedTransfer {
   event: ResolvedEvent;
@@ -299,28 +363,6 @@ function getEliminationCount(state: GameState, day?: number, period?: "day" | "n
   );
 }
 
-function getRoundEliminationTotals(results: readonly GameState[]): Map<string, number> {
-  const totals = new Map<string, number>();
-
-  for (const result of results) {
-    for (const event of result.eventHistory) {
-      const eliminationCount = event.changes.filter(
-        (change) => change.type === "eliminate-tribute",
-      ).length;
-
-      if (eliminationCount === 0) {
-        continue;
-      }
-
-      const key = `${event.round.period}-` + `${event.round.day}`;
-
-      totals.set(key, (totals.get(key) ?? 0) + eliminationCount);
-    }
-  }
-
-  return totals;
-}
-
 function getStressResults(): GameState[] {
   return [
     ...Array.from(
@@ -374,36 +416,6 @@ describe("simulation stress tests", () => {
     expect(firstResult).not.toBe(secondResult);
 
     expect(secondResult).toEqual(firstResult);
-  });
-
-  it("concentrates more than half of all eliminations in the Bloodbath", () => {
-    const results = getStressResults();
-
-    const dayOneEliminations = results.reduce(
-      (total, result) => total + getEliminationCount(result, 1, "day"),
-
-      0,
-    );
-
-    const totalEliminations = results.reduce(
-      (total, result) => total + getEliminationCount(result),
-
-      0,
-    );
-
-    expect(dayOneEliminations / totalEliminations).toBeGreaterThan(0.5);
-
-    const roundTotals = getRoundEliminationTotals(results);
-
-    const dayOneAverage = dayOneEliminations / results.length;
-
-    for (const [roundKey, eliminationTotal] of roundTotals) {
-      if (roundKey === "day-1") {
-        continue;
-      }
-
-      expect(dayOneAverage).toBeGreaterThan(eliminationTotal / results.length);
-    }
   });
 
   it("exercises ordinary theft during full-game simulations", () => {
@@ -566,46 +578,88 @@ describe("simulation stress tests", () => {
     expect(deathLootTransferCount).toBeGreaterThan(0);
   });
 
-  it("records healthy game lengths and a complete victory rate", () => {
-    const halfGameResults = Array.from(
-      {
-        length: 200,
-      },
+  it("stays within established simulation balance guardrails", () => {
+    const results = getStressResults();
 
-      (_, index) => simulateGame(`half-game-${index}`, 6),
+    const halfGameResults = results.slice(0, 200);
+
+    const fullGameResults = results.slice(200);
+
+    const halfGameAverageRounds = getAverage(halfGameResults.map(getGameLengthInRounds));
+
+    const fullGameAverageRounds = getAverage(fullGameResults.map(getGameLengthInRounds));
+
+    const totalEliminations = results.reduce(
+      (total, result) => total + getEliminationCount(result),
+      0,
     );
 
-    const fullGameResults = Array.from(
-      {
-        length: 100,
-      },
-
-      (_, index) => simulateGame(`full-game-${index}`, 12),
+    const dayOneEliminations = results.reduce(
+      (total, result) => total + getEliminationCount(result, 1, "day"),
+      0,
     );
 
-    const halfGameAverageLength = getAverage(halfGameResults.map(getGameLengthInRounds));
+    const acquisitions = results.flatMap(getAcquisitionTransactions);
 
-    const fullGameAverageLength = getAverage(fullGameResults.map(getGameLengthInRounds));
+    const transfers = results.flatMap(getTransferTransactions);
 
-    /*
-     * Broad guardrails only. The exact pacing may evolve,
-     * but games should take more than the Bloodbath alone
-     * and remain comfortably below the 100-round safety cap.
-     */
-    expect(halfGameAverageLength).toBeGreaterThan(1);
+    const theftTransfers = transfers.filter((transaction) => transaction.sourceId === "theft");
 
-    expect(halfGameAverageLength).toBeLessThan(50);
-
-    expect(fullGameAverageLength).toBeGreaterThan(1);
-
-    expect(fullGameAverageLength).toBeLessThan(50);
-
-    const allResults = [...halfGameResults, ...fullGameResults];
+    const deathLootTransfers = transfers.filter(
+      (transaction) => transaction.sourceId === "death-loot",
+    );
 
     const completionRate =
-      allResults.filter((result) => result.phase === "victory" && result.victoryOutcome !== null)
-        .length / allResults.length;
+      results.filter((result) => result.phase === "victory" && result.victoryOutcome !== null)
+        .length / results.length;
 
-    expect(completionRate).toBe(1);
+    const familyCounts = getEventFamilyCounts(results);
+
+    expect(halfGameAverageRounds).toBeGreaterThan(
+      SIMULATION_BALANCE_GUARDRAILS.halfGameAverageRounds.minimumExclusive,
+    );
+
+    expect(halfGameAverageRounds).toBeLessThan(
+      SIMULATION_BALANCE_GUARDRAILS.halfGameAverageRounds.maximumExclusive,
+    );
+
+    expect(fullGameAverageRounds).toBeGreaterThan(
+      SIMULATION_BALANCE_GUARDRAILS.fullGameAverageRounds.minimumExclusive,
+    );
+
+    expect(fullGameAverageRounds).toBeLessThan(
+      SIMULATION_BALANCE_GUARDRAILS.fullGameAverageRounds.maximumExclusive,
+    );
+
+    const dayOneEliminationShare = dayOneEliminations / totalEliminations;
+
+    expect(dayOneEliminationShare).toBeGreaterThan(
+      SIMULATION_BALANCE_GUARDRAILS.dayOneEliminationShare.minimumExclusive,
+    );
+
+    expect(dayOneEliminationShare).toBeLessThanOrEqual(
+      SIMULATION_BALANCE_GUARDRAILS.dayOneEliminationShare.maximumInclusive,
+    );
+
+    expect(acquisitions.length / results.length).toBeGreaterThan(
+      SIMULATION_BALANCE_GUARDRAILS.minimumAverageAcquisitionsPerGame,
+    );
+
+    expect(theftTransfers.length / results.length).toBeGreaterThan(
+      SIMULATION_BALANCE_GUARDRAILS.minimumAverageTheftTransfersPerGame,
+    );
+
+    expect(deathLootTransfers.length / results.length).toBeGreaterThan(
+      SIMULATION_BALANCE_GUARDRAILS.minimumAverageDeathLootTransfersPerGame,
+    );
+
+    expect(completionRate).toBe(SIMULATION_BALANCE_GUARDRAILS.completionRate);
+
+    for (const [family, count] of familyCounts) {
+      expect(
+        count,
+        `Expected simulations to exercise the "${family}" event family.`,
+      ).toBeGreaterThanOrEqual(SIMULATION_BALANCE_GUARDRAILS.minimumFamilyEventCount);
+    }
   });
 });

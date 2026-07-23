@@ -22,6 +22,7 @@ import {
   isPoisonousBerriesFinaleEligible,
 } from "~/game/events/catalogue/relationships/romantic-events";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
+import { validateEventResolution } from "~/game/events/validation/validate-event-resolution";
 
 export const MAX_CONSECUTIVE_NON_ELIMINATION_ROUNDS = 2;
 
@@ -188,6 +189,13 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
       participantsByRole: selection.participantsByRole,
     });
 
+    validateEventResolution({
+      eventId,
+      definitionId: definition.id,
+      round,
+      resolution,
+    });
+
     return [
       {
         id: eventId,
@@ -253,6 +261,13 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
       itemsByRole: selected.selection.itemsByRole,
 
       unavailableItemInstanceIds,
+    });
+
+    validateEventResolution({
+      eventId,
+      definitionId: selected.definition.id,
+      round,
+      resolution,
     });
 
     events.push({

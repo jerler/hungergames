@@ -22,21 +22,24 @@ export type ItemOrigin = "natural-resource" | "manufactured";
 
 export type ItemAcquisitionSource = "cornucopia" | "natural-foraging" | "sponsor";
 
-export type ItemTag =
-  | "consumable"
-  | "water"
-  | "food"
-  | "medicine"
-  | "shelter"
-  | "fire"
-  | "tool"
-  | "weapon"
-  | "defense"
-  | "navigation"
-  | "trap"
-  | "camouflage"
-  | "hunting"
-  | "fishing";
+export const ITEM_TAGS = [
+  "consumable",
+  "water",
+  "food",
+  "medicine",
+  "shelter",
+  "fire",
+  "tool",
+  "weapon",
+  "defense",
+  "navigation",
+  "trap",
+  "camouflage",
+  "hunting",
+  "fishing",
+] as const;
+
+export type ItemTag = (typeof ITEM_TAGS)[number];
 
 export interface ItemTreatment {
   statusId: StatusEffectId;

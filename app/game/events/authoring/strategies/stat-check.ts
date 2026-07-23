@@ -8,7 +8,7 @@ import {
   resolveAuthoredOutcome,
 } from "~/game/events/authoring/outcomes/random-result";
 import { resolveAuthoredResult } from "~/game/events/authoring/outcomes/resolve-authored-result";
-import { resolveStatCheck, type StatCheckOutcome } from "~/game/events/event-outcomes";
+import { EVENT_STATS, resolveStatCheck, type StatCheckOutcome } from "~/game/events/event-outcomes";
 import { resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
 import { requireSingleParticipant } from "~/game/events/event-schema";
 
@@ -42,6 +42,12 @@ export function statCheck(
     validate(eventId, roleIds, requiredItemRoleIds): void {
       if (!roleIds.includes(roleId)) {
         throw new Error(`Event "${eventId}": stat check ` + `references unknown role "${roleId}".`);
+      }
+
+      if (!EVENT_STATS.includes(check.stat)) {
+        throw new Error(
+          `Event "${eventId}": stat check references unknown stat "${String(check.stat)}".`,
+        );
       }
 
       if (!Number.isInteger(check.difficulty) || check.difficulty < 1 || check.difficulty > 5) {

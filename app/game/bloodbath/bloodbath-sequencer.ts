@@ -30,6 +30,7 @@ import type {
   RoundReference,
 } from "~/game/types/game-state";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
+import { validateEventResolution } from "~/game/events/validation/validate-event-resolution";
 
 function createEventId(round: RoundReference, eventIndex: number, definitionId: string): string {
   return ["bloodbath", round.period, round.day, eventIndex, definitionId].join("-");
@@ -90,6 +91,13 @@ function resolveBloodbathEvent({
     participantsByRole,
 
     unavailableItemInstanceIds,
+  });
+
+  validateEventResolution({
+    eventId,
+    definitionId: definition.id,
+    round,
+    resolution,
   });
 
   const committedItemInstanceIds = getCommittedItemInstanceIds(resolution.changes);
@@ -303,10 +311,6 @@ export function sequenceBloodbathEvents(state: GameState, round: RoundReference)
 
   const random = createSeededRandom(createRoundSeed(state.seed, round));
 
-  /*
-   * Preserve Phase 3's random-stream ordering:
-   * strategy assignment still consumes the first values.
-   */
   const strategyPlan = assignBloodbathStrategies(livingTributes, random);
 
   const fatalityTarget = determineBloodbathFatalityTarget(livingTributes.length, random);

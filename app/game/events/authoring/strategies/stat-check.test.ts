@@ -327,4 +327,36 @@ describe("statCheck", () => {
 
     expect(resolution.text).toBe("Complete replacement text.");
   });
+
+  it("rejects an unknown stat name", () => {
+    expect(() =>
+      createEvent("unknown-stat")
+        .solo("tribute")
+        .during("day")
+        .resolve(
+          statCheck(
+            "tribute",
+            {
+              stat: "speed" as never,
+              difficulty: 3,
+              luckAdjusted: false,
+            },
+            {
+              criticalFailure: result({
+                text: "Critical failure.",
+              }),
+              failure: result({
+                text: "Failure.",
+              }),
+              success: result({
+                text: "Success.",
+              }),
+              exceptionalSuccess: result({
+                text: "Exceptional success.",
+              }),
+            },
+          ),
+        ),
+    ).toThrow('references unknown stat "speed"');
+  });
 });

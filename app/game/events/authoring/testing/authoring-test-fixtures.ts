@@ -2,6 +2,8 @@ import type { PronounSetId } from "~/game/tributes/pronouns";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState, GameTribute, RoundReference } from "~/game/types/game-state";
 import type { TributeStats } from "~/game/types/tribute";
+import { createInventoryItemInstance } from "~/game/items/inventory-engine";
+import type { ItemDefinitionId } from "~/game/items/item-schema";
 
 export const AUTHORING_TEST_ROUND = {
   day: 2,
@@ -103,5 +105,38 @@ export function createAuthoringTestGame(
     createdAt: "2026-07-22T12:00:00.000Z",
 
     updatedAt: "2026-07-22T12:00:00.000Z",
+  };
+}
+
+interface AuthoringTestItemOptions {
+  eventId?: string;
+  round?: RoundReference;
+  usesRemaining?: number | null;
+}
+
+export function withAuthoringTestItem(
+  tribute: GameTribute,
+  itemId: ItemDefinitionId,
+  {
+    eventId = ["authoring-fixture", tribute.id, tribute.inventory.length, itemId].join(":"),
+    round = AUTHORING_TEST_ROUND,
+    usesRemaining,
+  }: AuthoringTestItemOptions = {},
+): GameTribute {
+  const item = createInventoryItemInstance(eventId, tribute.id, itemId, round);
+
+  return {
+    ...tribute,
+
+    inventory: [
+      ...tribute.inventory,
+
+      usesRemaining === undefined
+        ? item
+        : {
+            ...item,
+            usesRemaining,
+          },
+    ],
   };
 }

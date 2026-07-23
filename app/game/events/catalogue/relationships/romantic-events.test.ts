@@ -4,7 +4,6 @@ import { applyResolvedEvent } from "~/game/engine/apply-game-change";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 import type { RandomSource } from "~/game/engine/random";
-import { EVENT_CATALOGUE } from "~/game/events/catalogue";
 import {
   isPoisonousBerriesFinaleEligible,
   POISONOUS_BERRIES_JOINT_VICTORY_EVENT,
@@ -356,14 +355,6 @@ function createRomanticTruceState(): RomanticTruceFixture {
 }
 
 describe("romantic events", () => {
-  it("includes every romantic event in the main catalogue", () => {
-    expect(
-      ROMANTIC_EVENTS.every((event) =>
-        EVENT_CATALOGUE.some((candidate) => candidate.id === event.id),
-      ),
-    ).toBe(true);
-  });
-
   it("keeps romantic formation substantially rarer than standard pair formation", () => {
     const romanticFormation = requireRomanticEvent("romantic-truce-formation");
 

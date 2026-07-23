@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
 import type {
   EventDefinition,
   EventResolution,
@@ -145,10 +144,6 @@ function getAcquiredItemIds(resolution: EventResolution) {
 }
 
 describe("survival events", () => {
-  it("includes every event in the main catalogue", () => {
-    expect(SURVIVAL_EVENTS.every((event) => EVENT_CATALOGUE.includes(event))).toBe(true);
-  });
-
   it("applies disoriented after a critical map failure", () => {
     const originalGame = createTestGame();
 

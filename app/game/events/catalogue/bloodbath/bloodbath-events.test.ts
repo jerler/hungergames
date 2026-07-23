@@ -20,6 +20,7 @@ import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameChange, GameState, GameTribute, ResolvedEvent } from "~/game/types/game-state";
+import { sampleOutcomeSignatures } from "~/game/events/testing/event-test-helpers";
 
 const DAY_ONE = {
   day: 1,
@@ -155,20 +156,11 @@ function sampleSignatures(
   participantsByRole: ParticipantsByRole,
   getSignature: (changes: readonly GameChange[]) => string,
 ): Set<string> {
-  const signatures = new Set<string>();
+  return sampleOutcomeSignatures(
+    (randomValue) => resolveDefinition(definition, game, participantsByRole, randomValue),
 
-  for (let index = 0; index < 1_000; index += 1) {
-    const resolution = resolveDefinition(
-      definition,
-      game,
-      participantsByRole,
-      (index + 0.5) / 1_000,
-    );
-
-    signatures.add(getSignature(resolution.changes));
-  }
-
-  return signatures;
+    (resolution) => getSignature(resolution.changes),
+  );
 }
 
 function resolveFleeOutcome(

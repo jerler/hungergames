@@ -157,3 +157,36 @@ describe("authored requirement validation", () => {
     ).not.toThrow();
   });
 });
+
+describe("authored event configuration validation", () => {
+  it.each(["", "Not Kebab Case", "invalid_event"])("rejects invalid event ID %j", (eventId) => {
+    expect(() => createEvent(eventId).solo().during("day").resolve(createStaticStrategy())).toThrow(
+      "must be non-empty kebab-case text",
+    );
+  });
+
+  it.each([0, -1, Number.POSITIVE_INFINITY, Number.NaN])(
+    "rejects invalid event weight %s",
+    (weight) => {
+      expect(() =>
+        createEvent("invalid-weight")
+          .solo()
+          .during("day")
+          .weight(weight)
+          .resolve(createStaticStrategy()),
+      ).toThrow("must have a positive finite weight");
+    },
+  );
+
+  it("requires at least one period", () => {
+    expect(() => createEvent("missing-period").solo().resolve(createStaticStrategy())).toThrow(
+      "must declare at least one period",
+    );
+  });
+
+  it("requires at least one role", () => {
+    expect(() => createEvent("missing-role").during("day").resolve(createStaticStrategy())).toThrow(
+      "must declare at least one participant role",
+    );
+  });
+});

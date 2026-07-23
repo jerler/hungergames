@@ -19,8 +19,13 @@ import type {
   InventoryItem,
   RoundReference,
 } from "~/game/types/game-state";
+import { COMBAT_EVENTS } from "~/game/events/catalogue/encounters/combat-events";
 
-import { reserveEventCommitments, sequenceRoundEvents } from "./event-sequencer";
+import {
+  MAX_CONSECUTIVE_NON_ELIMINATION_ROUNDS,
+  reserveEventCommitments,
+  sequenceRoundEvents,
+} from "./event-sequencer";
 
 const FIRST_ROUND = {
   day: 1,
@@ -34,6 +39,8 @@ const NEXT_ROUND = {
 
 const THEFT_EVENT_ID = "steal-from-stronger-tribute";
 
+const COMBAT_EVENT_IDS = new Set(COMBAT_EVENTS.map((event) => event.id));
+
 interface SharedItemFixture {
   state: GameState;
 
@@ -43,6 +50,38 @@ interface SharedItemFixture {
   outsider: GameTribute;
 
   item: InventoryItem;
+}
+
+function createSafetyCombatGame(seed: string): GameState {
+  const game = createTestGame(seed);
+
+  return {
+    ...game,
+    seed,
+
+    engine: {
+      ...game.engine,
+
+      consecutiveNonEliminationRounds: MAX_CONSECUTIVE_NON_ELIMINATION_ROUNDS,
+    },
+
+    tributes: game.tributes.map((tribute) => ({
+      ...tribute,
+
+      inventory: [
+        ...tribute.inventory,
+
+        createInventoryItemInstance(
+          `safety-combat:${tribute.id}`,
+          tribute.id,
+          "knife",
+          FIRST_ROUND,
+        ),
+      ],
+    })),
+
+    truces: [],
+  };
 }
 
 function createTestGame(seed = "event-reservations"): GameState {
@@ -710,5 +749,34 @@ describe("ordinary theft sequencing", () => {
     );
 
     expect(events.some((event) => event.definitionId === THEFT_EVENT_ID)).toBe(false);
+  });
+});
+
+describe("forced combat elimination", () => {
+  it("can use a migrated weapon attack as the safety resolution", () => {
+    let combatEvent: ResolvedEvent | undefined;
+
+    for (let index = 0; index < 1_000; index += 1) {
+      const events = sequenceRoundEvents(
+        createSafetyCombatGame(`safety-combat-${index}`),
+        NEXT_ROUND,
+      );
+
+      const firstEvent = events[0];
+
+      if (firstEvent && COMBAT_EVENT_IDS.has(firstEvent.definitionId)) {
+        combatEvent = firstEvent;
+        break;
+      }
+    }
+
+    expect(combatEvent).toBeDefined();
+    expect(combatEvent?.resolutionMode).toBe("safety");
+
+    expect(
+      combatEvent?.changes.filter((change) => change.type === "eliminate-tribute"),
+    ).toHaveLength(1);
+
+    expect(combatEvent?.changes.some((change) => change.type === "use-item")).toBe(true);
   });
 });

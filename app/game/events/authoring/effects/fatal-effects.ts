@@ -5,6 +5,8 @@ export interface EliminateOptions {
   causeLabel: string;
 }
 
+export type KillOptions = EliminateOptions;
+
 export function eliminate(
   roleId: string,
   { causeId, causeLabel }: EliminateOptions,
@@ -12,6 +14,20 @@ export function eliminate(
   return {
     type: "eliminate",
     roleId,
+    causeId,
+    causeLabel,
+  };
+}
+
+export function kill(
+  killerRoleId: string,
+  victimRoleId: string,
+  { causeId, causeLabel }: KillOptions,
+): EliminateEffect {
+  return {
+    type: "eliminate",
+    roleId: victimRoleId,
+    killerRoleId,
     causeId,
     causeLabel,
   };

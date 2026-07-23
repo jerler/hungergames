@@ -21,6 +21,10 @@ export type {
   RoleWeight,
 } from "./roles/role-schema";
 
+export { combatRolePair } from "./roles/combat-role-pair";
+
+export type { CombatRolePairOptions } from "./roles/combat-role-pair";
+
 /* Eligibility requirements */
 
 export { hasAnyHarmfulStatus, hasStatus, lacksStatus } from "./requirements/status-requirements";
@@ -52,14 +56,24 @@ export type {
 /* Stat checks */
 
 export { brains, brawn, luck } from "./checks/stat-checks";
+export { ordinaryAttackCheck } from "./checks/combat-check";
+
+export type {
+  OrdinaryAttackCheckOptions,
+  WeaponAttackCheck,
+  WeaponAttackCheckContext,
+  WeaponAttackModifier,
+  WeaponAttackOutcome,
+} from "./checks/combat-check";
 
 /* Effects */
 
 export { applyStatus } from "./effects/status-effects";
 export { survived } from "./effects/statistic-effects";
 
-export { eliminate } from "./effects/fatal-effects";
-export type { EliminateOptions } from "./effects/fatal-effects";
+export { eliminate, kill } from "./effects/fatal-effects";
+
+export type { EliminateOptions, KillOptions } from "./effects/fatal-effects";
 
 export { customResolution } from "./strategies/custom-resolution";
 
@@ -117,3 +131,7 @@ export type { ItemStatEventOptions } from "./families/item-stat-event";
 
 export type { EventFamilyMetadata } from "./families/family-types";
 export type { StatOutcomeKey } from "./families/family-outcomes";
+
+export { createWeaponAttackEvent } from "./families/weapon-attack-event";
+
+export type { WeaponAttackEventOptions, WeaponUseTiming } from "./families/weapon-attack-event";

@@ -52,7 +52,16 @@ export type EventEffect =
 
 export interface EliminateEffect {
   type: "eliminate";
+
+  /**
+   * The role being eliminated.
+   */
   roleId: string;
+
+  /**
+   * Omitted for environmental fatalities.
+   */
+  killerRoleId?: string;
 
   causeId: string;
   causeLabel: string;

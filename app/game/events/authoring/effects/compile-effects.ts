@@ -143,6 +143,18 @@ export function validateEffects(
     }
 
     if (effect.type === "eliminate") {
+      if (effect.killerRoleId && !knownRoleIds.has(effect.killerRoleId)) {
+        throw new Error(
+          `Event "${eventId}": effect "eliminate" references unknown killer role "${effect.killerRoleId}".`,
+        );
+      }
+
+      if (effect.killerRoleId === effect.roleId) {
+        throw new Error(
+          `Event "${eventId}": effect "eliminate" cannot use the same role as killer and victim.`,
+        );
+      }
+
       if (!effect.causeId.trim()) {
         throw new Error(
           `Event "${eventId}": effect "eliminate" must declare a non-empty cause ID.`,
@@ -212,9 +224,13 @@ export function compileEffects(
           );
         }
 
-        const tribute = requireSingleParticipant(context.participantsByRole, effect.roleId);
+        const victim = requireSingleParticipant(context.participantsByRole, effect.roleId);
 
-        return createFatalChanges(tribute, effect.causeId, effect.causeLabel, resolvedText);
+        const killer = effect.killerRoleId
+          ? requireSingleParticipant(context.participantsByRole, effect.killerRoleId)
+          : null;
+
+        return createFatalChanges(victim, effect.causeId, effect.causeLabel, resolvedText, killer);
       }
 
       case "use-required-item":

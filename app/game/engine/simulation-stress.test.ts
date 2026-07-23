@@ -21,6 +21,7 @@ import type {
 import { CORNUCOPIA_EVENTS } from "~/game/events/catalogue/bloodbath";
 import { getRoundSequence } from "~/game/engine/rounds";
 import { getItemDefinition } from "~/game/items/item-catalogue";
+import { COMBAT_EVENTS } from "~/game/events/catalogue/encounters/combat-events";
 
 const simulationCache = new Map<string, GameState>();
 
@@ -32,6 +33,7 @@ type TransferItemChange = Extract<
 >;
 
 const CORNUCOPIA_EVENT_IDS = new Set(CORNUCOPIA_EVENTS.map((event) => event.id));
+const ORDINARY_COMBAT_EVENT_IDS = new Set(COMBAT_EVENTS.map((event) => event.id));
 
 interface ResolvedTransfer {
   event: ResolvedEvent;
@@ -428,6 +430,37 @@ describe("simulation stress tests", () => {
       expect(new Set(theftTransfers.map((change) => change.itemInstanceId)).size).toBe(
         theftTransfers.length,
       );
+    }
+  });
+
+  it("exercises ordinary combat with one credited kill per event", () => {
+    const combatEvents = getStressResults().flatMap((result) =>
+      result.eventHistory.filter((event) => ORDINARY_COMBAT_EVENT_IDS.has(event.definitionId)),
+    );
+
+    expect(combatEvents.length).toBeGreaterThan(0);
+
+    for (const event of combatEvents) {
+      expect(event.changes.filter((change) => change.type === "eliminate-tribute")).toHaveLength(1);
+
+      expect(
+        event.changes.filter(
+          (change) =>
+            change.type === "increment-statistic" && change.statistic === "attemptedKills",
+        ),
+      ).toHaveLength(1);
+
+      expect(
+        event.changes.filter(
+          (change) => change.type === "increment-statistic" && change.statistic === "kills",
+        ),
+      ).toHaveLength(1);
+
+      expect(
+        event.changes.filter(
+          (change) => change.type === "use-item" || change.type === "consume-item",
+        ),
+      ).toHaveLength(1);
     }
   });
 

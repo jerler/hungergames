@@ -21,6 +21,7 @@ import {
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { GameChange, GameTribute, InventoryItem } from "~/game/types/game-state";
 import { getTributePronouns } from "~/game/tributes/pronouns";
+import { always, applyStatus, createEvent, result } from "~/game/events/authoring";
 
 const NATURAL_RESOURCE_ITEM_IDS = ["food", "water"] satisfies readonly ItemDefinitionId[];
 
@@ -158,57 +159,36 @@ export const ENVIRONMENTAL_EVENTS = [
     },
   },
 
-  {
-    id: "rough-terrain",
-    category: "hazard",
-    tags: ["hazard", "status", "environment"],
-    periods: ["day"],
-    baseWeight: 6,
+  createEvent("rough-terrain")
+    .solo("tribute", { getWeight: getVulnerabilityWeight })
+    .category("hazard")
+    .tags("hazard", "status", "environment")
+    .during("day")
+    .weight(6)
+    .resolve(
+      always(
+        result({
+          text: ({ tribute }) => `${tribute.name} is injured while crossing rough terrain.`,
+          effects: [applyStatus("tribute", "injured", 1)],
+        }),
+      ),
+    ),
 
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-        getWeight: getVulnerabilityWeight,
-      },
-    ],
-
-    resolve({ eventId, round, participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
-      return {
-        text: `${tribute.snapshot.name} is injured ` + "while crossing rough terrain.",
-
-        changes: [createStatusChange(eventId, tribute, "injured", 1, round)],
-      };
-    },
-  },
-
-  {
-    id: "contaminated-water",
-    category: "hazard",
-    tags: ["hazard", "status", "environment"],
-    periods: ["day"],
-    baseWeight: 5,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-        getWeight: getVulnerabilityWeight,
-      },
-    ],
-
-    resolve({ eventId, round, participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
-      return {
-        text: `${tribute.snapshot.name} drinks ` + "contaminated water and becomes dehydrated.",
-
-        changes: [createStatusChange(eventId, tribute, "dehydrated", 2, round)],
-      };
-    },
-  },
+  createEvent("contaminated-water")
+    .solo("tribute", { getWeight: getVulnerabilityWeight })
+    .category("hazard")
+    .tags("hazard", "status", "environment")
+    .during("day")
+    .weight(5)
+    .resolve(
+      always(
+        result({
+          text: ({ tribute }) =>
+            `${tribute.name} drinks contaminated water and becomes dehydrated.`,
+          effects: [applyStatus("tribute", "dehydrated", 2)],
+        }),
+      ),
+    ),
 
   {
     id: "arena-goose",
@@ -433,31 +413,20 @@ export const ENVIRONMENTAL_EVENTS = [
     },
   },
 
-  {
-    id: "cold-rain",
-    category: "hazard",
-    tags: ["hazard", "status", "environment"],
-    periods: ["night"],
-    baseWeight: 6,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-        getWeight: getVulnerabilityWeight,
-      },
-    ],
-
-    resolve({ eventId, round, participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
-      return {
-        text: `${tribute.snapshot.name} is caught ` + "without shelter in freezing rain.",
-
-        changes: [createStatusChange(eventId, tribute, "exposed", 2, round)],
-      };
-    },
-  },
+  createEvent("cold-rain")
+    .solo("tribute", { getWeight: getVulnerabilityWeight })
+    .category("hazard")
+    .tags("hazard", "status", "environment")
+    .during("night")
+    .weight(6)
+    .resolve(
+      always(
+        result({
+          text: ({ tribute }) => `${tribute.name} is caught without shelter in freezing rain.`,
+          effects: [applyStatus("tribute", "exposed", 2)],
+        }),
+      ),
+    ),
 
   /* Day and Night */
   {
@@ -489,29 +458,18 @@ export const ENVIRONMENTAL_EVENTS = [
     },
   },
 
-  {
-    id: "deep-cut",
-    category: "hazard",
-    tags: ["hazard", "status"],
-    periods: ["day", "night"],
-    baseWeight: 4,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-        getWeight: getVulnerabilityWeight,
-      },
-    ],
-
-    resolve({ eventId, round, participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
-      return {
-        text: `${tribute.snapshot.name} suffers a deep ` + "cut and begins bleeding.",
-
-        changes: [createStatusChange(eventId, tribute, "bleeding", 2, round)],
-      };
-    },
-  },
+  createEvent("deep-cut")
+    .solo("tribute", { getWeight: getVulnerabilityWeight })
+    .category("hazard")
+    .tags("hazard", "status")
+    .during("day", "night")
+    .weight(4)
+    .resolve(
+      always(
+        result({
+          text: ({ tribute }) => `${tribute.name} suffers a deep cut and begins bleeding.`,
+          effects: [applyStatus("tribute", "bleeding", 2)],
+        }),
+      ),
+    ),
 ] satisfies readonly EventDefinition[];

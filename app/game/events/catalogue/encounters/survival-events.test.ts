@@ -16,6 +16,7 @@ import type { GameState, GameTribute } from "~/game/types/game-state";
 import type { TributeStats } from "~/game/types/tribute";
 import { SURVIVAL_EVENTS } from "./survival-events";
 import { selectEventParticipants } from "~/game/events/participant-selection";
+import { getSurvivalSelectionWeight } from "~/game/engine/stat-formulas";
 
 const ROUND = {
   day: 1,
@@ -285,4 +286,36 @@ describe("survival events", () => {
       });
     },
   );
+
+  it("finds-hiding-place preserves its authored catalogue contract", () => {
+    const game = createTestGame();
+    const tribute = withStats(game.tributes[0], BALANCED_STATS, "Shelter");
+
+    const definition = requireEvent("finds-hiding-place");
+
+    expect(definition).toMatchObject({
+      id: "finds-hiding-place",
+      category: "survival",
+      tags: ["survival", "resource"],
+      periods: ["day", "night"],
+      baseWeight: 8,
+      roles: [{ id: "tribute", count: 1 }],
+    });
+
+    expect(definition.roles[0]?.getWeight).toBe(getSurvivalSelectionWeight);
+
+    const resolution = resolveEvent(definition, game, { tribute: [tribute] }, [0.5]);
+
+    expect(resolution).toEqual({
+      text: "Shelter finds a concealed place to rest.",
+      changes: [
+        {
+          type: "increment-statistic",
+          tributeId: tribute.id,
+          statistic: "eventsSurvived",
+          amount: 1,
+        },
+      ],
+    });
+  });
 });

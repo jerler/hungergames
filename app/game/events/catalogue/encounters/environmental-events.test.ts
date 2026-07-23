@@ -16,6 +16,7 @@ import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState, GameTribute } from "~/game/types/game-state";
 import type { TributeStats } from "~/game/types/tribute";
+import { getVulnerabilityWeight } from "~/game/engine/stat-formulas";
 
 import { ENVIRONMENTAL_EVENTS } from "./environmental-events";
 
@@ -34,6 +35,45 @@ const BALANCED_STATS = {
   brawn: 3,
   luck: 3,
 } satisfies TributeStats;
+
+const SIMPLE_STATUS_EVENT_CASES = [
+  {
+    eventId: "rough-terrain",
+    tags: ["hazard", "status", "environment"],
+    periods: ["day"],
+    weight: 6,
+    text: "is injured while crossing rough terrain.",
+    statusId: "injured",
+    severity: 1,
+  },
+  {
+    eventId: "contaminated-water",
+    tags: ["hazard", "status", "environment"],
+    periods: ["day"],
+    weight: 5,
+    text: "drinks contaminated water and becomes dehydrated.",
+    statusId: "dehydrated",
+    severity: 2,
+  },
+  {
+    eventId: "cold-rain",
+    tags: ["hazard", "status", "environment"],
+    periods: ["night"],
+    weight: 6,
+    text: "is caught without shelter in freezing rain.",
+    statusId: "exposed",
+    severity: 2,
+  },
+  {
+    eventId: "deep-cut",
+    tags: ["hazard", "status"],
+    periods: ["day", "night"],
+    weight: 4,
+    text: "suffers a deep cut and begins bleeding.",
+    statusId: "bleeding",
+    severity: 2,
+  },
+] as const;
 
 function createTestGame(): GameState {
   const config = {
@@ -167,6 +207,40 @@ function getAppliedStatuses(resolution: EventResolution) {
 }
 
 describe("environmental events", () => {
+  it.each(SIMPLE_STATUS_EVENT_CASES)(
+    "$eventId preserves its authored catalogue contract",
+    ({ eventId, tags, periods, weight, text, statusId, severity }) => {
+      const game = createTestGame();
+      const tribute = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
+      const definition = requireEvent(eventId);
+
+      expect(definition).toMatchObject({
+        id: eventId,
+        category: "hazard",
+        tags,
+        periods,
+        baseWeight: weight,
+        roles: [{ id: "tribute", count: 1 }],
+      });
+
+      expect(definition.roles[0]?.getWeight).toBe(getVulnerabilityWeight);
+
+      const resolution = resolveEvent(definition, game, { tribute: [tribute] }, [0.5]);
+
+      expect(resolution.text).toBe(`Hazel ${text}`);
+
+      expect(resolution.changes).toEqual([
+        expect.objectContaining({
+          type: "apply-status",
+          tributeId: tribute.id,
+          status: expect.objectContaining({
+            definitionId: statusId,
+            severity,
+          }),
+        }),
+      ]);
+    },
+  );
   it("includes every event in the main catalogue", () => {
     expect(
       ENVIRONMENTAL_EVENTS.every((event) =>

@@ -5,6 +5,7 @@ import {
 } from "~/game/engine/stat-formulas";
 import {
   acquireNaturalResource,
+  always,
   applyStatus,
   brains,
   createEvent,
@@ -13,20 +14,17 @@ import {
   randomResult,
   recordRequiredItemUse,
   result,
-  soloRole,
   statCheck,
   survived,
 } from "~/game/events/authoring";
 import {
   createItemAcquisitionAndSurvivalChanges,
   createStatusChange,
-  createSurvivalChanges,
 } from "~/game/events/event-change-builders";
 import { resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
 import type { StatCheckOutcome } from "~/game/events/event-outcomes";
 import {
   requireParticipants,
-  requireSingleParticipant,
   type EventDefinition,
   type EventResolution,
   type EventResolutionContext,
@@ -103,7 +101,7 @@ export const SURVIVAL_EVENTS = [
         : `${tribute.name} identifies edible roots and plants and gathers enough for a meal.`,
   }),
   createEvent("upside-down-map")
-    .roles(soloRole("tribute", { getWeight: getForagingScore }))
+    .solo("tribute", { getWeight: getForagingScore })
     .when(hasItem("tribute", { definitionIds: ["map"] }))
     .category("survival")
     .tags("survival", "item", "tool", "status", "resource")
@@ -215,29 +213,18 @@ export const SURVIVAL_EVENTS = [
   },
 
   /* Day and Night */
-  {
-    id: "finds-hiding-place",
-    category: "survival",
-    tags: ["survival", "resource"],
-    periods: ["day", "night"],
-    baseWeight: 8,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-        getWeight: getSurvivalSelectionWeight,
-      },
-    ],
-
-    resolve({ participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-
-      return {
-        text: `${tribute.snapshot.name} finds ` + "a concealed place to rest.",
-
-        changes: createSurvivalChanges([tribute]),
-      };
-    },
-  },
+  createEvent("finds-hiding-place")
+    .solo("tribute", { getWeight: getSurvivalSelectionWeight })
+    .category("survival")
+    .tags("survival", "resource")
+    .during("day", "night")
+    .weight(8)
+    .resolve(
+      always(
+        result({
+          text: ({ tribute }) => `${tribute.name} finds a concealed place to rest.`,
+          effects: [survived("tribute")],
+        }),
+      ),
+    ),
 ] satisfies readonly EventDefinition[];

@@ -21,6 +21,7 @@ import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState, GameTribute, ResolvedEvent } from "~/game/types/game-state";
 import type { TributeStats } from "~/game/types/tribute";
 import { createTruceInstance } from "~/game/truces/truce-engine";
+import { getForagingScore, getVulnerabilityWeight } from "~/game/engine/stat-formulas";
 
 const ROUND = {
   day: 1,
@@ -35,33 +36,54 @@ const BALANCED_STATS = {
 
 const EVENT_ITEM_CASES = [
   {
-    eventId: "trap-kit-instructions-missing",
-    itemId: "trap-kit",
-  },
-  {
     eventId: "fishing-gear-enormous-fish",
     itemId: "fishing-gear",
-  },
-  {
-    eventId: "camouflage-catastrophe",
-    itemId: "camouflage-net",
+    tags: ["hazard", "tool", "item", "status", "resource"],
+    periods: ["day"],
+    weight: 3.5,
+    getWeight: getForagingScore,
   },
   {
     eventId: "axe-based-shelter-renovation",
     itemId: "axe",
+    tags: ["hazard", "environment", "weapon", "tool", "item", "status"],
+    periods: ["day"],
+    weight: 3.5,
+    getWeight: undefined,
   },
   {
     eventId: "slingshot-trick-shot",
     itemId: "slingshot",
+    tags: ["hazard", "weapon", "item", "status", "resource"],
+    periods: ["day"],
+    weight: 3.5,
+    getWeight: undefined,
+  },
+  {
+    eventId: "trap-kit-instructions-missing",
+    itemId: "trap-kit",
+    tags: ["hazard", "tool", "item", "status", "resource"],
+    periods: ["day", "night"],
+    weight: 3.5,
+    getWeight: getForagingScore,
   },
   {
     eventId: "shield-used-for-everything-else",
     itemId: "shield",
+    tags: ["hazard", "tool", "item", "status", "resource"],
+    periods: ["day", "night"],
+    weight: 3.5,
+    getWeight: getVulnerabilityWeight,
   },
-] satisfies readonly {
-  eventId: string;
-  itemId: ItemDefinitionId;
-}[];
+  {
+    eventId: "camouflage-catastrophe",
+    itemId: "camouflage-net",
+    tags: ["hazard", "item", "tool", "status"],
+    periods: ["day", "night"],
+    weight: 3.5,
+    getWeight: undefined,
+  },
+] as const;
 
 const OUTCOME_RANDOM_VALUES = [0, 0.2, 0.6, 0.999] as const;
 
@@ -193,6 +215,32 @@ function getAcquiredItemIds(resolution: EventResolution) {
 }
 
 describe("item use events", () => {
+  it.each(EVENT_ITEM_CASES)(
+    "$eventId preserves its catalogue metadata",
+    ({ eventId, itemId, tags, periods, weight, getWeight }) => {
+      const definition = requireEvent(eventId);
+
+      expect(definition).toMatchObject({
+        id: eventId,
+        category: "hazard",
+        tags,
+        periods,
+        baseWeight: weight,
+
+        roles: [
+          {
+            id: "tribute",
+            count: 1,
+            requiredItemDefinitionIds: [itemId],
+            itemAccess: "accessible",
+          },
+        ],
+      });
+
+      expect(definition.roles[0]?.getWeight).toBe(getWeight);
+    },
+  );
+
   it("includes every event in the main catalogue", () => {
     expect(
       ITEM_USE_EVENTS.every((event) =>
@@ -404,7 +452,7 @@ describe("item use events", () => {
     });
   });
 
-  it("successful shelter renovation applies concealed", () => {
+  it("successful shelter renovation applies concealed and survival credit", () => {
     const game = createTestGame();
 
     const tribute = withItem(withStats(game.tributes[0], BALANCED_STATS), "axe");
@@ -412,13 +460,18 @@ describe("item use events", () => {
     const resolution = resolveEvent(
       requireEvent("axe-based-shelter-renovation"),
       game,
-      {
-        tribute: [tribute],
-      },
+      { tribute: [tribute] },
       [0.6],
     );
 
     expect(getAppliedStatusIds(resolution)).toEqual(["concealed"]);
+
+    expect(resolution.changes).toContainEqual({
+      type: "increment-statistic",
+      tributeId: tribute.id,
+      statistic: "eventsSurvived",
+      amount: 1,
+    });
   });
 
   it("a failed slingshot shot applies hunted", () => {
@@ -438,7 +491,29 @@ describe("item use events", () => {
     expect(getAppliedStatusIds(resolution)).toEqual(["hunted"]);
   });
 
-  it("an exceptional shield experiment finds food and water", () => {
+  it("a successful slingshot shot gathers food and grants survival credit", () => {
+    const game = createTestGame();
+
+    const tribute = withItem(withStats(game.tributes[0], BALANCED_STATS), "slingshot");
+
+    const resolution = resolveEvent(
+      requireEvent("slingshot-trick-shot"),
+      game,
+      { tribute: [tribute] },
+      [0.6],
+    );
+
+    expect(getAcquiredItemIds(resolution)).toEqual(["food"]);
+
+    expect(resolution.changes).toContainEqual({
+      type: "increment-statistic",
+      tributeId: tribute.id,
+      statistic: "eventsSurvived",
+      amount: 1,
+    });
+  });
+
+  it("an exceptional shield experiment finds food and water and grants survival credit", () => {
     const game = createTestGame();
 
     const tribute = withItem(withStats(game.tributes[0], BALANCED_STATS), "shield");
@@ -446,13 +521,18 @@ describe("item use events", () => {
     const resolution = resolveEvent(
       requireEvent("shield-used-for-everything-else"),
       game,
-      {
-        tribute: [tribute],
-      },
+      { tribute: [tribute] },
       [0.999],
     );
 
     expect(getAcquiredItemIds(resolution)).toEqual(["food", "water"]);
+
+    expect(resolution.changes).toContainEqual({
+      type: "increment-statistic",
+      tributeId: tribute.id,
+      statistic: "eventsSurvived",
+      amount: 1,
+    });
   });
 
   it("only creates valid item and status definitions", () => {

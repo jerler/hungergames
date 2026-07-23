@@ -16,8 +16,8 @@ export function always(
   { intro }: AlwaysStrategyOptions = {},
 ): EventResolutionStrategy {
   return {
-    validate(eventId, roleIds): void {
-      validateEffects(eventId, result.effects, roleIds);
+    validate(eventId, roleIds, requiredItemRoleIds): void {
+      validateEffects(eventId, result.effects, roleIds, requiredItemRoleIds);
     },
 
     resolve(context, roleIds) {

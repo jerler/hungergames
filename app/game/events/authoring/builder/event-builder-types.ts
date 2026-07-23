@@ -22,7 +22,11 @@ export interface AuthoredEventConfiguration {
 }
 
 export interface EventResolutionStrategy {
-  validate(eventId: string, roleIds: readonly string[]): void;
+  validate(
+    eventId: string,
+    roleIds: readonly string[],
+    requiredItemRoleIds: readonly string[],
+  ): void;
 
   resolve(context: EventResolutionContext, roleIds: readonly string[]): EventResolution;
 }

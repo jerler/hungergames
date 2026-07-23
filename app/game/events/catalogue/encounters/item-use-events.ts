@@ -15,113 +15,68 @@ import {
   type EventResolution,
 } from "~/game/events/event-schema";
 import { getTributePronouns } from "~/game/tributes/pronouns";
+import {
+  acquireNaturalResource,
+  applyStatus,
+  brawn,
+  consumeRequiredItem,
+  createEvent,
+  hasItem,
+  result,
+  soloRole,
+  statCheck,
+  survived,
+} from "~/game/events/authoring";
 
 export const ITEM_USE_EVENTS = [
   /* Day Only */
-  {
-    id: "fishing-gear-enormous-fish",
-    category: "hazard",
-    tags: ["hazard", "tool", "item", "status", "resource"],
-    periods: ["day"],
-    baseWeight: 3.5,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-
-        requiredItemDefinitionIds: ["fishing-gear"],
-
-        getWeight: getForagingScore,
-      },
-    ],
-
-    resolve(context): EventResolution {
-      const { eventId, round, random, participantsByRole } = context;
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-      const pronouns = getTributePronouns(tribute);
-
-      const fishingGear = requireEventItem(
-        context,
-        tribute,
-        "fishing-gear",
-        "fishing-gear-enormous-fish",
-      );
-
-      const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, random);
-
-      const consumeFishingGear = createItemUseChange(
-        fishingGear.owner,
-        fishingGear.item,
-        "fishing-gear-enormous-fish",
-      );
-
-      switch (outcome) {
-        case "critical-failure":
-          return {
-            text:
-              `${tribute.snapshot.name} hooks an enormous fish and is ` +
-              "dragged violently through the water before cutting the line.",
-
-            changes: [
-              createStatusChange(eventId, tribute, "injured", 1, round),
-              createStatusChange(eventId, tribute, "exhausted", 2, round),
-              consumeFishingGear,
-            ],
-          };
-
-        case "failure":
-          return {
-            text:
-              `${tribute.snapshot.name} battles an enormous fish for hours, ` +
-              "only for it to escape at the last possible moment.",
-
-            changes: [
-              createStatusChange(eventId, tribute, "exhausted", 1, round),
-              consumeFishingGear,
-            ],
-          };
-
-        case "success":
-          return {
-            text:
-              `${tribute.snapshot.name} lands an enormous fish ` +
-              "and prepares enough food to keep going.",
-
-            changes: [
-              ...createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                tribute,
-                ["food"],
-                round,
-                "natural-foraging",
-              ),
-              consumeFishingGear,
-            ],
-          };
-
-        case "exceptional-success":
-          return {
-            text:
-              `${tribute.snapshot.name} lands a legendary arena fish ` +
-              `and is briefly overwhelmed by ` +
-              `${pronouns.possessiveAdjective} own competence.`,
-
-            changes: [
-              ...createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                tribute,
-                ["food"],
-                round,
-                "natural-foraging",
-              ),
-              createStatusChange(eventId, tribute, "inspired", 2, round),
-              consumeFishingGear,
-            ],
-          };
-      }
-    },
-  },
+  createEvent("fishing-gear-enormous-fish")
+    .roles(soloRole("tribute", { getWeight: getForagingScore }))
+    .when(hasItem("tribute", { definitionIds: ["fishing-gear"] }))
+    .category("hazard")
+    .tags("hazard", "tool", "item", "status", "resource")
+    .during("day")
+    .weight(3.5)
+    .resolve(
+      statCheck("tribute", brawn(3), {
+        criticalFailure: result({
+          text: ({ tribute }) =>
+            `${tribute.name} hooks an enormous fish and is dragged violently through the water before cutting the line.`,
+          effects: [
+            applyStatus("tribute", "injured", 1),
+            applyStatus("tribute", "exhausted", 2),
+            consumeRequiredItem("tribute", { reason: "fishing-gear-enormous-fish" }),
+          ],
+        }),
+        failure: result({
+          text: ({ tribute }) =>
+            `${tribute.name} battles an enormous fish for hours, only for it to escape at the last possible moment.`,
+          effects: [
+            applyStatus("tribute", "exhausted", 1),
+            consumeRequiredItem("tribute", { reason: "fishing-gear-enormous-fish" }),
+          ],
+        }),
+        success: result({
+          text: ({ tribute }) =>
+            `${tribute.name} lands an enormous fish and prepares enough food to keep going.`,
+          effects: [
+            acquireNaturalResource("tribute", "food"),
+            survived("tribute"),
+            consumeRequiredItem("tribute", { reason: "fishing-gear-enormous-fish" }),
+          ],
+        }),
+        exceptionalSuccess: result({
+          text: ({ tribute }) =>
+            `${tribute.name} lands a legendary arena fish and is briefly overwhelmed by ${tribute.pronouns.possessiveAdjective} own competence.`,
+          effects: [
+            acquireNaturalResource("tribute", "food"),
+            survived("tribute"),
+            applyStatus("tribute", "inspired", 2),
+            consumeRequiredItem("tribute", { reason: "fishing-gear-enormous-fish" }),
+          ],
+        }),
+      }),
+    ),
   {
     id: "axe-based-shelter-renovation",
     category: "hazard",

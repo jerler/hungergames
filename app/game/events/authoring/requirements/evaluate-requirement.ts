@@ -25,7 +25,21 @@ export type CandidateRequirement =
 export function isCandidateRequirement(
   requirement: AuthoredRequirement,
 ): requirement is CandidateRequirement {
-  return requirement.kind !== "not-in-same-truce";
+  switch (requirement.kind) {
+    case "has-status":
+    case "lacks-status":
+    case "has-any-harmful-status":
+    case "minimum-stat":
+    case "maximum-stat":
+    case "in-active-truce":
+      return true;
+
+    case "not-in-same-truce":
+    case "has-item":
+    case "has-item-tag":
+    case "has-treatment-for":
+      return false;
+  }
 }
 
 export function isRelationshipOppositionRequirement(

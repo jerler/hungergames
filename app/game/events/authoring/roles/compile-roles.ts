@@ -5,7 +5,11 @@ import {
   isCandidateRequirement,
   isRelationshipOppositionRequirement,
 } from "../requirements/evaluate-requirement";
-import type { AuthoredRequirement } from "../requirements/requirement-schema";
+import {
+  getTreatmentItemDefinitionIds,
+  isItemRequirement,
+} from "../requirements/item-requirements";
+import type { AuthoredRequirement, ItemRequirement } from "../requirements/requirement-schema";
 import type { AuthoredRoleSpecification } from "./role-schema";
 
 function addUniqueRoleId(roleIds: string[], roleId: string): void {
@@ -33,13 +37,6 @@ function createOppositionMap(
 
     const secondOppositions = [...(oppositionMap.get(requirement.secondRoleId) ?? [])];
 
-    /*
-     * Compile the relationship in both directions so the
-     * protection remains correct regardless of role order.
-     *
-     * The existing participant selector performs the
-     * actual same-truce check.
-     */
     addUniqueRoleId(firstOppositions, requirement.secondRoleId);
 
     addUniqueRoleId(secondOppositions, requirement.firstRoleId);
@@ -61,6 +58,46 @@ function getCandidateRequirementsForRole(
     .filter((requirement) => requirement.roleId === roleId);
 }
 
+function getItemRequirementForRole(
+  roleId: string,
+  requirements: readonly AuthoredRequirement[],
+): ItemRequirement | undefined {
+  return requirements
+    .filter(isItemRequirement)
+    .find((requirement) => requirement.roleId === roleId);
+}
+
+function compileItemRequirement(
+  requirement: ItemRequirement | undefined,
+): Partial<ParticipantRoleDefinition> {
+  if (!requirement) {
+    return {};
+  }
+
+  switch (requirement.kind) {
+    case "has-item":
+      return {
+        requiredItemDefinitionIds: [...requirement.definitionIds],
+
+        itemAccess: requirement.access,
+      };
+
+    case "has-item-tag":
+      return {
+        requiredItemTags: [...requirement.tags],
+
+        itemAccess: requirement.access,
+      };
+
+    case "has-treatment-for":
+      return {
+        requiredItemDefinitionIds: getTreatmentItemDefinitionIds(requirement.statusId),
+
+        itemAccess: requirement.access,
+      };
+  }
+}
+
 export function compileAuthoredRoles(
   roles: readonly AuthoredRoleSpecification[],
   requirements: readonly AuthoredRequirement[] = [],
@@ -69,6 +106,8 @@ export function compileAuthoredRoles(
 
   return roles.map((role): ParticipantRoleDefinition => {
     const roleRequirements = getCandidateRequirementsForRole(role.id, requirements);
+
+    const itemRequirement = getItemRequirementForRole(role.id, requirements);
 
     const opposedRoleIds = oppositionMap.get(role.id) ?? [];
 
@@ -87,6 +126,8 @@ export function compileAuthoredRoles(
             opposesRoleIds: [...opposedRoleIds],
           }
         : {}),
+
+      ...compileItemRequirement(itemRequirement),
 
       ...(roleRequirements.length > 0
         ? {

@@ -15,6 +15,7 @@ import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState, GameTribute } from "~/game/types/game-state";
 import type { TributeStats } from "~/game/types/tribute";
 import { SURVIVAL_EVENTS } from "./survival-events";
+import { selectEventParticipants } from "~/game/events/participant-selection";
 
 const ROUND = {
   day: 1,
@@ -96,17 +97,35 @@ function resolveEvent(
   participantsByRole: ParticipantsByRole,
   randomValues: readonly number[],
 ): EventResolution {
+  const livingTributes = Object.values(participantsByRole).flat();
+
+  const selection = selectEventParticipants(
+    definition,
+    {
+      state: game,
+      round: ROUND,
+      livingTributes,
+    },
+    () => 0,
+    new Set(),
+    new Set(),
+  );
+
   return definition.resolve({
     state: game,
     round: ROUND,
 
-    livingTributes: game.tributes.filter((tribute) => tribute.isAlive),
+    livingTributes,
 
     eventId: `test:${definition.id}`,
 
     random: createSequenceRandom(randomValues),
 
     participantsByRole,
+
+    itemsByRole: selection?.itemsByRole,
+
+    unavailableItemInstanceIds: new Set(),
   });
 }
 

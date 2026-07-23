@@ -39,6 +39,11 @@ export type {
   RelationshipRequirement,
   RequirementStat,
   StatRequirement,
+  HasItemRequirement,
+  HasItemTagRequirement,
+  HasTreatmentForRequirement,
+  ItemRequirement,
+  RequiredItemAccess,
   StatusRequirement,
 } from "./requirements/requirement-schema";
 
@@ -65,3 +70,18 @@ export { statCheck } from "./strategies/stat-check";
 export type { EventCharacter, EventPronouns } from "./characters/event-character";
 
 export type { EventText, EventTextContext } from "./characters/event-text-context";
+
+export { hasItem, hasItemTag, hasTreatmentFor } from "./requirements/item-requirements";
+
+export type {
+  HasItemOptions,
+  HasItemTagOptions,
+  HasTreatmentForOptions,
+} from "./requirements/item-requirements";
+
+export { consumeRequiredItem, recordRequiredItemUse } from "./effects/required-item-effects";
+
+export type { RequiredItemEffectOptions } from "./effects/required-item-effects";
+
+export { acquireNaturalResource } from "./effects/natural-resource-effects";
+export { randomResult } from "./outcomes/random-result";

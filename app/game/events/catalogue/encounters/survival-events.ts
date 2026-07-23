@@ -5,16 +5,24 @@ import {
   getSurvivalSelectionWeight,
 } from "~/game/engine/stat-formulas";
 import {
+  acquireNaturalResource,
+  applyStatus,
+  brains,
+  createEvent,
+  hasItem,
+  randomResult,
+  result,
+  soloRole,
+  statCheck,
+  survived,
+  recordRequiredItemUse,
+} from "~/game/events/authoring";
+import {
   createItemAcquisitionAndSurvivalChanges,
-  createItemUseChange,
   createStatusChange,
   createSurvivalChanges,
 } from "~/game/events/event-change-builders";
-
-import {
-  requireEventItem,
-  resolveLuckAdjustedStatCheck,
-} from "~/game/events/event-resolution-helpers";
+import { resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
 import type { StatCheckOutcome } from "~/game/events/event-outcomes";
 import {
   requireParticipants,
@@ -26,8 +34,6 @@ import {
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getCooperativeTruceWeight } from "~/game/truces/truce-selection";
 import type { GameChange, GameTribute } from "~/game/types/game-state";
-import { getTributePronouns } from "~/game/tributes/pronouns";
-
 const NATURAL_RESOURCE_ITEM_IDS = ["food", "water"] satisfies readonly ItemDefinitionId[];
 
 function resolveForagingParticipant(
@@ -131,99 +137,62 @@ export const SURVIVAL_EVENTS = [
       };
     },
   },
-  {
-    id: "upside-down-map",
-    category: "survival",
-    tags: ["survival", "item", "tool", "status", "resource"],
-    periods: ["day"],
-    baseWeight: 4,
-
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
-
-        requiredItemDefinitionIds: ["map"],
-
-        getWeight: getForagingScore,
-      },
-    ],
-
-    resolve(context): EventResolution {
-      const { eventId, round, random, participantsByRole } = context;
-
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-      const pronouns = getTributePronouns(tribute);
-      const map = requireEventItem(context, tribute, "map", "upside-down-map");
-
-      const useMap = createItemUseChange(map.owner, map.item, "upside-down-map");
-
-      const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
-
-      switch (outcome) {
-        case "critical-failure":
-          return {
-            text:
-              `${tribute.snapshot.name} follows ` +
-              `${pronouns.possessiveAdjective} map for hours ` +
-              `before realizing ${pronouns.subject} ` +
-              `${pronouns.havePresent} been holding it upside down.`,
-
-            changes: [createStatusChange(eventId, tribute, "disoriented", 2, round), useMap],
-          };
-
-        case "failure":
-          return {
-            text:
-              `${tribute.snapshot.name} misreads ` +
-              `${pronouns.possessiveAdjective} map and becomes ` +
-              "hopelessly turned around.",
-
-            changes: [createStatusChange(eventId, tribute, "disoriented", 1, round), useMap],
-          };
-
-        case "success": {
-          const itemId = selectRandomItem(NATURAL_RESOURCE_ITEM_IDS, random);
-
-          const destinationText =
-            itemId === "water" ? "a clean spring" : "a patch of edible plants";
-
-          return {
-            text:
-              `${tribute.snapshot.name} correctly reads ` +
-              `${pronouns.possessiveAdjective} map and follows ` +
-              `it to ${destinationText}.`,
-
-            changes: [
-              ...createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                tribute,
-                [itemId],
-                round,
-                "natural-foraging",
-              ),
-              useMap,
+  createEvent("upside-down-map")
+    .roles(soloRole("tribute", { getWeight: getForagingScore }))
+    .when(hasItem("tribute", { definitionIds: ["map"] }))
+    .category("survival")
+    .tags("survival", "item", "tool", "status", "resource")
+    .during("day")
+    .weight(4)
+    .resolve(
+      statCheck("tribute", brains(3), {
+        criticalFailure: result({
+          text: ({ tribute }) =>
+            `${tribute.name} follows ${tribute.pronouns.possessiveAdjective} map for hours before realizing ${tribute.pronouns.subject} ${tribute.pronouns.havePresent} been holding it upside down.`,
+          effects: [
+            applyStatus("tribute", "disoriented", 2),
+            recordRequiredItemUse("tribute", { reason: "upside-down-map" }),
+          ],
+        }),
+        failure: result({
+          text: ({ tribute }) =>
+            `${tribute.name} misreads ${tribute.pronouns.possessiveAdjective} map and becomes hopelessly turned around.`,
+          effects: [
+            applyStatus("tribute", "disoriented", 1),
+            recordRequiredItemUse("tribute", { reason: "upside-down-map" }),
+          ],
+        }),
+        success: randomResult(
+          result({
+            text: ({ tribute }) =>
+              `${tribute.name} correctly reads ${tribute.pronouns.possessiveAdjective} map and follows it to a patch of edible plants.`,
+            effects: [
+              acquireNaturalResource("tribute", "food"),
+              survived("tribute"),
+              recordRequiredItemUse("tribute", { reason: "upside-down-map" }),
             ],
-          };
-        }
-
-        case "exceptional-success":
-          return {
-            text:
-              `${tribute.snapshot.name} studies ` +
-              `${pronouns.possessiveAdjective} map ` +
-              "and locates a secure natural shelter hidden " +
-              "from the rest of the arena.",
-
-            changes: [
-              createStatusChange(eventId, tribute, "concealed", 2, round),
-              ...createSurvivalChanges([tribute]),
-              useMap,
+          }),
+          result({
+            text: ({ tribute }) =>
+              `${tribute.name} correctly reads ${tribute.pronouns.possessiveAdjective} map and follows it to a clean spring.`,
+            effects: [
+              acquireNaturalResource("tribute", "water"),
+              survived("tribute"),
+              recordRequiredItemUse("tribute", { reason: "upside-down-map" }),
             ],
-          };
-      }
-    },
-  },
+          }),
+        ),
+        exceptionalSuccess: result({
+          text: ({ tribute }) =>
+            `${tribute.name} studies ${tribute.pronouns.possessiveAdjective} map and locates a secure natural shelter hidden from the rest of the arena.`,
+          effects: [
+            applyStatus("tribute", "concealed", 2),
+            survived("tribute"),
+            recordRequiredItemUse("tribute", { reason: "upside-down-map" }),
+          ],
+        }),
+      }),
+    ),
 
   {
     id: "unfamiliar-foraging-ground",

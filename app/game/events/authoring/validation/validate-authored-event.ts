@@ -3,12 +3,37 @@ import type {
   EventResolutionStrategy,
 } from "~/game/events/authoring/builder/event-builder-types";
 import {
+  getTreatmentItemDefinitionIds,
+  isItemRequirement,
+} from "~/game/events/authoring/requirements/item-requirements";
+import {
   getRequirementRoleIds,
   type AuthoredRequirement,
+  type ItemRequirement,
 } from "~/game/events/authoring/requirements/requirement-schema";
 import type { AuthoredRoleSpecification } from "~/game/events/authoring/roles/role-schema";
+import { getItemDefinition } from "~/game/items/item-catalogue";
+import type { ItemTag } from "~/game/items/item-schema";
+import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 
 const EVENT_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+const ITEM_TAGS = new Set<ItemTag>([
+  "consumable",
+  "water",
+  "food",
+  "medicine",
+  "shelter",
+  "fire",
+  "tool",
+  "weapon",
+  "defense",
+  "navigation",
+  "trap",
+  "camouflage",
+  "hunting",
+  "fishing",
+]);
 
 function validateRole(
   eventId: string,
@@ -36,6 +61,82 @@ function validateRole(
   }
 }
 
+function validateItemRequirement(eventId: string, requirement: ItemRequirement): void {
+  if (requirement.access !== "accessible" && requirement.access !== "owned") {
+    throw new Error(
+      `Event "${eventId}": requirement "${requirement.kind}" has invalid item access "${String(
+        requirement.access,
+      )}".`,
+    );
+  }
+
+  switch (requirement.kind) {
+    case "has-item": {
+      if (requirement.definitionIds.length === 0) {
+        throw new Error(
+          `Event "${eventId}": requirement "has-item" must declare at least one item definition.`,
+        );
+      }
+
+      if (new Set(requirement.definitionIds).size !== requirement.definitionIds.length) {
+        throw new Error(
+          `Event "${eventId}": requirement "has-item" declares duplicate item definitions.`,
+        );
+      }
+
+      for (const itemId of requirement.definitionIds) {
+        try {
+          getItemDefinition(itemId);
+        } catch {
+          throw new Error(
+            `Event "${eventId}": requirement "has-item" references unknown item "${itemId}".`,
+          );
+        }
+      }
+
+      return;
+    }
+
+    case "has-item-tag": {
+      if (requirement.tags.length === 0) {
+        throw new Error(
+          `Event "${eventId}": requirement "has-item-tag" must declare at least one item tag.`,
+        );
+      }
+
+      if (new Set(requirement.tags).size !== requirement.tags.length) {
+        throw new Error(
+          `Event "${eventId}": requirement "has-item-tag" declares duplicate item tags.`,
+        );
+      }
+
+      for (const tag of requirement.tags) {
+        if (!ITEM_TAGS.has(tag)) {
+          throw new Error(
+            `Event "${eventId}": requirement "has-item-tag" references unknown item tag "${tag}".`,
+          );
+        }
+      }
+
+      return;
+    }
+
+    case "has-treatment-for": {
+      try {
+        getStatusDefinition(requirement.statusId);
+      } catch {
+        throw new Error(
+          `Event "${eventId}": requirement "has-treatment-for" references unknown status "${requirement.statusId}".`,
+        );
+      }
+
+      if (getTreatmentItemDefinitionIds(requirement.statusId).length === 0) {
+        throw new Error(`Event "${eventId}": no item can treat status "${requirement.statusId}".`);
+      }
+    }
+  }
+}
+
 function validateRequirement(
   eventId: string,
   requirement: AuthoredRequirement,
@@ -56,6 +157,35 @@ function validateRequirement(
     throw new Error(
       `Event "${eventId}": requirement "not-in-same-truce" must reference two different roles.`,
     );
+  }
+
+  if (isItemRequirement(requirement)) {
+    validateItemRequirement(eventId, requirement);
+  }
+}
+
+function validateRequiredItemCounts(
+  eventId: string,
+  requirements: readonly AuthoredRequirement[],
+): void {
+  const itemRequirementsByRole = new Map<string, number>();
+
+  for (const requirement of requirements) {
+    if (!isItemRequirement(requirement)) {
+      continue;
+    }
+
+    const count = itemRequirementsByRole.get(requirement.roleId) ?? 0;
+
+    itemRequirementsByRole.set(requirement.roleId, count + 1);
+  }
+
+  for (const [roleId, count] of itemRequirementsByRole) {
+    if (count > 1) {
+      throw new Error(
+        `Event "${eventId}": role "${roleId}" declares more than one required-item requirement.`,
+      );
+    }
   }
 }
 
@@ -101,5 +231,11 @@ export function validateAuthoredEvent(
     validateRequirement(id, requirement, knownRoleIds);
   }
 
-  strategy.validate(id, roleIds);
+  validateRequiredItemCounts(id, requirements);
+
+  const requiredItemRoleIds = [
+    ...new Set(requirements.filter(isItemRequirement).map((requirement) => requirement.roleId)),
+  ];
+
+  strategy.validate(id, roleIds, requiredItemRoleIds);
 }

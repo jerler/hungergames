@@ -144,17 +144,35 @@ function resolveEvent(
   participantsByRole: ParticipantsByRole,
   randomValues: readonly number[],
 ): EventResolution {
+  const livingTributes = Object.values(participantsByRole).flat();
+
+  const selection = selectEventParticipants(
+    definition,
+    {
+      state: game,
+      round: ROUND,
+      livingTributes,
+    },
+    () => 0,
+    new Set(),
+    new Set(),
+  );
+
   return definition.resolve({
     state: game,
     round: ROUND,
 
-    livingTributes: game.tributes.filter((tribute) => tribute.isAlive),
+    livingTributes,
 
     eventId: `test:${definition.id}`,
 
     random: createSequenceRandom(randomValues),
 
     participantsByRole,
+
+    itemsByRole: selection?.itemsByRole,
+
+    unavailableItemInstanceIds: new Set(),
   });
 }
 

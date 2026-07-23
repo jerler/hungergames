@@ -6,6 +6,10 @@ import {
 import type { AuthoredStatCheck } from "~/game/events/authoring/checks/check-schema";
 import { compileEffects, validateEffects } from "~/game/events/authoring/effects/compile-effects";
 import type { StatCheckResults } from "~/game/events/authoring/outcomes/outcome-schema";
+import {
+  getConcreteEventResults,
+  resolveAuthoredOutcome,
+} from "~/game/events/authoring/outcomes/random-result";
 import { resolveOutcomeText } from "~/game/events/authoring/outcomes/resolve-outcome";
 import { resolveStatCheck, type StatCheckOutcome } from "~/game/events/event-outcomes";
 import { resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
@@ -38,14 +42,14 @@ export function statCheck(
   { intro }: StatCheckStrategyOptions = {},
 ): EventResolutionStrategy {
   return {
-    validate(eventId, roleIds): void {
+    validate(eventId, roleIds, requiredItemRoleIds): void {
       if (!roleIds.includes(roleId)) {
         throw new Error(`Event "${eventId}": stat check ` + `references unknown role "${roleId}".`);
       }
 
       if (!Number.isInteger(check.difficulty) || check.difficulty < 1 || check.difficulty > 5) {
         throw new Error(
-          `Event "${eventId}": stat-check ` + `difficulty must be an integer from 1 to 5.`,
+          `Event "${eventId}": stat-check ` + "difficulty must be an integer from 1 to 5.",
         );
       }
 
@@ -57,15 +61,26 @@ export function statCheck(
       ] as const;
 
       for (const outcomeKey of requiredOutcomeKeys) {
-        const eventResult = outcomes[outcomeKey];
+        const authoredOutcome = outcomes[outcomeKey];
 
-        if (!eventResult) {
+        if (!authoredOutcome) {
           throw new Error(
             `Event "${eventId}": stat check ` + `is missing outcome "${outcomeKey}".`,
           );
         }
 
-        validateEffects(eventId, eventResult.effects, roleIds);
+        const concreteResults = getConcreteEventResults(authoredOutcome);
+
+        if (concreteResults.length === 0) {
+          throw new Error(
+            `Event "${eventId}": stat check outcome ` +
+              `"${outcomeKey}" must contain at least one result.`,
+          );
+        }
+
+        for (const eventResult of concreteResults) {
+          validateEffects(eventId, eventResult.effects, roleIds, requiredItemRoleIds);
+        }
       }
     },
 
@@ -78,13 +93,14 @@ export function statCheck(
             stats: tribute.snapshot.stats,
 
             stat: check.stat,
-
             difficulty: check.difficulty,
 
             random: context.random,
           });
 
-      const eventResult = outcomes[getAuthoredOutcomeKey(outcome)];
+      const authoredOutcome = outcomes[getAuthoredOutcomeKey(outcome)];
+
+      const eventResult = resolveAuthoredOutcome(authoredOutcome, context.random);
 
       const textContext = createEventTextContext(context, roleIds);
 

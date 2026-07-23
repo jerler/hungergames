@@ -175,6 +175,8 @@ export const DEFAULT_TRIBUTES = [
   createTributeDefinition("xenomorph", "Xenomorph", "it", 3, 5, 3),
   createTributeDefinition("predator", "Predator", "it", 4, 5, 1),
   createTributeDefinition("ted-lasso", "Ted Lasso", "he", 3, 2, 2),
+  createTributeDefinition("grace-ready-or-not", "Grace", "she", 3, 2, 4),
+  createTributeDefinition("cookie-monster", "Cookie Monster", "he", 1, 2, 4),
   createTributeDefinition("fleabag", "Fleabag", "she", 4, 1, 4),
   createTributeDefinition("villanelle", "Villanelle", "she", 4, 5, 2),
   createTributeDefinition("david-rose", "David Rose", "he", 3, 1, 3),

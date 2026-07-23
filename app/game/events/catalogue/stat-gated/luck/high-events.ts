@@ -1,11 +1,13 @@
-import { createStatusChange, createSurvivalChanges } from "~/game/events/event-change-builders";
-import { isStatAtLeast, resolveStatCheck } from "~/game/events/event-outcomes";
 import {
-  requireSingleParticipant,
-  type EventDefinition,
-  type EventResolution,
-} from "~/game/events/event-schema";
-import { getTributePronouns } from "~/game/tributes/pronouns";
+  applyStatus,
+  createEvent,
+  luck,
+  result,
+  statCheck,
+  survived,
+} from "~/game/events/authoring";
+import { isStatAtLeast } from "~/game/events/event-outcomes";
+import type { EventDefinition } from "~/game/events/event-schema";
 
 export const HIGH_LUCK_EVENTS = [
   /* Day Only */
@@ -13,80 +15,58 @@ export const HIGH_LUCK_EVENTS = [
   /* Night Only */
 
   /* Day and Night */
-  {
-    id: "unexpected-pep-talk",
-    category: "survival",
 
-    tags: ["survival", "status"],
+  createEvent("unexpected-pep-talk")
+    .category("survival")
+    .tags("survival", "status")
+    .during("day", "night")
+    .weight(3.5)
+    .solo("tribute", {
+      isEligible: (tribute) => isStatAtLeast(tribute.snapshot.stats, "luck", 4),
 
-    periods: ["day", "night"],
+      getWeight: (tribute) => tribute.snapshot.stats.luck,
+    })
+    .resolve(
+      statCheck("tribute", luck(3), {
+        criticalFailure: result({
+          text: ({ tribute }) =>
+            `${tribute.name} receives an ` +
+            `arena message advising ${tribute.pronouns.object} to ` +
+            '"believe in the feet they can become." ' +
+            `${tribute.pronouns.Subject} ` +
+            `${tribute.pronouns.bePresent} left ` +
+            "deeply confused.",
 
-    baseWeight: 3.5,
+          effects: [applyStatus("tribute", "disoriented", 1)],
+        }),
 
-    roles: [
-      {
-        id: "tribute",
-        count: 1,
+        failure: result({
+          text: ({ tribute }) =>
+            `${tribute.name} receives an ` +
+            "aggressively generic pep talk that " +
+            "provides no useful information whatsoever.",
 
-        isEligible: (tribute) => isStatAtLeast(tribute.snapshot.stats, "luck", 4),
+          effects: [survived("tribute")],
+        }),
 
-        getWeight: (tribute) => tribute.snapshot.stats.luck,
-      },
-    ],
+        success: result({
+          text: ({ tribute }) =>
+            `${tribute.name} hears a ` +
+            "well-timed message of encouragement " +
+            "and feels newly determined.",
 
-    resolve({ eventId, round, random, participantsByRole }): EventResolution {
-      const tribute = requireSingleParticipant(participantsByRole, "tribute");
-      const pronouns = getTributePronouns(tribute);
-      const outcome = resolveStatCheck({
-        stats: tribute.snapshot.stats,
-        stat: "luck",
-        difficulty: 3,
-        random,
-      });
+          effects: [applyStatus("tribute", "inspired", 1)],
+        }),
 
-      switch (outcome) {
-        case "critical-failure":
-          return {
-            text:
-              `${tribute.snapshot.name} receives an ` +
-              `arena message advising ${pronouns.object} to ` +
-              '"believe in the feet they can become." ' +
-              `${pronouns.Subject} ${pronouns.bePresent} left ` +
-              "deeply confused.",
+        exceptionalSuccess: result({
+          text: ({ tribute }) =>
+            `${tribute.name} receives ` +
+            `exactly the encouragement ` +
+            `${tribute.pronouns.subject} needed ` +
+            "and feels unstoppable.",
 
-            changes: [createStatusChange(eventId, tribute, "disoriented", 1, round)],
-          };
-
-        case "failure":
-          return {
-            text:
-              `${tribute.snapshot.name} receives an ` +
-              "aggressively generic pep talk that " +
-              "provides no useful information whatsoever.",
-
-            changes: createSurvivalChanges([tribute]),
-          };
-
-        case "success":
-          return {
-            text:
-              `${tribute.snapshot.name} hears a ` +
-              "well-timed message of encouragement " +
-              "and feels newly determined.",
-
-            changes: [createStatusChange(eventId, tribute, "inspired", 1, round)],
-          };
-
-        case "exceptional-success":
-          return {
-            text:
-              `${tribute.snapshot.name} receives ` +
-              `exactly the encouragement ${pronouns.subject} needed ` +
-              "and feels unstoppable.",
-
-            changes: [createStatusChange(eventId, tribute, "inspired", 2, round)],
-          };
-      }
-    },
-  },
+          effects: [applyStatus("tribute", "inspired", 2)],
+        }),
+      }),
+    ),
 ] satisfies readonly EventDefinition[];

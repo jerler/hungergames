@@ -6,7 +6,7 @@ import type { StatusEffectId } from "./status-schema";
 const EXPECTED_STATUS_IDS = [
   "injured",
   "bleeding",
-  "parched",
+  "thirsty",
   "dehydrated",
   "hungry",
   "starving",
@@ -39,12 +39,7 @@ describe("status catalogue", () => {
       (status) => status.duration.kind === "timed" && status.duration.expiration === "fatal",
     );
 
-    expect(statuses.map((status) => status.id)).toEqual([
-      "bleeding",
-      "dehydrated",
-      "starving",
-      "poisoned",
-    ]);
+    expect(statuses.map((status) => status.id)).toEqual(["bleeding", "poisoned"]);
   });
 
   it("contains the expected recovering harmful statuses", () => {
@@ -67,7 +62,12 @@ describe("status catalogue", () => {
   it("contains the expected persistent statuses", () => {
     const statuses = STATUS_CATALOGUE.filter((status) => status.duration.kind === "persistent");
 
-    expect(statuses.map((status) => status.id)).toEqual(["parched", "hungry"]);
+    expect(statuses.map((status) => status.id)).toEqual([
+      "thirsty",
+      "dehydrated",
+      "hungry",
+      "starving",
+    ]);
   });
 
   it("contains the expected beneficial statuses", () => {

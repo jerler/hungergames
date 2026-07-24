@@ -11,6 +11,16 @@ import { getItemDefinition } from "~/game/items/item-catalogue";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import { getRoundSequence } from "~/game/engine/rounds";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
+import type { SurvivalNeed } from "~/game/survival/survival-schema";
+import type { StatusEffectId } from "~/game/statuses/status-schema";
+
+import {
+  getSurvivalNeedProgression,
+  getSurvivalNeedStage,
+  isSurvivalNeedFatal,
+} from "~/game/survival/survival-thresholds";
+
+const SURVIVAL_NEEDS = ["water", "food"] as const satisfies readonly SurvivalNeed[];
 
 const RESOLVED_EVENT_KINDS = new Set<ResolvedEventKind>([
   "primary",
@@ -52,7 +62,131 @@ function assertNonNegativeInteger(value: number, label: string): void {
   assert(Number.isInteger(value) && value >= 0, `${label} must be a non-negative integer.`);
 }
 
-function assertTributeSurvivalState(tribute: GameTribute): void {
+function getRoundsWithoutNeed(tribute: GameTribute, need: SurvivalNeed): number {
+  const progression = getSurvivalNeedProgression(need);
+
+  return tribute.survival[progression.counterKey];
+}
+
+export function assertTributeSurvivalNeedInvariants(
+  tribute: GameTribute,
+  allowPendingFatality = false,
+): void {
+  /*
+   * Need stages are derived active state.
+   *
+   * Dead tributes no longer advance or synchronize their
+   * survival needs, so their counters and statuses remain
+   * frozen at the point of death. We still validate their
+   * counters as non-negative integers elsewhere, but only
+   * living tributes must match the current derived stage.
+   */
+  if (!tribute.isAlive) {
+    return;
+  }
+
+  for (const need of SURVIVAL_NEEDS) {
+    const progression = getSurvivalNeedProgression(need);
+
+    const roundsWithoutNeed = getRoundsWithoutNeed(tribute, need);
+
+    const expectedStage = getSurvivalNeedStage(need, roundsWithoutNeed);
+
+    const needStatusIds: ReadonlySet<StatusEffectId> = new Set(
+      progression.stages.map((stage) => stage.statusId),
+    );
+
+    const activeNeedStatuses = tribute.statuses.filter((status) =>
+      needStatusIds.has(status.definitionId),
+    );
+
+    if (!expectedStage) {
+      assert(
+        activeNeedStatuses.length === 0,
+        `tribute "${tribute.id}" has a ${need} ` + "status below its first deprivation threshold.",
+      );
+    } else {
+      assert(
+        activeNeedStatuses.length === 1,
+        `tribute "${tribute.id}" must have exactly one active ${need} stage.`,
+      );
+
+      assert(
+        activeNeedStatuses[0]?.definitionId === expectedStage.statusId,
+
+        `tribute "${tribute.id}" has ${need} status ` +
+          `"${activeNeedStatuses[0]?.definitionId ?? "none"}" ` +
+          `but counter ${roundsWithoutNeed} requires ` +
+          `"${expectedStage.statusId}".`,
+      );
+    }
+
+    if (tribute.isAlive && !allowPendingFatality) {
+      assert(
+        !isSurvivalNeedFatal(need, roundsWithoutNeed),
+
+        `living tribute "${tribute.id}" remains beyond the fatal ${need} threshold.`,
+      );
+    }
+  }
+}
+
+export function assertNeedResolutionEventInvariants(event: ResolvedEvent): void {
+  if (event.kind !== "need-resolution") {
+    return;
+  }
+
+  const eliminations = event.changes.filter((change) => change.type === "eliminate-tribute");
+
+  assert(
+    eliminations.length === 1,
+    `need-resolution event "${event.id}" must eliminate exactly one tribute.`,
+  );
+
+  const elimination = eliminations[0];
+
+  assert(
+    elimination !== undefined,
+    `need-resolution event "${event.id}" is missing its elimination.`,
+  );
+
+  assert(
+    elimination.killerTributeIds.length === 0,
+    `need-resolution event "${event.id}" cannot have a killer.`,
+  );
+
+  assert(
+    event.participantTributeIds.includes(elimination.tributeId),
+    `need-resolution event "${event.id}" does not include its victim as a participant.`,
+  );
+
+  assert(
+    !event.changes.some((change) => change.type === "transfer-item"),
+    `need-resolution event "${event.id}" cannot create death loot.`,
+  );
+
+  assert(
+    !event.changes.some(
+      (change) =>
+        change.type === "increment-statistic" &&
+        (change.statistic === "kills" || change.statistic === "attemptedKills"),
+    ),
+    `need-resolution event "${event.id}" cannot award kill statistics.`,
+  );
+
+  const validNeedFatality =
+    (event.definitionId === "need-fatality:dehydration" &&
+      elimination.causeId === "survival-need:water") ||
+    (event.definitionId === "need-fatality:starvation" &&
+      elimination.causeId === "survival-need:food");
+
+  assert(
+    validNeedFatality,
+    `need-resolution event "${event.id}" has mismatched need fatality metadata.`,
+  );
+}
+
+function assertTributeSurvivalState(tribute: GameTribute, allowPendingFatality: boolean): void {
   const survival = tribute.survival;
 
   assert(survival, `tribute "${tribute.id}" is missing survival state.`);
@@ -66,6 +200,8 @@ function assertTributeSurvivalState(tribute: GameTribute): void {
     survival.roundsWithoutWater,
     `tribute "${tribute.id}" rounds without water`,
   );
+
+  assertTributeSurvivalNeedInvariants(tribute, allowPendingFatality);
 
   const rest = survival.lastNightRest;
 
@@ -351,7 +487,7 @@ export function assertGameStateInvariants(state: GameState): void {
       `tribute "${tribute.id}" has inconsistent life and death state.`,
     );
 
-    assertTributeSurvivalState(tribute);
+    assertTributeSurvivalState(tribute, state.phase === "round-events");
 
     assertUniqueValues(
       tribute.statuses.map((status) => status.id),
@@ -749,6 +885,8 @@ export function assertGameStateInvariants(state: GameState): void {
       RESOLVED_EVENT_KINDS.has(event.kind),
       `event "${event.id}" has invalid kind "${String(event.kind)}".`,
     );
+
+    assertNeedResolutionEventInvariants(event);
 
     assertPreparationEvent(event, tributeIds);
 

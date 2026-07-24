@@ -155,7 +155,7 @@ describe("RoundEventFeed", () => {
 
         affectedNeed: "water",
 
-        affectedStatusIds: ["parched"],
+        affectedStatusIds: ["thirsty"],
       },
     };
 
@@ -181,7 +181,7 @@ describe("RoundEventFeed", () => {
 
     expect(screen.getByText("Need: Hydration")).toBeInTheDocument();
 
-    expect(screen.getByText("Statuses: Parched")).toBeInTheDocument();
+    expect(screen.getByText("Statuses: Thirsty")).toBeInTheDocument();
 
     expect(screen.getByText("1 of 2 arena events revealed")).toBeInTheDocument();
   });

@@ -53,8 +53,8 @@ export const STATUS_CATALOGUE = [
   },
 
   {
-    id: "parched",
-    label: "Parched",
+    id: "thirsty",
+    label: "Thirsty",
     description:
       "Thirst reduces the tribute's concentration, endurance, and ability to gather resources.",
 
@@ -80,18 +80,15 @@ export const STATUS_CATALOGUE = [
     id: "dehydrated",
     label: "Dehydrated",
     description:
-      "Severe dehydration rapidly reduces concentration and endurance and will become fatal if untreated.",
+      "Severe dehydration rapidly reduces concentration and endurance and can become fatal without water.",
 
     kind: "harmful",
 
     duration: {
-      kind: "timed",
-      defaultRounds: 3,
-      expiration: "fatal",
+      kind: "persistent",
     },
 
-    fatalCauseLabel: "Dehydration",
-    fatalSummary: "succumbs to severe dehydration.",
+    removalDescription: "Remains until the tribute drinks enough water to recover.",
 
     maxSeverity: 3,
 
@@ -102,7 +99,6 @@ export const STATUS_CATALOGUE = [
       foragingPerSeverity: -0.35,
     },
   },
-
   {
     id: "hungry",
     label: "Hungry",
@@ -130,19 +126,15 @@ export const STATUS_CATALOGUE = [
   {
     id: "starving",
     label: "Starving",
-    description:
-      "Prolonged hunger severely weakens the tribute and will become fatal without food.",
+    description: "Prolonged hunger severely weakens the tribute and can become fatal without food.",
 
     kind: "harmful",
 
     duration: {
-      kind: "timed",
-      defaultRounds: 3,
-      expiration: "fatal",
+      kind: "persistent",
     },
 
-    fatalCauseLabel: "Starvation",
-    fatalSummary: "succumbs to starvation.",
+    removalDescription: "Remains until the tribute eats enough food to recover.",
 
     maxSeverity: 3,
 

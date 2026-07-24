@@ -1,7 +1,7 @@
 export type StatusEffectId =
   | "injured"
   | "bleeding"
-  | "parched"
+  | "thirsty"
   | "dehydrated"
   | "hungry"
   | "starving"

@@ -1,9 +1,18 @@
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
+import type { SurvivalNeed } from "~/game/survival/survival-schema";
 
 export interface SurvivedEffect {
   type: "survived";
   roleId: string;
+}
+
+export interface IncreaseSurvivalDeprivationEffect {
+  type: "increase-survival-deprivation";
+
+  roleId: string;
+  need: SurvivalNeed;
+  rounds: number;
 }
 
 export interface ApplyStatusEffect {
@@ -66,6 +75,7 @@ export type RequiredItemEffect =
 
 export type EventEffect =
   | SurvivedEffect
+  | IncreaseSurvivalDeprivationEffect
   | ApplyStatusEffect
   | AcquireNaturalResourceEffect
   | RequiredItemEffect

@@ -70,6 +70,7 @@ export type {
 
 export { applyStatus } from "./effects/status-effects";
 export { survived } from "./effects/statistic-effects";
+export { increaseSurvivalDeprivation } from "./effects/survival-effects";
 
 export { eliminate, kill } from "./effects/fatal-effects";
 

@@ -48,15 +48,6 @@ const SIMPLE_STATUS_EVENT_CASES = [
     severity: 1,
   },
   {
-    eventId: "contaminated-water",
-    tags: ["hazard", "status", "environment"],
-    periods: ["day"],
-    weight: 5,
-    text: "drinks contaminated water and becomes dehydrated.",
-    statusId: "dehydrated",
-    severity: 2,
-  },
-  {
     eventId: "cold-rain",
     tags: ["hazard", "status", "environment"],
     periods: ["night"],
@@ -643,5 +634,45 @@ describe("environmental events", () => {
         expect(role.targeting, `${definition.id}:${role.id}`).not.toBe("hostile");
       }
     }
+  });
+
+  it("contaminated-water advances water deprivation and applies the matching stage", () => {
+    const game = createTestGame();
+
+    const tribute = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
+
+    const definition = requireEvent("contaminated-water");
+
+    const resolution = resolveEvent(
+      definition,
+      game,
+      {
+        tribute: [tribute],
+      },
+      [0.5],
+    );
+
+    expect(resolution.text).toBe("Hazel drinks contaminated water and becomes dehydrated.");
+
+    expect(resolution.changes).toEqual([
+      {
+        type: "increment-survival-need-counter",
+
+        tributeId: tribute.id,
+        need: "water",
+        amount: 2,
+      },
+
+      expect.objectContaining({
+        type: "apply-status",
+        tributeId: tribute.id,
+
+        status: expect.objectContaining({
+          definitionId: "dehydrated",
+
+          remainingRounds: null,
+        }),
+      }),
+    ]);
   });
 });

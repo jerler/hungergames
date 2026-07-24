@@ -28,7 +28,7 @@ const DAY_THREE = {
 
 function withStatus(
   tribute: GameTribute,
-  statusId: "bleeding" | "injured" | "parched" | "dehydrated" | "hungry" | "starving",
+  statusId: "bleeding" | "injured" | "thirsty" | "dehydrated" | "hungry" | "starving",
   durationRounds?: number,
 ): GameTribute {
   return {
@@ -125,7 +125,7 @@ describe("prepareRound", () => {
       },
     };
 
-    tribute = withStatus(tribute, "dehydrated", 2);
+    tribute = withStatus(tribute, "dehydrated");
 
     tribute = withStatus(tribute, "hungry");
 
@@ -217,7 +217,7 @@ describe("prepareRound", () => {
       districtPosition: 1,
     };
 
-    first = withStatus(first, "parched");
+    first = withStatus(first, "thirsty");
 
     first = withAuthoringTestItem(first, "water");
 
@@ -231,7 +231,7 @@ describe("prepareRound", () => {
       districtPosition: 2,
     };
 
-    second = withStatus(second, "parched");
+    second = withStatus(second, "thirsty");
 
     const game: GameState = {
       ...createAuthoringTestGame([first, second]),

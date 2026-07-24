@@ -13,11 +13,15 @@ import { getItemDefinition } from "~/game/items/item-catalogue";
 import { createInventoryItemInstance } from "~/game/items/inventory-engine";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import type { GameChange } from "~/game/types/game-state";
-import type { StatusDefinition } from "~/game/statuses/status-schema";
+import type { StatusDefinition, StatusEffectId } from "~/game/statuses/status-schema";
 import type { EventEffect, RequiredItemEffect } from "./effect-schema";
 import { compileItemUseEffects } from "~/game/items/item-effect-engine";
 import { compileItemRestChanges } from "~/game/items/item-rest-engine";
 import type { GameTribute } from "~/game/types/game-state";
+import {
+  getSurvivalNeedProgression,
+  getSurvivalNeedStage,
+} from "~/game/survival/survival-thresholds";
 
 function isRequiredItemEffect(effect: EventEffect): effect is RequiredItemEffect {
   return (
@@ -162,6 +166,63 @@ function validateNaturalResourceEffect(
   }
 }
 
+function compileSurvivalDeprivationEffect(
+  effect: Extract<
+    EventEffect,
+    {
+      type: "increase-survival-deprivation";
+    }
+  >,
+  context: EventResolutionContext,
+): GameChange[] {
+  const tribute = requireSingleParticipant(context.participantsByRole, effect.roleId);
+
+  const progression = getSurvivalNeedProgression(effect.need);
+
+  const currentRounds = tribute.survival[progression.counterKey];
+
+  const projectedRounds = currentRounds + effect.rounds;
+
+  const expectedStage = getSurvivalNeedStage(effect.need, projectedRounds);
+
+  const needStatusIds: ReadonlySet<StatusEffectId> = new Set(
+    progression.stages.map((stage) => stage.statusId),
+  );
+
+  const changes: GameChange[] = tribute.statuses.flatMap((status) =>
+    needStatusIds.has(status.definitionId)
+      ? [
+          {
+            type: "remove-status",
+            tributeId: tribute.id,
+            statusId: status.id,
+          } satisfies GameChange,
+        ]
+      : [],
+  );
+
+  changes.push({
+    type: "increment-survival-need-counter",
+    tributeId: tribute.id,
+    need: effect.need,
+    amount: effect.rounds,
+  });
+
+  if (expectedStage) {
+    changes.push(
+      createStatusChange(
+        context.eventId,
+        tribute,
+        expectedStage.statusId,
+        expectedStage.severity,
+        context.round,
+      ),
+    );
+  }
+
+  return changes;
+}
+
 export function validateEffects(
   eventId: string,
   effects: readonly EventEffect[],
@@ -178,6 +239,16 @@ export function validateEffects(
         `Event "${eventId}": effect "${effect.type}" ` +
           `references unknown role "${effect.roleId}".`,
       );
+    }
+
+    if (effect.type === "increase-survival-deprivation") {
+      if (!Number.isInteger(effect.rounds) || effect.rounds <= 0) {
+        throw new Error(
+          `Event "${eventId}": effect ` +
+            '"increase-survival-deprivation" ' +
+            "requires a positive integer round count.",
+        );
+      }
     }
 
     if (isRequiredItemEffect(effect) && !rolesWithRequiredItems.has(effect.roleId)) {
@@ -275,6 +346,9 @@ export function compileEffects(
           ),
         ];
       }
+
+      case "increase-survival-deprivation":
+        return compileSurvivalDeprivationEffect(effect, context);
 
       case "acquire-natural-resource": {
         const tribute = requireSingleParticipant(context.participantsByRole, effect.roleId);

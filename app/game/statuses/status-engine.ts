@@ -1,9 +1,9 @@
-import { applyResolvedEvent } from "~/game/engine/apply-game-change";
+import { applyAutomaticResolutionEvents } from "~/game/engine/apply-automatic-resolution-events";
+import { chooseSimultaneousFatalitySurvivor } from "~/game/engine/simultaneous-fatality";
 import { createFatalStatusResolutionEvent } from "~/game/events/catalogue/statuses/resolution-events";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import type { StatusEffectId, StatusModifiers } from "~/game/statuses/status-schema";
 import type { GameState, GameTribute, RoundReference, StatusEffect } from "~/game/types/game-state";
-import { getEffectiveLuck } from "~/game/engine/effective-stats";
 
 export type StatusScoreKey = "combat" | "survival" | "awareness" | "foraging";
 
@@ -94,30 +94,6 @@ function removeExpiredRecoveringStatuses(tribute: GameTribute): GameTribute {
   };
 }
 
-function chooseSimultaneousFatalitySurvivor(
-  fatalCandidates: readonly GameTribute[],
-  livingTributes: readonly GameTribute[],
-): string | null {
-  if (fatalCandidates.length === 0 || fatalCandidates.length !== livingTributes.length) {
-    return null;
-  }
-
-  /*
-   * If every remaining tribute would
-   * die at the same instant, the
-   * highest-Luck tribute narrowly
-   * survives so the Games still have
-   * one victor.
-   */
-  return (
-    [...fatalCandidates].sort(
-      (firstTribute, secondTribute) =>
-        getEffectiveLuck(secondTribute) - getEffectiveLuck(firstTribute) ||
-        firstTribute.id.localeCompare(secondTribute.id),
-    )[0]?.id ?? null
-  );
-}
-
 export function advanceStatusDurations(state: GameState): GameState {
   const completedRound = state.currentRound;
 
@@ -164,7 +140,7 @@ export function advanceStatusDurations(state: GameState): GameState {
 
   const sparedTributeId = chooseSimultaneousFatalitySurvivor(fatalCandidates, livingTributes);
 
-  let nextState: GameState = {
+  const nextState: GameState = {
     ...state,
 
     tributes: tributesWithResolvedRecoveries.map((tribute) => {
@@ -194,25 +170,5 @@ export function advanceStatusDurations(state: GameState): GameState {
       return createFatalStatusResolutionEvent(tribute, fatalStatus, completedRound);
     });
 
-  for (const fatalEvent of fatalEvents) {
-    nextState = applyResolvedEvent(nextState, fatalEvent);
-  }
-
-  return {
-    ...nextState,
-
-    /*
-     * Fatal status deaths happen
-     * automatically at the end of the
-     * round, so they are immediately
-     * revealed in the event feed.
-     *
-     * Recovering effects simply
-     * disappear and do not create a
-     * separate event.
-     */
-    roundEvents: [...nextState.roundEvents, ...fatalEvents],
-
-    revealedEventCount: nextState.revealedEventCount + fatalEvents.length,
-  };
+  return applyAutomaticResolutionEvents(nextState, fatalEvents);
 }

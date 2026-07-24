@@ -79,32 +79,43 @@ function compileStatusRemovalEffects(
   }));
 }
 
-export function compileItemUseEffects({
+export function compileItemUseEffects(options: CompileItemUseEffectsOptions): GameChange[] {
+  const definition = getItemDefinition(options.item.definitionId);
+
+  if (!definition.useEffects || definition.useEffects.length === 0) {
+    throw new Error(`Item "${definition.id}" does not define active use effects.`);
+  }
+
+  requireUsableItem(options.actingTribute, options.item);
+
+  return compileItemUseEffectChanges({
+    ...options,
+    effects: definition.useEffects,
+  });
+}
+
+export function compileItemUseEffectChanges({
   eventId,
   round,
   actingTribute,
   owner,
   item,
   reason = eventId,
-}: CompileItemUseEffectsOptions): GameChange[] {
-  const definition = getItemDefinition(item.definitionId);
+  effects,
+}: CompileExplicitItemUseEffectsOptions): GameChange[] {
+  const changes = compileStatusRemovalEffects(actingTribute, effects);
 
-  if (!definition.useEffects || definition.useEffects.length === 0) {
-    throw new Error(`Item "${definition.id}" does not define active use effects.`);
-  }
-
-  requireUsableItem(actingTribute, item);
-
-  const changes = compileStatusRemovalEffects(actingTribute, definition.useEffects);
-
-  for (const effect of definition.useEffects) {
+  for (const effect of effects) {
     switch (effect.type) {
       case "satisfy-need":
         changes.push({
           type: "satisfy-survival-need",
+
           tributeId: actingTribute.id,
+
           need: toSurvivalNeed(effect.need),
         });
+
         break;
 
       case "grant-status":
@@ -118,14 +129,11 @@ export function compileItemUseEffects({
             effect.durationRounds,
           ),
         );
+
         break;
 
       case "remove-status":
       case "remove-medical-statuses":
-        /*
-         * Removal effects were compiled together
-         * above to prevent duplicate changes.
-         */
         break;
     }
   }
@@ -133,4 +141,8 @@ export function compileItemUseEffects({
   changes.push(createItemUseChange(owner, item, reason));
 
   return changes;
+}
+
+export interface CompileExplicitItemUseEffectsOptions extends CompileItemUseEffectsOptions {
+  effects: readonly ItemUseEffect[];
 }

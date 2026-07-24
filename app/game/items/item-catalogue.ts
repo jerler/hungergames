@@ -17,7 +17,7 @@ export const ITEM_CATALOGUE = [
     tags: ["consumable", "water"],
     maxUses: 1,
 
-    useEffects: [itemSatisfiesNeed("hydration"), itemRemovesStatuses("parched", "dehydrated")],
+    useEffects: [itemSatisfiesNeed("hydration"), itemRemovesStatuses("thirsty", "dehydrated")],
   },
   {
     id: "food",

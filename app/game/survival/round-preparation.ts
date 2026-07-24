@@ -45,7 +45,7 @@ interface AutomaticItemPreparationAction {
   getAffectedStatusIds: (tribute: GameTribute) => StatusEffectId[];
 }
 
-const HYDRATION_STATUS_IDS = ["parched", "dehydrated"] as const satisfies readonly StatusEffectId[];
+const HYDRATION_STATUS_IDS = ["thirsty", "dehydrated"] as const satisfies readonly StatusEffectId[];
 
 const FOOD_STATUS_IDS = ["hungry", "starving"] as const satisfies readonly StatusEffectId[];
 

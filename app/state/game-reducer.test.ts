@@ -479,7 +479,7 @@ describe("gameReducer", () => {
                 createStatusEffectInstance(
                   "preparation-thirst",
                   candidate.id,
-                  "parched",
+                  "thirsty",
                   1,
                   DAY_ONE,
                 ),

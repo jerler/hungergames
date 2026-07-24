@@ -10,6 +10,7 @@ import { expireTrucesAfterRound } from "~/game/truces/truce-engine";
 import { createSoleVictoryOutcome } from "~/game/victory/victory-outcome";
 import { loadGameState } from "~/game/persistence/game-state-loader";
 import { prepareRound } from "~/game/survival/round-preparation";
+import { advanceSurvivalNeedsAfterRound } from "~/game/survival/survival-needs-engine";
 
 export type GameReducerState = GameState | null;
 
@@ -96,7 +97,9 @@ function completeRound(state: GameState, now: string): GameState {
 
   const stateWithAdvancedStatuses = advanceStatusDurations(state);
 
-  const stateAfterRoundProcessing = expireTrucesAfterRound(stateWithAdvancedStatuses);
+  const stateWithAdvancedNeeds = advanceSurvivalNeedsAfterRound(stateWithAdvancedStatuses);
+
+  const stateAfterRoundProcessing = expireTrucesAfterRound(stateWithAdvancedNeeds);
   const containedElimination = stateAfterRoundProcessing.roundEvents.some((event) =>
     event.changes.some((change) => change.type === "eliminate-tribute"),
   );

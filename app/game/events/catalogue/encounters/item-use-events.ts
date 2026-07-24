@@ -1,9 +1,8 @@
-import { getForagingScore, getVulnerabilityWeight } from "~/game/engine/stat-formulas";
+import { getVulnerabilityWeight } from "~/game/engine/stat-formulas";
 import {
   acquireNaturalResource,
   applyStatus,
   brains,
-  brawn,
   createItemStatEvent,
   result,
   survived,
@@ -12,45 +11,6 @@ import type { EventDefinition } from "~/game/events/event-schema";
 
 export const ITEM_USE_EVENTS = [
   /* Day Only */
-
-  createItemStatEvent("fishing-gear-enormous-fish", {
-    itemId: "fishing-gear",
-    check: brawn(3),
-    tags: ["tool", "item", "status", "resource"],
-    periods: ["day"],
-    weight: 3.5,
-    roleOptions: { getWeight: getForagingScore },
-
-    outcomes: {
-      criticalFailure: result({
-        text: ({ tribute }) =>
-          `${tribute.name} hooks an enormous fish and is dragged violently through the water before cutting the line.`,
-        effects: [applyStatus("tribute", "injured", 1), applyStatus("tribute", "exhausted", 2)],
-      }),
-
-      failure: result({
-        text: ({ tribute }) =>
-          `${tribute.name} battles an enormous fish for hours, only for it to escape at the last possible moment.`,
-        effects: [applyStatus("tribute", "exhausted", 1)],
-      }),
-
-      success: result({
-        text: ({ tribute }) =>
-          `${tribute.name} lands an enormous fish and prepares enough food to keep going.`,
-        effects: [acquireNaturalResource("tribute", "food"), survived("tribute")],
-      }),
-
-      exceptionalSuccess: result({
-        text: ({ tribute }) =>
-          `${tribute.name} lands a legendary arena fish and is briefly overwhelmed by ${tribute.pronouns.possessiveAdjective} own competence.`,
-        effects: [
-          acquireNaturalResource("tribute", "food"),
-          survived("tribute"),
-          applyStatus("tribute", "inspired", 2),
-        ],
-      }),
-    },
-  }),
 
   createItemStatEvent("axe-based-shelter-renovation", {
     itemId: "axe",
@@ -113,14 +73,14 @@ export const ITEM_USE_EVENTS = [
       success: result({
         text: ({ tribute }) =>
           `${tribute.name} uses a careful slingshot shot to knock edible fruit from a high branch.`,
-        effects: [acquireNaturalResource("tribute", "food"), survived("tribute")],
+        effects: [acquireNaturalResource("tribute", "wild-fruit-and-berries"), survived("tribute")],
       }),
 
       exceptionalSuccess: result({
         text: ({ tribute }) =>
           `${tribute.name} performs an impossible-looking trick shot, collects the fallen food, and feels extremely pleased with ${tribute.pronouns.reflexive}.`,
         effects: [
-          acquireNaturalResource("tribute", "food"),
+          acquireNaturalResource("tribute", "wild-fruit-and-berries"),
           applyStatus("tribute", "inspired", 1),
           survived("tribute"),
         ],
@@ -131,45 +91,6 @@ export const ITEM_USE_EVENTS = [
   /* Night Only */
 
   /* Day and Night */
-
-  createItemStatEvent("trap-kit-instructions-missing", {
-    itemId: "trap-kit",
-    check: brains(3),
-    tags: ["tool", "item", "status", "resource"],
-    periods: ["day", "night"],
-    weight: 3.5,
-    roleOptions: { getWeight: getForagingScore },
-
-    outcomes: {
-      criticalFailure: result({
-        text: ({ tribute }) =>
-          `${tribute.name} tries to assemble a trap kit without instructions and immediately catches ${tribute.pronouns.reflexive}.`,
-        effects: [applyStatus("tribute", "injured", 1)],
-      }),
-
-      failure: result({
-        text: ({ tribute }) =>
-          `${tribute.name} spends hours constructing a trap that repeatedly springs before anything approaches it.`,
-        effects: [applyStatus("tribute", "exhausted", 1)],
-      }),
-
-      success: result({
-        text: ({ tribute }) =>
-          `${tribute.name} successfully assembles a trap and catches enough game for a meal.`,
-        effects: [acquireNaturalResource("tribute", "food"), survived("tribute")],
-      }),
-
-      exceptionalSuccess: result({
-        text: ({ tribute }) =>
-          `${tribute.name} constructs an ingenious trap, secures food, and feels considerably more capable than before.`,
-        effects: [
-          acquireNaturalResource("tribute", "food"),
-          survived("tribute"),
-          applyStatus("tribute", "inspired", 1),
-        ],
-      }),
-    },
-  }),
 
   createItemStatEvent("shield-used-for-everything-else", {
     itemId: "shield",
@@ -202,7 +123,7 @@ export const ITEM_USE_EVENTS = [
         text: ({ tribute }) =>
           `${tribute.name} uses ${tribute.pronouns.possessiveAdjective} shield as a sled and glides into a sheltered hollow containing edible plants and a clean spring.`,
         effects: [
-          acquireNaturalResource("tribute", "food"),
+          acquireNaturalResource("tribute", "wild-fruit-and-berries"),
           acquireNaturalResource("tribute", "water"),
           survived("tribute"),
         ],

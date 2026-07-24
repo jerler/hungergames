@@ -6,6 +6,8 @@ import { GAMEMAKER_EVENTS } from "./gamemaker-events";
 import { ITEM_USE_EVENTS } from "./item-use-events";
 import { SURVIVAL_EVENTS } from "./survival-events";
 import { THEFT_EVENTS } from "./theft-events";
+import { HUNTING_EVENTS } from "./hunting-events";
+import { FORAGING_EVENTS } from "./foraging-events";
 
 export { THEFT_EVENTS };
 
@@ -16,4 +18,6 @@ export const ENCOUNTER_EVENTS = [
   ...SURVIVAL_EVENTS,
   ...ITEM_USE_EVENTS,
   ...GAMEMAKER_EVENTS,
+  ...HUNTING_EVENTS,
+  ...FORAGING_EVENTS,
 ] satisfies readonly EventDefinition[];

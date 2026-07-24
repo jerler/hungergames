@@ -37,7 +37,7 @@ const NIGHT_ONE = {
 
 const INVENTORY_DEFINITIONS = [
   "water",
-  "food",
+  "wild-fruit-and-berries",
   "med-kit",
   "blanket",
   "matches",

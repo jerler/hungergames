@@ -3,7 +3,30 @@ import { describe, expect, it } from "vitest";
 import { ITEM_CATALOGUE, getItemDefinition } from "./item-catalogue";
 import type { ItemDefinitionId, ItemOrigin } from "./item-schema";
 
-const NATURAL_RESOURCE_ITEM_IDS = ["water", "food"] satisfies readonly ItemDefinitionId[];
+const SAFE_NATURAL_FOOD_ITEM_IDS = [
+  "wild-fruit-and-berries",
+  "mushrooms",
+  "eggs",
+  "rabbit",
+  "chicken",
+  "fish",
+] satisfies readonly ItemDefinitionId[];
+
+const HARMFUL_FORAGE_ITEM_IDS = [
+  "hallucinogenic-berries",
+  "poison-berries",
+  "hallucinogenic-mushrooms",
+  "poison-mushrooms",
+] satisfies readonly ItemDefinitionId[];
+
+const NATURAL_RESOURCE_ITEM_IDS = [
+  "water",
+
+  ...SAFE_NATURAL_FOOD_ITEM_IDS,
+  ...HARMFUL_FORAGE_ITEM_IDS,
+
+  "kindling",
+] satisfies readonly ItemDefinitionId[];
 
 const MANUFACTURED_ITEM_IDS = [
   // Manufactured food and drinks
@@ -32,6 +55,7 @@ const MANUFACTURED_ITEM_IDS = [
   "camouflage-net",
   "fishing-gear",
   "trap-kit",
+  "foraging-guidebook",
 
   // Equipment
   "shield",
@@ -104,6 +128,10 @@ describe("item catalogue treatments", () => {
     expect(new Set(itemIds).size).toBe(itemIds.length);
   });
 
+  it("does not expose the retired generic food item", () => {
+    expect(ITEM_CATALOGUE.map(({ id }) => id)).not.toContain("food");
+  });
+
   it("gives each specialized item its intended bonuses", () => {
     expect(getItemDefinition("shield")).toMatchObject({
       combatBonus: 0.45,
@@ -154,6 +182,107 @@ describe("item catalogue treatments", () => {
         }),
       ]),
     );
+  });
+
+  it("presents natural water as fresh water", () => {
+    expect(getItemDefinition("water")).toMatchObject({
+      label: "Fresh water",
+
+      origin: "natural-resource",
+
+      tags: ["consumable", "water"],
+    });
+  });
+
+  it.each(SAFE_NATURAL_FOOD_ITEM_IDS)("%s is a single-use natural food", (itemId) => {
+    const definition = getItemDefinition(itemId);
+
+    expect(definition).toMatchObject({
+      origin: "natural-resource",
+
+      maxUses: 1,
+    });
+
+    expect(definition.tags).toEqual(expect.arrayContaining(["consumable", "food"]));
+
+    expect(definition.useEffects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "satisfy-need",
+
+          need: "food",
+        }),
+      ]),
+    );
+  });
+
+  it.each([
+    {
+      itemId: "hallucinogenic-berries",
+
+      statusId: "disoriented",
+    },
+    {
+      itemId: "poison-berries",
+
+      statusId: "poisoned",
+    },
+    {
+      itemId: "hallucinogenic-mushrooms",
+
+      statusId: "disoriented",
+    },
+    {
+      itemId: "poison-mushrooms",
+
+      statusId: "poisoned",
+    },
+  ] as const)("$itemId is harmful forage rather than automatic food", ({ itemId, statusId }) => {
+    const definition = getItemDefinition(itemId);
+
+    expect(definition.origin).toBe("natural-resource");
+
+    expect(definition.tags).toContain("consumable");
+
+    expect(definition.tags).not.toContain("food");
+
+    expect(definition.useEffects).toContainEqual({
+      type: "grant-status",
+
+      statusId,
+
+      severity: 1,
+    });
+  });
+
+  it("defines kindling as a limited natural rest resource", () => {
+    expect(getItemDefinition("kindling")).toMatchObject({
+      origin: "natural-resource",
+
+      maxUses: 1,
+
+      rest: {
+        quality: "sheltered",
+
+        check: {
+          stat: "brains-or-luck",
+
+          difficulty: 3,
+        },
+      },
+    });
+  });
+
+  it("defines the foraging guidebook as a reusable manufactured tool", () => {
+    expect(getItemDefinition("foraging-guidebook")).toMatchObject({
+      origin: "manufactured",
+
+      tags: ["tool"],
+
+      foragingBonus: 0.5,
+    });
+
+    expect(getItemDefinition("foraging-guidebook").maxUses).toBeUndefined();
   });
 
   it("defines reusable and limited rest capabilities", () => {

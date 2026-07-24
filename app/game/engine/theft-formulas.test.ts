@@ -319,7 +319,7 @@ describe("theft weighting formulas", () => {
         luck: 2,
       },
 
-      itemDefinitionIds: ["food"],
+      itemDefinitionIds: ["wild-fruit-and-berries"],
     });
 
     const strongTarget = createTestTribute({

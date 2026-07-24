@@ -4,7 +4,6 @@ import { createInitialGameState } from "~/game/engine/create-initial-game-state"
 import type { RandomSource } from "~/game/engine/random";
 import { selectEventParticipants } from "~/game/events/participant-selection";
 import type { EventDefinition } from "~/game/events/event-schema";
-import { SURVIVAL_EVENTS } from "~/game/events/catalogue/encounters/survival-events";
 import { STANDARD_FORMATION_EVENTS } from "~/game/events/catalogue/relationships/standard-formation-events";
 
 import {
@@ -13,6 +12,7 @@ import {
 } from "~/game/truces/truce-engine";
 import {
   getAverageDistrictAffinityWeight,
+  getCooperativeTruceWeight,
   getDistrictAffinityWeight,
 } from "~/game/truces/truce-selection";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
@@ -240,24 +240,69 @@ describe("truce selection", () => {
 
     const outsider = game.tributes[2];
 
-    const truce = createTruceInstance("existing-truce", [firstTribute.id, partner.id], DAY_ONE, {
-      day: 1,
-      period: "night",
-    });
+    const truce = createTruceInstance(
+      "existing-truce",
+
+      [firstTribute.id, partner.id],
+
+      DAY_ONE,
+
+      {
+        day: 1,
+        period: "night",
+      },
+    );
 
     const state = {
       ...game,
       truces: [truce],
     };
 
-    const picnic = SURVIVAL_EVENTS.find((event) => event.id === "unfamiliar-foraging-ground");
+    const cooperativeEvent: EventDefinition = {
+      id: "cooperative-selection-test",
 
-    if (!picnic) {
-      throw new Error("Missing unfamiliar-foraging-ground event.");
-    }
+      category: "survival",
+
+      tags: ["survival", "truce"],
+
+      periods: ["day"],
+
+      baseWeight: 1,
+
+      roles: [
+        {
+          id: "tributes",
+
+          count: 2,
+
+          getWeight: (
+            tribute,
+            {
+              state: selectionState,
+
+              participantsByRole,
+            },
+          ) =>
+            getCooperativeTruceWeight(
+              selectionState,
+
+              tribute,
+
+              participantsByRole.tributes ?? [],
+            ),
+        },
+      ],
+
+      resolve: () => ({
+        text: "Test cooperative event.",
+
+        changes: [],
+      }),
+    };
 
     const selection = selectEventParticipants(
-      picnic,
+      cooperativeEvent,
+
       {
         state,
         round: DAY_ONE,

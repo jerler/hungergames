@@ -10,7 +10,7 @@ import { compileItemUseEffectChanges } from "./item-effect-engine";
 
 describe("dual-purpose item effects", () => {
   it("satisfies both needs with one physical consumption", () => {
-    const tribute = withAuthoringTestItem(createAuthoringTestTribute(), "food");
+    const tribute = withAuthoringTestItem(createAuthoringTestTribute(), "soup");
 
     const item = tribute.inventory[0];
 

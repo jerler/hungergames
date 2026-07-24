@@ -89,6 +89,10 @@ export const CORNUCOPIA_PACK_ITEM_POOL = [
     rarity: "uncommon",
   },
   {
+    itemId: "foraging-guidebook",
+    rarity: "uncommon",
+  },
+  {
     itemId: "camouflage-net",
     rarity: "uncommon",
   },

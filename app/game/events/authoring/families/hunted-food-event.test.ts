@@ -1,0 +1,297 @@
+import { describe, expect, it } from "vitest";
+
+import { getForagingScore } from "~/game/engine/stat-formulas";
+
+import {
+  createAuthoringTestGame,
+  createAuthoringTestTribute,
+  withAuthoringTestItem,
+} from "~/game/events/authoring/testing/authoring-test-fixtures";
+
+import {
+  getAcquiredItemIds,
+  getAppliedStatuses,
+  hasSurvivalCredit,
+  selectAndResolveEvent,
+} from "~/game/events/testing/event-test-helpers";
+
+import { createHuntedFoodEvent, type HuntedFoodEventText } from "./hunted-food-event";
+
+const TEXT = {
+  criticalFailure: "Critical failure.",
+
+  failure: "Failure.",
+
+  success: "Success.",
+
+  exceptionalSuccess: "Exceptional success.",
+} satisfies HuntedFoodEventText;
+
+describe("createHuntedFoodEvent", () => {
+  it("supplies hunting defaults", () => {
+    const definition = createHuntedFoodEvent("hunting-defaults", {
+      foodId: "eggs",
+
+      difficulty: 3,
+
+      text: TEXT,
+    });
+
+    expect(definition).toMatchObject({
+      id: "hunting-defaults",
+
+      category: "survival",
+
+      tags: ["survival", "item", "resource", "status"],
+
+      periods: ["day"],
+
+      baseWeight: 4,
+
+      roles: [
+        {
+          id: "tribute",
+
+          count: 1,
+        },
+      ],
+    });
+
+    expect(definition.roles[0]?.getWeight).toBe(getForagingScore);
+
+    expect(definition.roles[0]?.requiredItemDefinitionIds).toBeUndefined();
+  });
+
+  it("compiles configured equipment as accessible and required", () => {
+    const definition = createHuntedFoodEvent("equipped-hunt", {
+      foodId: "rabbit",
+
+      difficulty: 3,
+
+      requiredEquipmentId: "trap-kit",
+
+      text: TEXT,
+    });
+
+    expect(definition.roles[0]).toMatchObject({
+      id: "tribute",
+
+      requiredItemDefinitionIds: ["trap-kit"],
+
+      requiredItemRequireUsable: true,
+
+      itemAccess: "accessible",
+    });
+  });
+
+  it("acquires natural food and consumes limited equipment", () => {
+    const tribute = withAuthoringTestItem(
+      createAuthoringTestTribute({
+        id: "rabbit-hunter",
+
+        stats: {
+          brains: 3,
+          brawn: 3,
+          luck: 3,
+        },
+      }),
+
+      "trap-kit",
+    );
+
+    const state = createAuthoringTestGame([tribute]);
+
+    const definition = createHuntedFoodEvent("limited-equipment-hunt", {
+      foodId: "rabbit",
+
+      difficulty: 3,
+
+      requiredEquipmentId: "trap-kit",
+
+      text: TEXT,
+    });
+
+    const { selection, resolution } = selectAndResolveEvent({
+      definition,
+      state,
+
+      livingTributes: [tribute],
+
+      randomValues: [0.6],
+    });
+
+    expect(selection.selectedItemInstanceIds).toEqual([tribute.inventory[0]?.id]);
+
+    expect(getAcquiredItemIds(resolution)).toEqual(["rabbit"]);
+
+    expect(resolution.changes).toContainEqual({
+      type: "consume-item",
+
+      tributeId: tribute.id,
+
+      itemInstanceId: tribute.inventory[0]?.id,
+
+      uses: 1,
+
+      reason: "limited-equipment-hunt",
+    });
+
+    expect(resolution.changes).toContainEqual(
+      expect.objectContaining({
+        type: "acquire-item",
+
+        acquisitionSource: "natural-foraging",
+
+        item: expect.objectContaining({
+          definitionId: "rabbit",
+        }),
+      }),
+    );
+
+    expect(hasSurvivalCredit(resolution, tribute.id)).toBe(true);
+  });
+
+  it("records reusable equipment without consuming it", () => {
+    const tribute = withAuthoringTestItem(
+      createAuthoringTestTribute({
+        id: "chicken-hunter",
+
+        stats: {
+          brains: 3,
+          brawn: 3,
+          luck: 3,
+        },
+      }),
+
+      "slingshot",
+    );
+
+    const state = createAuthoringTestGame([tribute]);
+
+    const definition = createHuntedFoodEvent("reusable-equipment-hunt", {
+      foodId: "chicken",
+
+      difficulty: 3,
+
+      requiredEquipmentId: "slingshot",
+
+      text: TEXT,
+    });
+
+    const { resolution } = selectAndResolveEvent({
+      definition,
+      state,
+
+      livingTributes: [tribute],
+
+      randomValues: [0.6],
+    });
+
+    expect(resolution.changes).toContainEqual({
+      type: "use-item",
+
+      tributeId: tribute.id,
+
+      itemInstanceId: tribute.inventory[0]?.id,
+
+      reason: "reusable-equipment-hunt",
+    });
+  });
+
+  it("applies critical injury and ordinary failure exhaustion", () => {
+    const tribute = createAuthoringTestTribute({
+      id: "egg-hunter",
+
+      stats: {
+        brains: 3,
+        brawn: 3,
+        luck: 3,
+      },
+    });
+
+    const state = createAuthoringTestGame([tribute]);
+
+    const definition = createHuntedFoodEvent("dangerous-nest", {
+      foodId: "eggs",
+
+      difficulty: 3,
+
+      text: TEXT,
+    });
+
+    const critical = selectAndResolveEvent({
+      definition,
+      state,
+
+      livingTributes: [tribute],
+
+      randomValues: [0],
+    }).resolution;
+
+    expect(getAppliedStatuses(critical)).toEqual([
+      expect.objectContaining({
+        definitionId: "injured",
+
+        severity: 2,
+      }),
+    ]);
+
+    const failure = selectAndResolveEvent({
+      definition,
+      state,
+
+      livingTributes: [tribute],
+
+      randomValues: [0.2],
+    }).resolution;
+
+    expect(getAppliedStatuses(failure)).toEqual([
+      expect.objectContaining({
+        definitionId: "exhausted",
+
+        severity: 1,
+      }),
+    ]);
+  });
+
+  it("applies well-fed on exceptional success", () => {
+    const tribute = createAuthoringTestTribute({
+      id: "exceptional-hunter",
+
+      stats: {
+        brains: 3,
+        brawn: 3,
+        luck: 3,
+      },
+    });
+
+    const state = createAuthoringTestGame([tribute]);
+
+    const definition = createHuntedFoodEvent("exceptional-hunt", {
+      foodId: "eggs",
+
+      difficulty: 3,
+
+      text: TEXT,
+    });
+
+    const { resolution } = selectAndResolveEvent({
+      definition,
+      state,
+
+      livingTributes: [tribute],
+
+      randomValues: [0.999],
+    });
+
+    expect(getAcquiredItemIds(resolution)).toEqual(["eggs"]);
+
+    expect(getAppliedStatuses(resolution)).toEqual([
+      expect.objectContaining({
+        definitionId: "well-fed",
+
+        severity: 1,
+      }),
+    ]);
+  });
+});

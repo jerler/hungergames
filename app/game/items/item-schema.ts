@@ -4,7 +4,23 @@ import type { TributeStats, TributeStatValue } from "~/game/types/tribute";
 export type ItemDefinitionId =
   // Natural resources
   | "water"
-  | "food"
+
+  // Safe natural food
+  | "wild-fruit-and-berries"
+  | "mushrooms"
+  | "eggs"
+  | "rabbit"
+  | "chicken"
+  | "fish"
+
+  // Harmful natural forage
+  | "hallucinogenic-berries"
+  | "poison-berries"
+  | "hallucinogenic-mushrooms"
+  | "poison-mushrooms"
+
+  // Natural utility
+  | "kindling"
 
   // Manufactured food and drinks
   | "soup"
@@ -29,6 +45,7 @@ export type ItemDefinitionId =
   | "matches"
   | "rope"
   | "map"
+  | "foraging-guidebook"
   | "trap-kit"
   | "camouflage-net"
   | "fishing-gear"

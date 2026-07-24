@@ -99,7 +99,7 @@ function selectAndResolve(
 describe("createNaturalResourceEvent", () => {
   it("supplies the natural-resource defaults", () => {
     const definition = createNaturalResourceEvent("natural-defaults", {
-      resources: ["food"],
+      resources: ["wild-fruit-and-berries"],
       text: ({ tribute }) => `${tribute.name} gathers food.`,
     });
 
@@ -130,7 +130,7 @@ describe("createNaturalResourceEvent", () => {
     const state = createAuthoringTestGame([tribute]);
 
     const definition = createNaturalResourceEvent("natural-effects", {
-      resources: ["food"],
+      resources: ["wild-fruit-and-berries"],
       text: ({ tribute: character }) => `${character.name} gathers food.`,
     });
 
@@ -150,7 +150,7 @@ describe("createNaturalResourceEvent", () => {
         acquisitionSource: "natural-foraging",
 
         item: expect.objectContaining({
-          definitionId: "food",
+          definitionId: "wild-fruit-and-berries",
           sourceEventId: "test:natural-effects",
         }),
       }),
@@ -199,7 +199,7 @@ describe("createNaturalResourceEvent", () => {
     const state = createAuthoringTestGame([tribute]);
 
     const definition = createNaturalResourceEvent("deterministic-resource", {
-      resources: ["food", "water"],
+      resources: ["wild-fruit-and-berries", "water"],
       text: (_context, itemId) => `Selected ${itemId}.`,
     });
 

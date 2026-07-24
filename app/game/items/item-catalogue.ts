@@ -21,6 +21,14 @@ const FOOD_RECOVERY_EFFECTS = [
   itemRemovesStatuses("hungry", "starving"),
 ] as const satisfies readonly ItemUseEffect[];
 
+const HALLUCINOGENIC_FORAGE_EFFECTS = [
+  itemGrantsStatus("disoriented", 1),
+] as const satisfies readonly ItemUseEffect[];
+
+const POISONOUS_FORAGE_EFFECTS = [
+  itemGrantsStatus("poisoned", 1),
+] as const satisfies readonly ItemUseEffect[];
+
 const CAFFEINATED_DRINK_EFFECTS = [
   ...HYDRATION_RECOVERY_EFFECTS,
 
@@ -33,9 +41,9 @@ export const ITEM_CATALOGUE = [
   // Natural resources
   {
     id: "water",
-    label: "Collected water",
+    label: "Fresh water",
 
-    description: "Clean water gathered from the arena that satisfies hydration.",
+    description: "Clean fresh water collected from a natural source in the arena.",
 
     origin: "natural-resource",
 
@@ -46,11 +54,13 @@ export const ITEM_CATALOGUE = [
     useEffects: HYDRATION_RECOVERY_EFFECTS,
   },
 
+  // Safe natural food
   {
-    id: "food",
-    label: "Gathered food",
+    id: "wild-fruit-and-berries",
 
-    description: "Edible plants, fish, or other natural food gathered from the arena.",
+    label: "Wild fruit and berries",
+
+    description: "Safely identified wild fruit and berries gathered from the arena.",
 
     origin: "natural-resource",
 
@@ -59,6 +69,168 @@ export const ITEM_CATALOGUE = [
     maxUses: 1,
 
     useEffects: FOOD_RECOVERY_EFFECTS,
+  },
+
+  {
+    id: "mushrooms",
+    label: "Mushrooms",
+
+    description: "Safely identified edible mushrooms gathered from the arena.",
+
+    origin: "natural-resource",
+
+    tags: ["consumable", "food"],
+
+    maxUses: 1,
+
+    useEffects: FOOD_RECOVERY_EFFECTS,
+  },
+
+  {
+    id: "eggs",
+    label: "Eggs",
+
+    description: "A clutch of eggs gathered from an arena nest and prepared as a meal.",
+
+    origin: "natural-resource",
+
+    tags: ["consumable", "food"],
+
+    maxUses: 1,
+
+    useEffects: FOOD_RECOVERY_EFFECTS,
+  },
+
+  {
+    id: "rabbit",
+    label: "Rabbit",
+
+    description: "A rabbit caught in the arena and prepared as a meal.",
+
+    origin: "natural-resource",
+
+    tags: ["consumable", "food"],
+
+    maxUses: 1,
+
+    useEffects: FOOD_RECOVERY_EFFECTS,
+  },
+
+  {
+    id: "chicken",
+    label: "Chicken",
+
+    description: "An arena chicken caught and prepared as a meal.",
+
+    origin: "natural-resource",
+
+    tags: ["consumable", "food"],
+
+    maxUses: 1,
+
+    useEffects: FOOD_RECOVERY_EFFECTS,
+  },
+
+  {
+    id: "fish",
+    label: "Fish",
+
+    description: "A fish caught in the arena and prepared as a meal.",
+
+    origin: "natural-resource",
+
+    tags: ["consumable", "food"],
+
+    maxUses: 1,
+
+    useEffects: FOOD_RECOVERY_EFFECTS,
+  },
+
+  // Harmful natural forage
+  {
+    id: "hallucinogenic-berries",
+
+    label: "Hallucinogenic berries",
+
+    description: "Strange berries that cause confusion and disorientation when consumed.",
+
+    origin: "natural-resource",
+
+    tags: ["consumable"],
+
+    maxUses: 1,
+
+    useEffects: HALLUCINOGENIC_FORAGE_EFFECTS,
+  },
+
+  {
+    id: "poison-berries",
+    label: "Poisonous berries",
+
+    description: "Toxic berries that poison anyone who consumes them.",
+
+    origin: "natural-resource",
+
+    tags: ["consumable"],
+
+    maxUses: 1,
+
+    useEffects: POISONOUS_FORAGE_EFFECTS,
+  },
+
+  {
+    id: "hallucinogenic-mushrooms",
+
+    label: "Hallucinogenic mushrooms",
+
+    description: "Unusual mushrooms that cause confusion and disorientation when consumed.",
+
+    origin: "natural-resource",
+
+    tags: ["consumable"],
+
+    maxUses: 1,
+
+    useEffects: HALLUCINOGENIC_FORAGE_EFFECTS,
+  },
+
+  {
+    id: "poison-mushrooms",
+    label: "Poisonous mushrooms",
+
+    description: "Toxic mushrooms that poison anyone who consumes them.",
+
+    origin: "natural-resource",
+
+    tags: ["consumable"],
+
+    maxUses: 1,
+
+    useEffects: POISONOUS_FORAGE_EFFECTS,
+  },
+
+  // Natural utility
+  {
+    id: "kindling",
+    label: "Dry kindling",
+
+    description: "Dry twigs and bark that can be burned to improve a night camp.",
+
+    origin: "natural-resource",
+
+    tags: ["fire", "shelter", "tool"],
+
+    maxUses: 1,
+
+    rest: {
+      quality: "sheltered",
+
+      check: {
+        stat: "brains-or-luck",
+
+        difficulty: 3,
+      },
+    },
   },
 
   // Manufactured food
@@ -344,6 +516,20 @@ export const ITEM_CATALOGUE = [
     foragingBonus: 0.35,
 
     useEffects: [itemRemovesStatuses("disoriented")],
+  },
+  {
+    id: "foraging-guidebook",
+
+    label: "Foraging guidebook",
+
+    description:
+      "A reusable field guide that helps identify edible, hallucinogenic, and poisonous arena plants.",
+
+    origin: "manufactured",
+
+    tags: ["tool"],
+
+    foragingBonus: 0.5,
   },
   {
     id: "camouflage-net",

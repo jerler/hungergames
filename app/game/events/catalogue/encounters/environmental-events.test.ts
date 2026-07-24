@@ -69,19 +69,6 @@ const SIMPLE_STATUS_EVENT_CASES = [
 
 const FATAL_EVENT_CASES = [
   {
-    eventId: "poisonous-berries",
-
-    tags: ["fatal", "hazard"],
-
-    periods: ["day"],
-    weight: 2,
-
-    causeLabel: "Poisoned",
-
-    expectedText: "Hazel mistakes poisonous berries for food.",
-  },
-
-  {
     eventId: "river-current",
 
     tags: ["fatal", "hazard"],
@@ -355,10 +342,6 @@ describe("environmental events", () => {
 
   it.each([
     {
-      eventId: "poisonous-berries",
-      stat: "brains",
-    },
-    {
       eventId: "river-current",
       stat: "brawn",
     },
@@ -425,11 +408,14 @@ describe("environmental events", () => {
   it("lets the goose steal the tribute's own food", () => {
     const originalGame = createTestGame();
 
-    const tribute = withItem(withStats(originalGame.tributes[0], BALANCED_STATS), "food");
+    const tribute = withItem(
+      withStats(originalGame.tributes[0], BALANCED_STATS),
+      "wild-fruit-and-berries",
+    );
 
     const game = replaceTributes(originalGame, [tribute]);
 
-    const food = tribute.inventory.find((item) => item.definitionId === "food");
+    const food = tribute.inventory.find((item) => item.definitionId === "wild-fruit-and-berries");
 
     const resolution = resolveEvent(
       requireEvent("arena-goose"),
@@ -456,19 +442,28 @@ describe("environmental events", () => {
     });
   });
 
-  it("lets the goose steal food owned by a truce partner", () => {
+  it("does not let the goose steal a truce partner's food", () => {
     const originalGame = createTestGame();
 
     const tribute = withStats(originalGame.tributes[0], BALANCED_STATS);
 
-    const itemOwner = withItem(withStats(originalGame.tributes[1], BALANCED_STATS), "food");
+    const itemOwner = withItem(
+      withStats(originalGame.tributes[1], BALANCED_STATS),
+      "wild-fruit-and-berries",
+    );
 
     const game = addTruce(replaceTributes(originalGame, [tribute, itemOwner]), [
       tribute,
       itemOwner,
     ]);
 
-    const food = itemOwner.inventory.find((item) => item.definitionId === "food");
+    const partnerFood = itemOwner.inventory.find(
+      (item) => item.definitionId === "wild-fruit-and-berries",
+    );
+
+    if (!partnerFood) {
+      throw new Error("Expected the truce partner to own food.");
+    }
 
     const resolution = resolveEvent(
       requireEvent("arena-goose"),
@@ -479,19 +474,22 @@ describe("environmental events", () => {
       [0],
     );
 
-    expect(resolution.changes).toContainEqual({
-      type: "consume-item",
+    expect(resolution.changes).not.toContainEqual(
+      expect.objectContaining({
+        type: "consume-item",
+        tributeId: itemOwner.id,
+        itemInstanceId: partnerFood.id,
+      }),
+    );
 
-      /*
-       * The user was `tribute`, but the
-       * physical owner is `itemOwner`.
-       */
-      tributeId: itemOwner.id,
+    expect(resolution.changes.some((change) => change.type === "consume-item")).toBe(false);
 
-      itemInstanceId: food?.id,
-      uses: 1,
-      reason: "arena-goose-theft",
-    });
+    expect(getAppliedStatuses(resolution)).toEqual([
+      expect.objectContaining({
+        definitionId: "hunted",
+        severity: 2,
+      }),
+    ]);
   });
 
   it("does not reuse food already reserved by another event", () => {
@@ -499,14 +497,17 @@ describe("environmental events", () => {
 
     const tribute = withStats(originalGame.tributes[0], BALANCED_STATS);
 
-    const itemOwner = withItem(withStats(originalGame.tributes[1], BALANCED_STATS), "food");
+    const itemOwner = withItem(
+      withStats(originalGame.tributes[1], BALANCED_STATS),
+      "wild-fruit-and-berries",
+    );
 
     const game = addTruce(replaceTributes(originalGame, [tribute, itemOwner]), [
       tribute,
       itemOwner,
     ]);
 
-    const food = itemOwner.inventory.find((item) => item.definitionId === "food");
+    const food = itemOwner.inventory.find((item) => item.definitionId === "wild-fruit-and-berries");
 
     if (!food) {
       throw new Error("Test truce partner has no food.");

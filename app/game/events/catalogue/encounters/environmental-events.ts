@@ -51,7 +51,7 @@ const ARENA_GOOSE_RESULTS = {
   exceptionalSuccess: result({
     text: ({ tribute }) =>
       `${tribute.name} befriends an arena goose, which leads ${tribute.pronouns.object} to a patch of edible plants.`,
-    effects: [acquireNaturalResource("tribute", "food"), survived("tribute")],
+    effects: [acquireNaturalResource("tribute", "wild-fruit-and-berries"), survived("tribute")],
   }),
 } as const;
 
@@ -73,7 +73,7 @@ const BRUSHFIRE_RESULTS = {
 
   exceptionalFood: result({
     append: ", reaches safety, and discovers a patch of edible plants beyond the burned ground.",
-    effects: [acquireNaturalResource("tribute", "food"), survived("tribute")],
+    effects: [acquireNaturalResource("tribute", "wild-fruit-and-berries"), survived("tribute")],
   }),
 
   exceptionalWater: result({
@@ -134,29 +134,6 @@ function getBrushfireIntro(tribute: GameTribute, itemId?: ItemDefinitionId): str
 
 export const ENVIRONMENTAL_EVENTS = [
   /* Day Only */
-  createEvent("poisonous-berries")
-    .solo("victim", {
-      getWeight: (tribute) => Math.max(0.25, 6 - tribute.snapshot.stats.brains),
-    })
-    .when(maximumStat("victim", "brains", 4))
-    .category("fatal")
-    .tags("fatal", "hazard")
-    .during("day")
-    .weight(2)
-    .resolve(
-      always(
-        result({
-          text: ({ victim }) => `${victim.name} mistakes poisonous berries for food.`,
-
-          effects: [
-            eliminate("victim", {
-              causeId: "poisonous-berries",
-              causeLabel: "Poisoned",
-            }),
-          ],
-        }),
-      ),
-    ),
 
   createEvent("river-current")
     .solo("victim", {
@@ -216,7 +193,7 @@ export const ENVIRONMENTAL_EVENTS = [
   createEvent("arena-goose")
     .solo("tribute", {
       getWeight: getVulnerabilityWeight,
-      optionalItem: { definitionIds: ["food"] },
+      optionalItem: { definitionIds: ["wild-fruit-and-berries"], access: "owned" },
     })
     .category("hazard")
     .tags("hazard", "status", "resource")

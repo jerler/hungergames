@@ -513,7 +513,7 @@ describe("truce engine", () => {
 
     const members = game.tributes.slice(0, 3);
 
-    const itemIds = ["water", "food", "med-kit", "blanket", "rope"] as const;
+    const itemIds = ["water", "wild-fruit-and-berries", "med-kit", "blanket", "rope"] as const;
 
     const acquiredItems = itemIds.map((itemId, index) =>
       createInventoryItemInstance(`setup-item-${index}`, members[0].id, itemId, DAY_ONE),

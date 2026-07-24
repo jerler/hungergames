@@ -10,7 +10,7 @@ import type {
   TributeSurvivalState,
 } from "~/game/survival/survival-schema";
 
-export const CURRENT_GAME_STATE_SCHEMA_VERSION = 4 as const;
+export const CURRENT_GAME_STATE_SCHEMA_VERSION = 5 as const;
 
 export type GamePhase = "opening" | "round-events" | "round-complete" | "victory" | "statistics";
 

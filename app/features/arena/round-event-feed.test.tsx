@@ -173,7 +173,7 @@ describe("RoundEventFeed", () => {
       }),
     ).toBeInTheDocument();
 
-    expect(screen.getByText("Item: Collected water")).toBeInTheDocument();
+    expect(screen.getByText("Item: Fresh water")).toBeInTheDocument();
 
     expect(screen.getByText("Borrowed from: Peeta")).toBeInTheDocument();
 

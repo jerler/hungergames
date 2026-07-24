@@ -162,4 +162,16 @@ describe("loadGameState", () => {
 
     expect(() => loadGameState(invalidGame)).toThrow(/rounds without water.*non-negative integer/i);
   });
+
+  it("rejects schema-4 saves from before the named natural-food migration", () => {
+    const schemaFourGame = {
+      ...createGame(),
+
+      schemaVersion: 4,
+    };
+
+    expect(() => loadGameState(schemaFourGame)).toThrow(UnsupportedGameStateSchemaError);
+
+    expect(() => loadGameState(schemaFourGame)).toThrow(/schema version 4/i);
+  });
 });

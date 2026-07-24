@@ -160,7 +160,7 @@ describe("createWeaponAttackEvent", () => {
         id: "victim",
         name: "Victim",
       }),
-      "food",
+      "wild-fruit-and-berries",
     );
 
     const killer = withItem(

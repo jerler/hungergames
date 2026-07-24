@@ -113,4 +113,14 @@ describe("Cornucopia item pool", () => {
 
     expect(counts.rare / sampleSize).toBeLessThan(0.05);
   });
+
+  it("makes the foraging guidebook an uncommon manufactured supply", () => {
+    expect(CORNUCOPIA_PACK_ITEM_POOL).toContainEqual({
+      itemId: "foraging-guidebook",
+
+      rarity: "uncommon",
+    });
+
+    expect(getItemDefinition("foraging-guidebook").origin).toBe("manufactured");
+  });
 });

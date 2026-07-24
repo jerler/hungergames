@@ -474,6 +474,7 @@ function compareRestSelections(
   return (
     getRestQualityRank(secondRest.quality) - getRestQualityRank(firstRest.quality) ||
     Number(Boolean(firstRest.check)) - Number(Boolean(secondRest.check)) ||
+    (firstRest.check?.difficulty ?? 0) - (secondRest.check?.difficulty ?? 0) ||
     Number(first.owner.id !== actingTribute.id) - Number(second.owner.id !== actingTribute.id) ||
     firstDefinition.id.localeCompare(secondDefinition.id) ||
     first.item.id.localeCompare(second.item.id)

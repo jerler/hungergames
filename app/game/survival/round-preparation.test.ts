@@ -180,7 +180,7 @@ describe("prepareRound", () => {
 
     tribute = withAuthoringTestItem(tribute, "water");
 
-    tribute = withAuthoringTestItem(tribute, "food");
+    tribute = withAuthoringTestItem(tribute, "wild-fruit-and-berries");
 
     const prepared = prepareRound(createAuthoringTestGame([tribute]), ROUND);
 
@@ -684,6 +684,34 @@ describe("prepareRound", () => {
 
     expect(
       prepared.state.tributes[0]?.inventory.some((item) => item.definitionId === "matches"),
+    ).toBe(true);
+  });
+
+  it("prefers matches over harder-to-use kindling", () => {
+    let tribute = createAuthoringTestTribute({
+      id: "checked-rest-priority",
+    });
+
+    tribute = withAuthoringTestItem(tribute, "kindling");
+
+    tribute = withAuthoringTestItem(tribute, "matches");
+
+    const prepared = prepareRound(
+      createAuthoringTestGame([tribute]),
+
+      NIGHT_TWO,
+    );
+
+    expect(prepared.events).toHaveLength(1);
+
+    expect(prepared.events[0]?.preparation).toMatchObject({
+      mechanic: "night-rest-preparation",
+
+      itemDefinitionId: "matches",
+    });
+
+    expect(
+      prepared.state.tributes[0]?.inventory.some((item) => item.definitionId === "kindling"),
     ).toBe(true);
   });
 

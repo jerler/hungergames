@@ -128,6 +128,13 @@ export type {
   NaturalResourceEventOptions,
   NaturalResourceEventText,
 } from "./families/natural-resource-event";
+export { createHuntedFoodEvent, HUNTED_FOOD_ITEM_IDS } from "./families/hunted-food-event";
+
+export type {
+  HuntedFoodEventOptions,
+  HuntedFoodEventText,
+  HuntedFoodItemId,
+} from "./families/hunted-food-event";
 
 export { createSoloStatEvent } from "./families/solo-stat-event";
 export type { SoloStatEventOptions } from "./families/solo-stat-event";
@@ -141,3 +148,17 @@ export type { StatOutcomeKey } from "./families/family-outcomes";
 export { createWeaponAttackEvent } from "./families/weapon-attack-event";
 
 export type { WeaponAttackEventOptions, WeaponUseTiming } from "./families/weapon-attack-event";
+
+export {
+  createForageIdentificationEvent,
+  HARMFUL_FORAGE_RETENTION_BRAINS,
+  HIDDEN_FORAGE_TYPES,
+  HIDDEN_FORAGE_WEIGHTS,
+  selectHiddenForageType,
+} from "./families/forage-identification-event";
+
+export type {
+  ForageIdentificationEventOptions,
+  ForageItemDefinitions,
+  HiddenForageType,
+} from "./families/forage-identification-event";

@@ -26,6 +26,8 @@ import { HIGH_LUCK_EVENTS } from "~/game/events/catalogue/stat-gated/luck/high-e
 import { LOW_LUCK_EVENTS } from "~/game/events/catalogue/stat-gated/luck/low-events";
 import { MIXED_STAT_GATED_EVENTS } from "~/game/events/catalogue/stat-gated/mixed-events";
 import { validateEventCatalogues } from "~/game/events/validation/validate-event-catalogues";
+import { HUNTING_EVENTS } from "./encounters/hunting-events";
+import { FORAGING_EVENTS } from "~/game/events/catalogue/encounters/foraging-events";
 
 describe("production event catalogues", () => {
   it("contains every exported event exactly once with no cross-catalogue IDs", () => {
@@ -51,6 +53,14 @@ describe("production event catalogues", () => {
           {
             name: "survival",
             events: SURVIVAL_EVENTS,
+          },
+          {
+            name: "hunting",
+            events: HUNTING_EVENTS,
+          },
+          {
+            name: "foraging",
+            events: FORAGING_EVENTS,
           },
           {
             name: "item-use",

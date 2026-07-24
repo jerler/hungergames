@@ -94,13 +94,13 @@ export const FLEE_EVENTS = [
       success: result({
         text: ({ tribute }) =>
           `${tribute.name} escapes the central Bloodbath and gathers edible plants.`,
-        effects: [acquireNaturalResource("tribute", "food"), survived("tribute")],
+        effects: [acquireNaturalResource("tribute", "wild-fruit-and-berries"), survived("tribute")],
       }),
       exceptionalSuccess: result({
         text: ({ tribute }) =>
           `${tribute.name} quickly identifies a patch of edible plants and feels confident about ${tribute.pronouns.possessiveAdjective} decision to flee.`,
         effects: [
-          acquireNaturalResource("tribute", "food"),
+          acquireNaturalResource("tribute", "wild-fruit-and-berries"),
           applyStatus("tribute", "inspired", 1),
           survived("tribute"),
         ],

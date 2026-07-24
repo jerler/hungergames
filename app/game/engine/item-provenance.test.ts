@@ -30,6 +30,10 @@ const MANUFACTURED_ITEM_IDS = ITEM_CATALOGUE.flatMap((definition) =>
   definition.origin === "manufactured" ? [definition.id] : [],
 );
 
+const NATURAL_RESOURCE_ITEM_IDS = ITEM_CATALOGUE.flatMap((definition) =>
+  definition.origin === "natural-resource" ? [definition.id] : [],
+);
+
 function createGame(): GameState {
   const config = {
     ...createDefaultGameConfig(),
@@ -102,34 +106,33 @@ function createAcquisitionEvent(
 }
 
 describe("item acquisition provenance", () => {
-  it.each(["food", "water"] satisfies readonly ItemDefinitionId[])(
-    "allows %s to be naturally foraged after Day 1",
-    (itemId) => {
-      const game = createGame();
+  it.each(NATURAL_RESOURCE_ITEM_IDS)("allows %s to be naturally foraged after Day 1", (itemId) => {
+    const game = createGame();
 
-      const { event } = createAcquisitionEvent(
-        game,
-        `forage-${itemId}`,
-        itemId,
-        "natural-foraging",
-        DAY_TWO,
-      );
+    const { event } = createAcquisitionEvent(
+      game,
+      `forage-${itemId}`,
+      itemId,
+      "natural-foraging",
+      DAY_TWO,
+    );
 
-      const nextState = applyResolvedEvent(game, event);
+    const nextState = applyResolvedEvent(game, event);
 
-      expect(nextState.itemTransactions).toContainEqual(
-        expect.objectContaining({
-          type: "acquired",
-          definitionId: itemId,
-          acquisitionSource: "natural-foraging",
+    expect(nextState.itemTransactions).toContainEqual(
+      expect.objectContaining({
+        type: "acquired",
 
-          round: DAY_TWO,
-        }),
-      );
+        definitionId: itemId,
 
-      expect(() => assertGameStateInvariants(nextState)).not.toThrow();
-    },
-  );
+        acquisitionSource: "natural-foraging",
+
+        round: DAY_TWO,
+      }),
+    );
+
+    expect(() => assertGameStateInvariants(nextState)).not.toThrow();
+  });
 
   it.each(MANUFACTURED_ITEM_IDS)("rejects naturally foraged manufactured item %s", (itemId) => {
     const game = createGame();
@@ -297,7 +300,7 @@ describe("item acquisition provenance", () => {
     const { event } = createAcquisitionEvent(
       game,
       "valid-foraging",
-      "food",
+      "wild-fruit-and-berries",
       "natural-foraging",
       DAY_TWO,
     );

@@ -57,26 +57,6 @@ function resolveItemEvent(
 }
 
 describe("item-use event content", () => {
-  it("the enormous fish can injure and exhaust its fisher", () => {
-    const { resolution } = resolveItemEvent("fishing-gear-enormous-fish", "fishing-gear", 0);
-
-    expect(
-      getAppliedStatuses(resolution).map((status) => ({
-        id: status.definitionId,
-        severity: status.severity,
-      })),
-    ).toEqual([
-      {
-        id: "injured",
-        severity: 1,
-      },
-      {
-        id: "exhausted",
-        severity: 2,
-      },
-    ]);
-  });
-
   it("successful shelter renovation grants hidden and survival credit", () => {
     const { tribute, resolution } = resolveItemEvent("axe-based-shelter-renovation", "axe", 0.6);
 
@@ -92,23 +72,9 @@ describe("item-use event content", () => {
 
     const success = resolveItemEvent("slingshot-trick-shot", "slingshot", 0.6);
 
-    expect(getAcquiredItemIds(success.resolution)).toEqual(["food"]);
+    expect(getAcquiredItemIds(success.resolution)).toEqual(["wild-fruit-and-berries"]);
 
     expect(hasSurvivalCredit(success.resolution, success.tribute.id)).toBe(true);
-  });
-
-  it("an exceptional trap produces food and inspiration", () => {
-    const { tribute, resolution } = resolveItemEvent(
-      "trap-kit-instructions-missing",
-      "trap-kit",
-      0.999,
-    );
-
-    expect(getAcquiredItemIds(resolution)).toEqual(["food"]);
-
-    expect(getAppliedStatusIds(resolution)).toEqual(["inspired"]);
-
-    expect(hasSurvivalCredit(resolution, tribute.id)).toBe(true);
   });
 
   it("an exceptional shield experiment finds both food and water", () => {
@@ -118,7 +84,7 @@ describe("item-use event content", () => {
       0.999,
     );
 
-    expect(getAcquiredItemIds(resolution)).toEqual(["food", "water"]);
+    expect(getAcquiredItemIds(resolution)).toEqual(["wild-fruit-and-berries", "water"]);
 
     expect(hasSurvivalCredit(resolution, tribute.id)).toBe(true);
   });

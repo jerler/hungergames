@@ -1,5 +1,6 @@
 import type { RandomSource } from "~/game/engine/random";
 import {
+  resolveScoreCheck,
   resolveStatCheck,
   type EventStat,
   type StatCheckOutcome,
@@ -47,6 +48,32 @@ export function resolveLuckAdjustedStatCheck(
   return resolveStatCheck({
     stats: effectiveStats,
     stat,
+    difficulty,
+    random,
+  });
+}
+
+export function resolveLuckAdjustedBestStatCheck(
+  tribute: GameTribute,
+  stats: readonly EventStat[],
+  baseDifficulty: TributeStatValue,
+  random: RandomSource,
+  difficultyReduction = 0,
+): StatCheckOutcome {
+  if (stats.length === 0) {
+    throw new Error("Best-stat check requires at least one candidate stat.");
+  }
+
+  const effectiveStats = getEffectiveStats(tribute);
+
+  const score = Math.max(...stats.map((stat) => effectiveStats[stat]));
+
+  const difficulty = clampStatCheckDifficulty(
+    baseDifficulty + getLuckDifficultyAdjustment(effectiveStats.luck) - difficultyReduction,
+  );
+
+  return resolveScoreCheck({
+    score,
     difficulty,
     random,
   });

@@ -912,7 +912,7 @@ describe("participant item-access modes", () => {
     "does not select depleted items in %s mode",
     (itemAccess) => {
       const fixture = createItemAccessFixture({
-        definitionId: "medicine",
+        definitionId: "med-kit",
 
         owner: itemAccess === "owned" ? "user" : "partner",
 
@@ -922,7 +922,7 @@ describe("participant item-access modes", () => {
       const selection = selectItemAccessParticipant(
         fixture,
 
-        createItemAccessDefinition("medicine", itemAccess),
+        createItemAccessDefinition("med-kit", itemAccess),
       );
 
       expect(selection).toBeNull();

@@ -13,8 +13,6 @@ import {
 } from "~/game/items/inventory-engine";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
 import type { ItemTag } from "~/game/items/item-schema";
-import { isMedicalStatusId } from "~/game/statuses/medical-statuses";
-import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
 import type {
   GameChange,
@@ -23,9 +21,8 @@ import type {
   PreparationMechanic,
   ResolvedEvent,
   RoundReference,
-  StatusEffect,
 } from "~/game/types/game-state";
-
+import { findMedicalTreatmentPlan, type MedicalTreatmentPlan } from "./medical-treatment-planner";
 import type { NightRestQuality, SurvivalNeed } from "./survival-schema";
 
 interface NightRestAttempt {
@@ -39,17 +36,20 @@ export interface PreparedRound {
   committedItemInstanceIds: Set<string>;
 }
 
-type AutomaticItemPreparationMechanic =
-  "urgent-medical-treatment" | "hydration-consumption" | "food-consumption";
+type AutomaticItemPreparationMechanic = "hydration-consumption" | "food-consumption";
 
 interface AutomaticItemPreparationAction {
   mechanic: AutomaticItemPreparationMechanic;
+
   requiredTag: ItemTag;
   affectedNeed?: SurvivalNeed;
 
   shouldPrepare: (tribute: GameTribute) => boolean;
 
-  getAffectedStatusIds: (tribute: GameTribute) => StatusEffectId[];
+  getAffectedStatusIds: (
+    tribute: GameTribute,
+    selection: AccessibleInventoryItem,
+  ) => StatusEffectId[];
 }
 
 const HYDRATION_STATUS_IDS = ["thirsty", "dehydrated"] as const satisfies readonly StatusEffectId[];
@@ -102,41 +102,12 @@ function getMatchingStatusIds(
   );
 }
 
-function isUrgentMedicalStatus(status: StatusEffect): boolean {
-  if (!isMedicalStatusId(status.definitionId) || status.remainingRounds === null) {
-    return false;
-  }
-
-  const definition = getStatusDefinition(status.definitionId);
-
-  return (
-    definition.duration.kind === "timed" &&
-    definition.duration.expiration === "fatal" &&
-    status.remainingRounds <= 1
-  );
-}
-
-function getMedicalStatusIds(tribute: GameTribute): StatusEffectId[] {
-  return uniqueStatusIds(
-    tribute.statuses.flatMap((status) =>
-      isMedicalStatusId(status.definitionId) ? [status.definitionId] : [],
-    ),
-  );
-}
-
 const AUTOMATIC_ITEM_ACTIONS = [
   {
-    mechanic: "urgent-medical-treatment",
-    requiredTag: "medicine",
-
-    shouldPrepare: (tribute) => tribute.statuses.some(isUrgentMedicalStatus),
-
-    getAffectedStatusIds: getMedicalStatusIds,
-  },
-
-  {
     mechanic: "hydration-consumption",
+
     requiredTag: "water",
+
     affectedNeed: "water",
 
     shouldPrepare: (tribute) => hasAnyStatus(tribute, HYDRATION_STATUS_IDS),
@@ -146,7 +117,9 @@ const AUTOMATIC_ITEM_ACTIONS = [
 
   {
     mechanic: "food-consumption",
+
     requiredTag: "food",
+
     affectedNeed: "food",
 
     shouldPrepare: (tribute) => hasAnyStatus(tribute, FOOD_STATUS_IDS),
@@ -208,6 +181,120 @@ function getItemPhrase(actingTribute: GameTribute, selection: AccessibleInventor
   return `${selection.owner.snapshot.name}'s ` + label;
 }
 
+function getMedicalConditionPhrase(statusId: StatusEffectId): string {
+  switch (statusId) {
+    case "injured":
+      return "their injuries";
+
+    case "bleeding":
+      return "their bleeding";
+
+    case "poisoned":
+      return "their poisoning";
+
+    case "burned":
+      return "their burns";
+
+    default:
+      throw new Error(`Cannot describe non-medical status "${statusId}" as a medical condition.`);
+  }
+}
+
+function createMedicalTreatmentText(patient: GameTribute, plan: MedicalTreatmentPlan): string {
+  const itemPhrase = getItemPhrase(patient, plan.selection);
+
+  const conditionPhrase = getMedicalConditionPhrase(plan.targetStatus.definitionId);
+
+  return `${patient.snapshot.name} uses ` + `${itemPhrase} to treat ` + `${conditionPhrase}.`;
+}
+
+function createMedicalTreatmentEvent(
+  state: GameState,
+  round: RoundReference,
+  patient: GameTribute,
+  plan: MedicalTreatmentPlan,
+): ResolvedEvent {
+  const eventId = createPreparationEventId(round, "medical-treatment", patient.id);
+
+  const changes = compileItemUseEffects({
+    eventId,
+    round,
+
+    random: createPreparationRandom(state.seed, round, "medical-treatment", patient.id),
+
+    actingTribute: patient,
+
+    owner: plan.selection.owner,
+
+    item: plan.selection.item,
+
+    reason: eventId,
+  });
+
+  return {
+    id: eventId,
+
+    definitionId: "automatic-medical-treatment",
+
+    kind: "preparation",
+
+    resolutionMode: "standard",
+
+    round,
+
+    participantTributeIds: getEventParticipantIds(patient, plan.selection),
+
+    text: createMedicalTreatmentText(patient, plan),
+
+    changes,
+
+    preparation: {
+      mechanic: "medical-treatment",
+
+      actingTributeId: patient.id,
+
+      itemInstanceId: plan.selection.item.id,
+
+      itemDefinitionId: plan.selection.item.definitionId,
+
+      itemOwnerTributeId: plan.selection.owner.id,
+
+      usesRemainingAfter: getUsesRemainingAfter(plan.selection),
+
+      affectedStatusIds: [...plan.treatedStatusIds],
+    },
+  };
+}
+
+function prepareMedicalTreatments(
+  preparedRound: PreparedRound,
+  round: RoundReference,
+): PreparedRound {
+  let nextPreparedRound = preparedRound;
+
+  const tributeIds = getStableLivingTributeIds(nextPreparedRound.state);
+
+  for (const tributeId of tributeIds) {
+    const patient = requireLivingTribute(nextPreparedRound.state, tributeId);
+
+    const plan = findMedicalTreatmentPlan(
+      nextPreparedRound.state,
+      patient,
+      nextPreparedRound.committedItemInstanceIds,
+    );
+
+    if (!plan) {
+      continue;
+    }
+
+    const event = createMedicalTreatmentEvent(nextPreparedRound.state, round, patient, plan);
+
+    nextPreparedRound = applyPreparationEvent(nextPreparedRound, event);
+  }
+
+  return nextPreparedRound;
+}
+
 function createAutomaticItemPreparationText(
   mechanic: AutomaticItemPreparationMechanic,
   actingTribute: GameTribute,
@@ -216,13 +303,6 @@ function createAutomaticItemPreparationText(
   const itemPhrase = getItemPhrase(actingTribute, selection);
 
   switch (mechanic) {
-    case "urgent-medical-treatment":
-      return (
-        `${actingTribute.snapshot.name} uses ` +
-        `${itemPhrase} to treat an urgent ` +
-        "medical condition."
-      );
-
     case "hydration-consumption":
       return (
         `${actingTribute.snapshot.name} drinks ` +
@@ -236,6 +316,7 @@ function createAutomaticItemPreparationText(
 }
 
 function createAutomaticItemPreparationEvent(
+  state: GameState,
   round: RoundReference,
   action: AutomaticItemPreparationAction,
   actingTribute: GameTribute,
@@ -243,14 +324,17 @@ function createAutomaticItemPreparationEvent(
 ): ResolvedEvent {
   const eventId = createPreparationEventId(round, action.mechanic, actingTribute.id);
 
-  const affectedStatusIds = action.getAffectedStatusIds(actingTribute);
+  const affectedStatusIds = action.getAffectedStatusIds(actingTribute, selection);
 
   const changes = compileItemUseEffects({
     eventId,
     round,
 
+    random: createPreparationRandom(state.seed, round, action.mechanic, actingTribute.id),
+
     actingTribute,
     owner: selection.owner,
+
     item: selection.item,
 
     reason: eventId,
@@ -343,7 +427,13 @@ function prepareAutomaticItemAction(
       continue;
     }
 
-    const event = createAutomaticItemPreparationEvent(round, action, actingTribute, selection);
+    const event = createAutomaticItemPreparationEvent(
+      nextPreparedRound.state,
+      round,
+      action,
+      actingTribute,
+      selection,
+    );
 
     nextPreparedRound = applyPreparationEvent(nextPreparedRound, event);
   }
@@ -759,6 +849,13 @@ export function prepareRound(state: GameState, round: RoundReference): PreparedR
     events: [],
     committedItemInstanceIds: new Set<string>(),
   };
+
+  /*
+   * Medical treatment occurs first so an
+   * imminent fatality is handled before
+   * ordinary food, hydration, or rest.
+   */
+  preparedRound = prepareMedicalTreatments(preparedRound, round);
 
   for (const action of AUTOMATIC_ITEM_ACTIONS) {
     preparedRound = prepareAutomaticItemAction(preparedRound, round, action);

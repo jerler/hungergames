@@ -171,7 +171,7 @@ describe("accidental truce dissolution", () => {
     const item = createInventoryItemInstance(
       "inventory-setup",
       secondMember.id,
-      "medicine",
+      "med-kit",
       DAY_ONE,
     );
 

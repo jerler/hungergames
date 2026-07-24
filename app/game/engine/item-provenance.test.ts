@@ -9,6 +9,7 @@ import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState, ResolvedEvent, RoundReference } from "~/game/types/game-state";
+import { ITEM_CATALOGUE } from "~/game/items/item-catalogue";
 
 const DAY_ONE = {
   day: 1,
@@ -24,6 +25,10 @@ const DAY_TWO = {
   day: 2,
   period: "day",
 } as const;
+
+const MANUFACTURED_ITEM_IDS = ITEM_CATALOGUE.flatMap((definition) =>
+  definition.origin === "manufactured" ? [definition.id] : [],
+);
 
 function createGame(): GameState {
   const config = {
@@ -126,14 +131,18 @@ describe("item acquisition provenance", () => {
     },
   );
 
-  it("rejects manufactured natural-foraging acquisitions", () => {
+  it.each(MANUFACTURED_ITEM_IDS)("rejects naturally foraged manufactured item %s", (itemId) => {
     const game = createGame();
 
     const { event } = createAcquisitionEvent(
       game,
-      "forage-knife",
-      "knife",
+
+      `forage-${itemId}`,
+
+      itemId,
+
       "natural-foraging",
+
       DAY_TWO,
     );
 
@@ -208,8 +217,8 @@ describe("item acquisition provenance", () => {
 
     const { event } = createAcquisitionEvent(
       game,
-      "sponsor-medicine",
-      "medicine",
+      "sponsor-med-kit",
+      "med-kit",
       "sponsor",
       DAY_TWO,
     );

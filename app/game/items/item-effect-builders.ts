@@ -1,4 +1,5 @@
 import type {
+  ChanceToGrantStatusItemEffect,
   GrantStatusItemEffect,
   ItemUseEffect,
   ItemUseNeed,
@@ -12,6 +13,27 @@ export function itemSatisfiesNeed(need: ItemUseNeed): SatisfyNeedItemEffect {
   return {
     type: "satisfy-need",
     need,
+  };
+}
+
+export function itemMayGrantStatus(
+  statusId: StatusEffectId,
+  severity: 1 | 2 | 3,
+  chance: number,
+  durationRounds?: number,
+): ChanceToGrantStatusItemEffect {
+  return {
+    type: "chance-to-grant-status",
+
+    statusId,
+    severity,
+    chance,
+
+    ...(durationRounds !== undefined
+      ? {
+          durationRounds,
+        }
+      : {}),
   };
 }
 

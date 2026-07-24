@@ -331,10 +331,10 @@ describe("death loot", () => {
       DAY_ONE,
     );
 
-    const medicine = createInventoryItemInstance(
+    const medKit = createInventoryItemInstance(
       "death-loot-setup",
       originalVictim.id,
-      "medicine",
+      "med-kit",
       DAY_ONE,
     );
 
@@ -355,7 +355,7 @@ describe("death loot", () => {
 
             tributeId: originalVictim.id,
             acquisitionSource: "cornucopia",
-            item: medicine,
+            item: medKit,
           },
         ],
         [originalVictim.id],
@@ -389,7 +389,7 @@ describe("death loot", () => {
 
     expect(deadVictim?.inventory).toEqual([]);
 
-    expect(survivingKiller?.inventory).toEqual(expect.arrayContaining([knife, medicine]));
+    expect(survivingKiller?.inventory).toEqual(expect.arrayContaining([knife, medKit]));
 
     /*
      * Reusable and limited-use items both
@@ -399,8 +399,8 @@ describe("death loot", () => {
       knife.usesRemaining,
     );
 
-    expect(survivingKiller?.inventory.find((item) => item.id === medicine.id)?.usesRemaining).toBe(
-      medicine.usesRemaining,
+    expect(survivingKiller?.inventory.find((item) => item.id === medKit.id)?.usesRemaining).toBe(
+      medKit.usesRemaining,
     );
 
     const lootTransactions = stateAfterDeath.itemTransactions.filter(
@@ -423,9 +423,9 @@ describe("death loot", () => {
           fromTributeId: victim.id,
           toTributeId: killer.id,
 
-          itemInstanceId: medicine.id,
+          itemInstanceId: medKit.id,
 
-          uses: medicine.usesRemaining,
+          uses: medKit.usesRemaining,
         }),
       ]),
     );

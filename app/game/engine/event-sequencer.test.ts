@@ -507,7 +507,7 @@ describe("ordinary round item reservations", () => {
   });
 
   it("reserves limited-use items referenced by consumption changes", () => {
-    const { state, owner, secondBorrower, outsider, item } = createSharedItemFixture("medicine");
+    const { state, owner, secondBorrower, outsider, item } = createSharedItemFixture("med-kit");
 
     const changes: readonly GameChange[] = [
       {
@@ -537,7 +537,7 @@ describe("ordinary round item reservations", () => {
     const laterSelection = selectRequiredItemEvent(
       state,
       secondBorrower,
-      "medicine",
+      "med-kit",
       new Set<string>(),
       unavailableItemInstanceIds,
     );

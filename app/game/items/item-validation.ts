@@ -72,6 +72,10 @@ function validateUseEffects(definition: ItemDefinition): void {
           fail(definition.id, `need-satisfaction effects require a limited-use consumable item.`);
         }
 
+        if (definition.tags.includes("medicine")) {
+          fail(definition.id, "medical items cannot satisfy food or hydration needs.");
+        }
+
         break;
       }
 
@@ -112,6 +116,38 @@ function validateUseEffects(definition: ItemDefinition): void {
 
         if (!Number.isInteger(effect.severity) || effect.severity < 1 || effect.severity > 3) {
           fail(definition.id, `grants status "${effect.statusId}" with invalid severity.`);
+        }
+
+        if (effect.durationRounds !== undefined) {
+          if (!Number.isInteger(effect.durationRounds) || effect.durationRounds <= 0) {
+            fail(definition.id, "declares an invalid status duration override.");
+          }
+
+          const statusDefinition = getStatusDefinition(effect.statusId);
+
+          if (statusDefinition.duration.kind === "persistent") {
+            fail(definition.id, `cannot override persistent status "${effect.statusId}".`);
+          }
+        }
+
+        break;
+      }
+
+      case "chance-to-grant-status": {
+        validateStatusReference(definition.id, effect.statusId);
+
+        if (grantedStatuses.has(effect.statusId)) {
+          fail(definition.id, `grants status "${effect.statusId}" more than once.`);
+        }
+
+        grantedStatuses.add(effect.statusId);
+
+        if (!Number.isInteger(effect.severity) || effect.severity < 1 || effect.severity > 3) {
+          fail(definition.id, `grants status "${effect.statusId}" with invalid severity.`);
+        }
+
+        if (!Number.isFinite(effect.chance) || effect.chance <= 0 || effect.chance > 1) {
+          fail(definition.id, `declares invalid chance for status "${effect.statusId}".`);
         }
 
         if (effect.durationRounds !== undefined) {

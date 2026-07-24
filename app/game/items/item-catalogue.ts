@@ -1,51 +1,282 @@
-import type { ItemDefinition, ItemDefinitionId } from "./item-schema";
+import type { ItemDefinition, ItemDefinitionId, ItemUseEffect } from "./item-schema";
+
 import {
   itemGrantsStatus,
+  itemMayGrantStatus,
   itemRemovesMedicalStatuses,
   itemRemovesStatuses,
   itemSatisfiesNeed,
 } from "./item-effect-builders";
-import { validateItemCatalogue } from "./item-validation";
+import { validateItemCatalogue } from "~/game/items/item-validation";
+
+const HYDRATION_RECOVERY_EFFECTS = [
+  itemSatisfiesNeed("hydration"),
+
+  itemRemovesStatuses("thirsty", "dehydrated"),
+] as const satisfies readonly ItemUseEffect[];
+
+const FOOD_RECOVERY_EFFECTS = [
+  itemSatisfiesNeed("food"),
+
+  itemRemovesStatuses("hungry", "starving"),
+] as const satisfies readonly ItemUseEffect[];
+
+const CAFFEINATED_DRINK_EFFECTS = [
+  ...HYDRATION_RECOVERY_EFFECTS,
+
+  itemRemovesStatuses("exhausted"),
+
+  itemGrantsStatus("alert", 1),
+] as const satisfies readonly ItemUseEffect[];
 
 export const ITEM_CATALOGUE = [
-  // Consumable resources
+  // Natural resources
   {
     id: "water",
-    label: "Water bottle",
-    description: "Clean water that satisfies hydration and treats dehydration.",
+    label: "Collected water",
+
+    description: "Clean water gathered from the arena that satisfies hydration.",
+
     origin: "natural-resource",
+
     tags: ["consumable", "water"],
+
     maxUses: 1,
 
-    useEffects: [itemSatisfiesNeed("hydration"), itemRemovesStatuses("thirsty", "dehydrated")],
+    useEffects: HYDRATION_RECOVERY_EFFECTS,
   },
+
   {
     id: "food",
-    label: "Food",
-    description: "A supply of food that satisfies hunger and leaves the tribute well-fed.",
+    label: "Gathered food",
+
+    description: "Edible plants, fish, or other natural food gathered from the arena.",
+
     origin: "natural-resource",
+
     tags: ["consumable", "food"],
+
     maxUses: 1,
 
-    survivalBonus: 0.15,
-
-    useEffects: [
-      itemSatisfiesNeed("food"),
-
-      itemRemovesStatuses("hungry", "starving"),
-
-      itemGrantsStatus("well-fed", 1),
-    ],
+    useEffects: FOOD_RECOVERY_EFFECTS,
   },
+
+  // Manufactured food
   {
-    id: "medicine",
-    label: "Medicine",
-    description: "Medical supplies for treating wounds, poison, and burns.",
+    id: "soup",
+    label: "Soup",
+
+    description: "A warm serving of soup that satisfies both hunger and hydration.",
+
     origin: "manufactured",
-    tags: ["consumable", "medicine"],
+
+    tags: ["consumable", "food", "water"],
+
     maxUses: 1,
+
+    useEffects: [...FOOD_RECOVERY_EFFECTS, ...HYDRATION_RECOVERY_EFFECTS],
+  },
+
+  {
+    id: "burger-and-fries",
+    label: "Burger and fries",
+
+    description: "A rich Capitol meal that satisfies hunger and may leave the tribute well fed.",
+
+    origin: "manufactured",
+
+    tags: ["consumable", "food"],
+
+    maxUses: 1,
+
+    useEffects: [...FOOD_RECOVERY_EFFECTS, itemMayGrantStatus("well-fed", 1, 0.5)],
+  },
+
+  {
+    id: "pizza-box",
+    label: "Pizza box",
+
+    description: "A box containing enough pizza for three separate meals.",
+
+    origin: "manufactured",
+
+    tags: ["consumable", "food"],
+
+    maxUses: 3,
+
+    useEffects: FOOD_RECOVERY_EFFECTS,
+  },
+
+  // Manufactured drinks
+  {
+    id: "bottled-water",
+    label: "Bottled water",
+
+    description: "A sealed bottle containing two servings of clean water.",
+
+    origin: "manufactured",
+
+    tags: ["consumable", "water"],
+
+    maxUses: 2,
+
+    useEffects: HYDRATION_RECOVERY_EFFECTS,
+  },
+
+  {
+    id: "coffee",
+    label: "Coffee",
+
+    description:
+      "A caffeinated drink that restores hydration, removes exhaustion, and improves alertness.",
+
+    origin: "manufactured",
+
+    tags: ["consumable", "water"],
+
+    maxUses: 1,
+
+    useEffects: CAFFEINATED_DRINK_EFFECTS,
+  },
+
+  {
+    id: "coca-cola",
+    label: "Coca-Cola",
+
+    description:
+      "A caffeinated soft drink that restores hydration, removes exhaustion, and improves alertness.",
+
+    origin: "manufactured",
+
+    tags: ["consumable", "water"],
+
+    maxUses: 1,
+
+    useEffects: CAFFEINATED_DRINK_EFFECTS,
+  },
+
+  {
+    id: "energy-drink",
+    label: "Energy drink",
+
+    description:
+      "A strongly caffeinated drink that restores hydration, removes exhaustion, and improves alertness.",
+
+    origin: "manufactured",
+
+    tags: ["consumable", "water"],
+
+    maxUses: 1,
+
+    useEffects: CAFFEINATED_DRINK_EFFECTS,
+  },
+
+  {
+    id: "hot-chocolate",
+    label: "Hot chocolate",
+
+    description:
+      "A comforting hot drink that restores hydration and brings a temporary stroke of luck.",
+
+    origin: "manufactured",
+
+    tags: ["consumable", "water"],
+
+    maxUses: 1,
+
+    useEffects: [...HYDRATION_RECOVERY_EFFECTS, itemGrantsStatus("lucky", 1)],
+  },
+
+  {
+    id: "herbal-tea",
+    label: "Herbal tea",
+
+    description: "A restorative herbal drink that restores hydration and relieves exhaustion.",
+
+    origin: "manufactured",
+
+    tags: ["consumable", "water"],
+
+    maxUses: 1,
+
+    useEffects: [...HYDRATION_RECOVERY_EFFECTS, itemRemovesStatuses("exhausted")],
+  },
+
+  // Medical supplies
+  {
+    id: "med-kit",
+    label: "Med kit",
+
+    description:
+      "A comprehensive medical kit with three uses that treats wounds, burns, and poisoning.",
+
+    origin: "manufactured",
+
+    tags: ["consumable", "medicine"],
+
+    maxUses: 3,
 
     useEffects: [itemRemovesMedicalStatuses()],
+  },
+
+  {
+    id: "bandages",
+    label: "Bandages",
+
+    description: "Sterile bandages for treating injuries and stopping bleeding.",
+
+    origin: "manufactured",
+
+    tags: ["consumable", "medicine"],
+
+    maxUses: 1,
+
+    useEffects: [itemRemovesStatuses("injured", "bleeding")],
+  },
+
+  {
+    id: "painkillers",
+    label: "Painkillers",
+
+    description: "A dose of painkillers that helps a tribute recover from an injury.",
+
+    origin: "manufactured",
+
+    tags: ["consumable", "medicine"],
+
+    maxUses: 1,
+
+    useEffects: [itemRemovesStatuses("injured")],
+  },
+
+  {
+    id: "burn-kit",
+    label: "Burn kit",
+
+    description: "Specialized dressings and ointment for treating burns.",
+
+    origin: "manufactured",
+
+    tags: ["consumable", "medicine"],
+
+    maxUses: 1,
+
+    useEffects: [itemRemovesStatuses("burned")],
+  },
+
+  {
+    id: "antidote",
+    label: "Antidote",
+
+    description: "A rare antidote capable of neutralizing arena poisons.",
+
+    origin: "manufactured",
+
+    tags: ["consumable", "medicine"],
+
+    maxUses: 1,
+
+    useEffects: [itemRemovesStatuses("poisoned")],
   },
 
   // Shelter and utility

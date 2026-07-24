@@ -30,7 +30,15 @@ const DAY_THREE = {
 
 function withStatus(
   tribute: GameTribute,
-  statusId: "bleeding" | "injured" | "thirsty" | "dehydrated" | "hungry" | "starving",
+  statusId:
+    | "bleeding"
+    | "injured"
+    | "poisoned"
+    | "burned"
+    | "thirsty"
+    | "dehydrated"
+    | "hungry"
+    | "starving",
   durationRounds?: number,
 ): GameTribute {
   return {
@@ -74,26 +82,29 @@ function createDeadTestTribute(tribute: GameTribute): GameTribute {
 }
 
 describe("prepareRound", () => {
-  it("visibly applies urgent medical treatment", () => {
+  it("visibly applies specific medical treatment", () => {
     let tribute = createAuthoringTestTribute({
       id: "patient",
+      name: "Katniss",
     });
 
     tribute = withStatus(tribute, "bleeding", 1);
 
     tribute = withStatus(tribute, "injured");
 
-    tribute = withAuthoringTestItem(tribute, "medicine");
+    tribute = withAuthoringTestItem(tribute, "bandages");
 
-    const medicine = tribute.inventory[0];
+    const bandages = tribute.inventory[0];
 
-    if (!medicine) {
-      throw new Error("Expected a medicine fixture.");
+    if (!bandages) {
+      throw new Error("Expected a bandages fixture.");
     }
 
-    const game = createAuthoringTestGame([tribute]);
+    const prepared = prepareRound(
+      createAuthoringTestGame([tribute]),
 
-    const prepared = prepareRound(game, ROUND);
+      ROUND,
+    );
 
     expect(prepared.events).toHaveLength(1);
 
@@ -101,15 +112,19 @@ describe("prepareRound", () => {
       kind: "preparation",
 
       preparation: {
-        mechanic: "urgent-medical-treatment",
+        mechanic: "medical-treatment",
 
         actingTributeId: tribute.id,
 
+        itemDefinitionId: "bandages",
+
         itemOwnerTributeId: tribute.id,
 
-        itemInstanceId: medicine.id,
+        itemInstanceId: bandages.id,
 
         usesRemainingAfter: 0,
+
+        affectedStatusIds: ["bleeding", "injured"],
       },
     });
 
@@ -117,25 +132,35 @@ describe("prepareRound", () => {
 
     expect(prepared.state.tributes[0].inventory).toEqual([]);
 
-    expect(prepared.state.eventHistory).toContainEqual(prepared.events[0]);
-
-    expect(prepared.committedItemInstanceIds).toContain(medicine.id);
+    expect(prepared.committedItemInstanceIds).toContain(bandages.id);
   });
 
-  it("does not consume medicine for non-urgent treatment", () => {
-    let tribute = createAuthoringTestTribute();
+  it("treats a nonfatal medical condition", () => {
+    let tribute = createAuthoringTestTribute({
+      id: "burn-patient",
+    });
 
-    tribute = withStatus(tribute, "bleeding", 2);
+    tribute = withStatus(tribute, "burned");
 
-    tribute = withAuthoringTestItem(tribute, "medicine");
+    tribute = withAuthoringTestItem(tribute, "burn-kit");
 
-    const game = createAuthoringTestGame([tribute]);
+    const prepared = prepareRound(
+      createAuthoringTestGame([tribute]),
 
-    const prepared = prepareRound(game, ROUND);
+      ROUND,
+    );
 
-    expect(prepared.events).toEqual([]);
+    expect(prepared.events).toHaveLength(1);
 
-    expect(prepared.state.tributes[0].inventory).toHaveLength(1);
+    expect(prepared.events[0].preparation).toMatchObject({
+      mechanic: "medical-treatment",
+
+      itemDefinitionId: "burn-kit",
+
+      affectedStatusIds: ["burned"],
+    });
+
+    expect(prepared.state.tributes[0].statuses).toEqual([]);
   });
 
   it("resolves hydration before food", () => {
@@ -170,12 +195,13 @@ describe("prepareRound", () => {
 
     expect(preparedTribute.survival.roundsWithoutFood).toBe(0);
 
-    expect(preparedTribute.statuses.map((status) => status.definitionId)).toEqual(["well-fed"]);
+    expect(preparedTribute.statuses).toEqual([]);
   });
 
-  it("attributes borrowed medicine to its physical owner", () => {
+  it("shows borrowed medical treatment in preparation text", () => {
     let patient = createAuthoringTestTribute({
       id: "patient",
+      name: "Katniss",
     });
 
     patient = {
@@ -184,10 +210,11 @@ describe("prepareRound", () => {
       districtPosition: 1,
     };
 
-    patient = withStatus(patient, "bleeding", 1);
+    patient = withStatus(patient, "poisoned", 1);
 
     let owner = createAuthoringTestTribute({
       id: "owner",
+      name: "Peeta",
     });
 
     owner = {
@@ -196,16 +223,24 @@ describe("prepareRound", () => {
       districtPosition: 2,
     };
 
-    owner = withAuthoringTestItem(owner, "medicine");
+    owner = withAuthoringTestItem(owner, "antidote");
 
     const game: GameState = {
       ...createAuthoringTestGame([patient, owner]),
 
       truces: [
-        createTruceInstance("preparation-truce", [patient.id, owner.id], ROUND, {
-          day: 3,
-          period: "day",
-        }),
+        createTruceInstance(
+          "preparation-truce",
+
+          [patient.id, owner.id],
+
+          ROUND,
+
+          {
+            day: 3,
+            period: "day",
+          },
+        ),
       ],
     };
 
@@ -213,14 +248,22 @@ describe("prepareRound", () => {
 
     const event = prepared.events[0];
 
+    expect(event.text).toBe("Katniss uses Peeta's antidote to treat their poisoning.");
+
     expect(event.preparation).toMatchObject({
+      mechanic: "medical-treatment",
+
       actingTributeId: patient.id,
+
+      itemDefinitionId: "antidote",
+
       itemOwnerTributeId: owner.id,
     });
 
     expect(event.changes).toContainEqual(
       expect.objectContaining({
         type: "consume-item",
+
         tributeId: owner.id,
       }),
     );

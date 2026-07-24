@@ -26,8 +26,13 @@ import { THEFT_EVENTS } from "~/game/events/catalogue/encounters/theft-events";
 import { RELATIONSHIP_EVENTS } from "~/game/events/catalogue/relationships";
 import { STAT_GATED_EVENTS } from "~/game/events/catalogue/stat-gated";
 import { getRoundSequence } from "~/game/engine/rounds";
+import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { COMBAT_EVENTS } from "~/game/events/catalogue/encounters/combat-events";
+import {
+  CORNUCOPIA_PACK_ITEM_POOL,
+  type CornucopiaPackRarity,
+} from "~/game/events/catalogue/bloodbath/cornucopia-item-pool";
 
 const simulationCache = new Map<string, GameState>();
 
@@ -40,6 +45,11 @@ type TransferItemChange = Extract<
 
 const CORNUCOPIA_EVENT_IDS = new Set(CORNUCOPIA_EVENTS.map((event) => event.id));
 const ORDINARY_COMBAT_EVENT_IDS = new Set(COMBAT_EVENTS.map((event) => event.id));
+const CORNUCOPIA_PACK_ENTRY_BY_ITEM_ID = new Map<
+  ItemDefinitionId,
+  (typeof CORNUCOPIA_PACK_ITEM_POOL)[number]
+>(CORNUCOPIA_PACK_ITEM_POOL.map((entry) => [entry.itemId, entry]));
+
 const SIMULATION_BALANCE_GUARDRAILS = {
   halfGameAverageRounds: {
     minimumExclusive: 1,
@@ -147,6 +157,16 @@ function getGameLengthInRounds(state: GameState): number {
 function getAcquisitionTransactions(state: GameState): AcquiredInventoryTransaction[] {
   return state.itemTransactions.filter(
     (transaction): transaction is AcquiredInventoryTransaction => transaction.type === "acquired",
+  );
+}
+
+function getCornucopiaPackAcquisitions(state: GameState): AcquiredInventoryTransaction[] {
+  const definitionIdByEventId = new Map(
+    state.eventHistory.map((event) => [event.id, event.definitionId]),
+  );
+
+  return getAcquisitionTransactions(state).filter(
+    (transaction) => definitionIdByEventId.get(transaction.sourceId) === "cornucopia-nearby-pack",
   );
 }
 
@@ -564,6 +584,60 @@ describe("simulation stress tests", () => {
     }
 
     expect(postDayOneNaturalAcquisitionCount).toBeGreaterThan(0);
+  });
+
+  it("keeps weighted Cornucopia pack acquisitions legal and balanced", () => {
+    const acquisitions = getStressResults().flatMap(getCornucopiaPackAcquisitions);
+
+    expect(acquisitions.length).toBeGreaterThan(0);
+
+    const rarityCounts: Record<CornucopiaPackRarity, number> = {
+      common: 0,
+      standard: 0,
+      uncommon: 0,
+      rare: 0,
+    };
+
+    let foodOrDrinkCount = 0;
+    let medicalCount = 0;
+
+    for (const acquisition of acquisitions) {
+      const entry = CORNUCOPIA_PACK_ENTRY_BY_ITEM_ID.get(acquisition.definitionId);
+
+      expect(entry).toBeDefined();
+
+      if (!entry) {
+        continue;
+      }
+
+      rarityCounts[entry.rarity] += 1;
+
+      const definition = getItemDefinition(acquisition.definitionId);
+
+      expect(definition.origin).toBe("manufactured");
+
+      expect(acquisition.acquisitionSource).toBe("cornucopia");
+
+      if (definition.tags.includes("food") || definition.tags.includes("water")) {
+        foodOrDrinkCount += 1;
+      }
+
+      if (definition.tags.includes("medicine")) {
+        medicalCount += 1;
+      }
+    }
+
+    expect(foodOrDrinkCount).toBeGreaterThan(0);
+
+    expect(medicalCount).toBeGreaterThan(0);
+
+    expect(rarityCounts.common + rarityCounts.standard).toBeGreaterThan(
+      rarityCounts.uncommon + rarityCounts.rare,
+    );
+
+    expect(rarityCounts.common).toBeGreaterThan(rarityCounts.rare);
+
+    expect(rarityCounts.rare / acquisitions.length).toBeLessThan(0.15);
   });
 
   it("records every post-Day-1 manufactured ownership change as one transfer transaction", () => {

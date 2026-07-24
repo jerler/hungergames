@@ -10,7 +10,7 @@ import type {
   TributeSurvivalState,
 } from "~/game/survival/survival-schema";
 
-export const CURRENT_GAME_STATE_SCHEMA_VERSION = 3 as const;
+export const CURRENT_GAME_STATE_SCHEMA_VERSION = 4 as const;
 
 export type GamePhase = "opening" | "round-events" | "round-complete" | "victory" | "statistics";
 
@@ -316,7 +316,7 @@ export type ResolvedEventKind =
 export type EventResolutionMode = "standard" | "safety";
 
 export type PreparationMechanic =
-  | "urgent-medical-treatment"
+  | "medical-treatment"
   | "hydration-consumption"
   | "food-consumption"
   | "night-rest-preparation"

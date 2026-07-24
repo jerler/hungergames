@@ -330,7 +330,7 @@ describe("truce conflict events", () => {
       }),
     };
 
-    state = acquireItem(state, partner, "medicine", "cornucopia", 1);
+    state = acquireItem(state, partner, "med-kit", "cornucopia", 1);
 
     const itemBefore = state.tributes.find((tribute) => tribute.id === partner.id)?.inventory[0];
 

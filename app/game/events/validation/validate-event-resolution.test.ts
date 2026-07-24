@@ -101,7 +101,7 @@ describe("validateEventResolution", () => {
   });
 
   it("rejects unsupported sponsor acquisition", () => {
-    const item = createInventoryItemInstance("resolved-event", "tribute", "medicine", DAY_TWO);
+    const item = createInventoryItemInstance("resolved-event", "tribute", "med-kit", DAY_TWO);
 
     expect(() =>
       validate({

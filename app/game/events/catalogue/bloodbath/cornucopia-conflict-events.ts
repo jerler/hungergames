@@ -15,6 +15,7 @@ import {
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { GameTribute } from "~/game/types/game-state";
 import { getTributePronouns } from "~/game/tributes/pronouns";
+import { selectCornucopiaPackItem } from "./cornucopia-item-pool";
 
 const CONTESTED_WEAPON_ITEM_IDS = [
   "knife",
@@ -22,18 +23,6 @@ const CONTESTED_WEAPON_ITEM_IDS = [
   "spear",
   "axe",
   "bow",
-] satisfies readonly ItemDefinitionId[];
-
-const CONTESTED_PACK_ITEM_IDS = [
-  "medicine",
-  "blanket",
-  "matches",
-  "rope",
-  "map",
-  "camouflage-net",
-  "fishing-gear",
-  "trap-kit",
-  "shield",
 ] satisfies readonly ItemDefinitionId[];
 
 type PairConflictOutcome = "attacker-dies" | "both-retreat" | "attacker-wins" | "defender-dies";
@@ -72,7 +61,9 @@ const GROUP_CONFLICT_OUTCOME_WEIGHTS = {
 interface ConflictDefinitionOptions {
   id: string;
   baseWeight: number;
-  itemIds: readonly ItemDefinitionId[];
+
+  selectItem: (random: RandomSource) => ItemDefinitionId;
+
   resourceDescription: string;
 }
 
@@ -153,7 +144,7 @@ function resolveGroupConflictOutcome(random: RandomSource): GroupConflictOutcome
 function createPairConflictEvent({
   id,
   baseWeight,
-  itemIds,
+  selectItem,
   resourceDescription,
 }: ConflictDefinitionOptions): EventDefinition {
   return {
@@ -189,7 +180,7 @@ function createPairConflictEvent({
 
       switch (outcome) {
         case "attacker-dies": {
-          const itemId = selectRandomItem(itemIds, random);
+          const itemId = selectItem(random);
 
           const text =
             `${attacker.snapshot.name} attacks ` +
@@ -233,7 +224,7 @@ function createPairConflictEvent({
           };
 
         case "attacker-wins": {
-          const itemId = selectRandomItem(itemIds, random);
+          const itemId = selectItem(random);
 
           return {
             text:
@@ -258,7 +249,7 @@ function createPairConflictEvent({
         }
 
         case "defender-dies": {
-          const itemId = selectRandomItem(itemIds, random);
+          const itemId = selectItem(random);
 
           const text =
             `${attacker.snapshot.name} kills ` +
@@ -289,7 +280,7 @@ function createPairConflictEvent({
 function createGroupConflictEvent({
   id,
   baseWeight,
-  itemIds,
+  selectItem,
   resourceDescription,
 }: ConflictDefinitionOptions): EventDefinition {
   return {
@@ -344,7 +335,7 @@ function createGroupConflictEvent({
 
           const victims = contenders.filter((tribute) => tribute.id !== winner.id);
 
-          const itemId = selectRandomItem(itemIds, random);
+          const itemId = selectItem(random);
 
           const text =
             `${winner.snapshot.name} survives a brutal ` +
@@ -384,7 +375,7 @@ function createGroupConflictEvent({
             throw new Error(`Event "${id}" could not resolve its escaping contender.`);
           }
 
-          const itemId = selectRandomItem(itemIds, random);
+          const itemId = selectItem(random);
 
           const escapeStatus = random() < 0.5 ? "injured" : "exhausted";
 
@@ -443,15 +434,21 @@ function createGroupConflictEvent({
 export const CORNUCOPIA_PAIR_CONFLICT_EVENTS = [
   createPairConflictEvent({
     id: "cornucopia-contested-weapon",
+
     baseWeight: 6,
-    itemIds: CONTESTED_WEAPON_ITEM_IDS,
+
+    selectItem: (random) => selectRandomItem(CONTESTED_WEAPON_ITEM_IDS, random),
+
     resourceDescription: "the same weapon",
   }),
 
   createPairConflictEvent({
     id: "cornucopia-pack-ambush",
+
     baseWeight: 5,
-    itemIds: CONTESTED_PACK_ITEM_IDS,
+
+    selectItem: selectCornucopiaPackItem,
+
     resourceDescription: "an unopened supply pack",
   }),
 ] satisfies readonly EventDefinition[];
@@ -459,15 +456,21 @@ export const CORNUCOPIA_PAIR_CONFLICT_EVENTS = [
 export const CORNUCOPIA_GROUP_CONFLICT_EVENTS = [
   createGroupConflictEvent({
     id: "cornucopia-three-way-weapon-melee",
+
     baseWeight: 7,
-    itemIds: CONTESTED_WEAPON_ITEM_IDS,
+
+    selectItem: (random) => selectRandomItem(CONTESTED_WEAPON_ITEM_IDS, random),
+
     resourceDescription: "a pile of weapons",
   }),
 
   createGroupConflictEvent({
     id: "cornucopia-entrance-collision",
+
     baseWeight: 6,
-    itemIds: CONTESTED_PACK_ITEM_IDS,
+
+    selectItem: selectCornucopiaPackItem,
+
     resourceDescription: "a collection of supply packs",
   }),
 ] satisfies readonly EventDefinition[];

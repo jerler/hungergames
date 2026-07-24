@@ -441,7 +441,7 @@ describe("truce engine", () => {
 
     const recipient = game.tributes[1];
 
-    const item = createInventoryItemInstance("item-found", source.id, "medicine", DAY_ONE);
+    const item = createInventoryItemInstance("item-found", source.id, "med-kit", DAY_ONE);
 
     const stateWithItem = applyResolvedEvent(
       game,
@@ -513,7 +513,7 @@ describe("truce engine", () => {
 
     const members = game.tributes.slice(0, 3);
 
-    const itemIds = ["water", "food", "medicine", "blanket", "rope"] as const;
+    const itemIds = ["water", "food", "med-kit", "blanket", "rope"] as const;
 
     const acquiredItems = itemIds.map((itemId, index) =>
       createInventoryItemInstance(`setup-item-${index}`, members[0].id, itemId, DAY_ONE),

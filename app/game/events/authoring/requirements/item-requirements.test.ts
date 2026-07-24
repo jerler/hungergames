@@ -134,7 +134,7 @@ describe("required-item role compilation", () => {
       [hasTreatmentFor("patient", "bleeding")],
     );
 
-    expect(role?.requiredItemDefinitionIds).toEqual(["medicine"]);
+    expect(role?.requiredItemDefinitionIds).toEqual(["med-kit", "bandages"]);
   });
 });
 

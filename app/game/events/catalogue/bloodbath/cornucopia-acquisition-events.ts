@@ -11,18 +11,10 @@ import {
 } from "~/game/events/event-schema";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getTributePronouns } from "~/game/tributes/pronouns";
-
-const PACK_ITEM_IDS = [
-  "medicine",
-  "blanket",
-  "matches",
-  "rope",
-  "map",
-  "camouflage-net",
-  "fishing-gear",
-  "trap-kit",
-  "shield",
-] satisfies readonly ItemDefinitionId[];
+import {
+  selectCornucopiaPackItem,
+  selectDistinctCornucopiaPackItems,
+} from "./cornucopia-item-pool";
 
 const EDGE_WEAPON_ITEM_IDS = [
   "knife",
@@ -31,25 +23,6 @@ const EDGE_WEAPON_ITEM_IDS = [
   "axe",
   "bow",
 ] satisfies readonly ItemDefinitionId[];
-
-function selectDistinctItems(
-  itemIds: readonly ItemDefinitionId[],
-  count: number,
-  random: () => number,
-): ItemDefinitionId[] {
-  const remainingItemIds = [...itemIds];
-  const selectedItemIds: ItemDefinitionId[] = [];
-
-  while (selectedItemIds.length < count && remainingItemIds.length > 0) {
-    const selectedItemId = selectRandomItem(remainingItemIds, random);
-
-    selectedItemIds.push(selectedItemId);
-
-    remainingItemIds.splice(remainingItemIds.indexOf(selectedItemId), 1);
-  }
-
-  return selectedItemIds;
-}
 
 export const CORNUCOPIA_ACQUISITION_EVENTS = [
   {
@@ -93,7 +66,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
           };
 
         case "success": {
-          const itemId = selectRandomItem(PACK_ITEM_IDS, random);
+          const itemId = selectCornucopiaPackItem(random);
 
           return {
             text:
@@ -111,7 +84,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
         }
 
         case "exceptional-success": {
-          const itemIds = selectDistinctItems(PACK_ITEM_IDS, 2, random);
+          const itemIds = selectDistinctCornucopiaPackItems(2, random);
 
           const itemLabels = itemIds.map(getItemLabel);
 

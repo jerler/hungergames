@@ -27,6 +27,9 @@ function getItemUseEffectStrategicValue(effect: ItemUseEffect): number {
 
     case "grant-status":
       return 0.35 + effect.severity * 0.25;
+
+    case "chance-to-grant-status":
+      return (0.35 + effect.severity * 0.25) * effect.chance;
   }
 }
 

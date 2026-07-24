@@ -108,8 +108,9 @@ function compileRequiredItemEffect(
 
         return compileItemUseEffects({
           eventId: context.eventId,
-
           round: context.round,
+
+          random: context.random,
 
           actingTribute,
           owner,

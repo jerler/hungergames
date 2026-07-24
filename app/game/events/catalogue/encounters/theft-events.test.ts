@@ -490,7 +490,7 @@ describe("theft participant selection", () => {
 
   it("does not select a target whose owned item has no remaining uses", () => {
     const fixture = createTheftFixture({
-      targetItemDefinitionIds: ["medicine"],
+      targetItemDefinitionIds: ["med-kit"],
 
       targetItemUsesRemaining: [0],
     });
@@ -741,7 +741,7 @@ describe("theft resolution", () => {
 
   it("kills the thief and transfers their complete inventory as identity-preserving death loot", () => {
     const fixture = createResolutionFixture({
-      thiefItemDefinitionIds: ["map", "medicine"],
+      thiefItemDefinitionIds: ["map", "med-kit"],
 
       targetItemDefinitionIds: ["matches"],
     });
@@ -998,7 +998,7 @@ describe("theft resolution", () => {
 
   it("transfers at most two distinct items on exceptional success", () => {
     const fixture = createResolutionFixture({
-      targetItemDefinitionIds: ["rope", "map", "medicine"],
+      targetItemDefinitionIds: ["rope", "map", "med-kit"],
     });
 
     const [primaryItem, reservedItem, availableItem] = fixture.targetItems;

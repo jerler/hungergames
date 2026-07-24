@@ -31,7 +31,7 @@ const RESOLVED_EVENT_KINDS = new Set<ResolvedEventKind>([
 ]);
 
 const PREPARATION_MECHANICS = new Set([
-  "urgent-medical-treatment",
+  "medical-treatment",
   "hydration-consumption",
   "food-consumption",
   "night-rest-preparation",
@@ -39,7 +39,7 @@ const PREPARATION_MECHANICS = new Set([
 ]);
 
 const ITEM_PREPARATION_MECHANICS = new Set([
-  "urgent-medical-treatment",
+  "medical-treatment",
   "hydration-consumption",
   "food-consumption",
 ]);

@@ -10,22 +10,21 @@ import type {
   RoundReference,
 } from "~/game/types/game-state";
 import type { SurvivalNeed } from "~/game/survival/survival-schema";
+import type { RandomSource } from "~/game/engine/random";
 
 export interface CompileItemUseEffectsOptions {
   eventId: string;
   round: RoundReference;
 
   actingTribute: GameTribute;
+  owner: GameTribute;
+  item: InventoryItem;
 
   /**
-   * The tribute who physically owns the item.
-   *
-   * This may differ from actingTribute when the item
-   * is borrowed through a truce.
+   * Required only when an effect contains a
+   * probabilistic outcome.
    */
-  owner: GameTribute;
-
-  item: InventoryItem;
+  random?: RandomSource;
 
   reason?: string;
 }
@@ -100,6 +99,7 @@ export function compileItemUseEffectChanges({
   actingTribute,
   owner,
   item,
+  random,
   reason = eventId,
   effects,
 }: CompileExplicitItemUseEffectsOptions): GameChange[] {
@@ -132,6 +132,31 @@ export function compileItemUseEffectChanges({
 
         break;
 
+      case "chance-to-grant-status": {
+        if (!random) {
+          throw new Error(
+            `Item "${item.definitionId}" requires a random source ` +
+              `to resolve chance-based status "${effect.statusId}".`,
+          );
+        }
+
+        if (random() >= effect.chance) {
+          break;
+        }
+
+        changes.push(
+          createStatusChange(
+            eventId,
+            actingTribute,
+            effect.statusId,
+            effect.severity,
+            round,
+            effect.durationRounds,
+          ),
+        );
+
+        break;
+      }
       case "remove-status":
       case "remove-medical-statuses":
         break;

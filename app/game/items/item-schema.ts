@@ -2,21 +2,43 @@ import type { StatusEffectId } from "~/game/statuses/status-schema";
 import type { TributeStats, TributeStatValue } from "~/game/types/tribute";
 
 export type ItemDefinitionId =
+  // Natural resources
   | "water"
-  | "medicine"
+  | "food"
+
+  // Manufactured food and drinks
+  | "soup"
+  | "burger-and-fries"
+  | "pizza-box"
+  | "bottled-water"
+  | "coffee"
+  | "coca-cola"
+  | "energy-drink"
+  | "hot-chocolate"
+  | "herbal-tea"
+
+  // Medical supplies
+  | "med-kit"
+  | "bandages"
+  | "painkillers"
+  | "burn-kit"
+  | "antidote"
+
+  // Shelter and utility
   | "blanket"
   | "matches"
   | "rope"
-  | "knife"
-  | "spear"
-  | "bow"
-  | "food"
-  | "shield"
-  | "axe"
   | "map"
   | "trap-kit"
   | "camouflage-net"
   | "fishing-gear"
+
+  // Equipment
+  | "knife"
+  | "spear"
+  | "bow"
+  | "shield"
+  | "axe"
   | "slingshot";
 
 export type ItemOrigin = "natural-resource" | "manufactured";
@@ -58,6 +80,22 @@ export interface RemoveMedicalStatusesItemEffect {
   type: "remove-medical-statuses";
 }
 
+export interface ChanceToGrantStatusItemEffect {
+  type: "chance-to-grant-status";
+
+  statusId: StatusEffectId;
+  severity: 1 | 2 | 3;
+
+  /**
+   * Inclusive lower bound, exclusive upper bound:
+   *
+   * random() < chance
+   */
+  chance: number;
+
+  durationRounds?: number;
+}
+
 export interface GrantStatusItemEffect {
   type: "grant-status";
   statusId: StatusEffectId;
@@ -69,7 +107,8 @@ export type ItemUseEffect =
   | SatisfyNeedItemEffect
   | RemoveStatusItemEffect
   | RemoveMedicalStatusesItemEffect
-  | GrantStatusItemEffect;
+  | GrantStatusItemEffect
+  | ChanceToGrantStatusItemEffect;
 
 export type ItemRestCheckStat = "brains" | "luck" | "brains-or-luck";
 

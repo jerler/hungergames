@@ -331,7 +331,7 @@ describe("theft weighting formulas", () => {
         luck: 5,
       },
 
-      itemDefinitionIds: ["bow", "medicine"],
+      itemDefinitionIds: ["bow", "med-kit"],
     });
 
     expect(getTheftTargetWeight(strongTarget, thief)).toBeGreaterThan(
@@ -449,7 +449,7 @@ describe("theft weighting formulas", () => {
         luck: 5,
       },
 
-      itemDefinitionIds: ["bow", "medicine"],
+      itemDefinitionIds: ["bow", "med-kit"],
     });
 
     const context = createContext([thief, target]);

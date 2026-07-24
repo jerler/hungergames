@@ -11,7 +11,7 @@ const ROUND = {
 } as const;
 
 describe("item effect compilation", () => {
-  it("applies food effects to the user and consumption to the owner", () => {
+  it("applies natural food effects to the user and consumption to the owner", () => {
     const owner = createAuthoringTestTribute({
       id: "owner",
     });
@@ -49,15 +49,6 @@ describe("item effect compilation", () => {
         }),
 
         expect.objectContaining({
-          type: "apply-status",
-          tributeId: actingTribute.id,
-
-          status: expect.objectContaining({
-            definitionId: "well-fed",
-          }),
-        }),
-
-        expect.objectContaining({
           type: "consume-item",
           tributeId: owner.id,
           itemInstanceId: food.id,
@@ -81,15 +72,15 @@ describe("item effect compilation", () => {
       ],
     };
 
-    const medicine = createInventoryItemInstance("medicine-event", tribute.id, "medicine", ROUND);
+    const medKit = createInventoryItemInstance("med-kit-event", tribute.id, "med-kit", ROUND);
 
     const changes = compileItemUseEffects({
-      eventId: "use-medicine",
+      eventId: "use-med-kit",
       round: ROUND,
 
       actingTribute,
-      owner: actingTribute,
-      item: medicine,
+      owner: tribute,
+      item: medKit,
     });
 
     const removedStatusIds = changes.flatMap((change) =>

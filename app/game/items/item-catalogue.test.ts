@@ -6,7 +6,25 @@ import type { ItemDefinitionId, ItemOrigin } from "./item-schema";
 const NATURAL_RESOURCE_ITEM_IDS = ["water", "food"] satisfies readonly ItemDefinitionId[];
 
 const MANUFACTURED_ITEM_IDS = [
-  "medicine",
+  // Manufactured food and drinks
+  "soup",
+  "burger-and-fries",
+  "pizza-box",
+  "bottled-water",
+  "coffee",
+  "coca-cola",
+  "energy-drink",
+  "hot-chocolate",
+  "herbal-tea",
+
+  // Medical supplies
+  "med-kit",
+  "bandages",
+  "painkillers",
+  "burn-kit",
+  "antidote",
+
+  // Shelter and utility
   "blanket",
   "matches",
   "rope",
@@ -14,6 +32,8 @@ const MANUFACTURED_ITEM_IDS = [
   "camouflage-net",
   "fishing-gear",
   "trap-kit",
+
+  // Equipment
   "shield",
   "knife",
   "slingshot",
@@ -121,7 +141,7 @@ describe("item catalogue treatments", () => {
       ]),
     );
 
-    expect(getItemDefinition("medicine").useEffects).toContainEqual({
+    expect(getItemDefinition("med-kit").useEffects).toContainEqual({
       type: "remove-medical-statuses",
     });
 
@@ -185,7 +205,7 @@ describe("item catalogue treatments", () => {
 
     expect(getItemDefinition("shield").maxUses).toBeUndefined();
 
-    expect(getItemDefinition("medicine").maxUses).toBe(1);
+    expect(getItemDefinition("med-kit").maxUses).toBe(3);
 
     expect(getItemDefinition("water").maxUses).toBe(1);
   });

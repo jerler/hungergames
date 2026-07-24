@@ -315,6 +315,41 @@ export type ResolvedEventKind =
 
 export type EventResolutionMode = "standard" | "safety";
 
+export type PreparationMechanic =
+  | "urgent-medical-treatment"
+  | "hydration-consumption"
+  | "food-consumption"
+  | "night-rest-preparation"
+  | "morning-rest-resolution";
+
+export interface PreparationEventDetails {
+  mechanic: PreparationMechanic;
+
+  /**
+   * The tribute receiving the preparation benefit.
+   */
+  actingTributeId: string;
+
+  /**
+   * Item fields are omitted for preparation events
+   * that do not use an inventory item.
+   */
+  itemInstanceId?: string;
+  itemDefinitionId?: ItemDefinitionId;
+  itemOwnerTributeId?: string;
+
+  /**
+   * Null represents reusable equipment.
+   * Zero means a limited-use item was exhausted.
+   */
+  usesRemainingAfter?: number | null;
+
+  affectedNeed?: SurvivalNeed;
+  affectedStatusIds?: StatusEffectId[];
+
+  restQuality?: NightRestQuality;
+}
+
 export interface ResolvedEvent {
   id: string;
   definitionId: string;
@@ -326,6 +361,8 @@ export interface ResolvedEvent {
 
   text: string;
   changes: GameChange[];
+
+  preparation?: PreparationEventDetails;
 }
 
 export interface EngineState {

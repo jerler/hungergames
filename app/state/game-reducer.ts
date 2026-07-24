@@ -9,6 +9,7 @@ import { advanceStatusDurations } from "~/game/statuses/status-engine";
 import { expireTrucesAfterRound } from "~/game/truces/truce-engine";
 import { createSoleVictoryOutcome } from "~/game/victory/victory-outcome";
 import { loadGameState } from "~/game/persistence/game-state-loader";
+import { prepareRound } from "~/game/survival/round-preparation";
 
 export type GameReducerState = GameState | null;
 
@@ -48,15 +49,29 @@ function beginNextRound(state: GameState, now: string): GameState {
 
   const nextRound = getNextRound(state.currentRound);
 
+  const preparedRound = prepareRound(state, nextRound);
+
+  const primaryEvents = resolveRound(
+    preparedRound.state,
+    nextRound,
+    preparedRound.committedItemInstanceIds,
+  );
+
   return finalizeState({
-    ...state,
+    ...preparedRound.state,
 
     phase: "round-events",
     currentRound: nextRound,
 
-    roundEvents: resolveRound(state, nextRound),
+    roundEvents: [...preparedRound.events, ...primaryEvents],
 
-    revealedEventCount: 0,
+    /*
+     * Preparation has already been applied and is
+     * immediately visible. The first hidden event is
+     * therefore the first primary event.
+     */
+    revealedEventCount: preparedRound.events.length,
+
     updatedAt: now,
   });
 }

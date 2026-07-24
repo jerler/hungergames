@@ -148,7 +148,43 @@ export function reserveEventCommitments(
   }
 }
 
-export function sequenceRoundEvents(state: GameState, round: RoundReference): ResolvedEvent[] {
+function getCommittedItemOwnerIds(
+  state: GameState,
+  committedItemInstanceIds: ReadonlySet<string>,
+): Set<string> {
+  const ownerIds = new Set<string>();
+
+  /*
+   * A preparation item may remain in inventory after use:
+   *
+   * - reusable equipment remains unchanged
+   * - limited-use equipment may retain additional uses
+   *
+   * Reserve its current physical owner so a primary event
+   * cannot kill them, transfer the item, or otherwise mutate
+   * the inventory that preparation already committed.
+   *
+   * Fully consumed items are no longer present and therefore
+   * do not require an owner reservation.
+   */
+  for (const tribute of state.tributes) {
+    const ownsCommittedItem = tribute.inventory.some((item) =>
+      committedItemInstanceIds.has(item.id),
+    );
+
+    if (ownsCommittedItem) {
+      ownerIds.add(tribute.id);
+    }
+  }
+
+  return ownerIds;
+}
+
+export function sequenceRoundEvents(
+  state: GameState,
+  round: RoundReference,
+  committedItemInstanceIds: ReadonlySet<string> = new Set<string>(),
+): ResolvedEvent[] {
   if (round.day === 1 && round.period === "day") {
     return sequenceBloodbathEvents(state, round);
   }
@@ -216,9 +252,9 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
 
   const targetEventCount = getRoundEventTargetCount(livingTributes.length);
 
-  const unavailableTributeIds = new Set<string>();
+  const unavailableItemInstanceIds = new Set(committedItemInstanceIds);
 
-  const unavailableItemInstanceIds = new Set<string>();
+  const unavailableTributeIds = getCommittedItemOwnerIds(state, unavailableItemInstanceIds);
 
   const events: ResolvedEvent[] = [];
 

@@ -699,6 +699,65 @@ describe("ordinary round item reservations", () => {
 
     expect(nextRoundSelection).not.toBeNull();
   });
+
+  it("reserves the current owner of an item committed during preparation", () => {
+    const originalState = createSafetyCombatGame("preparation-owner-reservation");
+
+    const owner = originalState.tributes[0];
+
+    if (!owner) {
+      throw new Error("Expected a preparation item owner.");
+    }
+
+    const blanket = createInventoryItemInstance(
+      "preparation-blanket-source",
+      owner.id,
+      "blanket",
+      FIRST_ROUND,
+    );
+
+    const state: GameState = {
+      ...originalState,
+
+      tributes: originalState.tributes.map((tribute) =>
+        tribute.id === owner.id
+          ? {
+              ...tribute,
+
+              inventory: [...tribute.inventory, blanket],
+            }
+          : tribute,
+      ),
+    };
+
+    const events = sequenceRoundEvents(state, NEXT_ROUND, new Set([blanket.id]));
+
+    /*
+     * The blanket remains physically owned after its
+     * reusable preparation use. Its owner must therefore
+     * be unavailable to primary event selection.
+     */
+    expect(events.some((event) => event.participantTributeIds.includes(owner.id))).toBe(false);
+
+    expect(
+      events.flatMap((event) =>
+        event.changes.flatMap((change) => {
+          switch (change.type) {
+            case "use-item":
+            case "consume-item":
+            case "transfer-item":
+              return [change.itemInstanceId];
+
+            case "acquire-item":
+              return [change.item.id];
+
+            default:
+              return [];
+          }
+        }),
+      ),
+    ).not.toContain(blanket.id);
+  });
 });
 
 describe("ordinary theft sequencing", () => {

@@ -12,7 +12,7 @@ import type { GameState } from "~/game/types/game-state";
 import { createStatusEffectInstance } from "~/game/statuses/status-engine";
 import { createTruceInstance } from "~/game/truces/truce-engine";
 import { createJointVictoryOutcome } from "~/game/victory/victory-outcome";
-
+import { createInventoryItemInstance } from "~/game/items/inventory-engine";
 import { gameReducer } from "./game-reducer";
 
 const DAY_ONE = {
@@ -417,5 +417,109 @@ describe("gameReducer", () => {
     ).toContainEqual(fatalStatus);
 
     expect(() => assertGameStateInvariants(completedState)).not.toThrow();
+  });
+
+  it("applies and reveals preparation before primary events", () => {
+    const game = createTestGame("preparation-round-test");
+
+    const tribute = game.tributes[0];
+
+    if (!tribute) {
+      throw new Error("Expected a tribute fixture.");
+    }
+
+    const water = createInventoryItemInstance("preparation-water", tribute.id, "water", DAY_ONE);
+
+    /*
+     * Acquire the item through the ordinary event path so
+     * inventory history and transactions remain valid.
+     */
+    const stateWithWater = applyResolvedEvent(game, {
+      id: "preparation-water",
+      definitionId: "test-water-acquisition",
+
+      kind: "primary",
+      resolutionMode: "standard",
+
+      round: DAY_ONE,
+
+      participantTributeIds: [tribute.id],
+
+      text: `${tribute.snapshot.name} finds clean water during test setup.`,
+
+      changes: [
+        {
+          type: "acquire-item",
+
+          tributeId: tribute.id,
+          acquisitionSource: "natural-foraging",
+
+          item: water,
+        },
+      ],
+    });
+
+    const stateWithPreparationNeed: GameState = {
+      ...stateWithWater,
+
+      phase: "round-complete",
+      currentRound: DAY_ONE,
+
+      roundEvents: [],
+      revealedEventCount: 0,
+
+      tributes: stateWithWater.tributes.map((candidate) =>
+        candidate.id === tribute.id
+          ? {
+              ...candidate,
+
+              statuses: [
+                ...candidate.statuses,
+
+                createStatusEffectInstance(
+                  "preparation-thirst",
+                  candidate.id,
+                  "parched",
+                  1,
+                  DAY_ONE,
+                ),
+              ],
+            }
+          : candidate,
+      ),
+    };
+
+    const nextState = gameReducer(stateWithPreparationNeed, {
+      type: "round/began",
+      now: "2026-07-24T12:00:00.000Z",
+    });
+
+    if (!nextState) {
+      throw new Error("The prepared Game disappeared.");
+    }
+
+    const preparationEvents = nextState.roundEvents.filter((event) => event.kind === "preparation");
+
+    expect(nextState.roundEvents[0]?.kind).toBe("preparation");
+
+    expect(nextState.roundEvents.some((event) => event.kind === "primary")).toBe(true);
+
+    expect(nextState.revealedEventCount).toBe(preparationEvents.length);
+
+    expect(nextState.eventHistory).toContainEqual(nextState.roundEvents[0]);
+
+    expect(nextState.itemTransactions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "acquired",
+          itemInstanceId: water.id,
+        }),
+
+        expect.objectContaining({
+          type: "consumed",
+          itemInstanceId: water.id,
+        }),
+      ]),
+    );
   });
 });

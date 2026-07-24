@@ -4,11 +4,13 @@ import {
   type GameTribute,
   type RoundReference,
   type ResolvedEventKind,
+  type ResolvedEvent,
 } from "~/game/types/game-state";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import { getRoundSequence } from "~/game/engine/rounds";
+import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
 
 const RESOLVED_EVENT_KINDS = new Set<ResolvedEventKind>([
   "primary",
@@ -16,6 +18,20 @@ const RESOLVED_EVENT_KINDS = new Set<ResolvedEventKind>([
   "aftermath",
   "status-resolution",
   "need-resolution",
+]);
+
+const PREPARATION_MECHANICS = new Set([
+  "urgent-medical-treatment",
+  "hydration-consumption",
+  "food-consumption",
+  "night-rest-preparation",
+  "morning-rest-resolution",
+]);
+
+const ITEM_PREPARATION_MECHANICS = new Set([
+  "urgent-medical-treatment",
+  "hydration-consumption",
+  "food-consumption",
 ]);
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -73,6 +89,142 @@ function assertTributeSurvivalState(tribute: GameTribute): void {
       rest.quality === "unsheltered",
     `tribute "${tribute.id}" has an invalid last-rest quality.`,
   );
+}
+
+function assertPreparationEvent(event: ResolvedEvent, tributeIds: ReadonlySet<string>): void {
+  if (event.kind !== "preparation") {
+    assert(
+      event.preparation === undefined,
+      `non-preparation event "${event.id}" has preparation metadata.`,
+    );
+
+    return;
+  }
+
+  const details = event.preparation;
+
+  assert(details !== undefined, `preparation event "${event.id}" is missing preparation metadata.`);
+
+  assert(
+    PREPARATION_MECHANICS.has(details.mechanic),
+    `preparation event "${event.id}" has an invalid mechanic.`,
+  );
+
+  assert(
+    tributeIds.has(details.actingTributeId),
+    `preparation event "${event.id}" references a missing acting tribute.`,
+  );
+
+  assert(
+    event.participantTributeIds.includes(details.actingTributeId),
+    `preparation event "${event.id}" does not include its acting tribute.`,
+  );
+
+  const hasAnyItemMetadata =
+    details.itemInstanceId !== undefined ||
+    details.itemDefinitionId !== undefined ||
+    details.itemOwnerTributeId !== undefined ||
+    details.usesRemainingAfter !== undefined;
+
+  const hasCompleteItemMetadata =
+    details.itemInstanceId !== undefined &&
+    details.itemDefinitionId !== undefined &&
+    details.itemOwnerTributeId !== undefined &&
+    details.usesRemainingAfter !== undefined;
+
+  assert(
+    !hasAnyItemMetadata || hasCompleteItemMetadata,
+    `preparation event "${event.id}" has incomplete item metadata.`,
+  );
+
+  if (ITEM_PREPARATION_MECHANICS.has(details.mechanic)) {
+    assert(hasCompleteItemMetadata, `item preparation event "${event.id}" is missing its item.`);
+  }
+
+  if (hasCompleteItemMetadata) {
+    const { itemInstanceId, itemDefinitionId, itemOwnerTributeId, usesRemainingAfter } = details;
+
+    assert(
+      itemInstanceId !== undefined &&
+        itemDefinitionId !== undefined &&
+        itemOwnerTributeId !== undefined &&
+        usesRemainingAfter !== undefined,
+      `preparation event "${event.id}" has incomplete item metadata.`,
+    );
+
+    const definition = getItemDefinition(itemDefinitionId);
+
+    assert(
+      tributeIds.has(itemOwnerTributeId),
+      `preparation event "${event.id}" references a missing item owner.`,
+    );
+
+    assert(
+      event.participantTributeIds.includes(itemOwnerTributeId),
+      `preparation event "${event.id}" does not include its item owner.`,
+    );
+
+    if (definition.maxUses === undefined) {
+      assert(
+        usesRemainingAfter === null,
+        `reusable preparation item "${itemInstanceId}" must record null uses.`,
+      );
+    } else {
+      assert(
+        typeof usesRemainingAfter === "number" &&
+          Number.isInteger(usesRemainingAfter) &&
+          usesRemainingAfter >= 0 &&
+          usesRemainingAfter < definition.maxUses,
+        `limited preparation item "${itemInstanceId}" has invalid remaining uses.`,
+      );
+    }
+  }
+
+  if (details.affectedNeed !== undefined) {
+    assert(
+      details.affectedNeed === "food" || details.affectedNeed === "water",
+      `preparation event "${event.id}" has an invalid affected need.`,
+    );
+  }
+
+  for (const statusId of details.affectedStatusIds ?? []) {
+    getStatusDefinition(statusId);
+  }
+
+  if (details.restQuality !== undefined) {
+    assert(
+      details.restQuality === "comfortable" ||
+        details.restQuality === "sheltered" ||
+        details.restQuality === "unsheltered",
+      `preparation event "${event.id}" has an invalid rest quality.`,
+    );
+  }
+
+  if (details.mechanic === "night-rest-preparation") {
+    assert(
+      event.round.period === "night",
+      `night-rest preparation event "${event.id}" occurs during the day.`,
+    );
+
+    assert(
+      details.restQuality !== undefined,
+      `night-rest preparation event "${event.id}" has no rest quality.`,
+    );
+  }
+
+  if (details.mechanic === "morning-rest-resolution") {
+    assert(
+      event.round.period === "day",
+      `morning-rest event "${event.id}" occurs during the night.`,
+    );
+
+    assert(!hasAnyItemMetadata, `morning-rest event "${event.id}" must not use an item.`);
+
+    assert(
+      details.restQuality !== undefined,
+      `morning-rest event "${event.id}" has no rest quality.`,
+    );
+  }
 }
 
 export function assertGameStateInvariants(state: GameState): void {
@@ -554,11 +706,51 @@ export function assertGameStateInvariants(state: GameState): void {
     );
   }
 
+  /*
+   * Item reservations govern planned events:
+   *
+   * - preparation events are resolved first
+   * - primary events are then sequenced around those commitments
+   *
+   * Derived aftermath and resolution events are created while
+   * applying or completing the round. They are not separate
+   * sequencer selections and therefore do not participate in
+   * this reservation boundary.
+   */
+  const plannedRoundEvents = state.roundEvents.filter(
+    (event) => event.kind === "preparation" || event.kind === "primary",
+  );
+
+  const eventIdByCommittedItemId = new Map<string, string>();
+
+  for (const event of plannedRoundEvents) {
+    /*
+     * One atomic event may reference the same item in more
+     * than one change. Only reuse by another planned event
+     * is a reservation conflict.
+     */
+    const eventCommittedItemIds = new Set(getCommittedItemInstanceIds(event.changes));
+
+    for (const itemInstanceId of eventCommittedItemIds) {
+      const previousEventId = eventIdByCommittedItemId.get(itemInstanceId);
+
+      assert(
+        previousEventId === undefined,
+        `item "${itemInstanceId}" is committed by both ` +
+          `"${previousEventId}" and "${event.id}".`,
+      );
+
+      eventIdByCommittedItemId.set(itemInstanceId, event.id);
+    }
+  }
+
   for (const event of [...state.roundEvents, ...state.eventHistory]) {
     assert(
       RESOLVED_EVENT_KINDS.has(event.kind),
       `event "${event.id}" has invalid kind "${String(event.kind)}".`,
     );
+
+    assertPreparationEvent(event, tributeIds);
 
     for (const participantId of event.participantTributeIds) {
       assert(

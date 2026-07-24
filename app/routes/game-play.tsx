@@ -114,6 +114,9 @@ export default function GamePlayPage() {
   const revealedEvents = selectRevealedRoundEvents(activeGame);
 
   const hiddenEventCount = selectHiddenEventCount(activeGame);
+  const totalPrimaryEventCount = activeGame.roundEvents.filter(
+    (event) => event.kind === "primary",
+  ).length;
 
   return (
     <div className="arena-page">
@@ -163,7 +166,8 @@ export default function GamePlayPage() {
               <RoundEventFeed
                 events={revealedEvents}
                 round={activeGame.currentRound}
-                totalEventCount={activeGame.roundEvents.length}
+                totalPrimaryEventCount={totalPrimaryEventCount}
+                tributes={activeGame.tributes}
               />
 
               <footer className="arena-controls">

@@ -1,9 +1,7 @@
-import type { GameState } from "~/game/types/game-state";
-
 export type GameAction =
   | {
       type: "game/loaded";
-      game: GameState;
+      game: unknown;
     }
   | {
       type: "round/began";

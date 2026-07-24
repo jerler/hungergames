@@ -71,6 +71,7 @@ function createAcquisitionEvent(
     event: {
       id: eventId,
       definitionId: eventId,
+      kind: "primary",
       resolutionMode: "standard",
 
       round: {
@@ -246,6 +247,7 @@ describe("item acquisition provenance", () => {
     const transferEvent: ResolvedEvent = {
       id: "later-theft",
       definitionId: "later-theft",
+      kind: "primary",
       resolutionMode: "standard",
 
       round: DAY_TWO,

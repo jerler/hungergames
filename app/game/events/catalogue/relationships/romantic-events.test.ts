@@ -135,6 +135,7 @@ function createFinalPairState(kind: "standard" | "romantic", livingTributeCount 
     state = applyResolvedEvent(state, {
       id: eventId,
       definitionId: "test-elimination",
+      kind: "primary",
       resolutionMode: "standard",
       round: DAY_ONE,
       participantTributeIds: [tribute.id],
@@ -202,7 +203,7 @@ function createJointVictoryEvent(
     id: eventId,
 
     definitionId: options.definitionId ?? "poisonous-berries-joint-victory",
-
+    kind: "primary",
     resolutionMode: "standard",
     round: NIGHT_ONE,
 
@@ -260,7 +261,7 @@ function applyResolution(
     id: eventId,
 
     definitionId: definition.id,
-
+    kind: "primary",
     resolutionMode: "standard",
 
     round: DAY_ONE,
@@ -318,7 +319,7 @@ function createRomanticTruceState(): RomanticTruceFixture {
       id: "setup-romantic-truce-event",
 
       definitionId: "setup-romantic-truce",
-
+      kind: "primary",
       resolutionMode: "standard",
 
       round: DAY_ONE,

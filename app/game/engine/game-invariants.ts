@@ -1,8 +1,22 @@
-import type { GameState, RoundReference } from "~/game/types/game-state";
+import {
+  CURRENT_GAME_STATE_SCHEMA_VERSION,
+  type GameState,
+  type GameTribute,
+  type RoundReference,
+  type ResolvedEventKind,
+} from "~/game/types/game-state";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import { getRoundSequence } from "~/game/engine/rounds";
+
+const RESOLVED_EVENT_KINDS = new Set<ResolvedEventKind>([
+  "primary",
+  "preparation",
+  "aftermath",
+  "status-resolution",
+  "need-resolution",
+]);
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
@@ -18,7 +32,55 @@ function roundsMatch(first: RoundReference, second: RoundReference): boolean {
   return first.day === second.day && first.period === second.period;
 }
 
+function assertNonNegativeInteger(value: number, label: string): void {
+  assert(Number.isInteger(value) && value >= 0, `${label} must be a non-negative integer.`);
+}
+
+function assertTributeSurvivalState(tribute: GameTribute): void {
+  const survival = tribute.survival;
+
+  assert(survival, `tribute "${tribute.id}" is missing survival state.`);
+
+  assertNonNegativeInteger(
+    survival.roundsWithoutFood,
+    `tribute "${tribute.id}" rounds without food`,
+  );
+
+  assertNonNegativeInteger(
+    survival.roundsWithoutWater,
+    `tribute "${tribute.id}" rounds without water`,
+  );
+
+  const rest = survival.lastNightRest;
+
+  if (!rest) {
+    return;
+  }
+
+  assert(
+    Number.isInteger(rest.round.day) && rest.round.day >= 1,
+    `tribute "${tribute.id}" has an invalid last-rest day.`,
+  );
+
+  assert(
+    rest.round.period === "night",
+    `tribute "${tribute.id}" has a last-rest result outside a night round.`,
+  );
+
+  assert(
+    rest.quality === "comfortable" ||
+      rest.quality === "sheltered" ||
+      rest.quality === "unsheltered",
+    `tribute "${tribute.id}" has an invalid last-rest quality.`,
+  );
+}
+
 export function assertGameStateInvariants(state: GameState): void {
+  assert(
+    state.schemaVersion === CURRENT_GAME_STATE_SCHEMA_VERSION,
+    `expected schema version ${CURRENT_GAME_STATE_SCHEMA_VERSION} but found ${state.schemaVersion}.`,
+  );
+
   const expectedTributeCount = state.config.districtCount * 2;
 
   assert(
@@ -136,6 +198,8 @@ export function assertGameStateInvariants(state: GameState): void {
       tribute.isAlive ? tribute.death === null : tribute.death !== null,
       `tribute "${tribute.id}" has inconsistent life and death state.`,
     );
+
+    assertTributeSurvivalState(tribute);
 
     assertUniqueValues(
       tribute.statuses.map((status) => status.id),
@@ -482,6 +546,11 @@ export function assertGameStateInvariants(state: GameState): void {
   }
 
   for (const event of [...state.roundEvents, ...state.eventHistory]) {
+    assert(
+      RESOLVED_EVENT_KINDS.has(event.kind),
+      `event "${event.id}" has invalid kind "${String(event.kind)}".`,
+    );
+
     for (const participantId of event.participantTributeIds) {
       assert(
         tributeIds.has(participantId),

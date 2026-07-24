@@ -646,7 +646,7 @@ describe("Bloodbath conflict inventory", () => {
       round: DAY_ONE,
 
       participantTributeIds: [attacker.id, defender.id],
-
+      kind: "primary",
       text: resolution.text,
       changes: resolution.changes,
     };

@@ -4,6 +4,13 @@ import type { GameConfig } from "~/game/types/game-config";
 import type { PortraitPosition, TributeStats } from "~/game/types/tribute";
 import type { ItemAcquisitionSource, ItemDefinitionId } from "~/game/items/item-schema";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
+import type {
+  NightRestQuality,
+  SurvivalNeed,
+  TributeSurvivalState,
+} from "~/game/survival/survival-schema";
+
+export const CURRENT_GAME_STATE_SCHEMA_VERSION = 2 as const;
 
 export type GamePhase = "opening" | "round-events" | "round-complete" | "victory" | "statistics";
 
@@ -100,8 +107,11 @@ export interface GameTribute {
 
   isAlive: boolean;
   death: TributeDeath | null;
+
+  survival: TributeSurvivalState;
   statuses: StatusEffect[];
   inventory: InventoryItem[];
+
   allianceId: string | null;
   statistics: TributeStatistics;
 }
@@ -120,6 +130,33 @@ export interface IncrementStatisticChange {
   tributeId: string;
   statistic: TributeStatisticKey;
   amount: number;
+}
+
+export interface SetSurvivalNeedCounterChange {
+  type: "set-survival-need-counter";
+  tributeId: string;
+  need: SurvivalNeed;
+  value: number;
+}
+
+export interface IncrementSurvivalNeedCounterChange {
+  type: "increment-survival-need-counter";
+  tributeId: string;
+  need: SurvivalNeed;
+  amount: number;
+}
+
+export interface SatisfySurvivalNeedChange {
+  type: "satisfy-survival-need";
+  tributeId: string;
+  need: SurvivalNeed;
+}
+
+export interface RecordNightRestChange {
+  type: "record-night-rest";
+  tributeId: string;
+  round: RoundReference;
+  quality: NightRestQuality;
 }
 
 export interface ApplyStatusChange {
@@ -254,6 +291,10 @@ export type InventoryTransaction =
 export type GameChange =
   | EliminateTributeChange
   | IncrementStatisticChange
+  | SetSurvivalNeedCounterChange
+  | IncrementSurvivalNeedCounterChange
+  | SatisfySurvivalNeedChange
+  | RecordNightRestChange
   | ApplyStatusChange
   | RemoveStatusChange
   | AcquireInventoryItemChange
@@ -265,11 +306,15 @@ export type GameChange =
   | FormVendettaChange
   | DeclareVictoryChange;
 
+export type ResolvedEventKind =
+  "primary" | "preparation" | "aftermath" | "status-resolution" | "need-resolution";
+
 export type EventResolutionMode = "standard" | "safety";
 
 export interface ResolvedEvent {
   id: string;
   definitionId: string;
+  kind: ResolvedEventKind;
   resolutionMode: EventResolutionMode;
 
   round: RoundReference;
@@ -285,7 +330,7 @@ export interface EngineState {
 }
 
 export interface GameState {
-  schemaVersion: 1;
+  schemaVersion: typeof CURRENT_GAME_STATE_SCHEMA_VERSION;
 
   id: string;
   seed: string;

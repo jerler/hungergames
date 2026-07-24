@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-
+import { createDefaultTributeSurvivalState } from "~/game/survival/survival-schema";
 import { createSeededRandom, type RandomSource } from "~/game/engine/random";
 import { createRoundSeed } from "~/game/engine/rounds";
 import type { GameTribute } from "~/game/types/game-state";
@@ -53,6 +53,7 @@ function createTribute(
 
     isAlive: true,
     death: null,
+    survival: createDefaultTributeSurvivalState(),
     statuses: [],
     inventory: [],
     allianceId: null,

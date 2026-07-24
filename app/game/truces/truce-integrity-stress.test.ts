@@ -88,6 +88,7 @@ function createEvent(
   return {
     id,
     definitionId: id,
+    kind: "primary",
     resolutionMode: "standard",
     round,
 

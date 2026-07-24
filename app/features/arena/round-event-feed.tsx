@@ -39,7 +39,7 @@ export function RoundEventFeed({ events, round, totalEventCount }: RoundEventFee
               eliminations.length === 1 ? "1 cannon fired" : `${eliminations.length} cannons fired`;
 
             return (
-              <li className="event-card" key={event.id}>
+              <li className="event-card" data-event-kind={event.kind} key={event.id}>
                 <span className="event-card__number">{String(index + 1).padStart(2, "0")}</span>
 
                 <p>{event.text}</p>

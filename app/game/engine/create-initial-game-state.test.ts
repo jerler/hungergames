@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
+import { CURRENT_GAME_STATE_SCHEMA_VERSION } from "~/game/types/game-state";
 
 import { createInitialGameState } from "./create-initial-game-state";
 
@@ -28,6 +29,7 @@ describe("createInitialGameState", () => {
     expect(gameState.id).toBe("id-1");
     expect(gameState.seed).toBe("test-seed");
     expect(gameState.phase).toBe("opening");
+    expect(gameState.schemaVersion).toBe(CURRENT_GAME_STATE_SCHEMA_VERSION);
     expect(gameState.truces).toEqual([]);
     expect(gameState.tributes).toHaveLength(12);
 
@@ -41,6 +43,11 @@ describe("createInitialGameState", () => {
       id: "id-2",
       district: 1,
       districtPosition: 1,
+      survival: {
+        roundsWithoutFood: 0,
+        roundsWithoutWater: 0,
+        lastNightRest: null,
+      },
       statistics: {
         kills: 0,
         attemptedKills: 0,

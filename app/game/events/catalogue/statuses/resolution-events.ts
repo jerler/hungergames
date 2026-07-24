@@ -46,19 +46,12 @@ export function createFatalStatusResolutionEvent(
 
   return {
     id: eventId,
-
     definitionId: `status-fatality:${definition.id}`,
-
+    kind: "status-resolution",
     resolutionMode: "standard",
-
-    round: {
-      ...round,
-    },
-
+    round: { ...round },
     participantTributeIds: [tribute.id],
-
     text,
-
     changes: [
       ...createFatalChanges(tribute, `status:${definition.id}`, definition.fatalCauseLabel, text),
       ...removeStatusChanges,

@@ -377,25 +377,17 @@ export function createAccidentalTruceDissolutionEvents(
     return [
       {
         id: aftermathEventId,
-
         definitionId:
           truce.kind === "romantic" ? "romantic-truce-ended-by-death" : "truce-ended-by-death",
-
+        kind: "aftermath",
         resolutionMode: "standard",
-
-        round: {
-          ...primaryEvent.round,
-        },
-
+        round: { ...primaryEvent.round },
         participantTributeIds: [
           ...new Set([...truce.tributeIds, ...response.participantTributeIds]),
         ],
-
         text: response.text ? `${dissolutionText} ${response.text}` : dissolutionText,
-
         changes: [
           ...response.changes,
-
           {
             type: "break-truce",
             truceId: truce.id,

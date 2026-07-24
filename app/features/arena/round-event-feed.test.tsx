@@ -1,7 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { EliminateTributeChange, ResolvedEvent } from "~/game/types/game-state";
+import type {
+  EliminateTributeChange,
+  ResolvedEvent,
+  ResolvedEventKind,
+} from "~/game/types/game-state";
 
 import { RoundEventFeed } from "./round-event-feed";
 
@@ -10,7 +14,10 @@ const TEST_ROUND = {
   period: "day",
 } as const;
 
-function createEvent(eliminatedTributeIds: readonly string[]): ResolvedEvent {
+function createEvent(
+  eliminatedTributeIds: readonly string[],
+  kind: ResolvedEventKind = "primary",
+): ResolvedEvent {
   const changes = eliminatedTributeIds.map((tributeId): EliminateTributeChange => ({
     type: "eliminate-tribute",
 
@@ -29,7 +36,7 @@ function createEvent(eliminatedTributeIds: readonly string[]): ResolvedEvent {
     id: "test-event",
 
     definitionId: "test-event",
-
+    kind,
     resolutionMode: "standard",
 
     round: TEST_ROUND,
@@ -76,4 +83,18 @@ describe("RoundEventFeed", () => {
 
     expect(screen.queryByText("Cannon fired")).not.toBeInTheDocument();
   });
+
+  it.each(["primary", "aftermath", "status-resolution"] as const)(
+    "renders %s events without filtering them",
+    (kind) => {
+      const event = createEvent([], kind);
+
+      const { container } = render(
+        <RoundEventFeed events={[event]} round={TEST_ROUND} totalEventCount={1} />,
+      );
+
+      expect(screen.getByText("Several cannons echo across the arena.")).toBeInTheDocument();
+      expect(container.querySelector(`[data-event-kind="${kind}"]`)).toBeInTheDocument();
+    },
+  );
 });

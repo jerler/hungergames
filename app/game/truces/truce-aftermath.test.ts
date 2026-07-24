@@ -59,12 +59,10 @@ function createEvent(
   return {
     id,
     definitionId: id,
-
+    kind: "primary",
     resolutionMode: "standard",
-
     round: DAY_ONE,
     participantTributeIds,
-
     text: "Test event.",
     changes,
   };
@@ -142,6 +140,7 @@ describe("accidental truce dissolution", () => {
     expect(aftermathEvents).toHaveLength(1);
 
     expect(aftermathEvents[0]).toMatchObject({
+      kind: "aftermath",
       participantTributeIds: members.map((member) => member.id),
 
       changes: [

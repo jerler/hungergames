@@ -431,7 +431,7 @@ function applyTheftResolution(fixture: TheftFixture, resolution: EventResolution
     id: THEFT_RESOLUTION_EVENT_ID,
 
     definitionId: STEAL_FROM_STRONGER_TRIBUTE_EVENT.id,
-
+    kind: "primary",
     resolutionMode: "standard",
 
     round: TEST_ROUND,

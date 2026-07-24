@@ -12,6 +12,7 @@ import type {
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { getRoundSequence } from "~/game/engine/rounds";
 import { createAccidentalTruceDissolutionEvents } from "~/game/truces/truce-aftermath";
+import type { SurvivalNeed } from "~/game/survival/survival-schema";
 
 function updateTribute(
   state: GameState,
@@ -31,6 +32,32 @@ function updateTribute(
       tribute.id === tributeId ? update(tribute) : tribute,
     ),
   };
+}
+
+type SurvivalNeedCounterKey = "roundsWithoutFood" | "roundsWithoutWater";
+
+function getSurvivalNeedCounterKey(need: SurvivalNeed): SurvivalNeedCounterKey {
+  if (need === "food") {
+    return "roundsWithoutFood";
+  }
+
+  if (need === "water") {
+    return "roundsWithoutWater";
+  }
+
+  throw new Error(`Unknown survival need "${String(need)}".`);
+}
+
+function requireNonNegativeInteger(value: number, description: string): void {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new Error(`${description} must be a non-negative integer.`);
+  }
+}
+
+function requirePositiveInteger(value: number, description: string): void {
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${description} must be a positive integer.`);
+  }
 }
 
 function validateTruceFormation(state: GameState, truce: Truce): void {
@@ -320,6 +347,71 @@ export function applyGameChange(
           [change.statistic]: tribute.statistics[change.statistic] + change.amount,
         },
       }));
+
+    case "set-survival-need-counter": {
+      requireNonNegativeInteger(change.value, "Survival need counter");
+
+      const counterKey = getSurvivalNeedCounterKey(change.need);
+
+      return updateTribute(state, change.tributeId, (tribute) => ({
+        ...tribute,
+        survival: {
+          ...tribute.survival,
+          [counterKey]: change.value,
+        },
+      }));
+    }
+
+    case "increment-survival-need-counter": {
+      requirePositiveInteger(change.amount, "Survival need counter increment");
+
+      const counterKey = getSurvivalNeedCounterKey(change.need);
+
+      return updateTribute(state, change.tributeId, (tribute) => ({
+        ...tribute,
+        survival: {
+          ...tribute.survival,
+          [counterKey]: tribute.survival[counterKey] + change.amount,
+        },
+      }));
+    }
+
+    case "satisfy-survival-need": {
+      const counterKey = getSurvivalNeedCounterKey(change.need);
+
+      return updateTribute(state, change.tributeId, (tribute) => ({
+        ...tribute,
+        survival: {
+          ...tribute.survival,
+          [counterKey]: 0,
+        },
+      }));
+    }
+
+    case "record-night-rest": {
+      if (
+        !Number.isInteger(change.round.day) ||
+        change.round.day < 1 ||
+        change.round.period !== "night"
+      ) {
+        throw new Error("Night rest must reference a valid night round.");
+      }
+
+      if (!roundsMatch(change.round, event.round)) {
+        throw new Error(`Night rest round does not match event "${event.id}".`);
+      }
+
+      return updateTribute(state, change.tributeId, (tribute) => ({
+        ...tribute,
+        survival: {
+          ...tribute.survival,
+          lastNightRest: {
+            round: { ...change.round },
+            quality: change.quality,
+          },
+        },
+      }));
+    }
 
     case "apply-status":
       return updateTribute(state, change.tributeId, (tribute) => {

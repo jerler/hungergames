@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { GameTribute } from "~/game/types/game-state";
-
+import { createDefaultTributeSurvivalState } from "~/game/survival/survival-schema";
 import { VictoryFanfare } from "./victory-fanfare";
 
 const victor: GameTribute = {
@@ -24,6 +24,7 @@ const victor: GameTribute = {
 
   isAlive: true,
   death: null,
+  survival: createDefaultTributeSurvivalState(),
   statuses: [],
   inventory: [],
   allianceId: null,

@@ -60,6 +60,7 @@ function createEvent(
   return {
     id,
     definitionId: id,
+    kind: "primary",
     resolutionMode: "standard",
     round,
     participantTributeIds,
@@ -390,14 +391,15 @@ describe("truce engine", () => {
     expect(expiredState.roundEvents).toEqual([
       expect.objectContaining({
         definitionId: "truce-expired",
-
+        kind: "aftermath",
         participantTributeIds: truce.tributeIds,
       }),
     ]);
 
-    expect(expiredState.eventHistory[expiredState.eventHistory.length - 1]?.definitionId).toBe(
-      "truce-expired",
-    );
+    expect(expiredState.eventHistory.at(-1)).toMatchObject({
+      definitionId: "truce-expired",
+      kind: "aftermath",
+    });
 
     expect(expiredState.revealedEventCount).toBe(1);
   });

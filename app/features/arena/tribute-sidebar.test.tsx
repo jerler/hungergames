@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-
+import { createDefaultTributeSurvivalState } from "~/game/survival/survival-schema";
 import type { GameTribute } from "~/game/types/game-state";
 
 import { TributeSidebar } from "./tribute-sidebar";
@@ -25,6 +25,7 @@ function createTribute(overrides: Partial<GameTribute>): GameTribute {
 
     isAlive: true,
     death: null,
+    survival: createDefaultTributeSurvivalState(),
     statuses: [],
     inventory: [],
     allianceId: null,

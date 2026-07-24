@@ -77,13 +77,17 @@ const SIMULATION_EVENT_FAMILIES = [
 
 type SimulationEventFamily = (typeof SIMULATION_EVENT_FAMILIES)[number][0];
 
+function getPrimaryEvents(state: GameState): ResolvedEvent[] {
+  return state.eventHistory.filter((event) => event.kind === "primary");
+}
+
 function getEventFamilyCounts(results: readonly GameState[]): Map<SimulationEventFamily, number> {
   const counts = new Map<SimulationEventFamily, number>(
     SIMULATION_EVENT_FAMILIES.map(([family]) => [family, 0]),
   );
 
   for (const result of results) {
-    for (const event of result.eventHistory) {
+    for (const event of getPrimaryEvents(result)) {
       for (const [family, eventIds] of SIMULATION_EVENT_FAMILIES) {
         if (!eventIds.has(event.definitionId)) {
           continue;
@@ -122,7 +126,7 @@ function getAverage(values: readonly number[]): number {
 
 function getCornucopiaParticipationRate(state: GameState): number {
   const participantIds = new Set(
-    state.eventHistory
+    getPrimaryEvents(state)
       .filter(
         (event) => isDayOneDaytime(event.round) && CORNUCOPIA_EVENT_IDS.has(event.definitionId),
       )
@@ -418,9 +422,37 @@ describe("simulation stress tests", () => {
     expect(secondResult).toEqual(firstResult);
   });
 
+  it("classifies sequenced catalogue events as primary", () => {
+    for (const result of getStressResults()) {
+      for (const event of result.eventHistory) {
+        const isCatalogueEvent = SIMULATION_EVENT_FAMILIES.some(([, eventIds]) =>
+          eventIds.has(event.definitionId),
+        );
+
+        if (isCatalogueEvent) {
+          expect(event.kind).toBe("primary");
+        }
+
+        if (event.definitionId.startsWith("status-fatality:")) {
+          expect(event.kind).toBe("status-resolution");
+        }
+
+        if (
+          event.definitionId === "truce-expired" ||
+          event.definitionId === "truce-ended-by-death" ||
+          event.definitionId === "romantic-truce-ended-by-death"
+        ) {
+          expect(event.kind).toBe("aftermath");
+        }
+      }
+    }
+  });
+
   it("exercises ordinary theft during full-game simulations", () => {
     const theftEvents = getStressResults().flatMap((result) =>
-      result.eventHistory.filter((event) => event.definitionId === "steal-from-stronger-tribute"),
+      getPrimaryEvents(result).filter(
+        (event) => event.definitionId === "steal-from-stronger-tribute",
+      ),
     );
 
     expect(theftEvents.length).toBeGreaterThan(0);
@@ -447,7 +479,7 @@ describe("simulation stress tests", () => {
 
   it("exercises ordinary combat with one credited kill per event", () => {
     const combatEvents = getStressResults().flatMap((result) =>
-      result.eventHistory.filter((event) => ORDINARY_COMBAT_EVENT_IDS.has(event.definitionId)),
+      getPrimaryEvents(result).filter((event) => ORDINARY_COMBAT_EVENT_IDS.has(event.definitionId)),
     );
 
     expect(combatEvents.length).toBeGreaterThan(0);

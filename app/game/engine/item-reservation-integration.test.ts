@@ -471,7 +471,7 @@ function applyResolution(
     id: `test-${definition.id}`,
 
     definitionId: definition.id,
-
+    kind: "primary",
     resolutionMode: "standard",
 
     round,

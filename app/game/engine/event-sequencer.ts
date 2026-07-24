@@ -199,17 +199,12 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
     return [
       {
         id: eventId,
-
         definitionId: definition.id,
-
+        kind: "primary",
         resolutionMode: "standard",
-
         round,
-
         participantTributeIds: selection.participantTributeIds,
-
         text: resolution.text,
-
         changes: resolution.changes,
       },
     ];
@@ -273,11 +268,10 @@ export function sequenceRoundEvents(state: GameState, round: RoundReference): Re
     events.push({
       id: eventId,
       definitionId: selected.definition.id,
+      kind: "primary",
       resolutionMode,
       round,
-
       participantTributeIds: selected.selection.participantTributeIds,
-
       text: resolution.text,
       changes: resolution.changes,
     });

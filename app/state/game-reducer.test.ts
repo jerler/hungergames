@@ -98,7 +98,7 @@ function createOneSurvivorState(): GameState {
       id: eventId,
 
       definitionId: "test-elimination",
-
+      kind: "primary",
       resolutionMode: "standard",
 
       round: DAY_ONE,
@@ -143,6 +143,20 @@ function createOneSurvivorState(): GameState {
 }
 
 describe("gameReducer", () => {
+  it("rejects schema-1 games when loading", () => {
+    const schemaOneGame = {
+      ...createTestGame(),
+      schemaVersion: 1,
+    };
+
+    expect(() =>
+      gameReducer(null, {
+        type: "game/loaded",
+        game: schemaOneGame,
+      }),
+    ).toThrow(/schema version 1/i);
+  });
+
   it("reveals and records resolved events", () => {
     const initialState = createTestGame();
 
@@ -265,7 +279,7 @@ describe("gameReducer", () => {
       state = applyResolvedEvent(state, {
         id: eventId,
         definitionId: "joint-victory-test-elimination",
-
+        kind: "primary",
         resolutionMode: "standard",
         round: DAY_ONE,
 
@@ -315,7 +329,7 @@ describe("gameReducer", () => {
     state = applyResolvedEvent(state, {
       id: "joint-victory-test-setup",
       definitionId: "joint-victory-test-setup",
-
+      kind: "primary",
       resolutionMode: "standard",
       round: DAY_ONE,
 
@@ -341,7 +355,7 @@ describe("gameReducer", () => {
       id: "joint-victory-test-event",
 
       definitionId: "poisonous-berries-joint-victory",
-
+      kind: "primary" as const,
       resolutionMode: "standard" as const,
       round: NIGHT_ONE,
 

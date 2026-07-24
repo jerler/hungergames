@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { GameTribute } from "~/game/types/game-state";
 import type { PronounSetId } from "~/game/tributes/pronouns";
-
+import { createDefaultTributeSurvivalState } from "~/game/survival/survival-schema";
 import { createEventCharacter } from "./event-character";
 
 function createTribute(pronouns: PronounSetId): GameTribute {
@@ -27,6 +27,7 @@ function createTribute(pronouns: PronounSetId): GameTribute {
 
     isAlive: true,
     death: null,
+    survival: createDefaultTributeSurvivalState(),
 
     statuses: [],
     inventory: [],

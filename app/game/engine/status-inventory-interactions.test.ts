@@ -55,14 +55,11 @@ function createEvent(
   return {
     id,
     definitionId: id,
+    kind: "primary",
     resolutionMode: "standard",
-
     round: DAY_ONE,
-
     participantTributeIds,
-
     text: "Test event.",
-
     changes,
   };
 }
@@ -167,6 +164,7 @@ describe("status and inventory interactions", () => {
       id: "setup-event",
       definitionId: "test-setup",
       resolutionMode: "standard",
+      kind: "primary",
       round,
       participantTributeIds: [tribute.id],
       text: "Test setup.",
@@ -430,6 +428,7 @@ describe("status and inventory interactions", () => {
     const setupEvent: ResolvedEvent = {
       id: setupEventId,
       definitionId: "medicine-priority-test",
+      kind: "primary",
       resolutionMode: "standard",
       round,
       participantTributeIds: [tribute.id],
@@ -575,6 +574,7 @@ describe("status and inventory interactions", () => {
         id: setupEventId,
         definitionId: "automatic-treatment-test",
         resolutionMode: "standard",
+        kind: "primary",
         round: appliedRound,
         participantTributeIds: [tribute.id],
         text: "Treatment setup.",

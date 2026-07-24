@@ -113,13 +113,12 @@ function resolveBloodbathEvent({
   return {
     id: eventId,
     definitionId: definition.id,
+    kind: "primary",
     resolutionMode: "standard",
     round,
-
     participantTributeIds: Object.values(participantsByRole)
       .flat()
       .map((tribute) => tribute.id),
-
     text: resolution.text,
     changes: resolution.changes,
   };

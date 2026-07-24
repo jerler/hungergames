@@ -166,23 +166,15 @@ export function expireTrucesAfterRound(state: GameState): GameState {
       `and go their separate ways.`;
 
     return {
-      id: `truce-expiry:` + `${completedRound.period}:` + `${completedRound.day}:` + truce.id,
-
+      id: `truce-expiry:${completedRound.period}:${completedRound.day}:${truce.id}`,
       definitionId: "truce-expired",
-
+      kind: "aftermath",
       resolutionMode: "standard",
-
-      round: {
-        ...completedRound,
-      },
-
+      round: { ...completedRound },
       participantTributeIds: [...truce.tributeIds],
-
       text,
-
       changes: [
         ...redistributionChanges,
-
         {
           type: "break-truce",
           truceId: truce.id,

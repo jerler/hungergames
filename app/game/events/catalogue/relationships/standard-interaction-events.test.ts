@@ -116,7 +116,7 @@ function formTruce(
     id: `setup-truce-event-${members.length}-${kind}`,
 
     definitionId: "setup-truce",
-
+    kind: "primary",
     resolutionMode: "standard",
 
     round: DAY_ONE,
@@ -150,6 +150,7 @@ function acquireItem(
     id: eventId,
     definitionId: "setup-item",
     resolutionMode: "standard",
+    kind: "primary",
     round: DAY_ONE,
     participantTributeIds: [tribute.id],
     text: "A test item is acquired.",
@@ -193,7 +194,7 @@ function applyResolution(
 ): GameState {
   return applyResolvedEvent(game, {
     id: `applied:${definition.id}`,
-
+    kind: "primary",
     definitionId: definition.id,
 
     resolutionMode: "standard",

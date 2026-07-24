@@ -1,9 +1,15 @@
 import type { PronounSetId } from "~/game/tributes/pronouns";
 import { createDefaultGameConfig } from "~/game/types/game-config";
-import type { GameState, GameTribute, RoundReference } from "~/game/types/game-state";
+import {
+  CURRENT_GAME_STATE_SCHEMA_VERSION,
+  type GameState,
+  type GameTribute,
+  type RoundReference,
+} from "~/game/types/game-state";
 import type { TributeStats } from "~/game/types/tribute";
 import { createInventoryItemInstance } from "~/game/items/inventory-engine";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
+import { createDefaultTributeSurvivalState } from "~/game/survival/survival-schema";
 
 export const AUTHORING_TEST_ROUND = {
   day: 2,
@@ -44,11 +50,9 @@ export function createAuthoringTestTribute({
     },
 
     isAlive: true,
-
     death: null,
-
+    survival: createDefaultTributeSurvivalState(),
     statuses: [],
-
     inventory: [],
 
     allianceId: null,
@@ -66,7 +70,7 @@ export function createAuthoringTestGame(
   tributes: readonly GameTribute[] = [createAuthoringTestTribute()],
 ): GameState {
   return {
-    schemaVersion: 1,
+    schemaVersion: CURRENT_GAME_STATE_SCHEMA_VERSION,
 
     id: "authoring-test-game",
 

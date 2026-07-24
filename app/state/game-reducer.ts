@@ -9,6 +9,7 @@ import { prepareTributesForRound } from "~/game/items/inventory-engine";
 import { advanceStatusDurations } from "~/game/statuses/status-engine";
 import { expireTrucesAfterRound } from "~/game/truces/truce-engine";
 import { createSoleVictoryOutcome } from "~/game/victory/victory-outcome";
+import { loadGameState } from "~/game/persistence/game-state-loader";
 
 export type GameReducerState = GameState | null;
 
@@ -168,7 +169,7 @@ function revealEntireRound(state: GameState, now: string): GameState {
 
 export function gameReducer(state: GameReducerState, action: GameAction): GameReducerState {
   if (action.type === "game/loaded") {
-    return finalizeState(action.game);
+    return finalizeState(loadGameState(action.game));
   }
 
   if (action.type === "game/reset") {

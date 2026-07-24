@@ -1,8 +1,13 @@
 import { validateTributeDrafts } from "~/features/reaping/reaping-validation";
 import type { TributeAssignmentMode } from "~/game/tributes/tribute-drafts";
 import type { GameConfig } from "~/game/types/game-config";
-import type { GameState, GameTribute } from "~/game/types/game-state";
+import {
+  CURRENT_GAME_STATE_SCHEMA_VERSION,
+  type GameState,
+  type GameTribute,
+} from "~/game/types/game-state";
 import type { TributeDraft } from "~/game/types/tribute";
+import { createDefaultTributeSurvivalState } from "~/game/survival/survival-schema";
 
 interface CreateInitialGameStateOptions {
   createId?: () => string;
@@ -34,8 +39,11 @@ function createGameTribute(tribute: TributeDraft, createId: () => string): GameT
 
     isAlive: true,
     death: null,
+
+    survival: createDefaultTributeSurvivalState(),
     statuses: [],
     inventory: [],
+
     allianceId: null,
 
     statistics: {
@@ -63,7 +71,7 @@ export function createInitialGameState(
   const timestamp = options.now ?? new Date().toISOString();
 
   return {
-    schemaVersion: 1,
+    schemaVersion: CURRENT_GAME_STATE_SCHEMA_VERSION,
 
     id: createId(),
     seed: options.seed ?? createId(),

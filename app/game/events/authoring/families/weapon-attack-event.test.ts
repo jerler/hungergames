@@ -372,4 +372,16 @@ describe("createWeaponAttackEvent", () => {
       }),
     ).toThrow("unreachable failure result");
   });
+
+  it("marks weapon victims as hostile targets", () => {
+    const definition = createWeaponAttackEvent("hostile-target-test", {
+      weaponId: "knife",
+      causeLabel: "Knifed",
+      text: "Test attack.",
+    });
+
+    const victimRole = definition.roles.find((role) => role.id === "victim");
+
+    expect(victimRole?.targeting).toBe("hostile");
+  });
 });

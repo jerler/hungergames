@@ -2,60 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { ITEM_CATALOGUE, getItemDefinition } from "./item-catalogue";
 import type { ItemDefinitionId, ItemOrigin } from "./item-schema";
-import type { StatusEffectId } from "~/game/statuses/status-schema";
-import { getStatusDefinition } from "~/game/statuses/status-catalogue";
-
-interface ExpectedTreatment {
-  itemId: ItemDefinitionId;
-  statusId: StatusEffectId;
-}
-
-const EXPECTED_TREATMENTS = [
-  {
-    itemId: "water",
-    statusId: "dehydrated",
-  },
-  {
-    itemId: "medicine",
-    statusId: "injured",
-  },
-  {
-    itemId: "medicine",
-    statusId: "bleeding",
-  },
-  {
-    itemId: "medicine",
-    statusId: "sick",
-  },
-  {
-    itemId: "medicine",
-    statusId: "poisoned",
-  },
-  {
-    itemId: "medicine",
-    statusId: "burned",
-  },
-  {
-    itemId: "blanket",
-    statusId: "exposed",
-  },
-  {
-    itemId: "matches",
-    statusId: "exposed",
-  },
-  {
-    itemId: "food",
-    statusId: "exhausted",
-  },
-  {
-    itemId: "map",
-    statusId: "disoriented",
-  },
-  {
-    itemId: "camouflage-net",
-    statusId: "hunted",
-  },
-] satisfies readonly ExpectedTreatment[];
 
 const NATURAL_RESOURCE_ITEM_IDS = ["water", "food"] satisfies readonly ItemDefinitionId[];
 
@@ -82,18 +28,6 @@ const EXPECTED_ITEM_IDS = [
 ] satisfies readonly ItemDefinitionId[];
 
 describe("item catalogue treatments", () => {
-  it.each(EXPECTED_TREATMENTS)("$itemId treats $statusId", ({ itemId, statusId }) => {
-    const item = getItemDefinition(itemId);
-
-    expect(item.treatments).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          statusId,
-        }),
-      ]),
-    );
-  });
-
   it("contains every planned item", () => {
     const actualItemIds = ITEM_CATALOGUE.map((item) => item.id).sort();
 
@@ -150,14 +84,6 @@ describe("item catalogue treatments", () => {
     expect(new Set(itemIds).size).toBe(itemIds.length);
   });
 
-  it("only references valid status definitions", () => {
-    for (const item of ITEM_CATALOGUE) {
-      for (const treatment of item.treatments ?? []) {
-        expect(() => getStatusDefinition(treatment.statusId)).not.toThrow();
-      }
-    }
-  });
-
   it("gives each specialized item its intended bonuses", () => {
     expect(getItemDefinition("shield")).toMatchObject({
       combatBonus: 0.45,
@@ -185,6 +111,70 @@ describe("item catalogue treatments", () => {
     });
   });
 
+  it("defines data-driven item effects", () => {
+    expect(getItemDefinition("water").useEffects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "satisfy-need",
+          need: "hydration",
+        }),
+      ]),
+    );
+
+    expect(getItemDefinition("medicine").useEffects).toContainEqual({
+      type: "remove-medical-statuses",
+    });
+
+    expect(getItemDefinition("camouflage-net").useEffects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "grant-status",
+          statusId: "hidden",
+          severity: 2,
+        }),
+      ]),
+    );
+  });
+
+  it("defines reusable and limited rest capabilities", () => {
+    const blanket = getItemDefinition("blanket");
+
+    expect(blanket).toMatchObject({
+      rest: {
+        quality: "comfortable",
+      },
+    });
+
+    expect(blanket.maxUses).toBeUndefined();
+
+    expect(getItemDefinition("matches")).toMatchObject({
+      maxUses: 2,
+
+      rest: {
+        quality: "sheltered",
+
+        check: {
+          stat: "brains",
+          difficulty: 2,
+        },
+      },
+    });
+  });
+
+  it("defines only the planned contextual capabilities", () => {
+    expect(getItemDefinition("matches").contextual).toEqual({
+      nightAwarenessBonus: 0.35,
+    });
+
+    expect(getItemDefinition("camouflage-net").contextual).toEqual({
+      hostileTargetWeightMultiplier: 0.5,
+    });
+
+    expect(getItemDefinition("shield").contextual).toEqual({
+      hostileDefenseBonus: 0.75,
+    });
+  });
+
   it("distinguishes reusable and limited-use items", () => {
     expect(getItemDefinition("knife").maxUses).toBeUndefined();
 
@@ -193,5 +183,11 @@ describe("item catalogue treatments", () => {
     expect(getItemDefinition("medicine").maxUses).toBe(1);
 
     expect(getItemDefinition("water").maxUses).toBe(1);
+  });
+
+  it("declares the spear's minimum Brawn requirement", () => {
+    expect(getItemDefinition("spear").minimumStats).toEqual({
+      brawn: 2,
+    });
   });
 });

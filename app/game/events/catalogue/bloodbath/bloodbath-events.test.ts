@@ -110,18 +110,19 @@ function getEliminations(changes: readonly GameChange[]) {
 function getFleeOutcomeSignature(changes: readonly GameChange[]): string {
   const statuses = getStatuses(changes);
 
-  const hasStatus = (definitionId: string, severity?: number) =>
+  const hasStatus = (definitionId: string, severity?: number, remainingRounds?: number | null) =>
     statuses.some(
       (status) =>
         status.definitionId === definitionId &&
-        (severity === undefined || status.severity === severity),
+        (severity === undefined || status.severity === severity) &&
+        (remainingRounds === undefined || status.remainingRounds === remainingRounds),
     );
 
   /*
    * Check exceptional outcomes first because the stream and
    * foraging branches also include an item acquisition.
    */
-  if (hasStatus("concealed") || hasStatus("inspired")) {
+  if (hasStatus("hidden") || hasStatus("inspired")) {
     return "exceptional-success";
   }
 
@@ -129,11 +130,11 @@ function getFleeOutcomeSignature(changes: readonly GameChange[]): string {
    * The woods critical failure also applies exhaustion, so
    * critical conditions must be checked before failures.
    */
-  if (hasStatus("injured") || hasStatus("poisoned") || hasStatus("disoriented", 2)) {
+  if (hasStatus("injured") || hasStatus("poisoned", 1, 2) || hasStatus("disoriented", 2)) {
     return "critical-failure";
   }
 
-  if (hasStatus("exhausted") || hasStatus("sick") || hasStatus("disoriented", 1)) {
+  if (hasStatus("exhausted") || hasStatus("poisoned", 1, 3) || hasStatus("disoriented", 1)) {
     return "failure";
   }
 

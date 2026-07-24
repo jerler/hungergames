@@ -1,7 +1,8 @@
 import { getCombatScore } from "~/game/engine/stat-formulas";
 import type { EventSelectionContext } from "~/game/events/event-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
-import type { ItemDefinitionId } from "~/game/items/item-schema";
+import type { ItemDefinition, ItemDefinitionId, ItemUseEffect } from "~/game/items/item-schema";
+import { isItemUsableBy } from "~/game/items/item-usability";
 import { areTributesInSameTruce } from "~/game/truces/truce-engine";
 import type { GameTribute, InventoryItem } from "~/game/types/game-state";
 
@@ -9,12 +10,49 @@ export const MINIMUM_THEFT_COMBAT_ADVANTAGE = 0.5;
 
 const MINIMUM_THEFT_WEIGHT = 0.1;
 
-function itemHasRemainingUses(item: InventoryItem): boolean {
-  return item.usesRemaining === null || item.usesRemaining > 0;
+function getUsableOwnedItems(tribute: GameTribute): InventoryItem[] {
+  return tribute.inventory.filter((item) => isItemUsableBy(tribute, item));
 }
 
-function getUsableOwnedItems(tribute: GameTribute): InventoryItem[] {
-  return tribute.inventory.filter(itemHasRemainingUses);
+function getItemUseEffectStrategicValue(effect: ItemUseEffect): number {
+  switch (effect.type) {
+    case "satisfy-need":
+      return 0.6;
+
+    case "remove-status":
+      return effect.statusIds.length * 0.45;
+
+    case "remove-medical-statuses":
+      return 2;
+
+    case "grant-status":
+      return 0.35 + effect.severity * 0.25;
+  }
+}
+
+function getItemCapabilityStrategicValue(definition: ItemDefinition): number {
+  const activeEffectValue = (definition.useEffects ?? []).reduce(
+    (total, effect) => total + getItemUseEffectStrategicValue(effect),
+    0,
+  );
+
+  const restValue =
+    definition.rest?.quality === "comfortable"
+      ? 0.6
+      : definition.rest?.quality === "sheltered"
+        ? 0.4
+        : 0;
+
+  const contextual = definition.contextual;
+
+  const contextualValue =
+    (contextual?.nightAwarenessBonus ?? 0) +
+    (contextual?.hostileDefenseBonus ?? 0) +
+    (contextual?.hostileTargetWeightMultiplier !== undefined
+      ? 1 - contextual.hostileTargetWeightMultiplier
+      : 0);
+
+  return activeEffectValue + restValue + contextualValue;
 }
 
 /**
@@ -33,15 +71,7 @@ function getItemStrategicValue(item: InventoryItem): number {
     (definition.awarenessBonus ?? 0) +
     (definition.foragingBonus ?? 0);
 
-  const treatmentValue = (definition.treatments ?? []).reduce(
-    (total, treatment) =>
-      total +
-      treatment.severityReduction * 0.08 +
-      treatment.durationReduction * 0.08 +
-      treatment.priority * 0.02,
-
-    0,
-  );
+  const capabilityValue = getItemCapabilityStrategicValue(definition);
 
   const remainingUseRatio =
     item.usesRemaining === null
@@ -56,7 +86,7 @@ function getItemStrategicValue(item: InventoryItem): number {
           ),
         );
 
-  return (1 + passiveBonusValue + treatmentValue) * remainingUseRatio;
+  return (1 + passiveBonusValue + capabilityValue) * remainingUseRatio;
 }
 
 function getOwnedInventoryStrategicValue(tribute: GameTribute): number {

@@ -5,6 +5,8 @@ export type RoleWeight = NonNullable<ParticipantRoleDefinition["getWeight"]>;
 
 export type RoleItemAccess = NonNullable<ParticipantRoleDefinition["itemAccess"]>;
 
+export type RoleTargeting = NonNullable<ParticipantRoleDefinition["targeting"]>;
+
 export interface AuthoredOptionalItemSelection {
   definitionIds?: readonly ItemDefinitionId[];
   tags?: readonly ItemTag[];
@@ -17,6 +19,14 @@ export interface AuthoredRoleOptions {
    * tribute will be selected for this role.
    */
   getWeight?: RoleWeight;
+
+  /**
+   * Marks this participant as the target of
+   * ordinary hostile action.
+   *
+   * Omitted roles are neutral.
+   */
+  targeting?: RoleTargeting;
 
   /**
    * Tributes selected for these roles cannot be active
@@ -34,6 +44,7 @@ export interface AuthoredRoleOptions {
 export interface AuthoredRoleSpecification {
   id: string;
   count: number;
+  targeting?: RoleTargeting;
 
   getWeight?: RoleWeight;
   opposesRoleIds: readonly string[];
@@ -46,11 +57,17 @@ export interface AuthoredRoleSpecification {
 export function createAuthoredRole(
   id: string,
   count: number,
-  { getWeight, opposesRoleIds = [], optionalItem }: AuthoredRoleOptions = {},
+  { getWeight, opposesRoleIds = [], optionalItem, targeting }: AuthoredRoleOptions = {},
 ): AuthoredRoleSpecification {
   return {
     id,
     count,
+
+    ...(targeting
+      ? {
+          targeting,
+        }
+      : {}),
 
     getWeight,
     opposesRoleIds: [...opposesRoleIds],

@@ -60,6 +60,14 @@ export interface NotInSameTruceRequirement {
 interface ItemRequirementBase {
   roleId: string;
   access: RequiredItemAccess;
+
+  /**
+   * Defaults to true.
+   *
+   * False permits a narrative ownership or
+   * possession check without allowing use.
+   */
+  requireUsable: boolean;
 }
 
 export interface HasItemRequirement extends ItemRequirementBase {

@@ -61,9 +61,12 @@ function getTheftTargetSelectionWeight(
  * attempt is their first defence. Combat strength contributes
  * to their ability to stop the thief after noticing them.
  */
-export function getTheftDifficulty(target: GameTribute): TributeStatValue {
+export function getTheftDifficulty(
+  target: GameTribute,
+  round?: EventResolutionContext["round"],
+): TributeStatValue {
   return clampStatCheckDifficulty(
-    1 + getAwarenessScore(target) * 0.5 + getCombatScore(target) * 0.25,
+    1 + getAwarenessScore(target, round) * 0.5 + getCombatScore(target) * 0.25,
   );
 }
 
@@ -180,14 +183,14 @@ export const STEAL_FROM_STRONGER_TRIBUTE_EVENT = {
       id: "target",
       count: 1,
 
+      targeting: "hostile",
+
       opposesRoleIds: ["thief"],
 
       itemAccess: "owned",
-
       requiredItemDefinitionIds: STEALABLE_ITEM_DEFINITION_IDS,
 
       isEligible: isEligibleTheftTarget,
-
       getWeight: getTheftTargetSelectionWeight,
     },
   ],
@@ -209,7 +212,7 @@ export const STEAL_FROM_STRONGER_TRIBUTE_EVENT = {
     const outcome = resolveLuckAdjustedStatCheck(
       thief,
       "brains",
-      getTheftDifficulty(target),
+      getTheftDifficulty(target, context.round),
       random,
     );
 

@@ -7,6 +7,7 @@ import {
   survived,
 } from "~/game/events/authoring";
 import type { EventDefinition } from "~/game/events/event-schema";
+import { getEffectiveLuck } from "~/game/engine/effective-stats";
 
 export const HIGH_LUCK_EVENTS = [
   /* Day Only */
@@ -25,7 +26,7 @@ export const HIGH_LUCK_EVENTS = [
     weight: 3.5,
 
     roleOptions: {
-      getWeight: (tribute) => tribute.snapshot.stats.luck,
+      getWeight: (tribute) => getEffectiveLuck(tribute),
     },
 
     outcomes: {

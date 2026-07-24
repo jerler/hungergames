@@ -68,7 +68,7 @@ export function validateEventResolution({
           definition = getStatusDefinition(change.status.definitionId);
         } catch {
           throw new Error(
-            `Event "${definitionId}" applies unknown status "${change.status.definitionId}".`,
+            `Event "${definitionId}" applies unknown status ` + `"${change.status.definitionId}".`,
           );
         }
 
@@ -78,7 +78,26 @@ export function validateEventResolution({
           change.status.severity > definition.maxSeverity
         ) {
           throw new Error(
-            `Event "${definitionId}" applies invalid severity ${change.status.severity} for status "${definition.id}".`,
+            `Event "${definitionId}" applies invalid severity ` +
+              `${change.status.severity} for status "${definition.id}".`,
+          );
+        }
+
+        if (definition.duration.kind === "persistent") {
+          if (change.status.remainingRounds !== null) {
+            throw new Error(
+              `Event "${definitionId}" gives persistent status ` +
+                `"${definition.id}" a timed duration.`,
+            );
+          }
+        } else if (
+          change.status.remainingRounds === null ||
+          !Number.isInteger(change.status.remainingRounds) ||
+          change.status.remainingRounds <= 0
+        ) {
+          throw new Error(
+            `Event "${definitionId}" gives timed status ` +
+              `"${definition.id}" an invalid duration.`,
           );
         }
 

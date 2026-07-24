@@ -110,6 +110,13 @@ function validateItemRequirement(eventId: string, requirement: ItemRequirement):
       )}".`,
     );
   }
+  if (typeof requirement.requireUsable !== "boolean") {
+    throw new Error(
+      `Event "${eventId}": requirement ` +
+        `"${requirement.kind}" has invalid ` +
+        "requireUsable configuration.",
+    );
+  }
 
   switch (requirement.kind) {
     case "has-item": {

@@ -219,10 +219,19 @@ export function assertGameStateInvariants(state: GameState): void {
         `status "${status.id}" has invalid severity.`,
       );
 
-      assert(
-        Number.isInteger(status.remainingRounds) && status.remainingRounds > 0,
-        `status "${status.id}" has invalid duration.`,
-      );
+      if (definition.duration.kind === "persistent") {
+        assert(
+          status.remainingRounds === null,
+          `persistent status "${status.id}" must have null duration.`,
+        );
+      } else {
+        assert(
+          status.remainingRounds !== null &&
+            Number.isInteger(status.remainingRounds) &&
+            status.remainingRounds > 0,
+          `timed status "${status.id}" has invalid duration.`,
+        );
+      }
     }
 
     for (const item of tribute.inventory) {

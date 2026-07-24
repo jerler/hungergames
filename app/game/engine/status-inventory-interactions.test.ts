@@ -7,7 +7,6 @@ import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 import {
   createInventoryItemInstance,
   findAccessibleInventoryItem,
-  prepareTributesForRound,
 } from "~/game/items/inventory-engine";
 import { createFatalChanges } from "~/game/events/event-change-builders";
 import { createStatusEffectInstance } from "~/game/statuses/status-engine";
@@ -17,7 +16,6 @@ import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameChange, GameState, ResolvedEvent } from "~/game/types/game-state";
 import { createTruceInstance } from "~/game/truces/truce-engine";
-import { getItemDefinition } from "~/game/items/item-catalogue";
 
 const DAY_ONE = {
   day: 1,
@@ -64,53 +62,6 @@ function createEvent(
   };
 }
 
-const AUTOMATIC_TREATMENT_CASES = [
-  {
-    itemId: "water",
-    statusId: "dehydrated",
-  },
-  {
-    itemId: "medicine",
-    statusId: "bleeding",
-  },
-  {
-    itemId: "medicine",
-    statusId: "injured",
-  },
-  {
-    itemId: "medicine",
-    statusId: "sick",
-  },
-  {
-    itemId: "medicine",
-    statusId: "poisoned",
-  },
-  {
-    itemId: "medicine",
-    statusId: "burned",
-  },
-  {
-    itemId: "blanket",
-    statusId: "exposed",
-  },
-  {
-    itemId: "matches",
-    statusId: "exposed",
-  },
-  {
-    itemId: "food",
-    statusId: "exhausted",
-  },
-  {
-    itemId: "map",
-    statusId: "disoriented",
-  },
-  {
-    itemId: "camouflage-net",
-    statusId: "hunted",
-  },
-] as const;
-
 describe("status and inventory interactions", () => {
   it.each([
     {
@@ -151,58 +102,6 @@ describe("status and inventory interactions", () => {
     expect(score(equippedTribute)).toBeGreaterThan(score(tribute));
   });
 
-  it("automatically consumes medicine to treat bleeding", () => {
-    const state = createGame();
-    const tribute = state.tributes[0];
-
-    const round = {
-      day: 1,
-      period: "day" as const,
-    };
-
-    const event: ResolvedEvent = {
-      id: "setup-event",
-      definitionId: "test-setup",
-      resolutionMode: "standard",
-      kind: "primary",
-      round,
-      participantTributeIds: [tribute.id],
-      text: "Test setup.",
-      changes: [
-        {
-          type: "apply-status",
-          tributeId: tribute.id,
-
-          status: createStatusEffectInstance("setup-event", tribute.id, "bleeding", 2, round),
-        },
-        {
-          type: "acquire-item",
-          tributeId: tribute.id,
-          acquisitionSource: "cornucopia",
-          item: createInventoryItemInstance("setup-event", tribute.id, "medicine", round),
-        },
-      ],
-    };
-
-    const affectedState = applyResolvedEvent(state, event);
-
-    const preparedState = prepareTributesForRound(affectedState, {
-      day: 1,
-      period: "night",
-    });
-
-    const preparedTribute = preparedState.tributes[0];
-
-    expect(preparedTribute.statuses).toEqual([]);
-
-    expect(preparedTribute.inventory).toEqual([]);
-
-    expect(preparedState.itemTransactions.map((transaction) => transaction.type)).toEqual([
-      "acquired",
-      "consumed",
-    ]);
-  });
-
   it("kills tributes whose untreated status reaches zero", () => {
     const state = createGame();
     const tribute = state.tributes[0];
@@ -223,13 +122,15 @@ describe("status and inventory interactions", () => {
 
               statuses: [
                 createStatusEffectInstance(
-                  "injury-event",
+                  "bleeding-event",
                   tribute.id,
-                  "injured",
+                  "bleeding",
                   1,
                   appliedRound,
                   2,
                 ),
+
+                createStatusEffectInstance("hidden-event", tribute.id, "hidden", 3, appliedRound),
               ],
             }
           : candidate,
@@ -270,15 +171,15 @@ describe("status and inventory interactions", () => {
       isAlive: false,
       statuses: [],
       death: {
-        causeId: "status:injured",
-        causeLabel: "Untreated injuries",
-        summary: `${tribute.snapshot.name} ` + "succumbs to untreated injuries.",
+        causeId: "status:bleeding",
+        causeLabel: "Bled out",
+        summary: `${tribute.snapshot.name} ` + "bleeds out from an untreated wound.",
         killerTributeIds: [],
       },
     });
 
     expect(afterSecondActiveRound.eventHistory.at(-1)?.definitionId).toBe(
-      "status-fatality:injured",
+      "status-fatality:bleeding",
     );
   });
 
@@ -413,227 +314,6 @@ describe("status and inventory interactions", () => {
 
     expect(getCombatScore(injuredTribute)).toBeLessThan(baseScore);
   });
-
-  it("uses medicine on bleeding before a less urgent injury", () => {
-    const state = createGame();
-    const tribute = state.tributes[0];
-
-    const round = {
-      day: 1,
-      period: "day" as const,
-    };
-
-    const setupEventId = "medicine-priority-setup";
-
-    const setupEvent: ResolvedEvent = {
-      id: setupEventId,
-      definitionId: "medicine-priority-test",
-      kind: "primary",
-      resolutionMode: "standard",
-      round,
-      participantTributeIds: [tribute.id],
-      text: "Treatment priority setup.",
-
-      changes: [
-        {
-          type: "apply-status",
-          tributeId: tribute.id,
-
-          status: createStatusEffectInstance(setupEventId, tribute.id, "bleeding", 1, round),
-        },
-        {
-          type: "apply-status",
-          tributeId: tribute.id,
-
-          status: createStatusEffectInstance(setupEventId, tribute.id, "injured", 1, round),
-        },
-        {
-          type: "acquire-item",
-          tributeId: tribute.id,
-          acquisitionSource: "cornucopia",
-
-          item: createInventoryItemInstance(setupEventId, tribute.id, "medicine", round),
-        },
-      ],
-    };
-
-    const affectedState = applyResolvedEvent(state, setupEvent);
-
-    const preparedState = prepareTributesForRound(affectedState, {
-      day: 1,
-      period: "night",
-    });
-
-    const preparedTribute = preparedState.tributes[0];
-
-    expect(preparedTribute.statuses.map((status) => status.definitionId)).toEqual(["injured"]);
-
-    expect(preparedTribute.inventory).toEqual([]);
-  });
-
-  it("uses a truce partner's medicine for automatic treatment", () => {
-    const originalState = createGame();
-
-    const patient = originalState.tributes[0];
-
-    const itemOwner = originalState.tributes[1];
-
-    const round = {
-      day: 1,
-      period: "day" as const,
-    };
-
-    const bleeding = createStatusEffectInstance(
-      "shared-treatment-status",
-      patient.id,
-      "bleeding",
-      2,
-      round,
-    );
-
-    const medicine = createInventoryItemInstance(
-      "shared-treatment-item",
-      itemOwner.id,
-      "medicine",
-      round,
-    );
-
-    const truce = createTruceInstance("shared-treatment-truce", [patient.id, itemOwner.id], round, {
-      day: 1,
-      period: "night",
-    });
-
-    const state: GameState = {
-      ...originalState,
-
-      tributes: originalState.tributes.map((tribute) => {
-        if (tribute.id === patient.id) {
-          return {
-            ...tribute,
-            statuses: [bleeding],
-          };
-        }
-
-        if (tribute.id === itemOwner.id) {
-          return {
-            ...tribute,
-            inventory: [medicine],
-          };
-        }
-
-        return tribute;
-      }),
-
-      truces: [truce],
-    };
-
-    const preparedState = prepareTributesForRound(state, {
-      day: 1,
-      period: "night",
-    });
-
-    const preparedPatient = preparedState.tributes.find((tribute) => tribute.id === patient.id);
-
-    const preparedOwner = preparedState.tributes.find((tribute) => tribute.id === itemOwner.id);
-
-    expect(preparedPatient?.statuses).toEqual([]);
-
-    expect(preparedOwner?.inventory).toEqual([]);
-
-    expect(preparedState.itemTransactions).toContainEqual(
-      expect.objectContaining({
-        type: "consumed",
-
-        /*
-         * The transaction belongs to
-         * the physical item owner.
-         */
-        tributeId: itemOwner.id,
-
-        itemInstanceId: medicine.id,
-        definitionId: "medicine",
-        uses: 1,
-      }),
-    );
-  });
-
-  it.each(AUTOMATIC_TREATMENT_CASES)(
-    "automatically uses $itemId to treat $statusId",
-    ({ itemId, statusId }) => {
-      const state = createGame();
-      const tribute = state.tributes[0];
-
-      const appliedRound = {
-        day: 1,
-        period: "day" as const,
-      };
-
-      const setupEventId = `setup-${itemId}-${statusId}`;
-
-      const setupEvent: ResolvedEvent = {
-        id: setupEventId,
-        definitionId: "automatic-treatment-test",
-        resolutionMode: "standard",
-        kind: "primary",
-        round: appliedRound,
-        participantTributeIds: [tribute.id],
-        text: "Treatment setup.",
-
-        changes: [
-          {
-            type: "apply-status",
-            tributeId: tribute.id,
-
-            status: createStatusEffectInstance(setupEventId, tribute.id, statusId, 1, appliedRound),
-          },
-          {
-            type: "acquire-item",
-            tributeId: tribute.id,
-            acquisitionSource: "cornucopia",
-
-            item: createInventoryItemInstance(setupEventId, tribute.id, itemId, appliedRound),
-          },
-        ],
-      };
-
-      const affectedState = applyResolvedEvent(state, setupEvent);
-
-      const preparedState = prepareTributesForRound(affectedState, {
-        day: 1,
-        period: "night",
-      });
-
-      const preparedTribute = preparedState.tributes.find(
-        (candidate) => candidate.id === tribute.id,
-      );
-
-      expect(preparedTribute).toBeDefined();
-
-      expect(preparedTribute?.statuses).toEqual([]);
-
-      const consumedTransaction = preparedState.itemTransactions.find(
-        (transaction) => transaction.type === "consumed" && transaction.definitionId === itemId,
-      );
-      const itemDefinition = getItemDefinition(itemId);
-
-      const remainingItem = preparedTribute?.inventory.find((item) => item.definitionId === itemId);
-
-      if (itemDefinition.maxUses === undefined) {
-        expect(consumedTransaction).toBeUndefined();
-
-        expect(remainingItem?.usesRemaining).toBeNull();
-      } else {
-        expect(consumedTransaction).toMatchObject({
-          tributeId: tribute.id,
-          definitionId: itemId,
-          uses: 1,
-          sourceId: `automatic-treatment:${statusId}`,
-        });
-
-        expect(remainingItem?.usesRemaining ?? 0).toBe(itemDefinition.maxUses - 1);
-      }
-    },
-  );
 });
 
 describe("death loot", () => {

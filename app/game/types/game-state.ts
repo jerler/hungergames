@@ -10,7 +10,7 @@ import type {
   TributeSurvivalState,
 } from "~/game/survival/survival-schema";
 
-export const CURRENT_GAME_STATE_SCHEMA_VERSION = 2 as const;
+export const CURRENT_GAME_STATE_SCHEMA_VERSION = 3 as const;
 
 export type GamePhase = "opening" | "round-events" | "round-complete" | "victory" | "statistics";
 
@@ -60,7 +60,11 @@ export interface StatusEffect {
   definitionId: StatusEffectId;
 
   severity: 1 | 2 | 3;
-  remainingRounds: number;
+  /**
+   * Timed statuses store their remaining duration.
+   * Persistent statuses use null and require explicit removal.
+   */
+  remainingRounds: number | null;
 
   sourceEventId: string;
   appliedRound: RoundReference;

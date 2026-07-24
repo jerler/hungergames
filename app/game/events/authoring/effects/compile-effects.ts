@@ -13,11 +13,39 @@ import { getItemDefinition } from "~/game/items/item-catalogue";
 import { createInventoryItemInstance } from "~/game/items/inventory-engine";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import type { GameChange } from "~/game/types/game-state";
-
+import type { StatusDefinition } from "~/game/statuses/status-schema";
 import type { EventEffect, RequiredItemEffect } from "./effect-schema";
+import { compileItemUseEffects } from "~/game/items/item-effect-engine";
+import { compileItemRestChanges } from "~/game/items/item-rest-engine";
+import type { GameTribute } from "~/game/types/game-state";
 
 function isRequiredItemEffect(effect: EventEffect): effect is RequiredItemEffect {
-  return effect.type === "use-required-item" || effect.type === "consume-required-item";
+  return (
+    effect.type === "use-required-item" ||
+    effect.type === "consume-required-item" ||
+    effect.type === "apply-required-item-effects" ||
+    effect.type === "apply-required-item-rest"
+  );
+}
+
+function requireSelectionUser(
+  context: EventResolutionContext,
+  selection: EventItemSelection,
+): GameTribute {
+  const participant = Object.values(context.participantsByRole)
+    .flat()
+    .find((tribute) => tribute.id === selection.userTributeId);
+
+  if (!participant) {
+    throw new Error(
+      `Event "${context.eventId}": selected item ` +
+        `"${selection.item.id}" references ` +
+        `missing acting tribute ` +
+        `"${selection.userTributeId}".`,
+    );
+  }
+
+  return participant;
 }
 
 function requireSelectedItems(
@@ -45,9 +73,11 @@ function compileRequiredItemEffect(
 
   const reason = effect.reason ?? context.eventId;
 
-  return selections.map(({ owner, item }): GameChange => {
+  return selections.flatMap((selection): GameChange[] => {
+    const { owner, item } = selection;
+
     switch (effect.type) {
-      case "use-required-item": {
+      case "use-required-item":
         if (item.usesRemaining !== null) {
           throw new Error(
             `Event "${context.eventId}": effect "use-required-item" ` +
@@ -56,10 +86,9 @@ function compileRequiredItemEffect(
           );
         }
 
-        return createItemUseChange(owner, item, reason);
-      }
+        return [createItemUseChange(owner, item, reason)];
 
-      case "consume-required-item": {
+      case "consume-required-item":
         if (item.usesRemaining === null) {
           throw new Error(
             `Event "${context.eventId}": effect "consume-required-item" ` +
@@ -68,7 +97,38 @@ function compileRequiredItemEffect(
           );
         }
 
-        return createItemUseChange(owner, item, reason);
+        return [createItemUseChange(owner, item, reason)];
+
+      case "apply-required-item-effects": {
+        const actingTribute = requireSelectionUser(context, selection);
+
+        return compileItemUseEffects({
+          eventId: context.eventId,
+
+          round: context.round,
+
+          actingTribute,
+          owner,
+          item,
+          reason,
+        });
+      }
+
+      case "apply-required-item-rest": {
+        const actingTribute = requireSelectionUser(context, selection);
+
+        return compileItemRestChanges({
+          eventId: context.eventId,
+
+          round: context.round,
+
+          random: context.random,
+
+          actingTribute,
+          owner,
+          item,
+          reason,
+        });
       }
     }
   });
@@ -128,12 +188,30 @@ export function validateEffects(
     }
 
     if (effect.type === "apply-status") {
+      let definition: StatusDefinition;
+
       try {
-        getStatusDefinition(effect.statusId);
+        definition = getStatusDefinition(effect.statusId);
       } catch {
         throw new Error(
           `Event "${eventId}": effect "apply-status" ` +
             `references unknown status "${effect.statusId}".`,
+        );
+      }
+
+      if (
+        effect.durationRounds !== undefined &&
+        (!Number.isInteger(effect.durationRounds) || effect.durationRounds <= 0)
+      ) {
+        throw new Error(
+          `Event "${eventId}": effect "apply-status" ` + "uses an invalid duration override.",
+        );
+      }
+
+      if (effect.durationRounds !== undefined && definition.duration.kind === "persistent") {
+        throw new Error(
+          `Event "${eventId}": persistent status ` +
+            `"${definition.id}" cannot use a duration override.`,
         );
       }
     }
@@ -193,6 +271,7 @@ export function compileEffects(
             effect.statusId,
             effect.severity,
             context.round,
+            effect.durationRounds,
           ),
         ];
       }
@@ -235,6 +314,8 @@ export function compileEffects(
 
       case "use-required-item":
       case "consume-required-item":
+      case "apply-required-item-effects":
+      case "apply-required-item-rest":
         return compileRequiredItemEffect(effect, context);
     }
   });

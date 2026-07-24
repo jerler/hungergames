@@ -34,8 +34,8 @@ export const FLEE_EVENTS = [
       }),
       exceptionalSuccess: result({
         text: ({ tribute }) =>
-          `${tribute.name} disappears into the woods before the fighting begins and finds a concealed place to watch from safety.`,
-        effects: [applyStatus("tribute", "concealed", 1), survived("tribute")],
+          `${tribute.name} disappears into the woods before the fighting begins and finds a hidden place to watch from safety.`,
+        effects: [applyStatus("tribute", "hidden", 1), survived("tribute")],
       }),
     },
   }),
@@ -67,7 +67,7 @@ export const FLEE_EVENTS = [
           `${tribute.name} finds a clean stream beside a sheltered hiding place far from the Cornucopia.`,
         effects: [
           acquireNaturalResource("tribute", "water"),
-          applyStatus("tribute", "concealed", 1),
+          applyStatus("tribute", "hidden", 1),
           survived("tribute"),
         ],
       }),
@@ -89,7 +89,7 @@ export const FLEE_EVENTS = [
       failure: result({
         text: ({ tribute }) =>
           `${tribute.name} eats an unfamiliar root after fleeing and quickly becomes sick.`,
-        effects: [applyStatus("tribute", "sick", 1)],
+        effects: [applyStatus("tribute", "poisoned", 1, 3)],
       }),
       success: result({
         text: ({ tribute }) =>

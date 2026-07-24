@@ -1,20 +1,34 @@
 export type StatusEffectId =
   | "injured"
   | "bleeding"
+  | "parched"
   | "dehydrated"
-  | "exposed"
+  | "hungry"
+  | "starving"
   | "exhausted"
   | "disoriented"
-  | "sick"
   | "poisoned"
   | "burned"
-  | "concealed"
+  | "hidden"
+  | "well-fed"
+  | "well-rested"
+  | "alert"
+  | "lucky"
   | "hunted"
   | "inspired";
 
 export type StatusKind = "harmful" | "beneficial";
-
 export type StatusExpiration = "fatal" | "recover";
+
+export type StatusDuration =
+  | {
+      kind: "timed";
+      defaultRounds: number;
+      expiration: StatusExpiration;
+    }
+  | {
+      kind: "persistent";
+    };
 
 export interface StatusModifiers {
   combatPerSeverity: number;
@@ -29,10 +43,9 @@ interface StatusDefinitionBase {
   description: string;
 
   kind: StatusKind;
-  expiration: StatusExpiration;
+  duration: StatusDuration;
 
   maxSeverity: 3;
-  defaultDurationRounds: number;
 
   /**
    * Signed score adjustments.
@@ -45,17 +58,41 @@ interface StatusDefinitionBase {
 
 export interface FatalStatusDefinition extends StatusDefinitionBase {
   kind: "harmful";
-  expiration: "fatal";
+
+  duration: {
+    kind: "timed";
+    defaultRounds: number;
+    expiration: "fatal";
+  };
 
   fatalCauseLabel: string;
   fatalSummary: string;
+
+  removalDescription?: never;
 }
 
 export interface RecoveringStatusDefinition extends StatusDefinitionBase {
-  expiration: "recover";
+  duration: {
+    kind: "timed";
+    defaultRounds: number;
+    expiration: "recover";
+  };
+
+  fatalCauseLabel?: never;
+  fatalSummary?: never;
+  removalDescription?: never;
+}
+
+export interface PersistentStatusDefinition extends StatusDefinitionBase {
+  duration: {
+    kind: "persistent";
+  };
+
+  removalDescription: string;
 
   fatalCauseLabel?: never;
   fatalSummary?: never;
 }
 
-export type StatusDefinition = FatalStatusDefinition | RecoveringStatusDefinition;
+export type StatusDefinition =
+  FatalStatusDefinition | RecoveringStatusDefinition | PersistentStatusDefinition;

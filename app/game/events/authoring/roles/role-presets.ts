@@ -22,6 +22,16 @@ function withDefaultWeight(
   };
 }
 
+function withDefaultTargeting(
+  options: AuthoredRoleOptions,
+  targeting: NonNullable<AuthoredRoleOptions["targeting"]>,
+): AuthoredRoleOptions {
+  return {
+    ...options,
+    targeting: options.targeting ?? targeting,
+  };
+}
+
 /**
  * A neutral single-participant role.
  *
@@ -78,8 +88,7 @@ export function victimRole(
   return createAuthoredRole(
     roleId,
     1,
-
-    withDefaultWeight(options, getVulnerabilityWeight),
+    withDefaultTargeting(withDefaultWeight(options, getVulnerabilityWeight), "hostile"),
   );
 }
 
@@ -100,15 +109,15 @@ export function opposedTargetRole(
   return createAuthoredRole(
     roleId,
     1,
-
-    withDefaultWeight(
-      {
-        ...options,
-
-        opposesRoleIds: [...new Set(opposesRoleIds)],
-      },
-
-      getVulnerabilityWeight,
+    withDefaultTargeting(
+      withDefaultWeight(
+        {
+          ...options,
+          opposesRoleIds: [...new Set(opposesRoleIds)],
+        },
+        getVulnerabilityWeight,
+      ),
+      "hostile",
     ),
   );
 }

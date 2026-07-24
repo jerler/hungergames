@@ -13,6 +13,7 @@ import type {
   MinimumStatRequirement,
   NotInSameTruceRequirement,
 } from "./requirement-schema";
+import { getEffectiveStats } from "~/game/engine/effective-stats";
 
 export type CandidateRequirement =
   | HasStatusRequirement
@@ -71,10 +72,10 @@ export function evaluateCandidateRequirement(
       );
 
     case "minimum-stat":
-      return tribute.snapshot.stats[requirement.stat] >= requirement.value;
+      return getEffectiveStats(tribute)[requirement.stat] >= requirement.value;
 
     case "maximum-stat":
-      return tribute.snapshot.stats[requirement.stat] <= requirement.value;
+      return getEffectiveStats(tribute)[requirement.stat] <= requirement.value;
 
     case "in-active-truce":
       return getActiveTruceForTribute(context.state, tribute.id) !== null;

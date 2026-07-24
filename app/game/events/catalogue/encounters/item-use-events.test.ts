@@ -77,10 +77,10 @@ describe("item-use event content", () => {
     ]);
   });
 
-  it("successful shelter renovation grants concealment and survival credit", () => {
+  it("successful shelter renovation grants hidden and survival credit", () => {
     const { tribute, resolution } = resolveItemEvent("axe-based-shelter-renovation", "axe", 0.6);
 
-    expect(getAppliedStatusIds(resolution)).toEqual(["concealed"]);
+    expect(getAppliedStatusIds(resolution)).toEqual(["hidden"]);
 
     expect(hasSurvivalCredit(resolution, tribute.id)).toBe(true);
   });
@@ -123,12 +123,12 @@ describe("item-use event content", () => {
     expect(hasSurvivalCredit(resolution, tribute.id)).toBe(true);
   });
 
-  it("exceptional camouflage applies strong concealment", () => {
+  it("exceptional camouflage applies strong hidden status", () => {
     const { resolution } = resolveItemEvent("camouflage-catastrophe", "camouflage-net", 0.999);
 
     expect(getAppliedStatuses(resolution)).toEqual([
       expect.objectContaining({
-        definitionId: "concealed",
+        definitionId: "hidden",
         severity: 2,
       }),
     ]);

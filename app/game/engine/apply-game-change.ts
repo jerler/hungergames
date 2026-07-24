@@ -48,6 +48,21 @@ function getSurvivalNeedCounterKey(need: SurvivalNeed): SurvivalNeedCounterKey {
   throw new Error(`Unknown survival need "${String(need)}".`);
 }
 
+function mergeStatusDuration(
+  existingDuration: number | null,
+  incomingDuration: number | null,
+): number | null {
+  if (existingDuration === null || incomingDuration === null) {
+    if (existingDuration !== incomingDuration) {
+      throw new Error("Cannot merge timed and persistent instances of the same status.");
+    }
+
+    return null;
+  }
+
+  return Math.max(existingDuration, incomingDuration);
+}
+
 function requireNonNegativeInteger(value: number, description: string): void {
   if (!Number.isInteger(value) || value < 0) {
     throw new Error(`${description} must be a non-negative integer.`);
@@ -441,7 +456,10 @@ export function applyGameChange(
                     status.severity + change.status.severity,
                   ) as 1 | 2 | 3,
 
-                  remainingRounds: Math.max(status.remainingRounds, change.status.remainingRounds),
+                  remainingRounds: mergeStatusDuration(
+                    status.remainingRounds,
+                    change.status.remainingRounds,
+                  ),
                 }
               : status,
           ),

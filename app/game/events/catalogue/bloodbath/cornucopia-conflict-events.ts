@@ -174,6 +174,7 @@ function createPairConflictEvent({
       {
         id: "defender",
         count: 1,
+        targeting: "hostile",
         opposesRoleIds: ["attacker"],
       },
     ],

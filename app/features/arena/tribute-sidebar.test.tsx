@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { createDefaultTributeSurvivalState } from "~/game/survival/survival-schema";
-import type { GameTribute } from "~/game/types/game-state";
+import type { GameTribute, StatusEffect } from "~/game/types/game-state";
 
 import { TributeSidebar } from "./tribute-sidebar";
 
@@ -38,6 +38,25 @@ function createTribute(overrides: Partial<GameTribute>): GameTribute {
     },
 
     ...overrides,
+  };
+}
+
+function createStatus(
+  definitionId: StatusEffect["definitionId"],
+  remainingRounds: number | null,
+  severity: StatusEffect["severity"] = 1,
+): StatusEffect {
+  return {
+    id: `status-${definitionId}`,
+    definitionId,
+    severity,
+    remainingRounds,
+    sourceEventId: `event-${definitionId}`,
+
+    appliedRound: {
+      day: 2,
+      period: "day",
+    },
   };
 }
 
@@ -133,7 +152,9 @@ describe("TributeSidebar", () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText("An untreated wound steadily weakens the tribute."),
+      screen.getByText(
+        "An untreated wound steadily weakens the tribute and will eventually become fatal.",
+      ),
     ).toBeInTheDocument();
 
     expect(screen.getByText("Received during Day 2.")).toBeInTheDocument();
@@ -182,5 +203,112 @@ describe("TributeSidebar", () => {
     expect(
       screen.getByText("The Babadook stabs Avery Chen at the Cornucopia."),
     ).toBeInTheDocument();
+  });
+
+  it("shows recovery timing for recovering statuses", () => {
+    render(
+      <TributeSidebar
+        tributes={[
+          createTribute({
+            statuses: [createStatus("injured", 2, 2)],
+          }),
+        ]}
+      />,
+    );
+
+    const statusButton = screen.getByRole("button", {
+      name: "Injured. Recovers in 2 rounds.",
+    });
+
+    expect(statusButton).toHaveTextContent("Injured");
+    expect(statusButton).toHaveTextContent("2 rounds");
+
+    expect(screen.getByText("Recovers in 2 rounds.")).toBeInTheDocument();
+  });
+
+  it("shows the duration of beneficial statuses", () => {
+    render(
+      <TributeSidebar
+        tributes={[
+          createTribute({
+            statuses: [createStatus("lucky", 2, 1)],
+          }),
+        ]}
+      />,
+    );
+
+    const statusButton = screen.getByRole("button", {
+      name: "Lucky. Wears off in 2 rounds.",
+    });
+
+    expect(statusButton).toHaveTextContent("Lucky");
+    expect(statusButton).toHaveTextContent("2 rounds");
+
+    expect(screen.getByText("Wears off in 2 rounds.")).toBeInTheDocument();
+  });
+
+  it("explains how persistent statuses are removed", () => {
+    render(
+      <TributeSidebar
+        tributes={[
+          createTribute({
+            statuses: [createStatus("hungry", null, 1)],
+          }),
+        ]}
+      />,
+    );
+
+    const removalDescription = "Remains until the tribute eats enough food to recover.";
+
+    const statusButton = screen.getByRole("button", {
+      name: `Hungry. ${removalDescription}`,
+    });
+
+    expect(statusButton).toHaveTextContent("Hungry");
+    expect(statusButton).toHaveTextContent("Persistent");
+
+    expect(screen.getByText(removalDescription)).toBeInTheDocument();
+  });
+
+  it("prioritizes urgent fatal statuses while listing every active status", () => {
+    render(
+      <TributeSidebar
+        tributes={[
+          createTribute({
+            statuses: [
+              createStatus("lucky", 1, 2),
+
+              createStatus("injured", 1, 3),
+
+              createStatus("poisoned", 2, 2),
+
+              createStatus("bleeding", 1, 1),
+            ],
+          }),
+        ]}
+      />,
+    );
+
+    const statusButton = screen.getByRole("button", {
+      name: "Bleeding. Fatal at the end " + "of the next round if untreated.",
+    });
+
+    expect(statusButton).toHaveTextContent("Bleeding");
+    expect(statusButton).toHaveTextContent("1 round");
+    expect(statusButton).toHaveTextContent("+3");
+
+    const tooltip = screen.getByRole("tooltip");
+
+    const statusItems = within(tooltip).getAllByRole("listitem");
+
+    expect(statusItems).toHaveLength(4);
+
+    expect(statusItems[0]).toHaveTextContent(/^Bleeding/);
+
+    expect(statusItems[1]).toHaveTextContent(/^Poisoned/);
+
+    expect(statusItems[2]).toHaveTextContent(/^Injured/);
+
+    expect(statusItems[3]).toHaveTextContent(/^Lucky/);
   });
 });

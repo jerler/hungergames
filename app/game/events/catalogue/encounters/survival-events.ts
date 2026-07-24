@@ -34,7 +34,7 @@ const UNFAMILIAR_FORAGING_RESULTS = {
   failure: result({
     text: ({ tributes }) => `${tributes.name} misidentifies a bitter root and becomes sick.`,
 
-    effects: [applyStatus("tributes", "sick", 1)],
+    effects: [applyStatus("tributes", "poisoned", 1, 3)],
   }),
 
   success: result({
@@ -130,7 +130,7 @@ export const SURVIVAL_EVENTS = [
           text: ({ tribute }) =>
             `${tribute.name} studies ${tribute.pronouns.possessiveAdjective} map and locates a secure natural shelter hidden from the rest of the arena.`,
           effects: [
-            applyStatus("tribute", "concealed", 2),
+            applyStatus("tribute", "hidden", 2),
             survived("tribute"),
             recordRequiredItemUse("tribute", { reason: "upside-down-map" }),
           ],
@@ -214,7 +214,7 @@ export const SURVIVAL_EVENTS = [
     .resolve(
       always(
         result({
-          text: ({ tribute }) => `${tribute.name} finds a concealed place to rest.`,
+          text: ({ tribute }) => `${tribute.name} finds a hidden place to rest.`,
           effects: [survived("tribute")],
         }),
       ),

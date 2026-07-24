@@ -3,6 +3,7 @@ import { createFatalStatusResolutionEvent } from "~/game/events/catalogue/status
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import type { StatusEffectId, StatusModifiers } from "~/game/statuses/status-schema";
 import type { GameState, GameTribute, RoundReference, StatusEffect } from "~/game/types/game-state";
+import { getEffectiveLuck } from "~/game/engine/effective-stats";
 
 export type StatusScoreKey = "combat" | "survival" | "awareness" | "foraging";
 
@@ -23,19 +24,24 @@ export function createStatusEffectInstance(
 ): StatusEffect {
   const definition = getStatusDefinition(definitionId);
 
-  return {
-    id: `${eventId}:` + `${tributeId}:` + definitionId,
+  if (durationRounds !== undefined && (!Number.isInteger(durationRounds) || durationRounds <= 0)) {
+    throw new Error(`Status "${definitionId}" duration override must be a positive integer.`);
+  }
 
+  if (definition.duration.kind === "persistent" && durationRounds !== undefined) {
+    throw new Error(`Persistent status "${definitionId}" cannot receive a duration override.`);
+  }
+
+  return {
+    id: `${eventId}:${tributeId}:${definitionId}`,
     definitionId,
     severity,
-
-    remainingRounds: durationRounds ?? definition.defaultDurationRounds,
-
+    remainingRounds:
+      definition.duration.kind === "timed"
+        ? (durationRounds ?? definition.duration.defaultRounds)
+        : null,
     sourceEventId: eventId,
-
-    appliedRound: {
-      ...round,
-    },
+    appliedRound: { ...round },
   };
 }
 
@@ -57,11 +63,13 @@ function getFatalStatus(tribute: GameTribute): StatusEffect | null {
   return (
     [...tribute.statuses]
       .filter((status) => {
-        if (status.remainingRounds > 0) {
+        if (status.remainingRounds === null || status.remainingRounds > 0) {
           return false;
         }
 
-        return getStatusDefinition(status.definitionId).expiration === "fatal";
+        const definition = getStatusDefinition(status.definitionId);
+
+        return definition.duration.kind === "timed" && definition.duration.expiration === "fatal";
       })
       .sort(
         (firstStatus, secondStatus) =>
@@ -74,13 +82,14 @@ function getFatalStatus(tribute: GameTribute): StatusEffect | null {
 function removeExpiredRecoveringStatuses(tribute: GameTribute): GameTribute {
   return {
     ...tribute,
-
     statuses: tribute.statuses.filter((status) => {
-      if (status.remainingRounds > 0) {
+      if (status.remainingRounds === null || status.remainingRounds > 0) {
         return true;
       }
 
-      return getStatusDefinition(status.definitionId).expiration === "fatal";
+      const definition = getStatusDefinition(status.definitionId);
+
+      return definition.duration.kind === "timed" && definition.duration.expiration === "fatal";
     }),
   };
 }
@@ -103,7 +112,7 @@ function chooseSimultaneousFatalitySurvivor(
   return (
     [...fatalCandidates].sort(
       (firstTribute, secondTribute) =>
-        secondTribute.snapshot.stats.luck - firstTribute.snapshot.stats.luck ||
+        getEffectiveLuck(secondTribute) - getEffectiveLuck(firstTribute) ||
         firstTribute.id.localeCompare(secondTribute.id),
     )[0]?.id ?? null
   );
@@ -126,19 +135,20 @@ export function advanceStatusDurations(state: GameState): GameState {
 
       statuses: tribute.statuses.map((status) => {
         /*
-         * A status does not consume
-         * one of its active rounds
-         * during the round in which
-         * it was first applied.
+         * Persistent statuses require explicit removal
+         * and never consume rounds automatically.
+         *
+         * A timed status does not consume one of its
+         * active rounds during the round in which it
+         * was first applied.
          */
-        if (isSameRound(status.appliedRound, completedRound)) {
+        if (status.remainingRounds === null || isSameRound(status.appliedRound, completedRound)) {
           return status;
         }
 
         return {
           ...status,
-
-          remainingRounds: status.remainingRounds - 1,
+          remainingRounds: Math.max(0, status.remainingRounds - 1),
         };
       }),
     };
@@ -165,7 +175,9 @@ export function advanceStatusDurations(state: GameState): GameState {
       return {
         ...tribute,
 
-        statuses: tribute.statuses.filter((status) => status.remainingRounds > 0),
+        statuses: tribute.statuses.filter(
+          (status) => status.remainingRounds === null || status.remainingRounds > 0,
+        ),
       };
     }),
   };

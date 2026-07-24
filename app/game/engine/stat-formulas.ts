@@ -2,9 +2,12 @@ import type { EventCategory, EventSelectionContext } from "~/game/events/event-s
 import { getInventoryBonus } from "~/game/items/inventory-engine";
 import { getStatusModifier } from "~/game/statuses/status-engine";
 import type { GameTribute } from "~/game/types/game-state";
+import { getEffectiveStats } from "~/game/engine/effective-stats";
+import { getNightAwarenessItemBonus } from "~/game/items/item-contextual-capabilities";
+import type { RoundReference } from "~/game/types/game-state";
 
 export function getCombatScore(tribute: GameTribute): number {
-  const { brains, brawn, luck } = tribute.snapshot.stats;
+  const { brains, brawn, luck } = getEffectiveStats(tribute);
 
   const baseScore = brawn * 0.55 + brains * 0.25 + luck * 0.2;
 
@@ -15,7 +18,7 @@ export function getCombatScore(tribute: GameTribute): number {
 }
 
 export function getSurvivalScore(tribute: GameTribute): number {
-  const { brains, brawn, luck } = tribute.snapshot.stats;
+  const { brains, brawn, luck } = getEffectiveStats(tribute);
 
   const baseScore = brains * 0.4 + brawn * 0.25 + luck * 0.35;
 
@@ -27,8 +30,8 @@ export function getSurvivalScore(tribute: GameTribute): number {
   );
 }
 
-export function getAwarenessScore(tribute: GameTribute): number {
-  const { brains, luck } = tribute.snapshot.stats;
+export function getAwarenessScore(tribute: GameTribute, round?: RoundReference): number {
+  const { brains, luck } = getEffectiveStats(tribute);
 
   const baseScore = brains * 0.65 + luck * 0.35;
 
@@ -36,12 +39,13 @@ export function getAwarenessScore(tribute: GameTribute): number {
     0.25,
     baseScore +
       getInventoryBonus(tribute, "awarenessBonus") +
+      getNightAwarenessItemBonus(tribute, round) +
       getStatusModifier(tribute, "awareness"),
   );
 }
 
 export function getForagingScore(tribute: GameTribute): number {
-  const { brains, brawn, luck } = tribute.snapshot.stats;
+  const { brains, brawn, luck } = getEffectiveStats(tribute);
 
   const baseScore = brains * 0.45 + luck * 0.4 + brawn * 0.15;
 

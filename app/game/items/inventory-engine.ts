@@ -4,10 +4,9 @@ import type {
   GameState,
   GameTribute,
   InventoryItem,
-  InventoryTransaction,
   RoundReference,
-  StatusEffect,
 } from "~/game/types/game-state";
+import { isItemUsableBy } from "~/game/items/item-usability";
 
 export function createInventoryItemInstance(
   eventId: string,
@@ -32,6 +31,8 @@ export interface InventoryItemRequirements {
   definitionIds?: readonly ItemDefinitionId[];
   requiredTags?: readonly ItemTag[];
   unavailableItemInstanceIds?: ReadonlySet<string>;
+  //Set false for narrative ownership/access checks where the item will not actually be used.
+  requireUsable?: boolean;
 }
 
 export interface AccessibleInventoryItem {
@@ -39,18 +40,11 @@ export interface AccessibleInventoryItem {
   item: InventoryItem;
 }
 
-function itemHasRemainingUses(item: InventoryItem): boolean {
-  return item.usesRemaining === null || item.usesRemaining > 0;
-}
-
 function itemMatchesRequirements(
   item: InventoryItem,
+  actingTribute: GameTribute,
   requirements: InventoryItemRequirements,
 ): boolean {
-  if (!itemHasRemainingUses(item)) {
-    return false;
-  }
-
   if (requirements.unavailableItemInstanceIds?.has(item.id)) {
     return false;
   }
@@ -61,14 +55,35 @@ function itemMatchesRequirements(
 
   const definition = getItemDefinition(item.definitionId);
 
-  return requirements.requiredTags?.every((tag) => definition.tags.includes(tag)) ?? true;
+  if (
+    requirements.requiredTags &&
+    !requirements.requiredTags.every((tag) => definition.tags.includes(tag))
+  ) {
+    return false;
+  }
+
+  const requireUsable = requirements.requireUsable ?? true;
+
+  if (requireUsable && !isItemUsableBy(actingTribute, item)) {
+    return false;
+  }
+
+  return true;
 }
 
 export function findUsableInventoryItem(
   tribute: GameTribute,
   requirements: InventoryItemRequirements,
 ): InventoryItem | null {
-  return tribute.inventory.find((item) => itemMatchesRequirements(item, requirements)) ?? null;
+  const usableRequirements = {
+    ...requirements,
+    requireUsable: true,
+  };
+
+  return (
+    tribute.inventory.find((item) => itemMatchesRequirements(item, tribute, usableRequirements)) ??
+    null
+  );
 }
 
 export function tributeHasUsableItem(
@@ -120,7 +135,7 @@ export function getAccessibleInventoryItems(
 ): AccessibleInventoryItem[] {
   return getAccessibleInventoryOwners(state, tribute).flatMap((owner) =>
     owner.inventory.flatMap((item) =>
-      itemMatchesRequirements(item, requirements)
+      itemMatchesRequirements(item, tribute, requirements)
         ? [
             {
               owner,
@@ -153,7 +168,12 @@ export function tributeCanAccessUsableItem(
     return true;
   }
 
-  return Boolean(findAccessibleInventoryItem(state, tribute, requirements));
+  return Boolean(
+    findAccessibleInventoryItem(state, tribute, {
+      ...requirements,
+      requireUsable: true,
+    }),
+  );
 }
 
 export function getInventoryBonus(
@@ -161,198 +181,10 @@ export function getInventoryBonus(
   bonus: "combatBonus" | "survivalBonus" | "awarenessBonus" | "foragingBonus",
 ): number {
   return tribute.inventory.reduce((total, item) => {
-    if (!itemHasRemainingUses(item)) {
+    if (!isItemUsableBy(tribute, item)) {
       return total;
     }
 
     return total + (getItemDefinition(item.definitionId)[bonus] ?? 0);
   }, 0);
-}
-
-interface TreatmentCandidate extends AccessibleInventoryItem {
-  status: StatusEffect;
-  severityReduction: number;
-  durationReduction: number;
-  priority: number;
-}
-
-function findTreatmentCandidate(
-  state: GameState,
-  tribute: GameTribute,
-  status: StatusEffect,
-): TreatmentCandidate | null {
-  const candidates = getAccessibleInventoryItems(state, tribute).flatMap(({ owner, item }) => {
-    const definition = getItemDefinition(item.definitionId);
-
-    const treatment = definition.treatments?.find(
-      (candidate) => candidate.statusId === status.definitionId,
-    );
-
-    if (!treatment) {
-      return [];
-    }
-
-    return [
-      {
-        owner,
-        item,
-        status,
-        ...treatment,
-      },
-    ];
-  });
-
-  candidates.sort(
-    (first, second) =>
-      second.priority - first.priority ||
-      second.severityReduction - first.severityReduction ||
-      /*
-       * Prefer the patient's own item when
-       * the treatment quality is identical.
-       */
-      Number(second.owner.id === tribute.id) - Number(first.owner.id === tribute.id) ||
-      first.item.id.localeCompare(second.item.id),
-  );
-
-  return candidates[0] ?? null;
-}
-
-export function prepareTributesForRound(state: GameState, round: RoundReference): GameState {
-  let nextState: GameState = {
-    ...state,
-
-    tributes: state.tributes.map((tribute) => ({
-      ...tribute,
-      statuses: [...tribute.statuses],
-      inventory: [...tribute.inventory],
-    })),
-
-    itemTransactions: [...state.itemTransactions],
-  };
-
-  for (const tributeSnapshot of state.tributes) {
-    const tributeAtStart = nextState.tributes.find((tribute) => tribute.id === tributeSnapshot.id);
-
-    if (!tributeAtStart || !tributeAtStart.isAlive) {
-      continue;
-    }
-
-    const orderedStatusIds = [...tributeAtStart.statuses]
-      .sort((first, second) => second.severity - first.severity)
-      .map((status) => status.id);
-
-    for (const statusId of orderedStatusIds) {
-      const currentTribute = nextState.tributes.find(
-        (tribute) => tribute.id === tributeSnapshot.id,
-      );
-
-      if (!currentTribute) {
-        throw new Error(`Missing tribute "${tributeSnapshot.id}" during automatic treatment.`);
-      }
-
-      const currentStatus = currentTribute.statuses.find((status) => status.id === statusId);
-
-      if (!currentStatus) {
-        continue;
-      }
-
-      const treatment = findTreatmentCandidate(nextState, currentTribute, currentStatus);
-
-      if (!treatment) {
-        continue;
-      }
-
-      const nextSeverity = currentStatus.severity - treatment.severityReduction;
-
-      const nextDuration = currentStatus.remainingRounds - treatment.durationReduction;
-
-      const patientId = currentTribute.id;
-      const itemOwnerId = treatment.owner.id;
-      const itemInstanceId = treatment.item.id;
-
-      const itemHasLimitedUses = treatment.item.usesRemaining !== null;
-      const transaction: InventoryTransaction | null = itemHasLimitedUses
-        ? {
-            id: [
-              "automatic-use",
-              round.period,
-              round.day,
-              patientId,
-              itemOwnerId,
-              itemInstanceId,
-              currentStatus.id,
-            ].join(":"),
-
-            type: "consumed",
-
-            tributeId: itemOwnerId,
-            itemInstanceId,
-            definitionId: treatment.item.definitionId,
-            uses: 1,
-
-            round: {
-              ...round,
-            },
-
-            sourceId: `automatic-treatment:${currentStatus.definitionId}`,
-          }
-        : null;
-
-      nextState = {
-        ...nextState,
-
-        tributes: nextState.tributes.map((tribute) => {
-          let updatedTribute = tribute;
-
-          if (tribute.id === patientId) {
-            updatedTribute = {
-              ...updatedTribute,
-
-              statuses:
-                nextSeverity <= 0 || nextDuration <= 0
-                  ? updatedTribute.statuses.filter((status) => status.id !== currentStatus.id)
-                  : updatedTribute.statuses.map((status) =>
-                      status.id === currentStatus.id
-                        ? {
-                            ...status,
-
-                            severity: nextSeverity as 1 | 2 | 3,
-
-                            remainingRounds: nextDuration,
-                          }
-                        : status,
-                    ),
-            };
-          }
-
-          if (tribute.id === itemOwnerId && itemHasLimitedUses) {
-            updatedTribute = {
-              ...updatedTribute,
-
-              inventory: updatedTribute.inventory
-                .map((item) => {
-                  if (item.id !== itemInstanceId || item.usesRemaining === null) {
-                    return item;
-                  }
-
-                  return {
-                    ...item,
-                    usesRemaining: item.usesRemaining - 1,
-                  };
-                })
-                .filter((item) => item.usesRemaining === null || item.usesRemaining > 0),
-            };
-          }
-
-          return updatedTribute;
-        }),
-
-        itemTransactions: transaction
-          ? [...nextState.itemTransactions, transaction]
-          : nextState.itemTransactions,
-      };
-    }
-  }
-
-  return nextState;
 }

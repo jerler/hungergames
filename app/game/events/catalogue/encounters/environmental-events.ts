@@ -20,6 +20,7 @@ import { requireSingleParticipant, type EventDefinition } from "~/game/events/ev
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getTributePronouns } from "~/game/tributes/pronouns";
 import type { GameTribute } from "~/game/types/game-state";
+import { getEffectiveLuck } from "~/game/engine/effective-stats";
 
 const ARENA_GOOSE_RESULTS = {
   criticalWithFood: result({
@@ -323,8 +324,9 @@ export const ENVIRONMENTAL_EVENTS = [
     .resolve(
       always(
         result({
-          text: ({ tribute }) => `${tribute.name} is caught without shelter in freezing rain.`,
-          effects: [applyStatus("tribute", "exposed", 2)],
+          text: ({ tribute }) =>
+            `${tribute.name} spends the night shivering through freezing rain and is exhausted by morning.`,
+          effects: [applyStatus("tribute", "exhausted", 2)],
         }),
       ),
     ),
@@ -332,7 +334,7 @@ export const ENVIRONMENTAL_EVENTS = [
   /* Day and Night */
   createEvent("fallen-cliff")
     .solo("victim", {
-      getWeight: (tribute) => Math.max(0.25, 6 - tribute.snapshot.stats.luck),
+      getWeight: (tribute) => Math.max(0.25, 6 - getEffectiveLuck(tribute)),
     })
     .category("fatal")
     .tags("fatal", "hazard")

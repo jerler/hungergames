@@ -50,6 +50,82 @@ describe("loadGameState", () => {
     expect(() => loadGameState(schemaOneGame)).toThrow(/schema version 1/i);
   });
 
+  it("rejects schema-2 saves using the retired status model", () => {
+    const game = createGame();
+
+    const schemaTwoGame = {
+      ...game,
+      schemaVersion: 2,
+
+      tributes: game.tributes.map((tribute, index) =>
+        index === 0
+          ? {
+              ...tribute,
+
+              statuses: [
+                {
+                  id: "legacy-concealed-status",
+                  definitionId: "concealed",
+                  severity: 2,
+                  remainingRounds: 2,
+                  sourceEventId: "legacy-concealment-event",
+
+                  appliedRound: {
+                    day: 1,
+                    period: "day",
+                  },
+                },
+              ],
+            }
+          : tribute,
+      ),
+    };
+
+    expect(() => loadGameState(schemaTwoGame)).toThrow(UnsupportedGameStateSchemaError);
+
+    expect(() => loadGameState(schemaTwoGame)).toThrow(/schema version 2/i);
+  });
+
+  it.each(["concealed", "sick", "exposed"] as const)(
+    "rejects a current-schema save containing retired status %s",
+    (definitionId) => {
+      const game = createGame();
+
+      const invalidGame = {
+        ...game,
+
+        tributes: game.tributes.map((tribute, index) =>
+          index === 0
+            ? {
+                ...tribute,
+
+                statuses: [
+                  {
+                    id: `invalid-${definitionId}-status`,
+
+                    definitionId,
+                    severity: 1,
+                    remainingRounds: 2,
+
+                    sourceEventId: "invalid-status-event",
+
+                    appliedRound: {
+                      day: 1,
+                      period: "day",
+                    },
+                  },
+                ],
+              }
+            : tribute,
+        ),
+      };
+
+      expect(() => loadGameState(invalidGame)).toThrow(
+        new RegExp(`unknown status definition "${definitionId}"`, "i"),
+      );
+    },
+  );
+
   it("rejects unknown future schema versions", () => {
     const futureGame = {
       ...createGame(),

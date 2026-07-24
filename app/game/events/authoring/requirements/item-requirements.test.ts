@@ -34,33 +34,53 @@ describe("required-item requirement factories", () => {
       definitionIds: ["map"],
 
       access: "accessible",
+      requireUsable: true,
     });
   });
 
   it("creates an owned item-tag requirement", () => {
     expect(
-      hasItemTag("forager", {
-        tags: ["fishing"],
-
-        access: "owned",
+      hasItem("tribute", {
+        definitionIds: ["map"],
       }),
     ).toEqual({
-      kind: "has-item-tag",
-      roleId: "forager",
+      kind: "has-item",
+      roleId: "tribute",
 
-      tags: ["fishing"],
+      definitionIds: ["map"],
 
-      access: "owned",
+      access: "accessible",
+      requireUsable: true,
     });
   });
 
   it("creates a treatment requirement", () => {
     expect(hasTreatmentFor("patient", "injured")).toEqual({
       kind: "has-treatment-for",
-
       roleId: "patient",
+
       statusId: "injured",
+
       access: "accessible",
+      requireUsable: true,
+    });
+  });
+
+  it("supports narrative ownership checks without requiring usability", () => {
+    expect(
+      hasItem("owner", {
+        definitionIds: ["spear"],
+        access: "owned",
+        requireUsable: false,
+      }),
+    ).toEqual({
+      kind: "has-item",
+      roleId: "owner",
+
+      definitionIds: ["spear"],
+
+      access: "owned",
+      requireUsable: false,
     });
   });
 });
@@ -111,10 +131,10 @@ describe("required-item role compilation", () => {
     const [role] = compileAuthoredRoles(
       [soloRole("patient")],
 
-      [hasTreatmentFor("patient", "exposed")],
+      [hasTreatmentFor("patient", "bleeding")],
     );
 
-    expect(role?.requiredItemDefinitionIds).toEqual(["blanket", "matches"]);
+    expect(role?.requiredItemDefinitionIds).toEqual(["medicine"]);
   });
 });
 

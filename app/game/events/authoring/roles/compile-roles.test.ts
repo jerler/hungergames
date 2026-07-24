@@ -13,7 +13,7 @@ import { inActiveTruce, notInSameTruce } from "../requirements/relationship-requ
 import { maximumStat, minimumStat } from "../requirements/stat-requirements";
 import { hasAnyHarmfulStatus, hasStatus, lacksStatus } from "../requirements/status-requirements";
 import { compileAuthoredRoles } from "./compile-roles";
-import { groupRole, soloRole } from "./role-presets";
+import { groupRole, soloRole, victimRole } from "./role-presets";
 
 const ROUND = {
   day: 2,
@@ -292,5 +292,16 @@ describe("compileAuthoredRoles compatibility", () => {
     expect(first[1]?.opposesRoleIds).toEqual(["attacker"]);
 
     expect(second[1]?.opposesRoleIds).toEqual(["attacker"]);
+  });
+
+  it("preserves role targeting metadata", () => {
+    const [neutralRole, hostileRole] = compileAuthoredRoles([
+      soloRole("environmental-victim"),
+      victimRole("combat-victim"),
+    ]);
+
+    expect(neutralRole?.targeting).toBeUndefined();
+
+    expect(hostileRole?.targeting).toBe("hostile");
   });
 });

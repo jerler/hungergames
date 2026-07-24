@@ -1,115 +1,89 @@
 import type { ItemDefinition, ItemDefinitionId } from "./item-schema";
+import {
+  itemGrantsStatus,
+  itemRemovesMedicalStatuses,
+  itemRemovesStatuses,
+  itemSatisfiesNeed,
+} from "./item-effect-builders";
+import { validateItemCatalogue } from "./item-validation";
 
 export const ITEM_CATALOGUE = [
   // Consumable resources
   {
     id: "water",
     label: "Water bottle",
-    description: "Clean water that automatically treats dehydration.",
+    description: "Clean water that satisfies hydration and treats dehydration.",
     origin: "natural-resource",
     tags: ["consumable", "water"],
     maxUses: 1,
-    treatments: [
-      {
-        statusId: "dehydrated",
-        severityReduction: 3,
-        durationReduction: 3,
-        priority: 10,
-      },
-    ],
+
+    useEffects: [itemSatisfiesNeed("hydration"), itemRemovesStatuses("parched", "dehydrated")],
   },
   {
     id: "food",
     label: "Food",
-    description: "A supply of food that restores energy and automatically treats exhaustion.",
+    description: "A supply of food that satisfies hunger and leaves the tribute well-fed.",
     origin: "natural-resource",
     tags: ["consumable", "food"],
     maxUses: 1,
+
     survivalBonus: 0.15,
 
-    treatments: [
-      {
-        statusId: "exhausted",
-        severityReduction: 2,
-        durationReduction: 2,
-        priority: 8,
-      },
+    useEffects: [
+      itemSatisfiesNeed("food"),
+
+      itemRemovesStatuses("hungry", "starving"),
+
+      itemGrantsStatus("well-fed", 1),
     ],
   },
   {
     id: "medicine",
     label: "Medicine",
-    description: "Medical supplies that automatically treat wounds, illness, poison, and burns.",
+    description: "Medical supplies for treating wounds, poison, and burns.",
     origin: "manufactured",
     tags: ["consumable", "medicine"],
     maxUses: 1,
-    treatments: [
-      {
-        statusId: "bleeding",
-        severityReduction: 3,
-        durationReduction: 3,
-        priority: 15,
-      },
-      {
-        statusId: "poisoned",
-        severityReduction: 3,
-        durationReduction: 3,
-        priority: 14,
-      },
-      {
-        statusId: "burned",
-        severityReduction: 2,
-        durationReduction: 2,
-        priority: 12,
-      },
-      {
-        statusId: "sick",
-        severityReduction: 2,
-        durationReduction: 2,
-        priority: 11,
-      },
-      {
-        statusId: "injured",
-        severityReduction: 2,
-        durationReduction: 2,
-        priority: 10,
-      },
-    ],
+
+    useEffects: [itemRemovesMedicalStatuses()],
   },
 
   // Shelter and utility
   {
     id: "blanket",
     label: "Blanket",
-    description: "A warm blanket that provides temporary shelter.",
+    description: "A warm blanket that makes resting in the arena more comfortable.",
     origin: "manufactured",
-    tags: ["shelter", "tool"],
+    tags: ["shelter", "comfort", "tool"],
+
     survivalBonus: 0.35,
-    treatments: [
-      {
-        statusId: "exposed",
-        severityReduction: 3,
-        durationReduction: 3,
-        priority: 10,
-      },
-    ],
+
+    rest: {
+      quality: "comfortable",
+    },
   },
   {
     id: "matches",
     label: "Matches",
-    description: "A small supply of matches for starting fires.",
+    description: "A small supply of matches for starting fires and improving a night camp.",
     origin: "manufactured",
     tags: ["fire", "shelter", "tool"],
+
     maxUses: 2,
     survivalBonus: 0.2,
-    treatments: [
-      {
-        statusId: "exposed",
-        severityReduction: 2,
-        durationReduction: 2,
-        priority: 7,
+
+    rest: {
+      quality: "sheltered",
+
+      check: {
+        stat: "brains",
+        difficulty: 2,
       },
-    ],
+    },
+
+    contextual: {
+      nightAwarenessBonus: 0.35,
+    },
   },
   {
     id: "rope",
@@ -130,14 +104,7 @@ export const ITEM_CATALOGUE = [
     awarenessBonus: 0.45,
     foragingBonus: 0.35,
 
-    treatments: [
-      {
-        statusId: "disoriented",
-        severityReduction: 3,
-        durationReduction: 3,
-        priority: 10,
-      },
-    ],
+    useEffects: [itemRemovesStatuses("disoriented")],
   },
   {
     id: "camouflage-net",
@@ -149,14 +116,11 @@ export const ITEM_CATALOGUE = [
     survivalBonus: 0.5,
     awarenessBonus: 0.1,
 
-    treatments: [
-      {
-        statusId: "hunted",
-        severityReduction: 3,
-        durationReduction: 3,
-        priority: 11,
-      },
-    ],
+    useEffects: [itemRemovesStatuses("hunted"), itemGrantsStatus("hidden", 2)],
+
+    contextual: {
+      hostileTargetWeightMultiplier: 0.5,
+    },
   },
   {
     id: "trap-kit",
@@ -211,6 +175,11 @@ export const ITEM_CATALOGUE = [
     description: "A strong close- and medium-range weapon.",
     origin: "manufactured",
     tags: ["weapon"],
+
+    minimumStats: {
+      brawn: 2,
+    },
+
     combatBonus: 1.35,
   },
   {
@@ -240,11 +209,16 @@ export const ITEM_CATALOGUE = [
     description: "A sturdy shield that improves combat survivability and protection from hazards.",
     origin: "manufactured",
     tags: ["tool", "defense"],
+    contextual: {
+      hostileDefenseBonus: 0.75,
+    },
 
     combatBonus: 0.45,
     survivalBonus: 0.55,
   },
 ] satisfies readonly ItemDefinition[];
+
+validateItemCatalogue(ITEM_CATALOGUE);
 
 export function getItemDefinition(itemId: ItemDefinitionId): ItemDefinition {
   const definition = ITEM_CATALOGUE.find((candidate) => candidate.id === itemId);

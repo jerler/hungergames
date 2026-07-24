@@ -108,7 +108,12 @@ export type {
   HasTreatmentForOptions,
 } from "./requirements/item-requirements";
 
-export { consumeRequiredItem, recordRequiredItemUse } from "./effects/required-item-effects";
+export {
+  applyRequiredItemEffects,
+  applyRequiredItemRest,
+  consumeRequiredItem,
+  recordRequiredItemUse,
+} from "./effects/required-item-effects";
 
 export type { RequiredItemEffectOptions } from "./effects/required-item-effects";
 

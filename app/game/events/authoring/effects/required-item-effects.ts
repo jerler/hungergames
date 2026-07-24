@@ -1,4 +1,9 @@
-import type { ConsumeRequiredItemEffect, RecordRequiredItemUseEffect } from "./effect-schema";
+import type {
+  ApplyRequiredItemEffectsEffect,
+  ApplyRequiredItemRestEffect,
+  ConsumeRequiredItemEffect,
+  RecordRequiredItemUseEffect,
+} from "./effect-schema";
 
 export interface RequiredItemEffectOptions {
   /**
@@ -7,6 +12,38 @@ export interface RequiredItemEffectOptions {
    * Defaults to the resolved event ID when omitted.
    */
   reason?: string;
+}
+
+export function applyRequiredItemEffects(
+  roleId: string,
+  { reason }: RequiredItemEffectOptions = {},
+): ApplyRequiredItemEffectsEffect {
+  return {
+    type: "apply-required-item-effects",
+    roleId,
+
+    ...(reason !== undefined
+      ? {
+          reason,
+        }
+      : {}),
+  };
+}
+
+export function applyRequiredItemRest(
+  roleId: string,
+  { reason }: RequiredItemEffectOptions = {},
+): ApplyRequiredItemRestEffect {
+  return {
+    type: "apply-required-item-rest",
+    roleId,
+
+    ...(reason !== undefined
+      ? {
+          reason,
+        }
+      : {}),
+  };
 }
 
 export function recordRequiredItemUse(

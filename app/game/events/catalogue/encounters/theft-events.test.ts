@@ -1092,4 +1092,10 @@ describe("theft resolution", () => {
 
     expect(getTransferChanges(highLuckResolution.changes)).toHaveLength(1);
   });
+
+  it("marks the theft target as hostile", () => {
+    const targetRole = STEAL_FROM_STRONGER_TRIBUTE_EVENT.roles.find((role) => role.id === "target");
+
+    expect(targetRole?.targeting).toBe("hostile");
+  });
 });

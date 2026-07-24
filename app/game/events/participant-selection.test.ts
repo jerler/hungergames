@@ -11,6 +11,7 @@ import { createCombatantRole } from "~/game/events/participant-role-builders";
 import { createTruceInstance } from "~/game/truces/truce-engine";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { GameState, GameTribute, InventoryItem } from "~/game/types/game-state";
+import { createStatusEffectInstance } from "~/game/statuses/status-engine";
 
 function createTestGame(seed = "participant-selection"): GameState {
   const config = {
@@ -776,4 +777,90 @@ describe("participant item-access modes", () => {
       expect(selection).toBeNull();
     },
   );
+
+  it("excludes Hidden 3 from hostile roles but not neutral roles", () => {
+    const originalState = createTestGame("hidden-targeting");
+
+    const originalHiddenTribute = originalState.tributes[0];
+
+    const hiddenTribute: GameTribute = {
+      ...originalHiddenTribute,
+      statuses: [
+        createStatusEffectInstance(
+          "hidden-targeting-setup",
+          originalHiddenTribute.id,
+          "hidden",
+          3,
+          {
+            day: 1,
+            period: "night",
+          },
+        ),
+      ],
+    };
+
+    const state: GameState = {
+      ...originalState,
+      tributes: originalState.tributes.map((tribute) =>
+        tribute.id === hiddenTribute.id ? hiddenTribute : tribute,
+      ),
+    };
+
+    const createDefinition = (targeting?: "neutral" | "hostile"): EventDefinition => ({
+      id: `hidden-${targeting ?? "default"}-test`,
+      category: "hazard",
+      tags: ["hazard"],
+      periods: ["day", "night"],
+      baseWeight: 1,
+
+      roles: [
+        {
+          id: "target",
+          count: 1,
+          targeting,
+        },
+      ],
+
+      resolve: () => ({
+        text: "Hidden targeting test.",
+        changes: [],
+      }),
+    });
+
+    const context: EventSelectionContext = {
+      state,
+      round: {
+        day: 2,
+        period: "day",
+      },
+      livingTributes: [hiddenTribute],
+    };
+
+    const hostileSelection = selectEventParticipants(
+      createDefinition("hostile"),
+      context,
+      () => 0,
+      new Set(),
+    );
+
+    expect(hostileSelection).toBeNull();
+
+    const neutralSelection = selectEventParticipants(
+      createDefinition("neutral"),
+      context,
+      () => 0,
+      new Set(),
+    );
+
+    expect(neutralSelection?.participantsByRole.target[0].id).toBe(hiddenTribute.id);
+
+    const defaultSelection = selectEventParticipants(
+      createDefinition(),
+      context,
+      () => 0,
+      new Set(),
+    );
+
+    expect(defaultSelection?.participantsByRole.target[0].id).toBe(hiddenTribute.id);
+  });
 });

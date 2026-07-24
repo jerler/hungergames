@@ -184,4 +184,22 @@ describe("role presets", () => {
       }).getWeight,
     ).toBe(customWeight);
   });
+
+  it("marks victim presets as hostile targets", () => {
+    expect(victimRole().targeting).toBe("hostile");
+
+    expect(opposedTargetRole().targeting).toBe("hostile");
+  });
+
+  it("keeps ordinary solo roles neutral", () => {
+    expect(soloRole().targeting).toBeUndefined();
+  });
+
+  it("allows hostile targeting to be overridden", () => {
+    expect(
+      victimRole("hazard-victim", {
+        targeting: "neutral",
+      }).targeting,
+    ).toBe("neutral");
+  });
 });

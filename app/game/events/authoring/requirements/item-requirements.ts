@@ -1,6 +1,7 @@
 import { ITEM_CATALOGUE } from "~/game/items/item-catalogue";
 import type { ItemDefinitionId, ItemTag } from "~/game/items/item-schema";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
+import { isMedicalStatusId } from "~/game/statuses/medical-statuses";
 
 import type {
   AuthoredRequirement,
@@ -14,20 +15,23 @@ import type {
 export interface HasItemOptions {
   definitionIds: readonly ItemDefinitionId[];
   access?: RequiredItemAccess;
+  requireUsable?: boolean;
 }
 
 export interface HasItemTagOptions {
   tags: readonly ItemTag[];
   access?: RequiredItemAccess;
+  requireUsable?: boolean;
 }
 
 export interface HasTreatmentForOptions {
   access?: RequiredItemAccess;
+  requireUsable?: boolean;
 }
 
 export function hasItem(
   roleId: string,
-  { definitionIds, access = "accessible" }: HasItemOptions,
+  { definitionIds, access = "accessible", requireUsable = true }: HasItemOptions,
 ): HasItemRequirement {
   return {
     kind: "has-item",
@@ -36,12 +40,13 @@ export function hasItem(
     definitionIds: [...definitionIds],
 
     access,
+    requireUsable,
   };
 }
 
 export function hasItemTag(
   roleId: string,
-  { tags, access = "accessible" }: HasItemTagOptions,
+  { tags, access = "accessible", requireUsable = true }: HasItemTagOptions,
 ): HasItemTagRequirement {
   return {
     kind: "has-item-tag",
@@ -50,19 +55,21 @@ export function hasItemTag(
     tags: [...tags],
 
     access,
+    requireUsable,
   };
 }
 
 export function hasTreatmentFor(
   roleId: string,
   statusId: StatusEffectId,
-  { access = "accessible" }: HasTreatmentForOptions = {},
+  { access = "accessible", requireUsable = true }: HasTreatmentForOptions = {},
 ): HasTreatmentForRequirement {
   return {
     kind: "has-treatment-for",
     roleId,
     statusId,
     access,
+    requireUsable,
   };
 }
 
@@ -77,9 +84,20 @@ export function isItemRequirement(
 }
 
 export function getTreatmentItemDefinitionIds(statusId: StatusEffectId): ItemDefinitionId[] {
-  return ITEM_CATALOGUE.flatMap((definition) =>
-    definition.treatments?.some((treatment) => treatment.statusId === statusId)
-      ? [definition.id]
-      : [],
-  );
+  return ITEM_CATALOGUE.flatMap((definition) => {
+    const removesStatus =
+      definition.useEffects?.some((effect) => {
+        if (effect.type === "remove-status") {
+          return effect.statusIds.includes(statusId);
+        }
+
+        if (effect.type === "remove-medical-statuses") {
+          return isMedicalStatusId(statusId);
+        }
+
+        return false;
+      }) ?? false;
+
+    return removesStatus ? [definition.id] : [];
+  });
 }

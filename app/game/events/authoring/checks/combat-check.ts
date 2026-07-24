@@ -3,6 +3,7 @@ import { getCombatScore, getSurvivalScore } from "~/game/engine/stat-formulas";
 import type { EventItemSelection } from "~/game/events/event-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import type { GameState, GameTribute, RoundReference } from "~/game/types/game-state";
+import { getHostileDefenseItemBonus } from "~/game/items/item-contextual-capabilities";
 
 export type WeaponAttackOutcome = "failure" | "success";
 
@@ -76,7 +77,9 @@ export function ordinaryAttackCheck({
 
     const defenseScore = Math.max(
       0.25,
-      getSurvivalScore(victim) + getModifier("victim defense", victimDefense, context),
+      getSurvivalScore(victim) +
+        getHostileDefenseItemBonus(victim) +
+        getModifier("victim defense", victimDefense, context),
     );
 
     const successChance = attackScore / (attackScore + defenseScore);

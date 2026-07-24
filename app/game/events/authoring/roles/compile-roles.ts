@@ -78,21 +78,21 @@ function compileItemRequirement(
     case "has-item":
       return {
         requiredItemDefinitionIds: [...requirement.definitionIds],
-
+        requiredItemRequireUsable: requirement.requireUsable,
         itemAccess: requirement.access,
       };
 
     case "has-item-tag":
       return {
         requiredItemTags: [...requirement.tags],
-
+        requiredItemRequireUsable: requirement.requireUsable,
         itemAccess: requirement.access,
       };
 
     case "has-treatment-for":
       return {
         requiredItemDefinitionIds: getTreatmentItemDefinitionIds(requirement.statusId),
-
+        requiredItemRequireUsable: requirement.requireUsable,
         itemAccess: requirement.access,
       };
   }
@@ -114,6 +114,12 @@ export function compileAuthoredRoles(
     return {
       id: role.id,
       count: role.count,
+
+      ...(role.targeting
+        ? {
+            targeting: role.targeting,
+          }
+        : {}),
 
       ...(role.getWeight
         ? {

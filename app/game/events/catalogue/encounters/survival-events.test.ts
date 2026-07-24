@@ -213,7 +213,7 @@ describe("survival events", () => {
     ]);
   });
 
-  it("makes a failed picnic participant sick", () => {
+  it("makes failed picnic participants slowly poisoned", () => {
     const game = createTestGame();
 
     const firstTribute = withStats(game.tributes[0], BALANCED_STATS);
@@ -229,9 +229,20 @@ describe("survival events", () => {
       [0.3, 0.3],
     );
 
-    expect(getAppliedStatuses(resolution).map((status) => status.definitionId)).toEqual([
-      "sick",
-      "sick",
+    expect(
+      getAppliedStatuses(resolution).map((status) => ({
+        definitionId: status.definitionId,
+        remainingRounds: status.remainingRounds,
+      })),
+    ).toEqual([
+      {
+        definitionId: "poisoned",
+        remainingRounds: 3,
+      },
+      {
+        definitionId: "poisoned",
+        remainingRounds: 3,
+      },
     ]);
   });
 
@@ -413,7 +424,7 @@ describe("survival events", () => {
     const resolution = resolveEvent(definition, game, { tribute: [tribute] }, [0.5]);
 
     expect(resolution).toEqual({
-      text: "Shelter finds a concealed place to rest.",
+      text: "Shelter finds a hidden place to rest.",
       changes: [
         {
           type: "increment-statistic",

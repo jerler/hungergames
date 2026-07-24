@@ -82,6 +82,14 @@ function validateRole(
     throw new Error(`Event "${eventId}" role "${role.id}" must have a positive integer count.`);
   }
 
+  if (
+    role.targeting !== undefined &&
+    role.targeting !== "neutral" &&
+    role.targeting !== "hostile"
+  ) {
+    throw new Error(`Event "${eventId}" role "${role.id}" ` + "has invalid targeting metadata.");
+  }
+
   if (role.isEligible !== undefined && typeof role.isEligible !== "function") {
     throw new Error(`Event "${eventId}" role "${role.id}" has an invalid eligibility callback.`);
   }
@@ -121,6 +129,23 @@ function validateRole(
   if (hasRequiredItem && hasOptionalItem) {
     throw new Error(
       `Event "${eventId}" role "${role.id}" cannot select both a required and optional item.`,
+    );
+  }
+
+  if (
+    role.requiredItemRequireUsable !== undefined &&
+    typeof role.requiredItemRequireUsable !== "boolean"
+  ) {
+    throw new Error(
+      `Event "${eventId}" role "${role.id}" ` + "has invalid required-item usability.",
+    );
+  }
+
+  if (role.requiredItemRequireUsable !== undefined && !hasRequiredItem) {
+    throw new Error(
+      `Event "${eventId}" role "${role.id}" ` +
+        "declares required-item usability " +
+        "without a required item.",
     );
   }
 

@@ -5,7 +5,6 @@ import { getNextRound } from "~/game/engine/rounds";
 import { selectLivingTributes } from "~/game/selectors/game-selectors";
 import type { GameState } from "~/game/types/game-state";
 import type { GameAction } from "~/state/game-actions";
-import { prepareTributesForRound } from "~/game/items/inventory-engine";
 import { advanceStatusDurations } from "~/game/statuses/status-engine";
 import { expireTrucesAfterRound } from "~/game/truces/truce-engine";
 import { createSoleVictoryOutcome } from "~/game/victory/victory-outcome";
@@ -49,15 +48,13 @@ function beginNextRound(state: GameState, now: string): GameState {
 
   const nextRound = getNextRound(state.currentRound);
 
-  const preparedState = prepareTributesForRound(state, nextRound);
-
   return finalizeState({
-    ...preparedState,
+    ...state,
 
     phase: "round-events",
     currentRound: nextRound,
 
-    roundEvents: resolveRound(preparedState, nextRound),
+    roundEvents: resolveRound(state, nextRound),
 
     revealedEventCount: 0,
     updatedAt: now,

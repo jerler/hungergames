@@ -61,9 +61,19 @@ export interface ParticipantSelectionContext extends EventSelectionContext {
   participantsByRole: ParticipantsByRole;
 }
 
+export type ParticipantTargeting = "neutral" | "hostile";
+
 export interface ParticipantRoleDefinition {
   id: string;
   count: number;
+
+  /**
+   * Describes whether selection represents an
+   * ordinary hostile attempt to target this tribute.
+   *
+   * Undefined is treated as neutral.
+   */
+  targeting?: ParticipantTargeting;
 
   isEligible?: (tribute: GameTribute, context: ParticipantSelectionContext) => boolean;
 
@@ -82,6 +92,14 @@ export interface ParticipantRoleDefinition {
    * Defaults to "accessible" for backward compatibility.
    */
   itemAccess?: "accessible" | "owned";
+
+  /**
+   * Whether a required item must be usable by
+   * the acting tribute.
+   *
+   * Defaults to true.
+   */
+  requiredItemRequireUsable?: boolean;
 
   /**
    * Optionally selects and reserves an item for this role.

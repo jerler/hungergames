@@ -11,6 +11,7 @@ import { resolveAuthoredResult } from "~/game/events/authoring/outcomes/resolve-
 import { EVENT_STATS, resolveStatCheck, type StatCheckOutcome } from "~/game/events/event-outcomes";
 import { resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
 import { requireSingleParticipant } from "~/game/events/event-schema";
+import { getEffectiveStats } from "~/game/engine/effective-stats";
 
 interface StatCheckStrategyOptions {
   intro?: EventText;
@@ -93,7 +94,7 @@ export function statCheck(
       const outcome = check.luckAdjusted
         ? resolveLuckAdjustedStatCheck(tribute, check.stat, check.difficulty, context.random)
         : resolveStatCheck({
-            stats: tribute.snapshot.stats,
+            stats: getEffectiveStats(tribute),
 
             stat: check.stat,
             difficulty: check.difficulty,

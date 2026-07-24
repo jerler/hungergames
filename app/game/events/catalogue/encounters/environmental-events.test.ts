@@ -61,8 +61,8 @@ const SIMPLE_STATUS_EVENT_CASES = [
     tags: ["hazard", "status", "environment"],
     periods: ["night"],
     weight: 6,
-    text: "is caught without shelter in freezing rain.",
-    statusId: "exposed",
+    text: "spends the night shivering through freezing rain and is exhausted by morning.",
+    statusId: "exhausted",
     severity: 2,
   },
   {
@@ -635,5 +635,13 @@ describe("environmental events", () => {
         }),
       }),
     );
+  });
+
+  it("keeps environmental roles neutral", () => {
+    for (const definition of ENVIRONMENTAL_EVENTS) {
+      for (const role of definition.roles) {
+        expect(role.targeting, `${definition.id}:${role.id}`).not.toBe("hostile");
+      }
+    }
   });
 });

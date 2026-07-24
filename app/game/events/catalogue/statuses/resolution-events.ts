@@ -22,17 +22,23 @@ export function createFatalStatusResolutionEvent(
 ): ResolvedEvent {
   const definition = getStatusDefinition(status.definitionId);
 
-  if (definition.expiration !== "fatal") {
+  const fatalCauseLabel = definition.fatalCauseLabel;
+  const fatalSummary = definition.fatalSummary;
+
+  if (
+    definition.duration.kind !== "timed" ||
+    definition.duration.expiration !== "fatal" ||
+    !fatalCauseLabel ||
+    !fatalSummary
+  ) {
     throw new Error(
-      `Recovering status "${definition.id}" ` + "cannot create a fatal resolution event.",
+      `Nonfatal status "${definition.id}" ` + "cannot create a fatal resolution event.",
     );
   }
 
+  const text = `${tribute.snapshot.name} ` + fatalSummary;
   const eventId =
     `status-fatality:${round.day}:` + `${round.period}:` + `${tribute.id}:` + status.id;
-
-  const text = `${tribute.snapshot.name} ` + definition.fatalSummary;
-
   /*
    * Death resolves every remaining status on the tribute.
    * These removals must occur after the elimination change
@@ -53,7 +59,7 @@ export function createFatalStatusResolutionEvent(
     participantTributeIds: [tribute.id],
     text,
     changes: [
-      ...createFatalChanges(tribute, `status:${definition.id}`, definition.fatalCauseLabel, text),
+      ...createFatalChanges(tribute, `status:${definition.id}`, fatalCauseLabel, text),
       ...removeStatusChanges,
     ],
   };

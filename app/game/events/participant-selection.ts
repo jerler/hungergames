@@ -13,6 +13,8 @@ import {
 } from "~/game/items/inventory-engine";
 import { areTributesInSameTruce } from "~/game/truces/truce-engine";
 import type { GameTribute } from "~/game/types/game-state";
+import { getHostileTargetingWeightMultiplier } from "~/game/statuses/hostile-targeting";
+import { getHostileItemTargetWeightMultiplier } from "~/game/items/item-contextual-capabilities";
 
 function isProtectedFromRoleByTruce(
   candidate: GameTribute,
@@ -54,8 +56,12 @@ function findAvailableRoleItem(
 
   const requirements = {
     definitionIds,
+
     requiredTags: required ? role.requiredItemTags : role.optionalItemTags,
+
     unavailableItemInstanceIds: reservedItemInstanceIds,
+
+    requireUsable: required ? (role.requiredItemRequireUsable ?? true) : true,
   };
 
   const access = required ? role.itemAccess : role.optionalItemAccess;
@@ -102,6 +108,8 @@ interface RoleCandidate {
   tribute: GameTribute;
 
   accessibleItem: AccessibleInventoryItem | null;
+
+  targetingWeightMultiplier: number;
 }
 
 /**
@@ -200,6 +208,16 @@ export function selectEventParticipants(
           return [];
         }
 
+        const targetingWeightMultiplier =
+          role.targeting === "hostile"
+            ? getHostileTargetingWeightMultiplier(tribute) *
+              getHostileItemTargetWeightMultiplier(tribute)
+            : 1;
+
+        if (targetingWeightMultiplier <= 0) {
+          return [];
+        }
+
         const accessibleItem = selectsItem
           ? findAvailableRoleItem(
               context,
@@ -222,6 +240,7 @@ export function selectEventParticipants(
           {
             tribute,
             accessibleItem,
+            targetingWeightMultiplier,
           },
         ];
       },
@@ -230,9 +249,8 @@ export function selectEventParticipants(
     while (remainingCandidates.length > 0) {
       const selectedCandidate = selectWeightedItem(
         remainingCandidates,
-
-        ({ tribute }) => role.getWeight?.(tribute, roleContext) ?? 1,
-
+        ({ tribute, targetingWeightMultiplier }) =>
+          (role.getWeight?.(tribute, roleContext) ?? 1) * targetingWeightMultiplier,
         random,
       );
 

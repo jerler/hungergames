@@ -31,12 +31,16 @@ function getFatalUrgency(remainingRounds: number): StatusPresentation {
   return "stable";
 }
 
+function isFatalStatusDefinition(definition: StatusDefinition): boolean {
+  return definition.duration.kind === "timed" && definition.duration.expiration === "fatal";
+}
+
 function getStatusPresentation(
   definition: StatusDefinition,
-  remainingRounds: number,
+  remainingRounds: number | null,
 ): StatusPresentation {
-  if (definition.expiration === "fatal") {
-    return getFatalUrgency(remainingRounds);
+  if (isFatalStatusDefinition(definition)) {
+    return remainingRounds === null ? "stable" : getFatalUrgency(remainingRounds);
   }
 
   if (definition.kind === "beneficial") {
@@ -47,7 +51,7 @@ function getStatusPresentation(
 }
 
 function getStatusSortGroup(definition: StatusDefinition): number {
-  if (definition.expiration === "fatal") {
+  if (isFatalStatusDefinition(definition)) {
     return 0;
   }
 
@@ -63,40 +67,75 @@ function compareStatusesByUrgency(firstStatus: StatusEffect, secondStatus: Statu
 
   const secondDefinition = getStatusDefinition(secondStatus.definitionId);
 
+  const firstRemainingRounds = firstStatus.remainingRounds ?? Number.POSITIVE_INFINITY;
+
+  const secondRemainingRounds = secondStatus.remainingRounds ?? Number.POSITIVE_INFINITY;
+
+  const remainingRoundDifference =
+    firstRemainingRounds === secondRemainingRounds
+      ? 0
+      : firstRemainingRounds - secondRemainingRounds;
+
   return (
     getStatusSortGroup(firstDefinition) - getStatusSortGroup(secondDefinition) ||
-    firstStatus.remainingRounds - secondStatus.remainingRounds ||
+    remainingRoundDifference ||
     secondStatus.severity - firstStatus.severity ||
     firstStatus.definitionId.localeCompare(secondStatus.definitionId)
   );
 }
 
-function formatStatusCountdown(definition: StatusDefinition, remainingRounds: number): string {
-  if (definition.expiration === "fatal") {
+function formatStatusCountdown(
+  definition: StatusDefinition,
+  remainingRounds: number | null,
+): string {
+  if (definition.duration.kind === "persistent") {
+    return definition.removalDescription ?? "Requires explicit removal.";
+  }
+
+  if (remainingRounds === null) {
+    return "Duration unavailable.";
+  }
+
+  if (definition.duration.expiration === "fatal") {
     if (remainingRounds <= 1) {
-      return "Fatal at the end of the " + "next round if untreated.";
+      return "Fatal at the end of the next round if untreated.";
     }
 
-    return `Fatal in ${remainingRounds} ` + "rounds if untreated.";
+    return `Fatal in ${remainingRounds} rounds if untreated.`;
   }
 
   if (definition.kind === "beneficial") {
     if (remainingRounds <= 1) {
-      return "Wears off at the end of " + "the next round.";
+      return "Wears off at the end of the next round.";
     }
 
-    return `Wears off in ` + `${remainingRounds} rounds.`;
+    return `Wears off in ${remainingRounds} rounds.`;
   }
 
   if (remainingRounds <= 1) {
-    return "Recovers at the end of the " + "next round.";
+    return "Recovers at the end of the next round.";
   }
 
-  return `Recovers in ` + `${remainingRounds} rounds.`;
+  return `Recovers in ${remainingRounds} rounds.`;
 }
 
 function formatRoundCount(roundCount: number): string {
   return `${roundCount} ${roundCount === 1 ? "round" : "rounds"}`;
+}
+
+function formatStatusDurationLabel(
+  definition: StatusDefinition,
+  remainingRounds: number | null,
+): string {
+  if (definition.duration.kind === "persistent") {
+    return "Persistent";
+  }
+
+  if (remainingRounds === null) {
+    return "Unknown duration";
+  }
+
+  return formatRoundCount(remainingRounds);
 }
 
 function formatNameList(names: readonly string[]): string {
@@ -237,7 +276,10 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
                       <strong>{primaryDefinition.label}</strong>
 
                       <span>
-                        {formatRoundCount(primaryStatus.remainingRounds)}
+                        {formatStatusDurationLabel(
+                          primaryDefinition,
+                          primaryStatus.remainingRounds,
+                        )}
 
                         {additionalStatusCount > 0 ? ` · +${additionalStatusCount}` : ""}
                       </span>

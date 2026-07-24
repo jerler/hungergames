@@ -63,26 +63,26 @@ export const ITEM_USE_EVENTS = [
       criticalFailure: result({
         text: ({ tribute }) =>
           `${tribute.name} attempts an ambitious shelter renovation, drops part of a tree on ${tribute.pronouns.reflexive}, and destroys the original shelter.`,
-        effects: [applyStatus("tribute", "injured", 2), applyStatus("tribute", "exposed", 1)],
+        effects: [applyStatus("tribute", "injured", 2)],
       }),
 
       failure: result({
         text: ({ tribute }) =>
           `${tribute.name} demolishes most of ${tribute.pronouns.possessiveAdjective} shelter before realizing ${tribute.pronouns.subject} had no clear renovation plan.`,
-        effects: [applyStatus("tribute", "exhausted", 1), applyStatus("tribute", "exposed", 1)],
+        effects: [applyStatus("tribute", "exhausted", 1)],
       }),
 
       success: result({
         text: ({ tribute }) =>
           `${tribute.name} uses an axe to construct a sturdy shelter hidden among the trees.`,
-        effects: [applyStatus("tribute", "concealed", 1), survived("tribute")],
+        effects: [applyStatus("tribute", "hidden", 1), survived("tribute")],
       }),
 
       exceptionalSuccess: result({
         text: ({ tribute }) =>
           `${tribute.name} transforms a rough shelter into an exceptionally concealed arena hideout.`,
         effects: [
-          applyStatus("tribute", "concealed", 2),
+          applyStatus("tribute", "hidden", 2),
           applyStatus("tribute", "inspired", 1),
           survived("tribute"),
         ],
@@ -233,13 +233,13 @@ export const ITEM_USE_EVENTS = [
       success: result({
         text: ({ tribute }) =>
           `${tribute.name} uses ${tribute.pronouns.possessiveAdjective} camouflage net to disappear into the surrounding terrain.`,
-        effects: [applyStatus("tribute", "concealed", 1)],
+        effects: [applyStatus("tribute", "hidden", 1)],
       }),
 
       exceptionalSuccess: result({
         text: ({ tribute }) =>
           `${tribute.name} constructs an almost perfect hideout with ${tribute.pronouns.possessiveAdjective} camouflage net.`,
-        effects: [applyStatus("tribute", "concealed", 2)],
+        effects: [applyStatus("tribute", "hidden", 2)],
       }),
     },
   }),

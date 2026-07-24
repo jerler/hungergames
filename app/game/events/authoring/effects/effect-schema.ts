@@ -12,6 +12,23 @@ export interface ApplyStatusEffect {
 
   statusId: StatusEffectId;
   severity: 1 | 2 | 3;
+
+  /**
+   * Overrides the catalogue duration for this timed instance.
+   */
+  durationRounds?: number;
+}
+
+export interface ApplyRequiredItemEffectsEffect {
+  type: "apply-required-item-effects";
+  roleId: string;
+  reason?: string;
+}
+
+export interface ApplyRequiredItemRestEffect {
+  type: "apply-required-item-rest";
+  roleId: string;
+  reason?: string;
 }
 
 export interface AcquireNaturalResourceEffect {
@@ -41,7 +58,11 @@ export interface ConsumeRequiredItemEffect {
   reason?: string;
 }
 
-export type RequiredItemEffect = RecordRequiredItemUseEffect | ConsumeRequiredItemEffect;
+export type RequiredItemEffect =
+  | RecordRequiredItemUseEffect
+  | ConsumeRequiredItemEffect
+  | ApplyRequiredItemEffectsEffect
+  | ApplyRequiredItemRestEffect;
 
 export type EventEffect =
   | SurvivedEffect

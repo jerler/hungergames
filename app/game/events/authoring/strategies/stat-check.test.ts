@@ -16,6 +16,23 @@ import {
   createAuthoringTestTribute,
 } from "~/game/events/authoring/testing/authoring-test-fixtures";
 import { resolveAuthoredEvent } from "~/game/events/authoring/testing/resolve-authored-event";
+import { createStatusEffectInstance } from "~/game/statuses/status-engine";
+import type { GameTribute } from "~/game/types/game-state";
+
+const ROUND = {
+  day: 1,
+  period: "day",
+} as const;
+
+function withLucky(tribute: GameTribute, severity: 1 | 2 | 3): GameTribute {
+  return {
+    ...tribute,
+    statuses: [
+      ...tribute.statuses,
+      createStatusEffectInstance("stat-check-lucky", tribute.id, "lucky", severity, ROUND),
+    ],
+  };
+}
 
 function createFourOutcomeEvent(
   check: ReturnType<typeof brains> = brains(3),
@@ -358,5 +375,90 @@ describe("statCheck", () => {
           ),
         ),
     ).toThrow('references unknown stat "speed"');
+  });
+
+  it("uses effective Luck for direct Luck checks", () => {
+    const baseTribute = createAuthoringTestTribute({
+      stats: {
+        brains: 3,
+        brawn: 3,
+        luck: 3,
+      },
+    });
+
+    const luckyTribute = withLucky(
+      {
+        ...baseTribute,
+        id: "lucky-tribute",
+      },
+      1,
+    );
+
+    const definition = createFourOutcomeEvent(luck(3), "effective-luck-check");
+
+    const baseResolution = resolveAuthoredEvent(
+      definition,
+      createAuthoringTestGame([baseTribute]),
+      {
+        tribute: [baseTribute],
+      },
+      [0.48],
+    );
+
+    const luckyResolution = resolveAuthoredEvent(
+      definition,
+      createAuthoringTestGame([luckyTribute]),
+      {
+        tribute: [luckyTribute],
+      },
+      [0.48],
+    );
+
+    expect(baseResolution.text).toBe("Test Tribute tries fails.");
+
+    expect(luckyResolution.text).toBe("Test Tribute tries succeeds.");
+
+    expect(luckyTribute.snapshot.stats.luck).toBe(3);
+  });
+  it("uses effective Luck for Luck-adjusted checks", () => {
+    const baseTribute = createAuthoringTestTribute({
+      stats: {
+        brains: 3,
+        brawn: 3,
+        luck: 3,
+      },
+    });
+
+    const luckyTribute = withLucky(
+      {
+        ...baseTribute,
+        id: "lucky-adjusted-tribute",
+      },
+      1,
+    );
+
+    const definition = createFourOutcomeEvent(brains(3), "effective-luck-adjustment");
+
+    const baseResolution = resolveAuthoredEvent(
+      definition,
+      createAuthoringTestGame([baseTribute]),
+      {
+        tribute: [baseTribute],
+      },
+      [0.48],
+    );
+
+    const luckyResolution = resolveAuthoredEvent(
+      definition,
+      createAuthoringTestGame([luckyTribute]),
+      {
+        tribute: [luckyTribute],
+      },
+      [0.48],
+    );
+
+    expect(baseResolution.text).toBe("Test Tribute tries fails.");
+
+    expect(luckyResolution.text).toBe("Test Tribute tries succeeds.");
   });
 });

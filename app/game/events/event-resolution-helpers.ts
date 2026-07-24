@@ -13,6 +13,7 @@ import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { GameTribute } from "~/game/types/game-state";
 import type { TributeStatValue } from "~/game/types/tribute";
 import type { EventResolutionContext } from "./event-schema";
+import { getEffectiveStats } from "~/game/engine/effective-stats";
 
 export function clampStatCheckDifficulty(difficulty: number): TributeStatValue {
   return Math.max(1, Math.min(5, Math.round(difficulty))) as TributeStatValue;
@@ -37,12 +38,14 @@ export function resolveLuckAdjustedStatCheck(
   random: RandomSource,
   difficultyReduction = 0,
 ): StatCheckOutcome {
+  const effectiveStats = getEffectiveStats(tribute);
+
   const difficulty = clampStatCheckDifficulty(
-    baseDifficulty + getLuckDifficultyAdjustment(tribute.snapshot.stats.luck) - difficultyReduction,
+    baseDifficulty + getLuckDifficultyAdjustment(effectiveStats.luck) - difficultyReduction,
   );
 
   return resolveStatCheck({
-    stats: tribute.snapshot.stats,
+    stats: effectiveStats,
     stat,
     difficulty,
     random,

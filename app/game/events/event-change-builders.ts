@@ -20,12 +20,19 @@ export function createStatusChange(
   statusId: StatusEffectId,
   severity: 1 | 2 | 3,
   round: EventResolutionContext["round"],
+  durationRounds?: number,
 ): GameChange {
   return {
     type: "apply-status",
     tributeId: tribute.id,
-
-    status: createStatusEffectInstance(eventId, tribute.id, statusId, severity, round),
+    status: createStatusEffectInstance(
+      eventId,
+      tribute.id,
+      statusId,
+      severity,
+      round,
+      durationRounds,
+    ),
   };
 }
 

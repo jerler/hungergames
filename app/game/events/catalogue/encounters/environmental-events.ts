@@ -297,14 +297,14 @@ export const ENVIRONMENTAL_EVENTS = [
     })
     .when(maximumStat("victim", "brawn", 4))
     .category("fatal")
-    .tags("fatal", "hazard")
+    .tags("fatal", "hazard", "environment")
     .during("night")
     .weight(2.25)
     .resolve(
       always(
         result({
           text: ({ victim }) =>
-            `${victim.name} is unable to find shelter and freezes during the night.`,
+            `The arena temperature plummets overnight, and ${victim.name} freezes before morning.`,
 
           effects: [
             eliminate("victim", {

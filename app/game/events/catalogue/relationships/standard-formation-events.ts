@@ -23,7 +23,7 @@ const FORMATION_BASE_WEIGHT = 7;
 
 const SHARED_SUPPLY_IDS = ["food", "water"] satisfies readonly ItemDefinitionId[];
 
-type FormationTheme = "share-shelter" | "split-supplies";
+type FormationTheme = "travel-together" | "split-supplies";
 
 function formatNameList(names: readonly string[]): string {
   if (names.length === 0) {
@@ -63,18 +63,18 @@ function createFormationEvent(
   groupSize: TruceGroupSize,
   groupSizeWeight: number,
 ): EventDefinition {
-  const sharesShelter = theme === "share-shelter";
+  const travelsTogether = theme === "travel-together";
   const eventId = `${theme}-truce-${groupSize}`;
 
   return {
     id: eventId,
     category: "survival",
 
-    tags: sharesShelter
-      ? ["survival", "truce", "cooperative", "environment"]
+    tags: travelsTogether
+      ? ["survival", "truce", "cooperative"]
       : ["survival", "truce", "cooperative", "item", "resource"],
 
-    periods: sharesShelter ? ["day"] : ["night"],
+    periods: travelsTogether ? ["day"] : ["night"],
 
     /*
      * The weights for all sizes total
@@ -137,15 +137,13 @@ function createFormationEvent(
         ...createSurvivalChanges(tributes),
       ];
 
-      if (!sharesShelter) {
+      if (!travelsTogether) {
         changes.push(...createSupplyChanges(resolvedEventId, tributes, round));
       }
 
-      const text = sharesShelter
-        ? `${formatNameList(names)} discover a defensible shelter ` +
-          "and agree to share it through the coming night."
-        : `${formatNameList(names)} gather food and water together ` +
-          "and agree to travel together temporarily.";
+      const text = travelsTogether
+        ? `${formatNameList(names)} decide that travelling alone is too dangerous and agree to watch one another's backs through the coming night.`
+        : `${formatNameList(names)} gather food and water together and agree to travel together temporarily.`;
 
       return {
         text,
@@ -156,7 +154,7 @@ function createFormationEvent(
 }
 
 const STANDARD_DAY_FORMATION_EVENTS = TRUCE_GROUP_SIZE_WEIGHTS.map(({ size, weight }) =>
-  createFormationEvent("share-shelter", size, weight),
+  createFormationEvent("travel-together", size, weight),
 );
 
 const STANDARD_NIGHT_FORMATION_EVENTS = TRUCE_GROUP_SIZE_WEIGHTS.map(({ size, weight }) =>

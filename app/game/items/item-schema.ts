@@ -71,12 +71,22 @@ export type ItemUseEffect =
   | RemoveMedicalStatusesItemEffect
   | GrantStatusItemEffect;
 
+export type ItemRestCheckStat = "brains" | "luck" | "brains-or-luck";
+
+export interface ItemRestCriticalFailureStatus {
+  statusId: StatusEffectId;
+  severity: 1 | 2 | 3;
+  durationRounds?: number;
+}
+
 export interface ItemRestCapability {
   quality: "comfortable" | "sheltered";
 
   check?: {
-    stat: "brains" | "luck";
+    stat: ItemRestCheckStat;
     difficulty: TributeStatValue;
+
+    criticalFailureStatus?: ItemRestCriticalFailureStatus;
   };
 }
 

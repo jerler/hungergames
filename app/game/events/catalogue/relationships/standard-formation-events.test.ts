@@ -70,7 +70,7 @@ describe("truce formation events", () => {
   it.each(TRUCE_GROUP_SIZE_WEIGHTS)(
     "creates size-$size variants with the intended weight",
     ({ size, weight }) => {
-      for (const theme of ["share-shelter", "split-supplies"] as const) {
+      for (const theme of ["travel-together", "split-supplies"] as const) {
         const event = requireEvent(`${theme}-truce-${size}`);
 
         expect(event.roles[0].count).toBe(size);
@@ -80,12 +80,12 @@ describe("truce formation events", () => {
     },
   );
 
-  it.each(TRUCE_GROUP_SIZE_WEIGHTS)("forms a real size-$size shelter truce", ({ size }) => {
+  it.each(TRUCE_GROUP_SIZE_WEIGHTS)("forms a real size-$size daytime travel truce", ({ size }) => {
     const game = createGame();
 
     const participants = game.tributes.slice(0, size);
 
-    const event = requireEvent(`share-shelter-truce-${size}`);
+    const event = requireEvent(`travel-together-truce-${size}`);
 
     const resolution = event.resolve({
       state: game,
@@ -93,7 +93,7 @@ describe("truce formation events", () => {
 
       livingTributes: game.tributes,
 
-      eventId: `shelter-test-${size}`,
+      eventId: `travel-test-${size}`,
 
       random: () => 0.5,
 
@@ -117,6 +117,8 @@ describe("truce formation events", () => {
         expiresAfterRound: NIGHT_ONE,
       }),
     ]);
+
+    expect(resolution.text).not.toMatch(/shelter|sleep|rest/i);
   });
 
   it("distributes supplies across every member", () => {
@@ -192,7 +194,7 @@ describe("truce formation events", () => {
       truces: [existingTruce],
     };
 
-    const event = requireEvent("share-shelter-truce-6");
+    const event = requireEvent("travel-together-truce-6");
 
     expect(
       event.isEligible?.({

@@ -70,30 +70,54 @@ const SIMPLE_STATUS_EVENT_CASES = [
 const FATAL_EVENT_CASES = [
   {
     eventId: "poisonous-berries",
+
+    tags: ["fatal", "hazard"],
+
     periods: ["day"],
     weight: 2,
+
     causeLabel: "Poisoned",
+
     expectedText: "Hazel mistakes poisonous berries for food.",
   },
+
   {
     eventId: "river-current",
+
+    tags: ["fatal", "hazard"],
+
     periods: ["day"],
     weight: 2,
+
     causeLabel: "Drowned",
+
     expectedText: "Hazel is swept away while crossing a violent river.",
   },
+
   {
     eventId: "freezing-night",
+
+    tags: ["fatal", "hazard", "environment"],
+
     periods: ["night"],
     weight: 2.25,
+
     causeLabel: "Froze",
-    expectedText: "Hazel is unable to find shelter and freezes during the night.",
+
+    expectedText: "The arena temperature plummets overnight, and Hazel freezes before morning.",
   },
+
   {
     eventId: "fallen-cliff",
+
+    tags: ["fatal", "hazard"],
+
     periods: ["day", "night"],
+
     weight: 2,
+
     causeLabel: "Fell",
+
     expectedText: "Hazel loses their footing near a cliff and falls to their death.",
   },
 ] as const;
@@ -281,7 +305,7 @@ describe("environmental events", () => {
 
   it.each(FATAL_EVENT_CASES)(
     "$eventId preserves its environmental fatality contract",
-    ({ eventId, periods, weight, causeLabel, expectedText }) => {
+    ({ eventId, tags, periods, weight, causeLabel, expectedText }) => {
       const game = createTestGame();
 
       const victim = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
@@ -291,7 +315,7 @@ describe("environmental events", () => {
       expect(definition).toMatchObject({
         id: eventId,
         category: "fatal",
-        tags: ["fatal", "hazard"],
+        tags,
         periods,
         baseWeight: weight,
 

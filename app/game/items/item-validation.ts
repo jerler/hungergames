@@ -159,7 +159,11 @@ function validateRest(definition: ItemDefinition): void {
     return;
   }
 
-  if (rest.check.stat !== "brains" && rest.check.stat !== "luck") {
+  if (
+    rest.check.stat !== "brains" &&
+    rest.check.stat !== "luck" &&
+    rest.check.stat !== "brains-or-luck"
+  ) {
     fail(definition.id, "declares an invalid rest-check stat.");
   }
 
@@ -169,6 +173,37 @@ function validateRest(definition: ItemDefinition): void {
     rest.check.difficulty > 5
   ) {
     fail(definition.id, "declares an invalid rest-check difficulty.");
+  }
+
+  const criticalFailureStatus = rest.check.criticalFailureStatus;
+
+  if (!criticalFailureStatus) {
+    return;
+  }
+
+  validateStatusReference(definition.id, criticalFailureStatus.statusId);
+
+  if (
+    !Number.isInteger(criticalFailureStatus.severity) ||
+    criticalFailureStatus.severity < 1 ||
+    criticalFailureStatus.severity > 3
+  ) {
+    fail(definition.id, "declares an invalid critical-failure status severity.");
+  }
+
+  if (criticalFailureStatus.durationRounds !== undefined) {
+    if (
+      !Number.isInteger(criticalFailureStatus.durationRounds) ||
+      criticalFailureStatus.durationRounds <= 0
+    ) {
+      fail(definition.id, "declares an invalid critical-failure status duration.");
+    }
+
+    const statusDefinition = getStatusDefinition(criticalFailureStatus.statusId);
+
+    if (statusDefinition.duration.kind === "persistent") {
+      fail(definition.id, `cannot override persistent status "${criticalFailureStatus.statusId}".`);
+    }
   }
 }
 

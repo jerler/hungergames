@@ -20,6 +20,12 @@ interface ResolveStatCheckOptions {
   random: RandomSource;
 }
 
+interface ResolveScoreCheckOptions {
+  score: number;
+  difficulty: StatCheckDifficulty;
+  random: RandomSource;
+}
+
 const STAT_CHECK_OUTCOMES = [
   "critical-failure",
   "failure",
@@ -81,18 +87,33 @@ function getOutcomeWeight(outcome: StatCheckOutcome, advantage: number): number 
   }
 }
 
-export function resolveStatCheck({
-  stats,
-  stat,
+export function resolveScoreCheck({
+  score,
   difficulty,
   random,
-}: ResolveStatCheckOptions): StatCheckOutcome {
-  const statValue = stats[stat];
-  const advantage = statValue - difficulty;
+}: ResolveScoreCheckOptions): StatCheckOutcome {
+  if (!Number.isFinite(score)) {
+    throw new Error("Stat-check score must be finite.");
+  }
+
+  const advantage = score - difficulty;
 
   return selectWeightedItem(
     STAT_CHECK_OUTCOMES,
     (outcome) => getOutcomeWeight(outcome, advantage),
     random,
   );
+}
+
+export function resolveStatCheck({
+  stats,
+  stat,
+  difficulty,
+  random,
+}: ResolveStatCheckOptions): StatCheckOutcome {
+  return resolveScoreCheck({
+    score: stats[stat],
+    difficulty,
+    random,
+  });
 }

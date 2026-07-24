@@ -360,7 +360,7 @@ describe("romantic events", () => {
     const romanticFormation = requireRomanticEvent("romantic-truce-formation");
 
     const standardFormation = STANDARD_FORMATION_EVENTS.find(
-      (event) => event.id === "share-shelter-truce-2",
+      (event) => event.id === "travel-together-truce-2",
     );
 
     if (!standardFormation) {

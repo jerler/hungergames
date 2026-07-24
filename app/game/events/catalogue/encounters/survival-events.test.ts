@@ -404,35 +404,66 @@ describe("survival events", () => {
     ]);
   });
 
-  it("finds-hiding-place preserves its authored catalogue contract", () => {
+  it("treats finds-hiding-place as concealment rather than rest", () => {
     const game = createTestGame();
-    const tribute = withStats(game.tributes[0], BALANCED_STATS, "Shelter");
+
+    const tribute = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
 
     const definition = requireEvent("finds-hiding-place");
 
     expect(definition).toMatchObject({
       id: "finds-hiding-place",
+
       category: "survival",
-      tags: ["survival", "resource"],
+
+      tags: ["survival", "status"],
+
       periods: ["day", "night"],
+
       baseWeight: 8,
-      roles: [{ id: "tribute", count: 1 }],
+
+      roles: [
+        {
+          id: "tribute",
+
+          count: 1,
+        },
+      ],
     });
 
     expect(definition.roles[0]?.getWeight).toBe(getSurvivalSelectionWeight);
 
-    const resolution = resolveEvent(definition, game, { tribute: [tribute] }, [0.5]);
+    const resolution = resolveEvent(
+      definition,
+      game,
 
-    expect(resolution).toEqual({
-      text: "Shelter finds a hidden place to rest.",
-      changes: [
-        {
-          type: "increment-statistic",
-          tributeId: tribute.id,
-          statistic: "eventsSurvived",
-          amount: 1,
-        },
-      ],
+      {
+        tribute: [tribute],
+      },
+
+      [0.5],
+    );
+
+    expect(resolution.text).toBe(
+      "Hazel slips into dense undergrowth and remains hidden from the other tributes.",
+    );
+
+    expect(getAppliedStatuses(resolution)).toEqual([
+      expect.objectContaining({
+        definitionId: "hidden",
+
+        severity: 1,
+      }),
+    ]);
+
+    expect(resolution.changes).toContainEqual({
+      type: "increment-statistic",
+
+      tributeId: tribute.id,
+
+      statistic: "eventsSurvived",
+
+      amount: 1,
     });
   });
 });

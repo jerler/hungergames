@@ -65,19 +65,27 @@ export const ITEM_CATALOGUE = [
   {
     id: "matches",
     label: "Matches",
-    description: "A small supply of matches for starting fires and improving a night camp.",
+    description: "A single book of matches for starting a fire and improving a night camp.",
+
     origin: "manufactured",
+
     tags: ["fire", "shelter", "tool"],
 
-    maxUses: 2,
+    maxUses: 1,
+
     survivalBonus: 0.2,
 
     rest: {
       quality: "sheltered",
 
       check: {
-        stat: "brains",
+        stat: "brains-or-luck",
         difficulty: 2,
+
+        criticalFailureStatus: {
+          statusId: "burned",
+          severity: 1,
+        },
       },
     },
 

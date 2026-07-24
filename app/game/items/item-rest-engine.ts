@@ -1,9 +1,16 @@
 import { getEffectiveStats } from "~/game/engine/effective-stats";
 import type { RandomSource } from "~/game/engine/random";
-import { createItemUseChange } from "~/game/events/event-change-builders";
-import { resolveStatCheck, type StatCheckOutcome } from "~/game/events/event-outcomes";
+import { createItemUseChange, createStatusChange } from "~/game/events/event-change-builders";
+import {
+  isSuccessfulStatCheckOutcome,
+  resolveStatCheck,
+  type EventStat,
+  type StatCheckOutcome,
+} from "~/game/events/event-outcomes";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { getItemUsability } from "~/game/items/item-usability";
+import type { ItemRestCheckStat } from "~/game/items/item-schema";
+import type { NightRestQuality } from "~/game/survival/survival-schema";
 import type {
   GameChange,
   GameTribute,
@@ -23,11 +30,27 @@ export interface CompileItemRestChangesOptions {
   reason?: string;
 }
 
-function isSuccessfulOutcome(outcome: StatCheckOutcome): boolean {
-  return outcome === "success" || outcome === "exceptional-success";
+export interface ItemRestResolution {
+  outcome: StatCheckOutcome | null;
+  quality: NightRestQuality;
+  changes: GameChange[];
 }
 
-export function compileItemRestChanges({
+function getRestCheckStat(tribute: GameTribute, configuredStat: ItemRestCheckStat): EventStat {
+  if (configuredStat === "brains" || configuredStat === "luck") {
+    return configuredStat;
+  }
+
+  const { brains, luck } = getEffectiveStats(tribute);
+
+  /*
+   * Stable tie-breaking avoids consuming random
+   * values merely to decide which stat to check.
+   */
+  return brains >= luck ? "brains" : "luck";
+}
+
+export function resolveItemRestAttempt({
   eventId,
   round,
   random,
@@ -35,9 +58,9 @@ export function compileItemRestChanges({
   owner,
   item,
   reason = eventId,
-}: CompileItemRestChangesOptions): GameChange[] {
+}: CompileItemRestChangesOptions): ItemRestResolution {
   if (round.period !== "night") {
-    throw new Error(`Item rest can only be recorded during a night round.`);
+    throw new Error("Item rest can only be recorded during a night round.");
   }
 
   const definition = getItemDefinition(item.definitionId);
@@ -58,22 +81,25 @@ export function compileItemRestChanges({
     );
   }
 
-  const quality = rest.check
-    ? isSuccessfulOutcome(
-        resolveStatCheck({
-          stats: getEffectiveStats(actingTribute),
-          stat: rest.check.stat,
-          difficulty: rest.check.difficulty,
-          random,
-        }),
-      )
-      ? rest.quality
-      : "unsheltered"
-    : rest.quality;
+  const outcome = rest.check
+    ? resolveStatCheck({
+        stats: getEffectiveStats(actingTribute),
 
-  return [
+        stat: getRestCheckStat(actingTribute, rest.check.stat),
+
+        difficulty: rest.check.difficulty,
+
+        random,
+      })
+    : null;
+
+  const quality =
+    outcome === null || isSuccessfulStatCheckOutcome(outcome) ? rest.quality : "unsheltered";
+
+  const changes: GameChange[] = [
     {
       type: "record-night-rest",
+
       tributeId: actingTribute.id,
 
       round: {
@@ -82,7 +108,35 @@ export function compileItemRestChanges({
 
       quality,
     },
-
-    createItemUseChange(owner, item, reason),
   ];
+
+  if (outcome === "critical-failure" && rest.check?.criticalFailureStatus) {
+    const status = rest.check.criticalFailureStatus;
+
+    changes.push(
+      createStatusChange(
+        eventId,
+        actingTribute,
+
+        status.statusId,
+        status.severity,
+
+        round,
+
+        status.durationRounds,
+      ),
+    );
+  }
+
+  changes.push(createItemUseChange(owner, item, reason));
+
+  return {
+    outcome,
+    quality,
+    changes,
+  };
+}
+
+export function compileItemRestChanges(options: CompileItemRestChangesOptions): GameChange[] {
+  return resolveItemRestAttempt(options).changes;
 }

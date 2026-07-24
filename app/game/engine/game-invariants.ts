@@ -326,7 +326,6 @@ function assertPreparationEvent(event: ResolvedEvent, tributeIds: ReadonlySet<st
   for (const statusId of details.affectedStatusIds ?? []) {
     getStatusDefinition(statusId);
   }
-
   if (details.restQuality !== undefined) {
     assert(
       details.restQuality === "comfortable" ||
@@ -346,6 +345,44 @@ function assertPreparationEvent(event: ResolvedEvent, tributeIds: ReadonlySet<st
       details.restQuality !== undefined,
       `night-rest preparation event "${event.id}" has no rest quality.`,
     );
+
+    const restChanges = event.changes.filter(
+      (
+        change,
+      ): change is Extract<
+        ResolvedEvent["changes"][number],
+        {
+          type: "record-night-rest";
+        }
+      > => change.type === "record-night-rest",
+    );
+
+    assert(
+      restChanges.length === 1,
+      `night-rest preparation event "${event.id}" must record exactly one rest result.`,
+    );
+
+    const restChange = restChanges[0];
+
+    assert(
+      restChange !== undefined,
+      `night-rest preparation event "${event.id}" is missing its rest result.`,
+    );
+
+    assert(
+      restChange.tributeId === details.actingTributeId,
+      `night-rest preparation event "${event.id}" records rest for the wrong tribute.`,
+    );
+
+    assert(
+      roundsMatch(restChange.round, event.round),
+      `night-rest preparation event "${event.id}" records the wrong round.`,
+    );
+
+    assert(
+      restChange.quality === details.restQuality,
+      `night-rest preparation event "${event.id}" has inconsistent rest quality.`,
+    );
   }
 
   if (details.mechanic === "morning-rest-resolution") {
@@ -359,6 +396,89 @@ function assertPreparationEvent(event: ResolvedEvent, tributeIds: ReadonlySet<st
     assert(
       details.restQuality !== undefined,
       `morning-rest event "${event.id}" has no rest quality.`,
+    );
+  }
+}
+
+function assertCurrentNightRestCoverage(state: GameState): void {
+  const round = state.currentRound;
+
+  if (!round || round.period !== "night") {
+    return;
+  }
+
+  /*
+   * Some focused tests construct an in-progress
+   * night state directly without passing through
+   * beginNextRound() and prepareRound().
+   *
+   * Enforce full rest coverage once the current
+   * round contains preparation output, which marks
+   * it as a planner-produced round.
+   */
+  const currentPreparationEvents = state.roundEvents.filter(
+    (event) => event.kind === "preparation" && roundsMatch(event.round, round),
+  );
+
+  if (currentPreparationEvents.length === 0) {
+    return;
+  }
+
+  const nightRestEvents = currentPreparationEvents.filter(
+    (event) => event.preparation?.mechanic === "night-rest-preparation",
+  );
+
+  const eventByTributeId = new Map<string, ResolvedEvent>();
+
+  for (const event of nightRestEvents) {
+    const details = event.preparation;
+
+    assert(
+      details?.mechanic === "night-rest-preparation",
+
+      `night-rest event "${event.id}" is missing its preparation details.`,
+    );
+
+    assert(
+      !eventByTributeId.has(details.actingTributeId),
+
+      `tribute "${details.actingTributeId}" has multiple night-rest preparation events.`,
+    );
+
+    eventByTributeId.set(details.actingTributeId, event);
+  }
+
+  for (const tribute of state.tributes) {
+    if (!tribute.isAlive) {
+      continue;
+    }
+
+    const event = eventByTributeId.get(tribute.id);
+
+    assert(
+      event !== undefined,
+
+      `living tribute "${tribute.id}" has no rest preparation for the current night.`,
+    );
+
+    const rest = tribute.survival.lastNightRest;
+
+    assert(
+      rest !== null,
+
+      `living tribute "${tribute.id}" has no recorded rest for the current night.`,
+    );
+
+    assert(
+      roundsMatch(rest.round, round),
+
+      `living tribute "${tribute.id}" has a stale rest result during the current night.`,
+    );
+
+    assert(
+      rest.quality === event.preparation?.restQuality,
+
+      `living tribute "${tribute.id}" has rest state that disagrees with its preparation event.`,
     );
   }
 }
@@ -897,6 +1017,8 @@ export function assertGameStateInvariants(state: GameState): void {
       );
     }
   }
+
+  assertCurrentNightRestCoverage(state);
 
   const eliminationChanges = state.eventHistory.flatMap((event) =>
     event.changes

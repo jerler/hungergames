@@ -128,7 +128,7 @@ export const SURVIVAL_EVENTS = [
         ),
         exceptionalSuccess: result({
           text: ({ tribute }) =>
-            `${tribute.name} studies ${tribute.pronouns.possessiveAdjective} map and locates a secure natural shelter hidden from the rest of the arena.`,
+            `${tribute.name} studies ${tribute.pronouns.possessiveAdjective} map and discovers a concealed route through the arena, disappearing from view.`,
           effects: [
             applyStatus("tribute", "hidden", 2),
             survived("tribute"),
@@ -206,16 +206,20 @@ export const SURVIVAL_EVENTS = [
 
   /* Day and Night */
   createEvent("finds-hiding-place")
-    .solo("tribute", { getWeight: getSurvivalSelectionWeight })
+    .solo("tribute", {
+      getWeight: getSurvivalSelectionWeight,
+    })
     .category("survival")
-    .tags("survival", "resource")
+    .tags("survival", "status")
     .during("day", "night")
     .weight(8)
     .resolve(
       always(
         result({
-          text: ({ tribute }) => `${tribute.name} finds a hidden place to rest.`,
-          effects: [survived("tribute")],
+          text: ({ tribute }) =>
+            `${tribute.name} slips into dense undergrowth and remains hidden from the other tributes.`,
+
+          effects: [applyStatus("tribute", "hidden", 1), survived("tribute")],
         }),
       ),
     ),

@@ -45,12 +45,12 @@ describe("item rest compilation", () => {
     ]);
   });
 
-  it("supports checked consumable rest", () => {
+  it("uses the better of Brains or Luck for checked rest", () => {
     const tribute = createAuthoringTestTribute({
       stats: {
-        brains: 5,
+        brains: 1,
         brawn: 3,
-        luck: 3,
+        luck: 5,
       },
     });
 
@@ -73,17 +73,20 @@ describe("item rest compilation", () => {
 
     expect(changes[1]).toMatchObject({
       type: "consume-item",
+
       tributeId: tribute.id,
       itemInstanceId: matches.id,
+
+      uses: 1,
     });
   });
 
-  it("records failed checked rest as unsheltered", () => {
+  it("records an ordinary matches failure as unsheltered", () => {
     const tribute = createAuthoringTestTribute({
       stats: {
         brains: 1,
         brawn: 3,
-        luck: 3,
+        luck: 1,
       },
     });
 
@@ -98,6 +101,60 @@ describe("item rest compilation", () => {
       eventId: "failed-matches-rest",
 
       round: NIGHT,
+
+      /*
+       * With this stat disadvantage,
+       * 0.3 falls in ordinary failure
+       * rather than critical failure.
+       */
+      random: () => 0.3,
+
+      actingTribute: tribute,
+      owner: tribute,
+      item: matches,
+    });
+
+    expect(changes).toEqual([
+      {
+        type: "record-night-rest",
+
+        tributeId: tribute.id,
+        round: NIGHT,
+
+        quality: "unsheltered",
+      },
+
+      expect.objectContaining({
+        type: "consume-item",
+
+        tributeId: tribute.id,
+        itemInstanceId: matches.id,
+
+        uses: 1,
+      }),
+    ]);
+  });
+
+  it("applies a mild burn on a critical matches failure", () => {
+    const tribute = createAuthoringTestTribute({
+      stats: {
+        brains: 1,
+        brawn: 3,
+        luck: 1,
+      },
+    });
+
+    const matches = createInventoryItemInstance(
+      "critical-matches-rest",
+      tribute.id,
+      "matches",
+      NIGHT,
+    );
+
+    const changes = compileItemRestChanges({
+      eventId: "critical-matches-rest",
+
+      round: NIGHT,
       random: () => 0,
 
       actingTribute: tribute,
@@ -105,11 +162,35 @@ describe("item rest compilation", () => {
       item: matches,
     });
 
-    expect(changes[0]).toMatchObject({
-      type: "record-night-rest",
-      quality: "unsheltered",
-    });
+    expect(changes).toEqual([
+      {
+        type: "record-night-rest",
 
-    expect(changes[1].type).toBe("consume-item");
+        tributeId: tribute.id,
+        round: NIGHT,
+
+        quality: "unsheltered",
+      },
+
+      expect.objectContaining({
+        type: "apply-status",
+
+        tributeId: tribute.id,
+
+        status: expect.objectContaining({
+          definitionId: "burned",
+          severity: 1,
+        }),
+      }),
+
+      expect.objectContaining({
+        type: "consume-item",
+
+        tributeId: tribute.id,
+        itemInstanceId: matches.id,
+
+        uses: 1,
+      }),
+    ]);
   });
 });

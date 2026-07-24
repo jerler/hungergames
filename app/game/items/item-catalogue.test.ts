@@ -148,14 +148,19 @@ describe("item catalogue treatments", () => {
     expect(blanket.maxUses).toBeUndefined();
 
     expect(getItemDefinition("matches")).toMatchObject({
-      maxUses: 2,
+      maxUses: 1,
 
       rest: {
         quality: "sheltered",
 
         check: {
-          stat: "brains",
+          stat: "brains-or-luck",
           difficulty: 2,
+
+          criticalFailureStatus: {
+            statusId: "burned",
+            severity: 1,
+          },
         },
       },
     });

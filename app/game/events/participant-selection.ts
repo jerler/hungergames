@@ -15,6 +15,7 @@ import { areTributesInSameTruce } from "~/game/truces/truce-engine";
 import type { GameTribute } from "~/game/types/game-state";
 import { getHostileTargetingWeightMultiplier } from "~/game/statuses/hostile-targeting";
 import { getHostileItemTargetWeightMultiplier } from "~/game/items/item-contextual-capabilities";
+import { getNightRestTargetingWeightMultiplier } from "~/game/survival/night-rest-targeting";
 
 function isProtectedFromRoleByTruce(
   candidate: GameTribute,
@@ -110,6 +111,10 @@ interface RoleCandidate {
   accessibleItem: AccessibleInventoryItem | null;
 
   targetingWeightMultiplier: number;
+}
+
+function isEnvironmentalHazard(definition: EventDefinition): boolean {
+  return definition.tags.includes("hazard") && definition.tags.includes("environment");
 }
 
 /**
@@ -208,11 +213,22 @@ export function selectEventParticipants(
           return [];
         }
 
-        const targetingWeightMultiplier =
-          role.targeting === "hostile"
-            ? getHostileTargetingWeightMultiplier(tribute) *
-              getHostileItemTargetWeightMultiplier(tribute)
-            : 1;
+        const isHostileTarget = role.targeting === "hostile";
+
+        const hostileTargetingMultiplier = isHostileTarget
+          ? getHostileTargetingWeightMultiplier(tribute) *
+            getHostileItemTargetWeightMultiplier(tribute)
+          : 1;
+
+        const restTargetingMultiplier = getNightRestTargetingWeightMultiplier(tribute, {
+          round: context.round,
+
+          isHostileTarget,
+
+          isEnvironmentalHazard: isEnvironmentalHazard(definition),
+        });
+
+        const targetingWeightMultiplier = hostileTargetingMultiplier * restTargetingMultiplier;
 
         if (targetingWeightMultiplier <= 0) {
           return [];

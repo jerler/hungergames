@@ -205,7 +205,7 @@ describe("truce selection", () => {
   it("selects the same formation for the same random sequence", () => {
     const game = createGame();
 
-    const definition = requireFormationEvent("share-shelter-truce-4");
+    const definition = requireFormationEvent("travel-together-truce-4");
 
     const selectGroup = () =>
       selectEventParticipants(

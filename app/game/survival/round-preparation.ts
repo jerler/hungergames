@@ -3,7 +3,9 @@ import { createSeededRandom, type RandomSource } from "~/game/engine/random";
 import { createStatusChange } from "~/game/events/event-change-builders";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { compileItemUseEffects } from "~/game/items/item-effect-engine";
-import { compileItemRestChanges } from "~/game/items/item-rest-engine";
+import { resolveItemRestAttempt } from "~/game/items/item-rest-engine";
+import { isSuccessfulStatCheckOutcome, type StatCheckOutcome } from "~/game/events/event-outcomes";
+import { resolveNaturalShelterCheck } from "./natural-shelter";
 import {
   findAccessibleInventoryItem,
   getAccessibleInventoryItems,
@@ -25,6 +27,11 @@ import type {
 } from "~/game/types/game-state";
 
 import type { NightRestQuality, SurvivalNeed } from "./survival-schema";
+
+interface NightRestAttempt {
+  outcome: StatCheckOutcome | null;
+  changes: GameChange[];
+}
 
 export interface PreparedRound {
   state: GameState;
@@ -418,22 +425,73 @@ function getRecordedRestQuality(changes: readonly GameChange[]): NightRestQualit
   return restChange.quality;
 }
 
+function createNaturalShelterRestAttempt(
+  state: GameState,
+  round: RoundReference,
+  tribute: GameTribute,
+): NightRestAttempt {
+  const outcome = resolveNaturalShelterCheck(
+    tribute,
+
+    createPreparationRandom(state.seed, round, "night-rest-preparation", tribute.id),
+  );
+
+  const quality = isSuccessfulStatCheckOutcome(outcome) ? "sheltered" : "unsheltered";
+
+  return {
+    outcome,
+
+    changes: [
+      {
+        type: "record-night-rest",
+
+        tributeId: tribute.id,
+
+        round: {
+          ...round,
+        },
+
+        quality,
+      },
+    ],
+  };
+}
+
 function createNightRestText(
   tribute: GameTribute,
   selection: AccessibleInventoryItem | null,
   quality: NightRestQuality,
+  outcome: StatCheckOutcome | null,
 ): string {
   if (!selection) {
-    return `${tribute.snapshot.name} finds no ` + "shelter and settles in for an exposed night.";
+    if (quality === "sheltered") {
+      return (
+        `${tribute.snapshot.name} finds a protected ` +
+        "natural hollow and prepares a sheltered place to sleep."
+      );
+    }
+
+    return (
+      `${tribute.snapshot.name} searches for natural shelter, ` +
+      "but cannot find a safe place before nightfall."
+    );
   }
 
   const itemPhrase = getItemPhrase(tribute, selection);
+
+  if (quality === "unsheltered" && outcome === "critical-failure") {
+    return (
+      `${tribute.snapshot.name} tries to use ` +
+      `${itemPhrase} to prepare camp, but burns ` +
+      "themself and fails to establish shelter."
+    );
+  }
 
   if (quality === "unsheltered") {
     return (
       `${tribute.snapshot.name} tries to use ` +
       `${itemPhrase} to prepare camp, but the ` +
-      "attempt fails and leaves them exposed."
+      "attempt fails and leaves them unsheltered."
     );
   }
 
@@ -454,8 +512,8 @@ function createNightRestPreparationEvent(
 ): ResolvedEvent {
   const eventId = createPreparationEventId(round, "night-rest-preparation", tribute.id);
 
-  const changes: GameChange[] = selection
-    ? compileItemRestChanges({
+  const attempt: NightRestAttempt = selection
+    ? resolveItemRestAttempt({
         eventId,
         round,
 
@@ -467,21 +525,13 @@ function createNightRestPreparationEvent(
 
         reason: eventId,
       })
-    : [
-        {
-          type: "record-night-rest",
-          tributeId: tribute.id,
-          round: {
-            ...round,
-          },
-          quality: "unsheltered",
-        },
-      ];
+    : createNaturalShelterRestAttempt(state, round, tribute);
 
-  const restQuality = getRecordedRestQuality(changes);
+  const restQuality = getRecordedRestQuality(attempt.changes);
 
   return {
     id: eventId,
+
     definitionId: "automatic-night-rest-preparation",
 
     kind: "preparation",
@@ -491,14 +541,15 @@ function createNightRestPreparationEvent(
 
     participantTributeIds: getEventParticipantIds(tribute, selection ?? undefined),
 
-    text: createNightRestText(tribute, selection, restQuality),
+    text: createNightRestText(tribute, selection, restQuality, attempt.outcome),
 
-    changes,
+    changes: attempt.changes,
 
     preparation: {
       mechanic: "night-rest-preparation",
 
       actingTributeId: tribute.id,
+
       restQuality,
 
       ...(selection
@@ -575,46 +626,55 @@ function createMorningRestChanges(
   tribute: GameTribute,
   quality: NightRestQuality,
 ): GameChange[] {
-  if (quality === "unsheltered") {
-    return [
-      ...createRemoveStatusChanges(tribute, "well-rested"),
+  switch (quality) {
+    case "comfortable":
+      return [
+        ...createRemoveStatusChanges(tribute, "exhausted"),
 
-      createStatusChange(eventId, tribute, "exhausted", 1, round),
-    ];
+        /*
+         * Replace yesterday's benefit rather
+         * than stacking consecutive nights.
+         */
+        ...createRemoveStatusChanges(tribute, "well-rested"),
+
+        createStatusChange(eventId, tribute, "well-rested", 2, round),
+      ];
+
+    case "sheltered":
+      /*
+       * Sheltered rest creates no new benefit
+       * or penalty. Any benefit from an older
+       * comfortable night is cleared.
+       */
+      return createRemoveStatusChanges(tribute, "well-rested");
+
+    case "unsheltered":
+      return [
+        ...createRemoveStatusChanges(tribute, "well-rested"),
+
+        createStatusChange(eventId, tribute, "exhausted", 1, round),
+      ];
   }
-
-  const wellRestedSeverity = quality === "comfortable" ? 2 : 1;
-
-  return [
-    ...createRemoveStatusChanges(tribute, "exhausted"),
-
-    /*
-     * Replace yesterday's benefit rather than
-     * allowing consecutive nights to stack it.
-     */
-    ...createRemoveStatusChanges(tribute, "well-rested"),
-
-    createStatusChange(eventId, tribute, "well-rested", wellRestedSeverity, round),
-  ];
 }
 
 function getMorningAffectedStatusIds(
   tribute: GameTribute,
   quality: NightRestQuality,
 ): StatusEffectId[] {
-  if (quality === "unsheltered") {
-    return uniqueStatusIds([
-      ...(getStatusInstanceIds(tribute, "well-rested").length > 0 ? ["well-rested" as const] : []),
+  const hasExhausted = getStatusInstanceIds(tribute, "exhausted").length > 0;
 
-      "exhausted",
-    ]);
+  const hasWellRested = getStatusInstanceIds(tribute, "well-rested").length > 0;
+
+  switch (quality) {
+    case "comfortable":
+      return uniqueStatusIds([...(hasExhausted ? ["exhausted" as const] : []), "well-rested"]);
+
+    case "sheltered":
+      return hasWellRested ? ["well-rested"] : [];
+
+    case "unsheltered":
+      return uniqueStatusIds([...(hasWellRested ? ["well-rested" as const] : []), "exhausted"]);
   }
-
-  return uniqueStatusIds([
-    ...(getStatusInstanceIds(tribute, "exhausted").length > 0 ? ["exhausted" as const] : []),
-
-    "well-rested",
-  ]);
 }
 
 function createMorningRestText(tribute: GameTribute, quality: NightRestQuality): string {
@@ -625,7 +685,7 @@ function createMorningRestText(tribute: GameTribute, quality: NightRestQuality):
       );
 
     case "sheltered":
-      return `${tribute.snapshot.name} wakes rested after ` + "sleeping safely under shelter.";
+      return `${tribute.snapshot.name} wakes after ` + "passing the night safely under shelter.";
 
     case "unsheltered":
       return `${tribute.snapshot.name} wakes exhausted ` + "after a cold and exposed night.";

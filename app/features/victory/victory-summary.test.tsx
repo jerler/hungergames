@@ -46,7 +46,6 @@ function createVictoryFixture(kind: "sole" | "joint"): VictoryFixture {
 
   const tributes = initialGame.tributes.map((tribute, index) => {
     const isVictor = index < victorCount;
-
     const name = index === 0 ? "Julie" : index === 1 ? "Nikita" : tribute.snapshot.name;
 
     return {
@@ -74,7 +73,6 @@ function createVictoryFixture(kind: "sole" | "joint"): VictoryFixture {
   });
 
   const firstVictor = tributes[0];
-
   const secondVictor = tributes[1];
 
   if (!firstVictor || !secondVictor) {
@@ -110,9 +108,8 @@ function createVictoryFixture(kind: "sole" | "joint"): VictoryFixture {
 }
 
 describe("VictorySummary", () => {
-  it("renders a sole-victor summary and opens statistics", () => {
+  it("renders a sole-victor record and opens statistics", () => {
     const { game, victors } = createVictoryFixture("sole");
-
     const handleViewStatistics = vi.fn();
 
     render(
@@ -121,18 +118,24 @@ describe("VictorySummary", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "The victor is...",
+        level: 1,
+        name: "Julie enters the history of Panem.",
       }),
     ).toBeInTheDocument();
 
-    expect(screen.getByText("Julie")).toBeInTheDocument();
-
     expect(
       screen.getByText(
-        `Julie is the sole survivor of a field of ${game.tributes.length} tributes.`,
+        `Out of ${game.tributes.length} tributes, Julie alone leaves the arena alive.`,
       ),
     ).toBeInTheDocument();
 
+    expect(
+      screen.getByRole("article", {
+        name: /Julie, District \d+ victor/i,
+      }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("Arena record")).toBeInTheDocument();
     expect(screen.queryByText("Nikita")).not.toBeInTheDocument();
 
     fireEvent.click(
@@ -144,36 +147,28 @@ describe("VictorySummary", () => {
     expect(handleViewStatistics).toHaveBeenCalledOnce();
   });
 
-  it("renders both joint victors", () => {
+  it("renders both joint victors as a defiance of the Capitol", () => {
     const { game, victors } = createVictoryFixture("joint");
 
     render(<VictorySummary game={game} victors={victors} onViewStatistics={vi.fn()} />);
 
     expect(
       screen.getByRole("heading", {
-        name: "The victors are...",
+        level: 1,
+        name: "Two names enter the history of Panem.",
       }),
     ).toBeInTheDocument();
 
-    expect(screen.getByText("Julie")).toBeInTheDocument();
-
-    expect(screen.getByText("Nikita")).toBeInTheDocument();
-
     expect(
-      screen.getByText("Julie and Nikita defied the Capitol and survived the Games together."),
+      screen.getByText(
+        "The Capitol demanded one survivor. Julie and Nikita forced it to accept two.",
+      ),
     ).toBeInTheDocument();
 
-    const victorCountByDistrict = new Map<number, number>();
-
-    for (const victor of victors) {
-      victorCountByDistrict.set(
-        victor.district,
-        (victorCountByDistrict.get(victor.district) ?? 0) + 1,
-      );
-    }
-
-    for (const [district, victorCount] of victorCountByDistrict) {
-      expect(screen.getAllByText(`District ${district}`)).toHaveLength(victorCount);
-    }
+    expect(screen.getByRole("heading", { level: 2, name: "Julie" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Nikita" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Their names will be spoken together whenever Panem remembers the arena."),
+    ).toBeInTheDocument();
   });
 });

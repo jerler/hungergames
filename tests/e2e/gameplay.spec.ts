@@ -62,7 +62,7 @@ test("runs a local Game through its victory sequence", async ({ page }) => {
 
   for (let roundIndex = 0; roundIndex < 50; roundIndex += 1) {
     const victoryHeading = page.getByRole("heading", {
-      name: /We have (?:a victor|victors)/i,
+      name: /The Games have (?:a victor|victors)/i,
     });
 
     if (await victoryHeading.isVisible()) {
@@ -102,19 +102,19 @@ test("runs a local Game through its victory sequence", async ({ page }) => {
 
   await expect(
     page.getByRole("heading", {
-      name: /We have (?:a victor|victors)/i,
+      name: /The Games have (?:a victor|victors)/i,
     }),
   ).toBeVisible();
 
   await page
     .getByRole("button", {
-      name: "Skip reveal",
+      name: "Skip ceremony",
     })
     .click();
 
   await expect(
     page.getByRole("heading", {
-      name: /The victor is\.\.\.|The victors are\.\.\./i,
+      name: /enters the history of Panem|Two names enter the history of Panem/i,
     }),
   ).toBeVisible();
 

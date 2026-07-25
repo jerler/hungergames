@@ -105,7 +105,13 @@ export default function GamePlayPage() {
     hasAcknowledgedFinalEvent &&
     !hasCompletedVictoryFanfare
   ) {
-    return <VictoryFanfare victors={victors} onComplete={completeVictoryFanfare} />;
+    return (
+      <VictoryFanfare
+        victors={victors}
+        tributeCount={activeGame.tributes.length}
+        onComplete={completeVictoryFanfare}
+      />
+    );
   }
 
   if (activeGame.phase === "victory" && victors.length > 0 && hasAcknowledgedFinalEvent) {

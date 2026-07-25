@@ -1,44 +1,210 @@
 .victory-fanfare,
 .victory-summary {
-  display: grid;
   min-height: 100vh;
-  padding: var(--space-5);
-  background:
-    radial-gradient(circle, rgb(227 182 91 / 20%), transparent 28rem), var(--color-background);
-  place-items: center;
+  color: var(--color-text);
 }
 
 .victory-fanfare {
   position: relative;
-  overflow: hidden;
+  isolation: isolate;
+  display: grid;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--space-6);
+  background:
+    radial-gradient(circle at 50% 42%, rgb(227 182 91 / 24%), transparent 24rem),
+    radial-gradient(circle at 18% 16%, rgb(219 98 98 / 10%), transparent 22rem),
+    linear-gradient(145deg, #08070b 0%, #17121d 52%, #0d0c11 100%);
+  place-items: center;
+}
+
+.victory-fanfare::before {
+  position: absolute;
+  z-index: -2;
+  inset: -35%;
+  background: conic-gradient(
+    from 90deg,
+    transparent 0deg,
+    rgb(227 182 91 / 7%) 26deg,
+    transparent 54deg,
+    transparent 180deg,
+    rgb(227 182 91 / 7%) 210deg,
+    transparent 240deg
+  );
+  content: "";
+  animation: victory-spotlight 9s linear infinite;
+}
+
+.victory-fanfare::after {
+  position: absolute;
+  z-index: 4;
+  border: 1px solid rgb(227 182 91 / 28%);
+  box-shadow:
+    inset 0 0 5rem rgb(0 0 0 / 42%),
+    inset 0 0 0 0.35rem rgb(0 0 0 / 22%);
+  content: "";
+  inset: var(--space-4);
+  pointer-events: none;
+}
+
+.victory-fanfare__atmosphere,
+.victory-fanfare__rays,
+.victory-fanfare__sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.victory-fanfare__atmosphere {
+  z-index: -1;
+}
+
+.victory-fanfare__rays {
+  display: grid;
+  place-items: center;
+}
+
+.victory-fanfare__ray {
+  position: absolute;
+  width: 1px;
+  height: 82vmax;
+  opacity: 0;
+  background: linear-gradient(to bottom, transparent, rgb(227 182 91 / 30%), transparent);
+  transform: rotate(calc(var(--ray-index) * 30deg)) scaleY(0.2);
+  animation: victory-ray-bloom 2.5s ease-out 1.55s forwards;
+}
+
+.victory-fanfare__spark {
+  position: absolute;
+  bottom: -1rem;
+  opacity: 0;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 0 1rem rgb(227 182 91 / 78%);
+  animation-name: victory-spark-rise;
+  animation-timing-function: cubic-bezier(0.16, 0.72, 0.31, 1);
+  animation-fill-mode: forwards;
 }
 
 .victory-fanfare__skip {
   position: absolute;
-  top: var(--space-5);
-  right: var(--space-5);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
+  z-index: 6;
+  top: var(--space-6);
+  right: var(--space-6);
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid rgb(227 182 91 / 40%);
   border-radius: 999px;
-  background: var(--color-surface);
+  background: rgb(13 12 17 / 78%);
   color: var(--color-text-muted);
   cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+  backdrop-filter: blur(0.75rem);
+  transition:
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
-.victory-fanfare__content,
-.victory-summary__content {
+.victory-fanfare__skip:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  transform: translateY(-1px);
+}
+
+.victory-fanfare__skip:focus-visible,
+.victory-summary__button:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 4px;
+}
+
+.victory-fanfare__content {
+  z-index: 1;
   display: grid;
-  width: min(100%, 48rem);
+  width: min(100%, 58rem);
   justify-items: center;
   text-align: center;
 }
 
+.victory-fanfare__broadcast-mark,
+.victory-fanfare__eyebrow,
+.victory-fanfare h1,
+.victory-fanfare__tribute-count,
+.victory-fanfare__portrait-stage,
+.victory-fanfare__name,
+.victory-fanfare__district,
+.victory-fanfare__proclamation {
+  opacity: 0;
+  transform: translateY(1rem);
+  animation: victory-reveal-step 700ms ease forwards;
+}
+
+.victory-fanfare__broadcast-mark {
+  display: inline-flex;
+  min-height: 3rem;
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+  border: 1px solid rgb(227 182 91 / 30%);
+  border-radius: 999px;
+  align-items: center;
+  gap: var(--space-3);
+  background: rgb(13 12 17 / 70%);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  animation-delay: 150ms;
+  backdrop-filter: blur(0.75rem);
+}
+
+.victory-fanfare__seal {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: rgb(227 182 91 / 12%);
+  place-items: center;
+}
+
+.victory-fanfare__seal img {
+  width: 1.65rem;
+  height: 1.65rem;
+  object-fit: contain;
+}
+
 .victory-fanfare__eyebrow {
+  margin: var(--space-6) 0 var(--space-2);
   color: var(--color-accent);
   font-size: var(--font-size-sm);
-  font-weight: 800;
-  letter-spacing: 0.2em;
+  font-weight: 850;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
+  animation-delay: 700ms;
+}
+
+.victory-fanfare h1 {
+  max-width: 13ch;
+  margin: 0;
+  font-size: clamp(3.2rem, 9vw, 7.5rem);
+  line-height: 0.88;
+  letter-spacing: -0.065em;
+  text-wrap: balance;
+  text-shadow: 0 0 3rem rgb(227 182 91 / 18%);
+  animation-delay: 1.08s;
+}
+
+.victory-fanfare__tribute-count {
+  margin: var(--space-4) 0 0;
+  color: var(--color-text-muted);
+  font-size: clamp(1rem, 2.4vw, 1.35rem);
+  animation-delay: 1.45s;
+}
+
+.victory-fanfare__portrait-stage {
+  position: relative;
+  margin-top: var(--space-7);
+  animation-delay: 1.85s;
 }
 
 .victory-fanfare__portraits {
@@ -47,129 +213,373 @@
 }
 
 .victory-fanfare__portraits--joint {
-  gap: 1rem;
+  gap: clamp(0.75rem, 3vw, 2rem);
 }
 
-.victory-fanfare__portraits--joint .victory-fanfare__portrait {
-  width: min(11rem, 34vw);
-  height: min(11rem, 34vw);
+.victory-fanfare__portrait-shell {
+  position: relative;
+  display: grid;
+  width: min(52vw, 18rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  place-items: center;
+}
+
+.victory-fanfare__portraits--joint .victory-fanfare__portrait-shell {
+  width: min(34vw, 14rem);
+}
+
+.victory-fanfare__portrait-shell::before,
+.victory-fanfare__portrait-shell::after {
+  position: absolute;
+  border-radius: 50%;
+  content: "";
+  inset: -0.8rem;
+}
+
+.victory-fanfare__portrait-shell::before {
+  border: 1px dashed rgb(227 182 91 / 58%);
+  animation: victory-ring-turn 14s linear infinite;
+}
+
+.victory-fanfare__portrait-shell::after {
+  z-index: -1;
+  background: radial-gradient(circle, rgb(227 182 91 / 30%), transparent 67%);
+  filter: blur(1.25rem);
+  transform: scale(1.22);
+}
+
+.victory-fanfare__portrait {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 2px solid var(--color-accent);
+  border-radius: 50%;
+  background:
+    linear-gradient(145deg, rgb(227 182 91 / 14%), transparent), var(--color-surface-raised);
+  box-shadow:
+    0 0 0 0.45rem rgb(13 12 17 / 88%),
+    0 0 0 0.55rem rgb(227 182 91 / 28%),
+    0 2rem 6rem rgb(0 0 0 / 55%);
+  color: var(--color-accent);
+  font-size: clamp(3rem, 10vw, 7rem);
+  font-weight: 900;
+  place-items: center;
+}
+
+.victory-fanfare__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.victory-fanfare__badge {
+  position: absolute;
+  z-index: 2;
+  bottom: -1rem;
+  left: 50%;
+  min-width: 7.5rem;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid #f4d38d;
+  background: linear-gradient(135deg, #f0c66b, #a86d22);
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 45%);
+  color: #17120a;
+  font-size: var(--font-size-sm);
+  font-weight: 950;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transform: translateX(-50%) skewX(-8deg);
+}
+
+.victory-fanfare__name {
+  margin-top: var(--space-7);
+  font-size: clamp(2.2rem, 6vw, 4.75rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+  animation-delay: 2.45s;
+}
+
+.victory-fanfare__district {
+  margin-top: var(--space-3);
+  color: var(--color-accent);
+  font-size: var(--font-size-lg);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation-delay: 2.78s;
+}
+
+.victory-fanfare__proclamation {
+  max-width: 42rem;
+  margin: var(--space-4) 0 0;
+  color: var(--color-text-muted);
+  font-size: clamp(1rem, 2.5vw, 1.3rem);
+  text-wrap: balance;
+  animation-delay: 3.08s;
+}
+
+.victory-fanfare__timer {
+  width: min(16rem, 48vw);
+  height: 2px;
+  overflow: hidden;
+  margin-top: var(--space-6);
+  background: rgb(227 182 91 / 18%);
+}
+
+.victory-fanfare__timer span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #9b621c, #f4d38d);
+  animation: victory-timer var(--victory-duration) linear forwards;
+}
+
+/* Final victor record */
+
+.victory-summary {
+  display: grid;
+  padding: clamp(var(--space-5), 5vw, var(--space-8));
+  background:
+    radial-gradient(circle at 50% 0%, rgb(227 182 91 / 18%), transparent 34rem),
+    linear-gradient(180deg, #141018 0%, var(--color-background) 52%);
+  place-items: center;
+}
+
+.victory-summary__content {
+  display: grid;
+  width: min(100%, 68rem);
+  justify-items: center;
+  text-align: center;
+}
+
+.victory-summary__official-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 850;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.victory-summary__official-mark > span:first-child {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgb(227 182 91 / 30%);
+  border-radius: 50%;
+  background: rgb(227 182 91 / 8%);
+  place-items: center;
+}
+
+.victory-summary__official-mark img {
+  width: 1.9rem;
+  height: 1.9rem;
+  object-fit: contain;
+}
+
+.victory-summary .eyebrow {
+  margin: var(--space-5) 0 var(--space-2);
+  color: var(--color-accent);
+}
+
+.victory-summary h1 {
+  max-width: 15ch;
+  margin: 0;
+  font-size: clamp(2.8rem, 8vw, 6.25rem);
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+  text-wrap: balance;
+}
+
+.victory-summary__introduction {
+  max-width: 48rem;
+  margin: var(--space-5) 0 var(--space-7);
+  color: var(--color-text-muted);
+  font-size: clamp(1.05rem, 2.5vw, 1.35rem);
+  text-wrap: balance;
 }
 
 .victory-summary__cards {
   display: grid;
-  gap: 1rem;
+  width: 100%;
+  max-width: 54rem;
+  gap: var(--space-5);
 }
 
 .victory-summary__cards--joint {
+  max-width: 68rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-@media (max-width: 700px) {
-  .victory-summary__cards--joint {
-    grid-template-columns: 1fr;
-  }
+.victory-summary__card {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  padding: clamp(var(--space-4), 4vw, var(--space-6));
+  border: 1px solid rgb(227 182 91 / 34%);
+  border-radius: var(--radius-lg);
+  grid-template-columns: minmax(11rem, 0.78fr) minmax(0, 1.22fr);
+  gap: clamp(var(--space-5), 4vw, var(--space-7));
+  align-items: center;
+  background: linear-gradient(135deg, rgb(227 182 91 / 8%), transparent 42%), var(--color-surface);
+  box-shadow:
+    var(--shadow-raised),
+    inset 0 1px rgb(255 255 255 / 4%);
+  text-align: left;
 }
 
-.victory-fanfare h1,
-.victory-summary h1 {
-  margin-bottom: var(--space-6);
-  font-size: clamp(3rem, 9vw, 7rem);
-  letter-spacing: -0.055em;
+.victory-summary__cards--joint .victory-summary__card {
+  grid-template-columns: 1fr;
+  align-content: start;
 }
 
-.victory-fanfare__portrait,
+.victory-summary__card::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5rem;
+  height: 5rem;
+  border-top: 1px solid var(--color-accent);
+  border-left: 1px solid var(--color-accent);
+  content: "";
+  pointer-events: none;
+}
+
+.victory-summary__visual {
+  position: relative;
+  display: grid;
+  justify-items: center;
+}
+
 .victory-summary__portrait {
   display: grid;
-  width: min(65vw, 20rem);
+  width: min(100%, 15rem);
   aspect-ratio: 1;
   overflow: hidden;
-  border: 1px solid var(--color-accent);
+  border: 2px solid var(--color-accent);
   border-radius: 50%;
   background: var(--color-surface-raised);
-  box-shadow: 0 0 6rem rgb(227 182 91 / 20%);
+  box-shadow:
+    0 0 0 0.4rem rgb(227 182 91 / 8%),
+    0 1.5rem 4rem rgb(0 0 0 / 45%);
   color: var(--color-accent);
-  font-size: clamp(3rem, 10vw, 7rem);
-  font-weight: 850;
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 900;
   place-items: center;
 }
 
-.victory-fanfare__portrait img,
 .victory-summary__portrait img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.victory-fanfare__name {
-  margin-top: var(--space-5);
-  font-size: clamp(2rem, 6vw, 4rem);
-}
-
-.victory-fanfare__district {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-lg);
-}
-
-.victory-summary__card {
-  display: grid;
-  width: min(100%, 44rem);
-  padding: var(--space-5);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  grid-template-columns: minmax(10rem, 0.8fr) 1fr;
-  gap: var(--space-6);
-  align-items: center;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
-}
-
-.victory-summary__portrait {
-  width: 100%;
-}
-
-.victory-summary__identity {
-  display: grid;
-  justify-items: start;
-  text-align: left;
-}
-
-.victory-summary__identity > span {
-  color: var(--color-accent);
-  font-weight: 800;
-  letter-spacing: 0.1em;
+.victory-summary__medallion {
+  position: absolute;
+  z-index: 2;
+  top: -0.7rem;
+  left: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: 999px;
+  background: var(--color-accent);
+  box-shadow: 0 0.75rem 1.5rem rgb(0 0 0 / 35%);
+  color: #17120a;
+  font-size: var(--font-size-xs);
+  font-weight: 950;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
-.victory-summary__identity > strong {
-  margin-block: var(--space-2) var(--space-5);
-  font-size: clamp(2rem, 5vw, 4rem);
-}
-
-.victory-summary__identity dl {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  margin: 0;
-}
-
-.victory-summary__identity dl div {
-  display: grid;
-}
-
-.victory-summary__identity dt {
-  color: var(--color-text-muted);
+.victory-summary__district {
+  margin-top: var(--space-4);
+  color: var(--color-accent);
   font-size: var(--font-size-sm);
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.victory-summary__identity dd {
+.victory-summary__identity {
+  min-width: 0;
+}
+
+.victory-summary__identity > p {
   margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
   font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.victory-summary__identity h2 {
+  margin: var(--space-2) 0 var(--space-5);
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+  overflow-wrap: anywhere;
+}
+
+.victory-summary__attributes,
+.victory-summary__record {
+  display: grid;
+  margin: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.victory-summary__attributes > div,
+.victory-summary__record > div {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: rgb(13 12 17 / 42%);
+}
+
+.victory-summary__attributes dt,
+.victory-summary__record dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.25;
+}
+
+.victory-summary__attributes dd,
+.victory-summary__record dd {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-lg);
+  font-weight: 900;
+}
+
+.victory-summary__record-heading {
+  display: flex;
+  margin: var(--space-5) 0 var(--space-3);
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-accent);
+  font-size: var(--font-size-xs);
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.victory-summary__record-heading::after {
+  height: 1px;
+  flex: 1;
+  background: rgb(227 182 91 / 25%);
+  content: "";
 }
 
 .victory-summary__copy {
-  margin-block: var(--space-5);
+  max-width: 48rem;
+  margin: var(--space-6) 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-lg);
+  text-wrap: balance;
 }
 
 .victory-summary__button {
@@ -180,19 +590,187 @@
   border-radius: 999px;
   align-items: center;
   gap: var(--space-3);
-  background: var(--color-accent);
+  background: linear-gradient(135deg, #f0c66b, #b77826);
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 32%);
   color: #17120a;
   cursor: pointer;
-  font-weight: 800;
+  font: inherit;
+  font-weight: 900;
+  transition:
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
-@media (max-width: 40rem) {
-  .victory-summary__card {
+.victory-summary__button:hover {
+  box-shadow: 0 1.25rem 3rem rgb(0 0 0 / 42%);
+  transform: translateY(-2px);
+}
+
+@keyframes victory-spotlight {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes victory-ray-bloom {
+  0% {
+    opacity: 0;
+    transform: rotate(calc(var(--ray-index) * 30deg)) scaleY(0.15);
+  }
+
+  45% {
+    opacity: 0.45;
+  }
+
+  100% {
+    opacity: 0.14;
+    transform: rotate(calc(var(--ray-index) * 30deg)) scaleY(1);
+  }
+}
+
+@keyframes victory-spark-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.6);
+  }
+
+  18% {
+    opacity: 0.95;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -105vh, 0) scale(1.15);
+  }
+}
+
+@keyframes victory-reveal-step {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes victory-ring-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes victory-timer {
+  to {
+    width: 100%;
+  }
+}
+
+@media (max-width: 54rem) {
+  .victory-summary__card,
+  .victory-summary__cards--joint .victory-summary__card {
     grid-template-columns: 1fr;
   }
 
   .victory-summary__identity {
-    justify-items: center;
     text-align: center;
+  }
+
+  .victory-summary__record-heading {
+    justify-content: center;
+  }
+
+  .victory-summary__record-heading::after {
+    display: none;
+  }
+}
+
+@media (max-width: 44rem) {
+  .victory-fanfare {
+    padding: 5.5rem var(--space-4) var(--space-6);
+  }
+
+  .victory-fanfare::after {
+    inset: var(--space-2);
+  }
+
+  .victory-fanfare__skip {
+    top: var(--space-4);
+    right: var(--space-4);
+  }
+
+  .victory-fanfare__broadcast-mark {
+    font-size: 0.65rem;
+    letter-spacing: 0.11em;
+  }
+
+  .victory-fanfare__portrait-shell {
+    width: min(62vw, 16rem);
+  }
+
+  .victory-fanfare__portraits--joint .victory-fanfare__portrait-shell {
+    width: min(39vw, 11rem);
+  }
+
+  .victory-fanfare__badge {
+    min-width: 6.5rem;
+  }
+
+  .victory-summary {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .victory-summary__cards--joint {
+    grid-template-columns: 1fr;
+  }
+
+  .victory-summary__attributes,
+  .victory-summary__record {
+    grid-template-columns: 1fr;
+  }
+
+  .victory-summary__attributes > div,
+  .victory-summary__record > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .victory-summary__attributes dd,
+  .victory-summary__record dd {
+    margin: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .victory-fanfare::before,
+  .victory-fanfare__portrait-shell::before,
+  .victory-fanfare__timer span {
+    animation: none;
+  }
+
+  .victory-fanfare__ray,
+  .victory-fanfare__spark {
+    display: none;
+  }
+
+  .victory-fanfare__broadcast-mark,
+  .victory-fanfare__eyebrow,
+  .victory-fanfare h1,
+  .victory-fanfare__tribute-count,
+  .victory-fanfare__portrait-stage,
+  .victory-fanfare__name,
+  .victory-fanfare__district,
+  .victory-fanfare__proclamation {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .victory-fanfare__timer span {
+    width: 100%;
+  }
+
+  .victory-fanfare__skip,
+  .victory-summary__button {
+    transition: none;
   }
 }

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { GameTribute } from "~/game/types/game-state";
 import { createDefaultTributeSurvivalState } from "~/game/survival/survival-schema";
+
 import { VictoryFanfare } from "./victory-fanfare";
 
 const victor: GameTribute = {
@@ -50,36 +51,48 @@ const secondVictor: GameTribute = {
 };
 
 describe("VictoryFanfare", () => {
-  it("allows the reveal to be skipped", () => {
+  it("presents a full sole-victor ceremony and allows it to be skipped", () => {
     const handleComplete = vi.fn();
 
-    render(<VictoryFanfare victors={[victor]} onComplete={handleComplete} />);
+    render(<VictoryFanfare victors={[victor]} tributeCount={12} onComplete={handleComplete} />);
+
+    expect(
+      screen.getByRole("heading", {
+        name: "The Games have a victor",
+      }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("The final cannon has sounded")).toBeInTheDocument();
+    expect(screen.getByText("From 12 tributes, one remains.")).toBeInTheDocument();
+    expect(screen.getByText("Julie")).toBeInTheDocument();
+    expect(screen.getByText("District 4")).toBeInTheDocument();
+    expect(screen.getByText("Long may Julie be remembered across Panem.")).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Skip reveal",
+        name: "Skip ceremony",
       }),
+    );
+
+    expect(handleComplete).toHaveBeenCalledOnce();
+  });
+
+  it("announces two joint victors as a Capitol-defying result", () => {
+    render(
+      <VictoryFanfare victors={[victor, secondVictor]} tributeCount={24} onComplete={vi.fn()} />,
     );
 
     expect(
       screen.getByRole("heading", {
-        name: "We have a victor",
-      }),
-    ).toBeInTheDocument();
-    expect(handleComplete).toHaveBeenCalledOnce();
-  });
-
-  it("announces two joint victors", () => {
-    render(<VictoryFanfare victors={[victor, secondVictor]} onComplete={vi.fn()} />);
-
-    expect(
-      screen.getByRole("heading", {
-        name: "We have victors",
+        name: "The Games have victors",
       }),
     ).toBeInTheDocument();
 
+    expect(screen.getByText("From 24 tributes, two defied the arena.")).toBeInTheDocument();
     expect(screen.getByText("Julie and Nikita")).toBeInTheDocument();
-
     expect(screen.getByText("District 4 • District 7")).toBeInTheDocument();
+    expect(
+      screen.getByText("The Capitol demanded one survivor. The arena answered with two."),
+    ).toBeInTheDocument();
   });
 });

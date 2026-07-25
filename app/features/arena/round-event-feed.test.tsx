@@ -177,12 +177,17 @@ describe("RoundEventFeed", () => {
 
     expect(screen.getByText("Borrowed from: Peeta")).toBeInTheDocument();
 
-    expect(screen.getByText("0 uses remaining")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Food and hydration",
+      }),
+    ).toBeInTheDocument();
 
-    expect(screen.getByText("Need: Hydration")).toBeInTheDocument();
+    expect(screen.getByText("No uses remaining")).toBeInTheDocument();
 
-    expect(screen.getByText("Statuses: Thirsty")).toBeInTheDocument();
+    expect(screen.getByText("Need restored: Hydration.")).toBeInTheDocument();
 
+    expect(screen.getByText("Statuses resolved: Thirsty.")).toBeInTheDocument();
     expect(screen.getByText("1 of 2 arena events revealed")).toBeInTheDocument();
   });
 
@@ -214,10 +219,78 @@ describe("RoundEventFeed", () => {
 
     renderFeed([preparationEvent], 3);
 
-    expect(screen.getByText("Rest: Comfortable")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Rest and shelter",
+      }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("Rest result: Comfortable rest.")).toBeInTheDocument();
 
     expect(screen.getByText("0 of 3 arena events revealed")).toBeInTheDocument();
 
     expect(screen.getByText(/reveal the first event/i)).toBeInTheDocument();
+  });
+
+  it("keeps preparation groups separate while preserving primary numbering", () => {
+    const medicalEvent: ResolvedEvent = {
+      id: "medical-preparation",
+      definitionId: "automatic-medical-treatment",
+
+      kind: "preparation",
+      resolutionMode: "standard",
+
+      round: TEST_ROUND,
+
+      participantTributeIds: [ACTOR.id],
+
+      text: "Katniss treats her injuries.",
+
+      changes: [],
+
+      preparation: {
+        mechanic: "medical-treatment",
+
+        actingTributeId: ACTOR.id,
+
+        affectedStatusIds: ["injured"],
+      },
+    };
+
+    const hydrationEvent: ResolvedEvent = {
+      id: "hydration-preparation",
+      definitionId: "automatic-hydration-consumption",
+
+      kind: "preparation",
+      resolutionMode: "standard",
+
+      round: TEST_ROUND,
+
+      participantTributeIds: [OWNER.id],
+
+      text: "Peeta drinks fresh water.",
+
+      changes: [],
+
+      preparation: {
+        mechanic: "hydration-consumption",
+
+        actingTributeId: OWNER.id,
+
+        affectedNeed: "water",
+      },
+    };
+
+    renderFeed([hydrationEvent, medicalEvent, createEvent([])], 2);
+
+    const headings = screen.getAllByRole("heading");
+
+    expect(headings.map((heading) => heading.textContent)).toEqual(
+      expect.arrayContaining(["Before the round", "Medical care", "Food and hydration"]),
+    );
+
+    expect(screen.getByText("01")).toBeInTheDocument();
+
+    expect(screen.getByText("1 of 2 arena events revealed")).toBeInTheDocument();
   });
 });

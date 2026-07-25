@@ -212,8 +212,6 @@ export interface ItemContextualCapabilities {
    * during a night event tagged as an ambush.
    */
   nightAmbushTargetWeightMultiplier?: number;
-
-  hostileDefenseBonus?: number;
 }
 
 export type ItemMinimumStats = Partial<Record<keyof TributeStats, TributeStatValue>>;

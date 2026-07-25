@@ -1,13 +1,17 @@
 import { formatRoundLabel } from "~/game/engine/rounds";
-import { getStatusDefinition } from "~/game/statuses/status-catalogue";
-import type { GameTribute, StatusEffect, TributeDeath } from "~/game/types/game-state";
-import type { StatusDefinition } from "~/game/statuses/status-schema";
+
+import {
+  compareStatusesByUrgency,
+  createStatusPresentation,
+} from "~/game/statuses/status-presentation";
+
+import { createRestPresentation } from "~/game/survival/rest-presentation";
+
+import type { GameTribute, TributeDeath } from "~/game/types/game-state";
 
 interface TributeSidebarProps {
   tributes: readonly GameTribute[];
 }
-
-type StatusPresentation = "critical" | "warning" | "stable" | "temporary" | "beneficial";
 
 function getInitials(name: string): string {
   return name
@@ -19,125 +23,6 @@ function getInitials(name: string): string {
     .join("");
 }
 
-function getFatalUrgency(remainingRounds: number): StatusPresentation {
-  if (remainingRounds <= 1) {
-    return "critical";
-  }
-
-  if (remainingRounds === 2) {
-    return "warning";
-  }
-
-  return "stable";
-}
-
-function isFatalStatusDefinition(definition: StatusDefinition): boolean {
-  return definition.duration.kind === "timed" && definition.duration.expiration === "fatal";
-}
-
-function getStatusPresentation(
-  definition: StatusDefinition,
-  remainingRounds: number | null,
-): StatusPresentation {
-  if (isFatalStatusDefinition(definition)) {
-    return remainingRounds === null ? "stable" : getFatalUrgency(remainingRounds);
-  }
-
-  if (definition.kind === "beneficial") {
-    return "beneficial";
-  }
-
-  return "temporary";
-}
-
-function getStatusSortGroup(definition: StatusDefinition): number {
-  if (isFatalStatusDefinition(definition)) {
-    return 0;
-  }
-
-  if (definition.kind === "harmful") {
-    return 1;
-  }
-
-  return 2;
-}
-
-function compareStatusesByUrgency(firstStatus: StatusEffect, secondStatus: StatusEffect): number {
-  const firstDefinition = getStatusDefinition(firstStatus.definitionId);
-
-  const secondDefinition = getStatusDefinition(secondStatus.definitionId);
-
-  const firstRemainingRounds = firstStatus.remainingRounds ?? Number.POSITIVE_INFINITY;
-
-  const secondRemainingRounds = secondStatus.remainingRounds ?? Number.POSITIVE_INFINITY;
-
-  const remainingRoundDifference =
-    firstRemainingRounds === secondRemainingRounds
-      ? 0
-      : firstRemainingRounds - secondRemainingRounds;
-
-  return (
-    getStatusSortGroup(firstDefinition) - getStatusSortGroup(secondDefinition) ||
-    remainingRoundDifference ||
-    secondStatus.severity - firstStatus.severity ||
-    firstStatus.definitionId.localeCompare(secondStatus.definitionId)
-  );
-}
-
-function formatStatusCountdown(
-  definition: StatusDefinition,
-  remainingRounds: number | null,
-): string {
-  if (definition.duration.kind === "persistent") {
-    return definition.removalDescription ?? "Requires explicit removal.";
-  }
-
-  if (remainingRounds === null) {
-    return "Duration unavailable.";
-  }
-
-  if (definition.duration.expiration === "fatal") {
-    if (remainingRounds <= 1) {
-      return "Fatal at the end of the next round if untreated.";
-    }
-
-    return `Fatal in ${remainingRounds} rounds if untreated.`;
-  }
-
-  if (definition.kind === "beneficial") {
-    if (remainingRounds <= 1) {
-      return "Wears off at the end of the next round.";
-    }
-
-    return `Wears off in ${remainingRounds} rounds.`;
-  }
-
-  if (remainingRounds <= 1) {
-    return "Recovers at the end of the next round.";
-  }
-
-  return `Recovers in ${remainingRounds} rounds.`;
-}
-
-function formatRoundCount(roundCount: number): string {
-  return `${roundCount} ${roundCount === 1 ? "round" : "rounds"}`;
-}
-
-function formatStatusDurationLabel(
-  definition: StatusDefinition,
-  remainingRounds: number | null,
-): string {
-  if (definition.duration.kind === "persistent") {
-    return "Persistent";
-  }
-
-  if (remainingRounds === null) {
-    return "Unknown duration";
-  }
-
-  return formatRoundCount(remainingRounds);
-}
-
 function formatNameList(names: readonly string[]): string {
   if (names.length === 0) {
     return "";
@@ -147,7 +32,7 @@ function formatNameList(names: readonly string[]): string {
     return names[0];
   }
 
-  return `${names.slice(0, -1).join(", ")} ` + `and ${names[names.length - 1]}`;
+  return `${names.slice(0, -1).join(", ")} ` + `and ${names.at(-1)}`;
 }
 
 function getKillerNames(death: TributeDeath, tributes: readonly GameTribute[]): string[] {
@@ -161,6 +46,10 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
     (firstTribute, secondTribute) =>
       firstTribute.district - secondTribute.district ||
       firstTribute.districtPosition - secondTribute.districtPosition,
+  );
+
+  const tributeNameById = new Map(
+    sortedTributes.map((tribute) => [tribute.id, tribute.snapshot.name]),
   );
 
   const livingCount = sortedTributes.filter((tribute) => tribute.isAlive).length;
@@ -183,18 +72,28 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
 
           const statuses = [...tribute.statuses].sort(compareStatusesByUrgency);
 
-          const primaryStatus = statuses[0] ?? null;
+          const statusPresentations = statuses.map((status) => ({
+            status,
 
-          const primaryDefinition = primaryStatus
-            ? getStatusDefinition(primaryStatus.definitionId)
-            : null;
+            details: createStatusPresentation(status, {
+              sourceTributeName: status.sourceTributeId
+                ? tributeNameById.get(status.sourceTributeId)
+                : null,
+            }),
+          }));
 
-          const statusPresentation =
-            primaryStatus && primaryDefinition
-              ? getStatusPresentation(primaryDefinition, primaryStatus.remainingRounds)
+          const primaryStatus = statusPresentations[0] ?? null;
+
+          const additionalStatusCount = Math.max(
+            0,
+
+            statusPresentations.length - 1,
+          );
+
+          const restPresentation =
+            tribute.isAlive && tribute.survival.lastNightRest
+              ? createRestPresentation(tribute.survival.lastNightRest)
               : null;
-
-          const additionalStatusCount = Math.max(0, statuses.length - 1);
 
           const killerNames = death ? getKillerNames(death, sortedTributes) : [];
 
@@ -208,11 +107,13 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
                 .filter(Boolean)
                 .join(" ")}
               key={tribute.id}
-              aria-label={`${tribute.snapshot.name}, District ${tribute.district}, ${
-                tribute.isAlive
+              aria-label={
+                `${tribute.snapshot.name}, ` +
+                `District ${tribute.district}, ` +
+                (tribute.isAlive
                   ? "alive"
-                  : `eliminated ${death ? formatRoundLabel(death.round) : ""}`
-              }`}
+                  : "eliminated " + (death ? formatRoundLabel(death.round) : ""))
+              }
             >
               <div className="sidebar-tribute__portrait">
                 <div className="sidebar-tribute__portrait-media">
@@ -221,9 +122,9 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
                       src={tribute.snapshot.portraitUrl}
                       alt=""
                       style={{
-                        objectPosition: `${tribute.snapshot.portraitPosition?.x ?? 50}% ${
-                          tribute.snapshot.portraitPosition?.y ?? 50
-                        }%`,
+                        objectPosition:
+                          `${tribute.snapshot.portraitPosition?.x ?? 50}% ` +
+                          `${tribute.snapshot.portraitPosition?.y ?? 50}%`,
                       }}
                     />
                   ) : (
@@ -236,7 +137,7 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
                     <button
                       className="sidebar-tribute__bar sidebar-tribute__death"
                       type="button"
-                      aria-label={`${death.causeLabel}. ${death.summary}`}
+                      aria-label={`${death.causeLabel}. ` + death.summary}
                       aria-describedby={deathTooltipId}
                     >
                       <strong>{formatRoundLabel(death.round)}</strong>
@@ -247,7 +148,7 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
                     <div className="sidebar-tribute__tooltip" id={deathTooltipId} role="tooltip">
                       <strong>
                         {killerNames.length > 0
-                          ? `${death.causeLabel} by ${formatNameList(killerNames)}`
+                          ? `${death.causeLabel} by ` + formatNameList(killerNames)
                           : death.causeLabel}
                       </strong>
 
@@ -258,28 +159,26 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
                   </div>
                 ) : null}
 
-                {tribute.isAlive && primaryStatus && primaryDefinition && statusPresentation ? (
+                {tribute.isAlive && primaryStatus ? (
                   <div className="sidebar-tribute__indicator sidebar-tribute__indicator--bottom">
                     <button
                       className={[
                         "sidebar-tribute__bar",
+
                         "sidebar-tribute__status",
-                        `sidebar-tribute__status--${statusPresentation}`,
+
+                        `sidebar-tribute__status--${primaryStatus.details.tone}`,
                       ].join(" ")}
                       type="button"
-                      aria-label={`${primaryDefinition.label}. ${formatStatusCountdown(
-                        primaryDefinition,
-                        primaryStatus.remainingRounds,
-                      )}`}
+                      aria-label={
+                        `${primaryStatus.details.label}. ` + primaryStatus.details.lifecycleSummary
+                      }
                       aria-describedby={statusTooltipId}
                     >
-                      <strong>{primaryDefinition.label}</strong>
+                      <strong>{primaryStatus.details.label}</strong>
 
                       <span>
-                        {formatStatusDurationLabel(
-                          primaryDefinition,
-                          primaryStatus.remainingRounds,
-                        )}
+                        {primaryStatus.details.durationLabel}
 
                         {additionalStatusCount > 0 ? ` · +${additionalStatusCount}` : ""}
                       </span>
@@ -291,23 +190,43 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
                       role="tooltip"
                     >
                       <ul>
-                        {statuses.map((status) => {
-                          const definition = getStatusDefinition(status.definitionId);
+                        {statusPresentations.map(({ status, details }) => (
+                          <li key={status.id}>
+                            <strong>{details.label}</strong>
 
-                          return (
-                            <li key={status.id}>
-                              <strong>{definition.label}</strong>
+                            <p>{details.description}</p>
 
-                              <p>{definition.description}</p>
+                            <div className="sidebar-tribute__status-meta">
+                              <span>{details.kindLabel}</span>
 
-                              <span>Received during {formatRoundLabel(status.appliedRound)}.</span>
+                              <span>{details.severityLabel}</span>
 
-                              <span>
-                                {formatStatusCountdown(definition, status.remainingRounds)}
-                              </span>
-                            </li>
-                          );
-                        })}
+                              <span>{details.appliedRoundLabel}</span>
+
+                              {details.sourceLabel ? <span>{details.sourceLabel}</span> : null}
+
+                              <span>{details.lifecycleSummary}</span>
+                            </div>
+
+                            {details.effectSummaries.length > 0 ? (
+                              <div className="sidebar-tribute__status-effects">
+                                <span>Gameplay effects</span>
+
+                                {details.effectSummaries.map((summary) => (
+                                  <span key={summary}>{summary}</span>
+                                ))}
+                              </div>
+                            ) : null}
+
+                            {details.fatalCauseLabel && details.fatalConsequence ? (
+                              <div className="sidebar-tribute__status-fatality">
+                                <span>Fatal outcome: {details.fatalCauseLabel}</span>
+
+                                <span>{details.fatalConsequence}</span>
+                              </div>
+                            ) : null}
+                          </li>
+                        ))}
                       </ul>
                     </div>
                   </div>
@@ -318,6 +237,21 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
                 <strong>{tribute.snapshot.name}</strong>
 
                 <span>District {tribute.district}</span>
+
+                {restPresentation ? (
+                  <span
+                    className={[
+                      "sidebar-tribute__rest",
+
+                      `sidebar-tribute__rest--${restPresentation.tone}`,
+                    ].join(" ")}
+                    aria-label={restPresentation.summary}
+                  >
+                    {restPresentation.label}
+                    {" · "}
+                    {restPresentation.roundLabel}
+                  </span>
+                ) : null}
               </div>
             </article>
           );

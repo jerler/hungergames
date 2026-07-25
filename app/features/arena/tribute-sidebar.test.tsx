@@ -315,4 +315,170 @@ describe("TributeSidebar", () => {
 
     expect(statusItems[3]).toHaveTextContent(/^Lucky/);
   });
+
+  it("shows status severity, effects, fatal outcome, and attributed source", () => {
+    const attacker = createTribute({
+      id: "tribute-2",
+
+      districtPosition: 2,
+
+      snapshot: {
+        name: "The Babadook",
+
+        pronouns: "they",
+
+        portraitUrl: null,
+
+        stats: {
+          brains: 4,
+
+          brawn: 3,
+
+          luck: 4,
+        },
+      },
+    });
+
+    render(
+      <TributeSidebar
+        tributes={[
+          createTribute({
+            statuses: [
+              {
+                ...createStatus("poisoned", 1, 3),
+
+                sourceTributeId: attacker.id,
+              },
+            ],
+          }),
+
+          attacker,
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Severity 3 of 3")).toBeInTheDocument();
+
+    expect(screen.getByText("Caused by The Babadook.")).toBeInTheDocument();
+
+    expect(screen.getByText("Fatal outcome: Poisoning")).toBeInTheDocument();
+
+    expect(screen.getByText("Combat score −1.05")).toBeInTheDocument();
+  });
+
+  it("shows the living tribute's most recent rest state", () => {
+    render(
+      <TributeSidebar
+        tributes={[
+          createTribute({
+            survival: {
+              ...createDefaultTributeSurvivalState(),
+
+              lastNightRest: {
+                round: {
+                  day: 2,
+
+                  period: "night",
+                },
+
+                quality: "comfortable",
+              },
+            },
+          }),
+        ]}
+      />,
+    );
+
+    const restState = screen.getByLabelText("Rested comfortably during Night 2.");
+
+    expect(restState).toHaveTextContent("Comfortable rest");
+
+    expect(restState).toHaveTextContent("Night 2");
+  });
+
+  it("shows rest without displacing an urgent status", () => {
+    render(
+      <TributeSidebar
+        tributes={[
+          createTribute({
+            survival: {
+              ...createDefaultTributeSurvivalState(),
+
+              lastNightRest: {
+                round: {
+                  day: 2,
+
+                  period: "night",
+                },
+
+                quality: "unsheltered",
+              },
+            },
+
+            statuses: [createStatus("bleeding", 1, 2)],
+          }),
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", {
+        name: "Bleeding. Fatal at the end of the next round if untreated.",
+      }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByLabelText("Spent Night 2 without adequate shelter.")).toBeInTheDocument();
+  });
+
+  it("keeps dead tribute cards focused on death information", () => {
+    render(
+      <TributeSidebar
+        tributes={[
+          createTribute({
+            isAlive: false,
+
+            survival: {
+              ...createDefaultTributeSurvivalState(),
+
+              lastNightRest: {
+                round: {
+                  day: 1,
+
+                  period: "night",
+                },
+
+                quality: "comfortable",
+              },
+            },
+
+            death: {
+              round: {
+                day: 2,
+
+                period: "day",
+              },
+
+              causeId: "starvation",
+
+              causeLabel: "Starved",
+
+              summary: "Avery starved.",
+
+              killerTributeIds: [],
+
+              resolvedEventId: "event-starvation",
+            },
+          }),
+        ]}
+      />,
+    );
+
+    expect(screen.queryByText("Comfortable rest")).not.toBeInTheDocument();
+
+    const deathBar = screen.getByRole("button", {
+      name: "Starved. Avery starved.",
+    });
+
+    expect(deathBar).toHaveTextContent("Starved");
+  });
 });

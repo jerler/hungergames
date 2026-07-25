@@ -4,6 +4,8 @@ import { isMedicalStatusId } from "~/game/statuses/medical-statuses";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
 
+const ITEM_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 const ITEM_TAG_SET = new Set<ItemTag>(ITEM_TAGS);
 
 const ACTIVE_USE_TAGS = new Set<ItemTag>(["consumable", "water", "food", "medicine", "tool"]);
@@ -297,8 +299,8 @@ function validateDefense(definition: ItemDefinition): void {
 }
 
 export function validateItemDefinition(definition: ItemDefinition): void {
-  if (!definition.id.trim()) {
-    fail(definition.id, "has an empty ID.");
+  if (!ITEM_ID_PATTERN.test(definition.id)) {
+    fail(definition.id, "ID must be non-empty kebab-case text.");
   }
 
   if (!definition.label.trim()) {
@@ -352,13 +354,13 @@ export function validateItemDefinition(definition: ItemDefinition): void {
   const contextual = definition.contextual;
 
   if (contextual) {
-    for (const [label, value] of [
-      ["nightAwarenessBonus", contextual.nightAwarenessBonus],
-      ["hostileDefenseBonus", contextual.hostileDefenseBonus],
-    ] as const) {
-      if (value !== undefined && (!Number.isFinite(value) || value < 0)) {
-        fail(definition.id, `declares invalid ${label}.`);
-      }
+    const nightAwarenessBonus = contextual.nightAwarenessBonus;
+
+    if (
+      nightAwarenessBonus !== undefined &&
+      (!Number.isFinite(nightAwarenessBonus) || nightAwarenessBonus < 0)
+    ) {
+      fail(definition.id, "declares invalid nightAwarenessBonus.");
     }
 
     const nightAmbushMultiplier = contextual.nightAmbushTargetWeightMultiplier;
@@ -379,6 +381,14 @@ export function validateItemDefinition(definition: ItemDefinition): void {
 
   validateUseEffects(definition);
   validateRest(definition);
+
+  if (definition.origin !== "natural-resource" && definition.origin !== "manufactured") {
+    fail(definition.id, "declares an invalid origin.");
+  }
+
+  if (definition.tags.length === 0) {
+    fail(definition.id, "must declare at least one tag.");
+  }
 }
 
 export function validateItemCatalogue(definitions: readonly ItemDefinition[]): void {

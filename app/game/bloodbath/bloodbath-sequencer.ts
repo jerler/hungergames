@@ -31,6 +31,7 @@ import type {
 } from "~/game/types/game-state";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
 import { validateEventResolution } from "~/game/events/validation/validate-event-resolution";
+import { selectEventParticipants } from "~/game/events/participant-selection";
 
 function createEventId(round: RoundReference, eventIndex: number, definitionId: string): string {
   return ["bloodbath", round.period, round.day, eventIndex, definitionId].join("-");
@@ -130,6 +131,69 @@ interface CornucopiaSequenceResult {
   plannedEliminationCount: number;
 }
 
+function selectBloodbathAcquisitionParticipants(
+  state: GameState,
+  round: RoundReference,
+  remainingTributes: GameTribute[],
+  definition: EventDefinition,
+  random: RandomSource,
+): ParticipantsByRole {
+  const selection = selectEventParticipants(
+    definition,
+
+    {
+      state,
+      round,
+
+      /*
+       * Restrict selection to tributes who,
+
+    {
+      state,
+      round,
+
+      /*
+       * Restrict selection to tributes who have not already
+       * received a Bloodbath event.
+       */
+      livingTributes: remainingTributes,
+    },
+
+    random,
+
+    /*
+     * Every tribute in remainingTributes is available.
+     */
+    new Set<string>(),
+  );
+
+  if (!selection) {
+    throw new Error(
+      `Bloodbath acquisition event "${definition.id}" ` +
+        "could not select an eligible participant.",
+    );
+  }
+
+  const selectedTributeId = selection.participantTributeIds[0];
+
+  if (!selectedTributeId) {
+    throw new Error(`Bloodbath acquisition event "${definition.id}" ` + "selected no participant.");
+  }
+
+  const selectedIndex = remainingTributes.findIndex((tribute) => tribute.id === selectedTributeId);
+
+  if (selectedIndex < 0) {
+    throw new Error(
+      `Bloodbath acquisition event "${definition.id}" ` +
+        `selected unavailable tribute "${selectedTributeId}".`,
+    );
+  }
+
+  remainingTributes.splice(selectedIndex, 1);
+
+  return selection.participantsByRole;
+}
+
 function sequenceCornucopiaEvents(
   state: GameState,
   round: RoundReference,
@@ -199,20 +263,30 @@ function sequenceCornucopiaEvents(
        * remains—the sequencer falls back to lower-risk
        * acquisition events.
        *
-       * It does not reroll previous outcomes or manufacture
-       * an elimination solely to hit the target.
+       * Select the acquisition definition first, then use its
+       * participant-role weighting to choose which remaining
+       * tribute attempts it.
+       *
+       * This ensures:
+       *
+       * - strong tributes are favoured for heavy weapons;
+       * - Brains-oriented tributes are favoured for tactical gear;
+       * - low-Brawn tactical preferences are actually applied.
        */
-      const tribute = remainingTributes.shift();
-
-      if (!tribute) {
-        throw new Error("Bloodbath acquisition selection lost a participant.");
-      }
-
-      definition = selectDefinition(CORNUCOPIA_ACQUISITION_EVENTS, context, random);
-
-      participantsByRole = {
-        tribute: [tribute],
+      const acquisitionContext: EventSelectionContext = {
+        ...context,
+        livingTributes: remainingTributes,
       };
+
+      definition = selectDefinition(CORNUCOPIA_ACQUISITION_EVENTS, acquisitionContext, random);
+
+      participantsByRole = selectBloodbathAcquisitionParticipants(
+        state,
+        round,
+        remainingTributes,
+        definition,
+        random,
+      );
     }
 
     const event = resolveBloodbathEvent({

@@ -35,6 +35,11 @@ import {
   CORNUCOPIA_PACK_ITEM_POOL,
   type CornucopiaPackRarity,
 } from "~/game/events/catalogue/bloodbath/cornucopia-item-pool";
+import { evaluateBalanceGuardrails } from "~/game/simulation/balance-guardrails";
+
+import { collectBalanceMetrics } from "~/game/simulation/balance-metrics";
+
+import type { SimulationRun } from "~/game/simulation/simulation-runner";
 
 const simulationCache = new Map<string, GameState>();
 
@@ -53,30 +58,6 @@ const CORNUCOPIA_PACK_ENTRY_BY_ITEM_ID = new Map<
   (typeof CORNUCOPIA_PACK_ITEM_POOL)[number]
 >(CORNUCOPIA_PACK_ITEM_POOL.map((entry) => [entry.itemId, entry]));
 
-const SIMULATION_BALANCE_GUARDRAILS = {
-  halfGameAverageRounds: {
-    minimumExclusive: 1,
-    maximumExclusive: 50,
-  },
-
-  fullGameAverageRounds: {
-    minimumExclusive: 1,
-    maximumExclusive: 50,
-  },
-
-  dayOneEliminationShare: {
-    minimumExclusive: 0.5,
-    maximumInclusive: 1,
-  },
-
-  minimumAverageAcquisitionsPerGame: 0,
-  minimumAverageTheftTransfersPerGame: 0,
-  minimumAverageDeathLootTransfersPerGame: 0,
-
-  completionRate: 1,
-  minimumFamilyEventCount: 1,
-} as const;
-
 const SIMULATION_EVENT_FAMILIES = [
   ["bloodbath", new Set(BLOODBATH_EVENT_CATALOGUE.map((event) => event.id))],
   ["combat", new Set(COMBAT_EVENTS.map((event) => event.id))],
@@ -91,32 +72,8 @@ const SIMULATION_EVENT_FAMILIES = [
   ["foraging", new Set(FORAGING_EVENTS.map((event) => event.id))],
 ] as const;
 
-type SimulationEventFamily = (typeof SIMULATION_EVENT_FAMILIES)[number][0];
-
 function getPrimaryEvents(state: GameState): ResolvedEvent[] {
   return state.eventHistory.filter((event) => event.kind === "primary");
-}
-
-function getEventFamilyCounts(results: readonly GameState[]): Map<SimulationEventFamily, number> {
-  const counts = new Map<SimulationEventFamily, number>(
-    SIMULATION_EVENT_FAMILIES.map(([family]) => [family, 0]),
-  );
-
-  for (const result of results) {
-    for (const event of getPrimaryEvents(result)) {
-      for (const [family, eventIds] of SIMULATION_EVENT_FAMILIES) {
-        if (!eventIds.has(event.definitionId)) {
-          continue;
-        }
-
-        counts.set(family, (counts.get(family) ?? 0) + 1);
-
-        break;
-      }
-    }
-  }
-
-  return counts;
 }
 
 interface ResolvedTransfer {
@@ -372,24 +329,6 @@ function expectValidVictoryOutcome(result: GameState): void {
 
   expect(new Set(victoryOutcome.victorTributeIds)).toEqual(
     new Set(livingTributes.map((tribute) => tribute.id)),
-  );
-}
-
-function getEliminationCount(state: GameState, day?: number, period?: "day" | "night"): number {
-  return state.eventHistory.reduce(
-    (total, event) => {
-      if (day !== undefined && event.round.day !== day) {
-        return total;
-      }
-
-      if (period !== undefined && event.round.period !== period) {
-        return total;
-      }
-
-      return total + event.changes.filter((change) => change.type === "eliminate-tribute").length;
-    },
-
-    0,
   );
 }
 
@@ -736,88 +675,34 @@ describe("simulation stress tests", () => {
   });
 
   it("stays within established simulation balance guardrails", () => {
-    const results = getStressResults();
+    const states = getStressResults();
 
-    const halfGameResults = results.slice(0, 200);
+    const runs: SimulationRun[] = states.map((state, index) => ({
+      seed: index < 200 ? `half-game-${index}` : `full-game-${index - 200}`,
 
-    const fullGameResults = results.slice(200);
+      districtCount: state.config.districtCount,
 
-    const halfGameAverageRounds = getAverage(halfGameResults.map(getGameLengthInRounds));
+      roundsCompleted: getGameLengthInRounds(state),
 
-    const fullGameAverageRounds = getAverage(fullGameResults.map(getGameLengthInRounds));
+      state,
+    }));
 
-    const totalEliminations = results.reduce(
-      (total, result) => total + getEliminationCount(result),
-      0,
+    const metrics = collectBalanceMetrics(runs);
+
+    const failedGuardrails = evaluateBalanceGuardrails(metrics).filter(
+      (guardrail) => !guardrail.passed,
     );
 
-    const dayOneEliminations = results.reduce(
-      (total, result) => total + getEliminationCount(result, 1, "day"),
-      0,
-    );
+    expect(
+      failedGuardrails,
 
-    const acquisitions = results.flatMap(getAcquisitionTransactions);
-
-    const transfers = results.flatMap(getTransferTransactions);
-
-    const theftTransfers = transfers.filter((transaction) => transaction.sourceId === "theft");
-
-    const deathLootTransfers = transfers.filter(
-      (transaction) => transaction.sourceId === "death-loot",
-    );
-
-    const completionRate =
-      results.filter((result) => result.phase === "victory" && result.victoryOutcome !== null)
-        .length / results.length;
-
-    const familyCounts = getEventFamilyCounts(results);
-
-    expect(halfGameAverageRounds).toBeGreaterThan(
-      SIMULATION_BALANCE_GUARDRAILS.halfGameAverageRounds.minimumExclusive,
-    );
-
-    expect(halfGameAverageRounds).toBeLessThan(
-      SIMULATION_BALANCE_GUARDRAILS.halfGameAverageRounds.maximumExclusive,
-    );
-
-    expect(fullGameAverageRounds).toBeGreaterThan(
-      SIMULATION_BALANCE_GUARDRAILS.fullGameAverageRounds.minimumExclusive,
-    );
-
-    expect(fullGameAverageRounds).toBeLessThan(
-      SIMULATION_BALANCE_GUARDRAILS.fullGameAverageRounds.maximumExclusive,
-    );
-
-    const dayOneEliminationShare = dayOneEliminations / totalEliminations;
-
-    expect(dayOneEliminationShare).toBeGreaterThan(
-      SIMULATION_BALANCE_GUARDRAILS.dayOneEliminationShare.minimumExclusive,
-    );
-
-    expect(dayOneEliminationShare).toBeLessThanOrEqual(
-      SIMULATION_BALANCE_GUARDRAILS.dayOneEliminationShare.maximumInclusive,
-    );
-
-    expect(acquisitions.length / results.length).toBeGreaterThan(
-      SIMULATION_BALANCE_GUARDRAILS.minimumAverageAcquisitionsPerGame,
-    );
-
-    expect(theftTransfers.length / results.length).toBeGreaterThan(
-      SIMULATION_BALANCE_GUARDRAILS.minimumAverageTheftTransfersPerGame,
-    );
-
-    expect(deathLootTransfers.length / results.length).toBeGreaterThan(
-      SIMULATION_BALANCE_GUARDRAILS.minimumAverageDeathLootTransfersPerGame,
-    );
-
-    expect(completionRate).toBe(SIMULATION_BALANCE_GUARDRAILS.completionRate);
-
-    for (const [family, count] of familyCounts) {
-      expect(
-        count,
-        `Expected simulations to exercise the "${family}" event family.`,
-      ).toBeGreaterThanOrEqual(SIMULATION_BALANCE_GUARDRAILS.minimumFamilyEventCount);
-    }
+      failedGuardrails
+        .map(
+          (guardrail) =>
+            `${guardrail.label}: actual ${guardrail.actual}; expected ${guardrail.expected}`,
+        )
+        .join("\n"),
+    ).toEqual([]);
   });
 
   it("exercises tactical offense by low-Brawn tributes in complete games", () => {

@@ -7,7 +7,6 @@ import {
   itemRemovesStatuses,
   itemSatisfiesNeed,
 } from "./item-effect-builders";
-import { validateItemCatalogue } from "~/game/items/item-validation";
 
 const HYDRATION_RECOVERY_EFFECTS = [
   itemSatisfiesNeed("hydration"),
@@ -1255,8 +1254,6 @@ export const ITEM_CATALOGUE = [
     },
   },
 ] satisfies readonly ItemDefinition[];
-
-validateItemCatalogue(ITEM_CATALOGUE);
 
 export function getItemDefinition(itemId: ItemDefinitionId): ItemDefinition {
   const definition = ITEM_CATALOGUE.find((candidate) => candidate.id === itemId);

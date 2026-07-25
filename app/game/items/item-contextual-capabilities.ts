@@ -47,19 +47,3 @@ export function getNightAmbushItemTargetWeightMultiplier(
     1,
   );
 }
-
-export function getHostileDefenseItemBonus(tribute: GameTribute): number {
-  return tribute.inventory.reduce(
-    (total, item) => {
-      if (!isItemUsableBy(tribute, item)) {
-        return total;
-      }
-
-      const definition = getItemDefinition(item.definitionId);
-
-      return total + (definition.contextual?.hostileDefenseBonus ?? 0);
-    },
-
-    0,
-  );
-}

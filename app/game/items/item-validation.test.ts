@@ -110,4 +110,34 @@ describe("item validation", () => {
       }),
     ).toThrow(/supported use mechanism/i);
   });
+
+  it("rejects invalid item IDs", () => {
+    expect(() =>
+      validateItemDefinition({
+        ...BASE_ITEM,
+
+        id: "Not Valid" as never,
+      }),
+    ).toThrow(/kebab-case/i);
+  });
+
+  it("rejects items without tags", () => {
+    expect(() =>
+      validateItemDefinition({
+        ...BASE_ITEM,
+
+        tags: [],
+      }),
+    ).toThrow(/at least one tag/i);
+  });
+
+  it("rejects invalid item origins", () => {
+    expect(() =>
+      validateItemDefinition({
+        ...BASE_ITEM,
+
+        origin: "unknown" as never,
+      }),
+    ).toThrow(/invalid origin/i);
+  });
 });

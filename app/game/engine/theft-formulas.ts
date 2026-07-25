@@ -50,7 +50,6 @@ function getItemCapabilityStrategicValue(definition: ItemDefinition): number {
 
   const contextualValue =
     (contextual?.nightAwarenessBonus ?? 0) +
-    (contextual?.hostileDefenseBonus ?? 0) +
     (contextual?.nightAmbushTargetWeightMultiplier !== undefined
       ? 1 - contextual.nightAmbushTargetWeightMultiplier
       : 0);

@@ -1,4 +1,5 @@
-import { getItemDefinition } from "~/game/items/item-catalogue";
+import { createInventoryItemPresentation } from "~/game/items/item-presentation";
+
 import type { GameTribute } from "~/game/types/game-state";
 
 interface InventorySummaryProps {
@@ -23,22 +24,87 @@ export function InventorySummary({ tributes }: InventorySummaryProps) {
       ) : (
         <ul className="inventory-summary__tributes">
           {tributesWithItems.map((tribute) => (
-            <li key={tribute.id}>
+            <li className="inventory-summary__owner" key={tribute.id}>
               <strong>{tribute.snapshot.name}</strong>
 
-              <ul>
+              <ul className="inventory-summary__items">
                 {tribute.inventory.map((item) => {
-                  const definition = getItemDefinition(item.definitionId);
+                  const presentation = createInventoryItemPresentation(tribute, item);
 
                   return (
-                    <li key={item.id}>
-                      <span>{definition.label}</span>
+                    <li
+                      className={[
+                        "inventory-item",
 
-                      <span>
-                        {item.usesRemaining === null
-                          ? "Reusable"
-                          : `${item.usesRemaining} ${item.usesRemaining === 1 ? "use" : "uses"}`}
-                      </span>
+                        presentation.usable ? "inventory-item--usable" : "inventory-item--unusable",
+                      ].join(" ")}
+                      key={item.id}
+                    >
+                      <details className="inventory-item__disclosure">
+                        <summary>
+                          <span className="inventory-item__summary-main">
+                            <strong>{presentation.label}</strong>
+
+                            <span
+                              className="inventory-item__usability"
+                              data-usable={presentation.usable}
+                            >
+                              {presentation.usable ? "Usable" : "Unusable"}
+                            </span>
+                          </span>
+
+                          <span className="inventory-item__uses">{presentation.usesLabel}</span>
+                        </summary>
+
+                        <div className="inventory-item__details">
+                          <p className="inventory-item__description">{presentation.description}</p>
+
+                          <dl className="inventory-item__metadata">
+                            <div>
+                              <dt>Requirements</dt>
+
+                              <dd>{presentation.minimumRequirements.join(", ")}</dd>
+                            </div>
+
+                            <div>
+                              <dt>Owner usability</dt>
+
+                              <dd>{presentation.usabilityLabel}</dd>
+                            </div>
+                          </dl>
+
+                          {presentation.unusableReasons.length > 0 ? (
+                            <section
+                              className="inventory-item__warning"
+                              aria-label={`${presentation.label} usability problems`}
+                            >
+                              <strong>Why it is unusable</strong>
+
+                              <ul>
+                                {presentation.unusableReasons.map((reason) => (
+                                  <li key={reason}>{reason}</li>
+                                ))}
+                              </ul>
+                            </section>
+                          ) : null}
+
+                          {presentation.capabilityGroups.length > 0 ? (
+                            <div className="inventory-item__capabilities">
+                              {presentation.capabilityGroups.map((group) => (
+                                <section key={group.label}>
+                                  <strong>{group.label}</strong>
+
+                                  <ul>
+                                    {group.details.map((detail) => (
+                                      <li key={detail}>{detail}</li>
+                                    ))}
+                                  </ul>
+                                </section>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      </details>
                     </li>
                   );
                 })}

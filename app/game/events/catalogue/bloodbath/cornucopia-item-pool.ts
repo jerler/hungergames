@@ -1,5 +1,5 @@
 import { selectRandomItem, selectWeightedItem, type RandomSource } from "~/game/engine/random";
-import { getItemDefinition } from "~/game/items/item-catalogue";
+import { ITEM_CATALOGUE, getItemDefinition } from "~/game/items/item-catalogue";
 
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 
@@ -242,6 +242,12 @@ function validateCornucopiaPackItemPool(pool: readonly CornucopiaPackItemPoolEnt
       throw new Error(`Cornucopia pack item "${entry.itemId}" ` + "must be manufactured.");
     }
 
+    if (definition.offense) {
+      throw new Error(
+        `Cornucopia pack item "${entry.itemId}" ` + "must not define an offense capability.",
+      );
+    }
+
     const weight = CORNUCOPIA_RARITY_WEIGHTS[entry.rarity];
 
     if (!Number.isFinite(weight) || weight <= 0) {
@@ -296,24 +302,135 @@ function validateBrainsOffensePool(itemIds: readonly ItemDefinitionId[]): void {
   }
 }
 
-validateDirectWeaponPool(
-  "Cornucopia edge direct-weapon pool",
-  CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS,
-);
+interface NamedItemPool {
+  label: string;
+  itemIds: readonly ItemDefinitionId[];
+}
 
-validateDirectWeaponPool(
-  "Cornucopia heavy direct-weapon pool",
-  CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS,
-);
+function validateDisjointItemPools(pools: readonly NamedItemPool[]): void {
+  const ownerByItemId = new Map<ItemDefinitionId, string>();
 
-validateDirectWeaponPool(
-  "Cornucopia contested direct-weapon pool",
-  CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS,
-);
+  for (const pool of pools) {
+    for (const itemId of pool.itemIds) {
+      const existingOwner = ownerByItemId.get(itemId);
 
-validateBrainsOffensePool(CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS);
+      if (existingOwner) {
+        throw new Error(
+          `Cornucopia item "${itemId}" appears in ` + `both ${existingOwner} and ${pool.label}.`,
+        );
+      }
 
-validateCornucopiaPackItemPool(CORNUCOPIA_PACK_ITEM_POOL);
+      ownerByItemId.set(itemId, pool.label);
+    }
+  }
+}
+
+function validateContestedWeaponCoverage(): void {
+  const expectedItemIds = new Set<ItemDefinitionId>([
+    ...CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS,
+    ...CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS,
+    "crossbow",
+  ]);
+
+  const actualItemIds = new Set<ItemDefinitionId>(CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS);
+
+  const missingItemIds = [...expectedItemIds].filter((itemId) => !actualItemIds.has(itemId));
+
+  const unexpectedItemIds = [...actualItemIds].filter((itemId) => !expectedItemIds.has(itemId));
+
+  if (missingItemIds.length > 0 || unexpectedItemIds.length > 0) {
+    throw new Error(
+      "Cornucopia contested direct-weapon pool " +
+        "does not match the complete direct-weapon " +
+        "acquisition set. " +
+        `Missing: ${missingItemIds.join(", ") || "none"}. ` +
+        `Unexpected: ${unexpectedItemIds.join(", ") || "none"}.`,
+    );
+  }
+}
+
+function validateManufacturedItemCoverage(): void {
+  const acquiredItemIds = new Set<ItemDefinitionId>([
+    ...CORNUCOPIA_PACK_ITEM_POOL.map((entry) => entry.itemId),
+
+    ...CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS,
+
+    ...CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS,
+
+    ...CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS,
+  ]);
+
+  const manufacturedItemIds = ITEM_CATALOGUE.filter(
+    (definition) => definition.origin === "manufactured",
+  ).map((definition) => definition.id);
+
+  const missingItemIds = manufacturedItemIds.filter((itemId) => !acquiredItemIds.has(itemId));
+
+  if (missingItemIds.length > 0) {
+    throw new Error(
+      "Manufactured items are missing from " +
+        "Cornucopia acquisition pools: " +
+        `${missingItemIds.join(", ")}.`,
+    );
+  }
+
+  const includedNaturalItemIds = ITEM_CATALOGUE.filter(
+    (definition) => definition.origin === "natural-resource",
+  )
+    .map((definition) => definition.id)
+    .filter((itemId) => acquiredItemIds.has(itemId));
+
+  if (includedNaturalItemIds.length > 0) {
+    throw new Error(
+      "Natural resources must not appear in " +
+        "Cornucopia acquisition pools: " +
+        `${includedNaturalItemIds.join(", ")}.`,
+    );
+  }
+}
+
+export function validateCornucopiaItemPools(): void {
+  validateDirectWeaponPool(
+    "Cornucopia edge direct-weapon pool",
+    CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS,
+  );
+
+  validateDirectWeaponPool(
+    "Cornucopia heavy direct-weapon pool",
+    CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS,
+  );
+
+  validateDirectWeaponPool(
+    "Cornucopia contested direct-weapon pool",
+    CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS,
+  );
+
+  validateBrainsOffensePool(CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS);
+
+  validateCornucopiaPackItemPool(CORNUCOPIA_PACK_ITEM_POOL);
+
+  validateDisjointItemPools([
+    {
+      label: "the pack pool",
+      itemIds: CORNUCOPIA_PACK_ITEM_POOL.map((entry) => entry.itemId),
+    },
+    {
+      label: "the edge direct-weapon pool",
+      itemIds: CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS,
+    },
+    {
+      label: "the heavy direct-weapon pool",
+      itemIds: CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS,
+    },
+    {
+      label: "the Brains-offense pool",
+      itemIds: CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS,
+    },
+  ]);
+
+  validateContestedWeaponCoverage();
+  validateManufacturedItemCoverage();
+}
 
 function getEntryWeight(entry: CornucopiaPackItemPoolEntry): number {
   return CORNUCOPIA_RARITY_WEIGHTS[entry.rarity];

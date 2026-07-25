@@ -913,48 +913,99 @@ export function assertGameStateInvariants(state: GameState): void {
    * Confirm that every item currently held by
    * a tribute agrees with the transaction ledger.
    */
+  const currentInventoryByItemId = new Map<
+    string,
+    {
+      ownerId: string;
+      usesRemaining: number | null;
+    }
+  >();
+
   for (const tribute of state.tributes) {
     for (const item of tribute.inventory) {
+      assert(
+        itemUseLedger.has(item.id),
+        `item "${item.id}" is present in inventory without an acquisition transaction.`,
+      );
+
       const originalDefinitionId = itemDefinitionLedger.get(item.id);
 
       assert(
+        originalDefinitionId !== undefined,
+        `item "${item.id}" has no recorded acquisition definition.`,
+      );
+
+      assert(
         originalDefinitionId === item.definitionId,
-        `item "${item.id}" has changed its ` + "definition since acquisition.",
+        `item "${item.id}" has changed its definition since acquisition.`,
       );
 
       const originalProvenance = itemProvenanceLedger.get(item.id);
 
       assert(
         originalProvenance !== undefined,
-        `item "${item.id}" does not have ` + "recorded acquisition provenance.",
+        `item "${item.id}" does not have recorded acquisition provenance.`,
       );
-
-      assert(
-        item.sourceEventId === originalProvenance.sourceEventId,
-        `item "${item.id}" has changed its ` + "source event since acquisition.",
-      );
-
       assert(
         roundsMatch(item.acquiredRound, originalProvenance.acquiredRound),
-        `item "${item.id}" has changed its ` + "acquisition round.",
+        `item "${item.id}" has changed its acquisition round.`,
       );
+
       assert(
         itemUseLedger.has(item.id),
-        `item "${item.id}" is present in inventory ` + "without an acquisition transaction.",
+        `item "${item.id}" is present in inventory without an acquisition transaction.`,
       );
 
       assert(
         itemUseLedger.get(item.id) === item.usesRemaining,
-        `item "${item.id}" does not match ` + "its transaction history.",
+        `item "${item.id}" does not match its transaction history.`,
       );
 
       assert(
         itemOwnerLedger.get(item.id) === tribute.id,
-        `item "${item.id}" is held by ` +
-          `"${tribute.id}" but its transaction ` +
-          "history records another owner.",
+        `item "${item.id}" is held by "${tribute.id}" but its transaction history records another owner.`,
       );
+
+      currentInventoryByItemId.set(item.id, {
+        ownerId: tribute.id,
+        usesRemaining: item.usesRemaining,
+      });
     }
+  }
+
+  /*
+   * Check the ledger in the opposite direction.
+   *
+   * Every reusable or partially consumed item must still
+   * exist in exactly one inventory. Fully consumed items
+   * must no longer be present.
+   */
+  for (const [itemInstanceId, remainingUses] of itemUseLedger) {
+    const currentInventoryEntry = currentInventoryByItemId.get(itemInstanceId);
+
+    if (remainingUses === 0) {
+      assert(
+        currentInventoryEntry === undefined,
+        `fully consumed item "${itemInstanceId}" remains in an inventory.`,
+      );
+
+      continue;
+    }
+
+    assert(
+      currentInventoryEntry !== undefined,
+      `item "${itemInstanceId}" has remaining uses but no current inventory owner.`,
+    );
+
+    assert(
+      currentInventoryEntry.ownerId === itemOwnerLedger.get(itemInstanceId),
+      `item "${itemInstanceId}" disagrees with its current owner ledger.`,
+    );
+
+    assert(
+      currentInventoryEntry.usesRemaining === remainingUses,
+      `item "${itemInstanceId}" disagrees with its remaining-use ledger.`,
+    );
   }
 
   assert(
@@ -1043,7 +1094,16 @@ export function assertGameStateInvariants(state: GameState): void {
 
   const eliminationChanges = state.eventHistory.flatMap((event) =>
     event.changes
-      .filter((change) => change.type === "eliminate-tribute")
+      .filter(
+        (
+          change,
+        ): change is Extract<
+          ResolvedEvent["changes"][number],
+          {
+            type: "eliminate-tribute";
+          }
+        > => change.type === "eliminate-tribute",
+      )
       .map((change) => ({
         event,
         change,
@@ -1055,14 +1115,57 @@ export function assertGameStateInvariants(state: GameState): void {
     "Eliminated tribute IDs",
   );
 
+  const eliminationByTributeId = new Map(
+    eliminationChanges.map((elimination) => [elimination.change.tributeId, elimination]),
+  );
+
   for (const tribute of state.tributes) {
+    const elimination = eliminationByTributeId.get(tribute.id);
+
     if (!tribute.death) {
+      assert(
+        elimination === undefined,
+        `living tribute "${tribute.id}" has an elimination change.`,
+      );
+
       continue;
     }
 
+    assert(elimination !== undefined, `dead tribute "${tribute.id}" has no elimination change.`);
+
+    const { event, change } = elimination;
+
     assert(
-      historyEventIds.has(tribute.death.resolvedEventId),
-      `death for tribute "${tribute.id}" references an unknown event.`,
+      tribute.death.resolvedEventId === event.id,
+      `death for tribute "${tribute.id}" references the wrong event.`,
+    );
+
+    assert(
+      roundsMatch(tribute.death.round, event.round),
+      `death for tribute "${tribute.id}" records the wrong round.`,
+    );
+
+    assert(
+      tribute.death.causeId === change.causeId,
+      `death for tribute "${tribute.id}" has a cause ID that disagrees with its elimination change.`,
+    );
+
+    assert(
+      tribute.death.causeLabel === change.causeLabel,
+      `death for tribute "${tribute.id}" has a cause label that disagrees with its elimination change.`,
+    );
+
+    assert(
+      tribute.death.summary === change.summary,
+      `death for tribute "${tribute.id}" has a summary that disagrees with its elimination change.`,
+    );
+
+    assert(
+      tribute.death.killerTributeIds.length === change.killerTributeIds.length &&
+        tribute.death.killerTributeIds.every(
+          (killerTributeId, index) => killerTributeId === change.killerTributeIds[index],
+        ),
+      `death for tribute "${tribute.id}" has killer attribution that disagrees with its elimination change.`,
     );
   }
 
@@ -1170,7 +1273,9 @@ export function assertGameStateInvariants(state: GameState): void {
 }
 
 export function assertGameStateInvariantsInDevelopment(state: GameState): void {
-  if (import.meta.env.DEV) {
+  const isViteDevelopment = typeof import.meta.env !== "undefined" && import.meta.env.DEV;
+
+  if (isViteDevelopment) {
     assertGameStateInvariants(state);
   }
 }

@@ -1,6 +1,10 @@
 import { formatRoundLabel } from "~/game/engine/rounds";
-import { getItemDefinition } from "~/game/items/item-catalogue";
-import { getStatusDefinition } from "~/game/statuses/status-catalogue";
+
+import {
+  createPreparationFeedPresentation,
+  type PreparationEventPresentation,
+} from "~/game/survival/preparation-presentation";
+
 import type { GameTribute, ResolvedEvent, RoundReference } from "~/game/types/game-state";
 
 interface RoundEventFeedProps {
@@ -10,88 +14,42 @@ interface RoundEventFeedProps {
   tributes: readonly GameTribute[];
 }
 
-function getTributeName(tributes: readonly GameTribute[], tributeId: string): string {
-  return tributes.find((tribute) => tribute.id === tributeId)?.snapshot.name ?? tributeId;
-}
-
-function formatNeed(need: "food" | "water"): string {
-  return need === "water" ? "Hydration" : "Food";
-}
-
-function formatRestQuality(quality: "comfortable" | "sheltered" | "unsheltered"): string {
-  return quality.charAt(0).toUpperCase() + quality.slice(1);
-}
-
-function getRemainingUsesLabel(usesRemaining: number | null | undefined): string | null {
-  if (usesRemaining === undefined) {
-    return null;
-  }
-
-  if (usesRemaining === null) {
-    return "Reusable";
-  }
-
-  return `${usesRemaining} ` + `${usesRemaining === 1 ? "use" : "uses"} remaining`;
-}
-
 interface PreparationEventCardProps {
-  event: ResolvedEvent;
-  tributes: readonly GameTribute[];
+  event: PreparationEventPresentation;
 }
 
-function PreparationEventCard({ event, tributes }: PreparationEventCardProps) {
-  const details = event.preparation;
-
-  if (!details) {
-    return (
-      <li className="preparation-card" data-event-kind={event.kind}>
-        <p>{event.text}</p>
-      </li>
-    );
-  }
-
-  const actingName = getTributeName(tributes, details.actingTributeId);
-
-  const itemLabel = details.itemDefinitionId
-    ? getItemDefinition(details.itemDefinitionId).label
-    : null;
-
-  const ownerName = details.itemOwnerTributeId
-    ? getTributeName(tributes, details.itemOwnerTributeId)
-    : null;
-
-  const isBorrowed =
-    details.itemOwnerTributeId !== undefined &&
-    details.itemOwnerTributeId !== details.actingTributeId;
-
-  const remainingUsesLabel = getRemainingUsesLabel(details.usesRemainingAfter);
-
-  const affectedStatusLabels =
-    details.affectedStatusIds?.map((statusId) => getStatusDefinition(statusId).label) ?? [];
-
+function PreparationEventCard({ event }: PreparationEventCardProps) {
   return (
-    <li className="preparation-card" data-event-kind={event.kind}>
+    <li className="preparation-card" data-impact-tone={event.impactTone}>
       <div className="preparation-card__body">
-        <strong>{actingName}</strong>
+        <strong>{event.actingTributeName}</strong>
 
         <p>{event.text}</p>
       </div>
 
-      <ul className="preparation-card__details" aria-label={`${actingName} preparation details`}>
-        {itemLabel ? <li>Item: {itemLabel}</li> : null}
+      {event.itemLabel || event.borrowedFromLabel || event.remainingUsesLabel ? (
+        <ul
+          className="preparation-card__details"
+          aria-label={`${event.actingTributeName} preparation items`}
+        >
+          {event.itemLabel ? <li>Item: {event.itemLabel}</li> : null}
 
-        {isBorrowed && ownerName ? <li>Borrowed from: {ownerName}</li> : null}
+          {event.borrowedFromLabel ? <li>Borrowed from: {event.borrowedFromLabel}</li> : null}
 
-        {remainingUsesLabel ? <li>{remainingUsesLabel}</li> : null}
+          {event.remainingUsesLabel ? <li>{event.remainingUsesLabel}</li> : null}
+        </ul>
+      ) : null}
 
-        {details.affectedNeed ? <li>Need: {formatNeed(details.affectedNeed)}</li> : null}
-
-        {affectedStatusLabels.length > 0 ? (
-          <li>Statuses: {affectedStatusLabels.join(", ")}</li>
-        ) : null}
-
-        {details.restQuality ? <li>Rest: {formatRestQuality(details.restQuality)}</li> : null}
-      </ul>
+      {event.impactDetails.length > 0 ? (
+        <ul
+          className="preparation-card__impact"
+          aria-label={`${event.actingTributeName} preparation impact`}
+        >
+          {event.impactDetails.map((detail) => (
+            <li key={detail}>{detail}</li>
+          ))}
+        </ul>
+      ) : null}
     </li>
   );
 }
@@ -134,6 +92,8 @@ export function RoundEventFeed({
 }: RoundEventFeedProps) {
   const preparationEvents = events.filter((event) => event.kind === "preparation");
 
+  const preparationGroups = createPreparationFeedPresentation(preparationEvents, tributes);
+
   const arenaEvents = events.filter((event) => event.kind !== "preparation");
 
   const revealedPrimaryEventCount = arenaEvents.filter((event) => event.kind === "primary").length;
@@ -152,7 +112,7 @@ export function RoundEventFeed({
         </p>
       </header>
 
-      {preparationEvents.length > 0 ? (
+      {preparationGroups.length > 0 ? (
         <section className="preparation-feed" aria-labelledby="preparation-feed-title">
           <header className="preparation-feed__header">
             <p className="eyebrow">Before the round</p>
@@ -160,11 +120,32 @@ export function RoundEventFeed({
             <h3 id="preparation-feed-title">Before the round</h3>
           </header>
 
-          <ol className="preparation-feed__list">
-            {preparationEvents.map((event) => (
-              <PreparationEventCard event={event} tributes={tributes} key={event.id} />
-            ))}
-          </ol>
+          <div className="preparation-feed__groups">
+            {preparationGroups.map((group) => {
+              const titleId = `preparation-group-${group.id}-title`;
+
+              return (
+                <section
+                  className="preparation-group"
+                  data-preparation-group={group.id}
+                  aria-labelledby={titleId}
+                  key={group.id}
+                >
+                  <header className="preparation-group__header">
+                    <h4 id={titleId}>{group.label}</h4>
+
+                    <p>{group.description}</p>
+                  </header>
+
+                  <ol className="preparation-group__list">
+                    {group.events.map((event) => (
+                      <PreparationEventCard event={event} key={event.id} />
+                    ))}
+                  </ol>
+                </section>
+              );
+            })}
+          </div>
         </section>
       ) : null}
 

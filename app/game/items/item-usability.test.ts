@@ -9,10 +9,15 @@ import {
   findAccessibleInventoryItem,
   findUsableInventoryItem,
 } from "~/game/items/inventory-engine";
-import { getItemUsability, isItemUsableBy } from "~/game/items/item-usability";
 import { createTruceInstance } from "~/game/truces/truce-engine";
 import type { GameState, GameTribute } from "~/game/types/game-state";
 import { getStrongestUsableDirectWeaponBonus } from "~/game/engine/stat-formulas";
+import {
+  getItemDefinitionUsability,
+  getItemUsability,
+  isItemDefinitionUsableBy,
+  isItemUsableBy,
+} from "~/game/items/item-usability";
 
 const ROUND = {
   day: 2,
@@ -246,5 +251,96 @@ describe("item usability", () => {
     expect(selection?.owner.id).toBe(owner.id);
 
     expect(selection?.item.id).toBe(owner.inventory[0]?.id);
+  });
+
+  it("evaluates definition-level Brawn requirements", () => {
+    const tribute = createAuthoringTestTribute({
+      name: "Almost Strong Enough",
+
+      stats: {
+        brains: 3,
+        brawn: 4,
+        luck: 3,
+      },
+    });
+
+    expect(getItemDefinitionUsability(tribute, "warhammer")).toEqual({
+      usable: false,
+
+      reasons: ["Requires Brawn 5; Almost Strong Enough has 4."],
+    });
+
+    expect(isItemDefinitionUsableBy(tribute, "warhammer")).toBe(false);
+  });
+
+  it("evaluates definition-level Brains requirements", () => {
+    const tribute = createAuthoringTestTribute({
+      name: "Careless Tribute",
+
+      stats: {
+        brains: 3,
+        brawn: 3,
+        luck: 3,
+      },
+    });
+
+    expect(getItemDefinitionUsability(tribute, "poison-vial")).toEqual({
+      usable: false,
+
+      reasons: ["Requires Brains 4; Careless Tribute has 3."],
+    });
+  });
+
+  it("allows a tribute meeting definition requirements", () => {
+    const tribute = createAuthoringTestTribute({
+      stats: {
+        brains: 5,
+        brawn: 5,
+        luck: 5,
+      },
+    });
+
+    expect(getItemDefinitionUsability(tribute, "warhammer")).toEqual({
+      usable: true,
+      reasons: [],
+    });
+  });
+
+  it("allows a tribute meeting definition requirements", () => {
+    const tribute = createAuthoringTestTribute({
+      stats: {
+        brains: 5,
+        brawn: 5,
+        luck: 5,
+      },
+    });
+
+    expect(getItemDefinitionUsability(tribute, "warhammer")).toEqual({
+      usable: true,
+      reasons: [],
+    });
+  });
+
+  it("uses the same requirement messages for definitions and instances", () => {
+    const tribute = createAuthoringTestTribute({
+      name: "Weak Tribute",
+
+      stats: {
+        brains: 3,
+        brawn: 1,
+        luck: 3,
+      },
+    });
+
+    const spear = createInventoryItemInstance(
+      "message-consistency-test",
+      tribute.id,
+      "spear",
+      ROUND,
+    );
+
+    expect(getItemDefinitionUsability(tribute, "spear").reasons).toEqual(
+      getItemUsability(tribute, spear).reasons,
+    );
   });
 });

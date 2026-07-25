@@ -23,6 +23,7 @@ import type {
   InventoryTransaction,
   ResolvedEvent,
 } from "~/game/types/game-state";
+import { isItemUsableBy } from "~/game/items/item-usability";
 
 import { getTheftDifficulty, STEAL_FROM_STRONGER_TRIBUTE_EVENT } from "./theft-events";
 
@@ -72,6 +73,7 @@ function createTestGame(seed = "theft-selection"): GameState {
 
 interface TheftFixtureOptions {
   thiefStats?: TributeStats;
+
   targetStats?: TributeStats;
 
   thiefItemDefinitionIds?: readonly ItemDefinitionId[];
@@ -80,6 +82,24 @@ interface TheftFixtureOptions {
 
   targetItemUsesRemaining?: readonly (number | null)[];
 
+  /**
+   * Places every item listed in
+   * thiefItemDefinitionIds in the partner's
+   * inventory instead of the thief's.
+   *
+   * The fixture also creates an active truce
+   * between the thief and the partner.
+   */
+  putThiefItemsOnPartner?: boolean;
+
+  /**
+   * Places every item listed in
+   * targetItemDefinitionIds in the partner's
+   * inventory instead of the target's.
+   *
+   * The fixture also creates an active truce
+   * between the target and the partner.
+   */
   putTargetItemsOnPartner?: boolean;
 
   thiefAndTargetShareTruce?: boolean;
@@ -141,6 +161,8 @@ function createTheftFixture({
 
   targetItemUsesRemaining = [],
 
+  putThiefItemsOnPartner = false,
+
   putTargetItemsOnPartner = false,
 
   thiefAndTargetShareTruce = false,
@@ -149,13 +171,41 @@ function createTheftFixture({
 
   const [originalThief, originalTarget, originalPartner] = originalState.tributes;
 
-  const itemOwner = putTargetItemsOnPartner ? originalPartner : originalTarget;
+  /*
+   * The test fixture uses one partner tribute.
+   * That partner cannot simultaneously belong
+   * to multiple active truces.
+   */
+  const requestedTruceCount = [
+    putThiefItemsOnPartner,
+    putTargetItemsOnPartner,
+    thiefAndTargetShareTruce,
+  ].filter(Boolean).length;
+
+  if (requestedTruceCount > 1) {
+    throw new Error("The theft fixture supports only one active truce relationship at a time.");
+  }
+
+  /*
+   * These variables determine who physically
+   * owns each group of test items.
+   *
+   * The returned thiefItems and targetItems
+   * arrays still identify the logical groups,
+   * regardless of their physical owner.
+   */
+  const thiefItemOwner = putThiefItemsOnPartner ? originalPartner : originalThief;
+
+  const targetItemOwner = putTargetItemsOnPartner ? originalPartner : originalTarget;
 
   const thiefItems = thiefItemDefinitionIds.map((definitionId, index) =>
     createInventoryItemInstance(
       `thief-item-${index}`,
-      originalThief.id,
+
+      thiefItemOwner.id,
+
       definitionId,
+
       ITEM_ACQUISITION_ROUND,
     ),
   );
@@ -163,8 +213,11 @@ function createTheftFixture({
   const targetItems = targetItemDefinitionIds.map((definitionId, index) => {
     const createdItem = createInventoryItemInstance(
       `theft-item-${index}`,
-      itemOwner.id,
+
+      targetItemOwner.id,
+
       definitionId,
+
       ITEM_ACQUISITION_ROUND,
     );
 
@@ -174,6 +227,7 @@ function createTheftFixture({
       ? createdItem
       : {
           ...createdItem,
+
           usesRemaining,
         };
   });
@@ -191,7 +245,13 @@ function createTheftFixture({
       },
     },
 
-    inventory: thiefItems,
+    /*
+     * When the partner owns the thief's test
+     * items, the thief's personal inventory
+     * must remain empty.
+     */
+    inventory: putThiefItemsOnPartner ? [] : thiefItems,
+
     statuses: [],
   };
 
@@ -208,6 +268,12 @@ function createTheftFixture({
       },
     },
 
+    /*
+     * Theft may select only target-owned items.
+     * Existing tests use this option to prove
+     * that a truce partner's inventory does not
+     * count as the target's personal inventory.
+     */
     inventory: putTargetItemsOnPartner ? [] : targetItems,
 
     statuses: [],
@@ -218,16 +284,55 @@ function createTheftFixture({
 
     snapshot: {
       ...originalPartner.snapshot,
+
       name: "Partner",
     },
 
-    inventory: putTargetItemsOnPartner ? targetItems : [],
+    /*
+     * The partner can hold either:
+     *
+     * - the thief's optional slingshot, or
+     * - the target's test items.
+     *
+     * The guard near the top prevents both
+     * arrangements from being requested at
+     * the same time.
+     */
+    inventory: [
+      ...(putThiefItemsOnPartner ? thiefItems : []),
+
+      ...(putTargetItemsOnPartner ? targetItems : []),
+    ],
 
     statuses: [],
   };
 
   const truces = [];
 
+  /*
+   * This relationship allows the thief to
+   * access a partner-owned slingshot through
+   * optionalItemAccess: "accessible".
+   */
+  if (putThiefItemsOnPartner) {
+    truces.push(
+      createTruceInstance(
+        "thief-partner-truce",
+
+        [thief.id, partner.id],
+
+        TEST_ROUND,
+
+        TRUCE_EXPIRY_ROUND,
+      ),
+    );
+  }
+
+  /*
+   * This is the older fixture mode used to
+   * prove that target-owned theft requirements
+   * do not accept a partner-owned item.
+   */
   if (putTargetItemsOnPartner) {
     truces.push(
       createTruceInstance(
@@ -236,6 +341,7 @@ function createTheftFixture({
         [target.id, partner.id],
 
         TEST_ROUND,
+
         TRUCE_EXPIRY_ROUND,
       ),
     );
@@ -249,6 +355,7 @@ function createTheftFixture({
         [thief.id, target.id],
 
         TEST_ROUND,
+
         TRUCE_EXPIRY_ROUND,
       ),
     );
@@ -256,7 +363,9 @@ function createTheftFixture({
 
   const replacements = new Map([
     [thief.id, thief],
+
     [target.id, target],
+
     [partner.id, partner],
   ]);
 
@@ -268,17 +377,24 @@ function createTheftFixture({
     truces,
 
     itemTransactions: [
-      ...thiefItems.map((item) => createRecordedAcquisition(thief.id, item)),
+      /*
+       * Record the real physical owner rather
+       * than assuming that the thief personally
+       * owns every thiefItems entry.
+       */
+      ...thiefItems.map((item) => createRecordedAcquisition(thiefItemOwner.id, item)),
 
-      ...targetItems.map((item) => createRecordedAcquisition(itemOwner.id, item)),
+      ...targetItems.map((item) => createRecordedAcquisition(targetItemOwner.id, item)),
     ],
   };
 
   return {
     state,
+
     thief,
     target,
     partner,
+
     targetItems,
     thiefItems,
   };
@@ -702,6 +818,267 @@ describe("theft participant selection", () => {
 
     expect(selection?.itemsByRole.target[0]?.item.id).toBe(fixture.targetItems[0].id);
   });
+  it("selects and reserves a thief-owned slingshot", () => {
+    const fixture = createTheftFixture({
+      thiefItemDefinitionIds: ["slingshot"],
+
+      targetItemDefinitionIds: ["blanket"],
+    });
+
+    const slingshot = fixture.thiefItems[0];
+
+    const selection = selectTheftParticipants(fixture);
+
+    expect(selection).not.toBeNull();
+
+    expect(selection?.itemsByRole.thief).toHaveLength(1);
+
+    expect(selection?.itemsByRole.thief[0]).toMatchObject({
+      userTributeId: fixture.thief.id,
+
+      owner: {
+        id: fixture.thief.id,
+      },
+
+      item: {
+        id: slingshot.id,
+
+        definitionId: "slingshot",
+      },
+    });
+
+    expect(selection?.selectedItemInstanceIds).toContain(slingshot.id);
+  });
+
+  it("builds a partner-owned slingshot fixture", () => {
+    const fixture = createTheftFixture({
+      thiefItemDefinitionIds: ["slingshot"],
+
+      putThiefItemsOnPartner: true,
+
+      targetItemDefinitionIds: ["blanket"],
+    });
+
+    const slingshot = fixture.thiefItems[0];
+
+    expect(fixture.thief.inventory).toEqual([]);
+
+    expect(fixture.partner.inventory).toEqual([slingshot]);
+
+    expect(fixture.target.inventory).toEqual(fixture.targetItems);
+
+    expect(fixture.state.truces).toHaveLength(1);
+
+    expect(fixture.state.truces[0].tributeIds).toEqual([fixture.thief.id, fixture.partner.id]);
+  });
+
+  it("allows the thief to borrow a slingshot from an active truce partner", () => {
+    const fixture = createTheftFixture({
+      thiefItemDefinitionIds: ["slingshot"],
+
+      putThiefItemsOnPartner: true,
+
+      targetItemDefinitionIds: ["blanket"],
+    });
+
+    const slingshot = fixture.thiefItems[0];
+
+    expect(fixture.thief.inventory).toEqual([]);
+
+    expect(fixture.partner.inventory).toContainEqual(slingshot);
+
+    const selection = selectTheftParticipants(fixture);
+
+    expect(selection).not.toBeNull();
+
+    expect(selection?.itemsByRole.thief[0]).toMatchObject({
+      /*
+       * The thief is using the item...
+       */
+      userTributeId: fixture.thief.id,
+
+      /*
+       * ...but the partner physically owns it.
+       */
+      owner: {
+        id: fixture.partner.id,
+      },
+
+      item: {
+        id: slingshot.id,
+
+        definitionId: "slingshot",
+      },
+    });
+
+    expect(selection?.selectedItemInstanceIds).toContain(slingshot.id);
+  });
+
+  it("does not select a slingshot already reserved by another event", () => {
+    const fixture = createTheftFixture({
+      thiefItemDefinitionIds: ["slingshot"],
+
+      targetItemDefinitionIds: ["blanket"],
+    });
+
+    const slingshot = fixture.thiefItems[0];
+
+    const firstSelection = selectTheftParticipants(fixture);
+
+    expect(firstSelection?.selectedItemInstanceIds).toContain(slingshot.id);
+
+    const secondSelection = selectTheftParticipants(
+      fixture,
+
+      new Set<string>(),
+
+      new Set<string>([slingshot.id]),
+    );
+
+    /*
+     * The event remains valid because the
+     * slingshot is optional.
+     */
+    expect(secondSelection).not.toBeNull();
+
+    expect(secondSelection?.itemsByRole.thief).toEqual([]);
+
+    expect(secondSelection?.selectedItemInstanceIds).not.toContain(slingshot.id);
+
+    /*
+     * The target's required stolen item should
+     * still be selected and reserved.
+     */
+    expect(secondSelection?.itemsByRole.target).toHaveLength(1);
+  });
+
+  it("does not select a target whose only item is unusable by the thief", () => {
+    const fixture = createTheftFixture({
+      thiefStats: {
+        brains: 3,
+        brawn: 4,
+        luck: 3,
+      },
+
+      targetStats: {
+        brains: 5,
+        brawn: 5,
+        luck: 5,
+      },
+
+      targetItemDefinitionIds: ["warhammer"],
+    });
+
+    expect(selectTheftParticipants(fixture)).toBeNull();
+  });
+
+  it("selects only items usable by the thief from mixed target inventory", () => {
+    const fixture = createTheftFixture({
+      thiefStats: {
+        brains: 3,
+        brawn: 4,
+        luck: 3,
+      },
+
+      targetStats: {
+        brains: 5,
+        brawn: 5,
+        luck: 5,
+      },
+
+      targetItemDefinitionIds: ["warhammer", "blanket"],
+    });
+
+    const selection = selectTheftParticipants(fixture);
+
+    expect(selection?.itemsByRole.target[0].item.definitionId).toBe("blanket");
+  });
+
+  it("does not transfer a thief-unusable exceptional item", () => {
+    const fixture = createResolutionFixture({
+      /*
+       * Brawn 4 allows the thief to use the
+       * blanket and map but not the Brawn-5
+       * warhammer.
+       */
+      thiefStats: {
+        brains: 3,
+        brawn: 4,
+        luck: 3,
+      },
+
+      /*
+       * The target must remain meaningfully
+       * stronger or the theft event is not
+       * eligible.
+       */
+      targetStats: {
+        brains: 5,
+        brawn: 5,
+        luck: 5,
+      },
+
+      /*
+       * The first item becomes the primary
+       * selected item.
+       *
+       * On exceptional success, the resolver
+       * must skip the unusable warhammer and
+       * choose the usable map.
+       */
+      targetItemDefinitionIds: ["blanket", "warhammer", "map"],
+    });
+
+    const [primaryItem, unusableAdditionalItem, usableAdditionalItem] = fixture.targetItems;
+
+    const resolution = resolveTheft(
+      fixture,
+
+      /*
+       * 0.99 selects exceptional success.
+       * The second value selects from the
+       * remaining usable candidates.
+       */
+      [0.99, 0],
+    );
+
+    const transfers = getTransferChanges(resolution.changes);
+
+    expect(transfers).toHaveLength(2);
+
+    expect(transfers.map((change) => change.itemInstanceId)).toEqual([
+      primaryItem.id,
+      usableAdditionalItem.id,
+    ]);
+
+    expect(transfers.some((change) => change.itemInstanceId === unusableAdditionalItem.id)).toBe(
+      false,
+    );
+
+    const nextState = applyTheftResolution(fixture, resolution);
+
+    const nextThief = requireTribute(nextState, fixture.thief.id);
+
+    const nextTarget = requireTribute(nextState, fixture.target.id);
+
+    expect(nextThief.inventory.find((item) => item.id === primaryItem.id)).toEqual(primaryItem);
+
+    expect(nextThief.inventory.find((item) => item.id === usableAdditionalItem.id)).toEqual(
+      usableAdditionalItem,
+    );
+
+    /*
+     * The warhammer remains with the target
+     * because the thief cannot use it.
+     */
+    expect(nextTarget.inventory.find((item) => item.id === unusableAdditionalItem.id)).toEqual(
+      unusableAdditionalItem,
+    );
+
+    expect(nextThief.inventory.some((item) => item.id === unusableAdditionalItem.id)).toBe(false);
+
+    expect(() => assertGameStateInvariants(nextState)).not.toThrow();
+  });
 });
 
 describe("theft resolution", () => {
@@ -845,6 +1222,232 @@ describe("theft resolution", () => {
     );
 
     expect(() => assertGameStateInvariants(nextState)).not.toThrow();
+  });
+
+  it("allows death loot to give the killer an unusable item", () => {
+    const fixture = createResolutionFixture({
+      /*
+       * The thief may own an unusable item.
+       * Ownership does not imply usability.
+       */
+      thiefStats: {
+        brains: 1,
+        brawn: 1,
+        luck: 1,
+      },
+
+      /*
+       * The target remains much stronger than
+       * the thief but is still one Brawn point
+       * short of using the warhammer.
+       */
+      targetStats: {
+        brains: 5,
+        brawn: 4,
+        luck: 5,
+      },
+
+      thiefItemDefinitionIds: ["warhammer"],
+
+      /*
+       * The attempted theft item must remain
+       * usable by the thief so participant
+       * selection can succeed.
+       */
+      targetItemDefinitionIds: ["blanket"],
+    });
+
+    const warhammer = fixture.thiefItems[0];
+
+    expect(warhammer).toBeDefined();
+
+    /*
+     * The future recipient cannot use the item
+     * even before the transfer occurs.
+     */
+    expect(isItemUsableBy(fixture.target, warhammer)).toBe(false);
+
+    /*
+     * Zero deterministically selects critical
+     * failure, causing the target to kill the
+     * thief and receive the thief's inventory.
+     */
+    const resolution = resolveTheft(fixture, [0]);
+
+    const deathLootTransfer = getTransferChanges(resolution.changes).find(
+      (change) => change.reason === "death-loot" && change.itemInstanceId === warhammer.id,
+    );
+
+    expect(deathLootTransfer).toEqual({
+      type: "transfer-item",
+
+      itemInstanceId: warhammer.id,
+
+      fromTributeId: fixture.thief.id,
+
+      toTributeId: fixture.target.id,
+
+      reason: "death-loot",
+    });
+
+    const nextState = applyTheftResolution(fixture, resolution);
+
+    const nextThief = requireTribute(nextState, fixture.thief.id);
+
+    const nextTarget = requireTribute(nextState, fixture.target.id);
+
+    expect(nextThief.isAlive).toBe(false);
+
+    const inheritedWarhammer = nextTarget.inventory.find((item) => item.id === warhammer.id);
+
+    expect(inheritedWarhammer).toEqual(warhammer);
+
+    if (!inheritedWarhammer) {
+      throw new Error("Expected the target to inherit the warhammer.");
+    }
+
+    /*
+     * The exact physical item was transferred,
+     * but the new owner still cannot use it.
+     */
+    expect(isItemUsableBy(nextTarget, inheritedWarhammer)).toBe(false);
+
+    expect(getItemTransferTransactions(nextState, warhammer.id)).toEqual([
+      expect.objectContaining({
+        type: "transferred",
+
+        fromTributeId: fixture.thief.id,
+
+        toTributeId: fixture.target.id,
+
+        itemInstanceId: warhammer.id,
+
+        definitionId: "warhammer",
+
+        sourceId: "death-loot",
+      }),
+    ]);
+
+    /*
+     * This is the central regression check:
+     * unusable ownership remains valid state.
+     */
+    expect(() => assertGameStateInvariants(nextState)).not.toThrow();
+  });
+
+  it("reduces theft difficulty by one when a slingshot is selected", () => {
+    const fixtureWithoutSlingshot = createResolutionFixture({
+      thiefItemDefinitionIds: [],
+
+      targetItemDefinitionIds: ["blanket"],
+    });
+
+    const fixtureWithSlingshot = createResolutionFixture({
+      thiefItemDefinitionIds: ["slingshot"],
+
+      targetItemDefinitionIds: ["blanket"],
+    });
+
+    const resolutionWithoutSlingshot = resolveTheft(fixtureWithoutSlingshot, [0.4]);
+
+    const resolutionWithSlingshot = resolveTheft(fixtureWithSlingshot, [0.4]);
+
+    /*
+     * The ordinary attempt fails.
+     */
+    expect(getTransferChanges(resolutionWithoutSlingshot.changes)).toEqual([]);
+
+    expect(
+      resolutionWithoutSlingshot.changes.some(
+        (change) => change.type === "apply-status" && change.status.definitionId === "hunted",
+      ),
+    ).toBe(true);
+
+    /*
+     * The exact same roll succeeds after the
+     * slingshot reduces difficulty by one.
+     */
+    expect(getTransferChanges(resolutionWithSlingshot.changes)).toHaveLength(1);
+
+    expect(resolutionWithSlingshot.changes.some((change) => change.type === "apply-status")).toBe(
+      false,
+    );
+  });
+
+  it("does not consume or transfer the slingshot during theft", () => {
+    const fixture = createResolutionFixture({
+      thiefItemDefinitionIds: ["slingshot"],
+
+      targetItemDefinitionIds: ["blanket"],
+    });
+
+    const originalSlingshot = fixture.thiefItems[0];
+
+    const resolution = resolveTheft(fixture, [0.4]);
+
+    const nextState = applyTheftResolution(fixture, resolution);
+
+    const nextThief = requireTribute(nextState, fixture.thief.id);
+
+    const retainedSlingshot = nextThief.inventory.find((item) => item.id === originalSlingshot.id);
+
+    /*
+     * The same physical item remains in the
+     * thief's inventory.
+     */
+    expect(retainedSlingshot).toEqual(originalSlingshot);
+
+    expect(retainedSlingshot?.usesRemaining).toBe(originalSlingshot.usesRemaining);
+
+    /*
+     * Only the target's stolen item should have
+     * produced a transfer transaction.
+     */
+    expect(getItemTransferTransactions(nextState, originalSlingshot.id)).toEqual([]);
+
+    expect(() => assertGameStateInvariants(nextState)).not.toThrow();
+  });
+
+  it("uses ordinary theft text when no slingshot is selected", () => {
+    const fixture = createResolutionFixture({
+      thiefItemDefinitionIds: [],
+
+      targetItemDefinitionIds: ["blanket"],
+    });
+
+    /*
+     * This remains a failure both with and
+     * without the one-point reduction, making
+     * it suitable for comparing text branches.
+     */
+    const resolution = resolveTheft(fixture, [0.2]);
+
+    expect(getTransferChanges(resolution.changes)).toEqual([]);
+
+    expect(resolution.text).toContain("catches Thief trying to steal");
+
+    expect(resolution.text).not.toMatch(/fires a stone|slingshot/i);
+  });
+
+  it("uses slingshot-specific text when the selected slingshot assists a failed theft", () => {
+    const fixture = createResolutionFixture({
+      thiefItemDefinitionIds: ["slingshot"],
+
+      targetItemDefinitionIds: ["blanket"],
+    });
+
+    /*
+     * At 0.2 the reduced-difficulty attempt
+     * still lands in failure, allowing us to
+     * test the slingshot failure wording.
+     */
+    const resolution = resolveTheft(fixture, [0.2]);
+
+    expect(getTransferChanges(resolution.changes)).toEqual([]);
+
+    expect(resolution.text).toMatch(/fires a stone into the trees/i);
+
+    expect(resolution.text).toContain("but the distraction ends before");
   });
 
   it("preserves both inventories and applies hunted on failure", () => {

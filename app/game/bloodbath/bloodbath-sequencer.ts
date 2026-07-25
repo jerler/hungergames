@@ -125,73 +125,130 @@ function resolveBloodbathEvent({
   };
 }
 
+interface BloodbathAcquisitionSelection {
+  definition: EventDefinition;
+
+  participantsByRole: ParticipantsByRole;
+}
+
 interface CornucopiaSequenceResult {
   events: ResolvedEvent[];
   nextEventIndex: number;
   plannedEliminationCount: number;
 }
 
-function selectBloodbathAcquisitionParticipants(
+function selectBloodbathAcquisitionEvent(
   state: GameState,
   round: RoundReference,
   remainingTributes: GameTribute[],
-  definition: EventDefinition,
   random: RandomSource,
-): ParticipantsByRole {
-  const selection = selectEventParticipants(
-    definition,
-
-    {
-      state,
-      round,
-
-      /*
-       * Restrict selection to tributes who,
-
-    {
-      state,
-      round,
-
-      /*
-       * Restrict selection to tributes who have not already
-       * received a Bloodbath event.
-       */
-      livingTributes: remainingTributes,
-    },
-
-    random,
+): BloodbathAcquisitionSelection {
+  const context: EventSelectionContext = {
+    state,
+    round,
 
     /*
-     * Every tribute in remainingTributes is available.
+     * Only tributes who have not already
+     * received a Bloodbath event may be
+     * selected.
      */
-    new Set<string>(),
+    livingTributes: remainingTributes,
+  };
+
+  /*
+   * Event-level eligibility is checked first.
+   *
+   * Participant-role eligibility is checked
+   * below by selectEventParticipants.
+   */
+  let candidateDefinitions = CORNUCOPIA_ACQUISITION_EVENTS.filter((definition) =>
+    isEventDefinitionEligible(definition, context),
   );
 
-  if (!selection) {
-    throw new Error(
-      `Bloodbath acquisition event "${definition.id}" ` +
-        "could not select an eligible participant.",
+  while (candidateDefinitions.length > 0) {
+    const definition = selectWeightedItem(
+      candidateDefinitions,
+
+      (candidate) => getEventDefinitionWeight(candidate, context),
+
+      random,
     );
-  }
 
-  const selectedTributeId = selection.participantTributeIds[0];
+    const selection = selectEventParticipants(
+      definition,
+      context,
+      random,
 
-  if (!selectedTributeId) {
-    throw new Error(`Bloodbath acquisition event "${definition.id}" ` + "selected no participant.");
-  }
-
-  const selectedIndex = remainingTributes.findIndex((tribute) => tribute.id === selectedTributeId);
-
-  if (selectedIndex < 0) {
-    throw new Error(
-      `Bloodbath acquisition event "${definition.id}" ` +
-        `selected unavailable tribute "${selectedTributeId}".`,
+      /*
+       * Every tribute in remainingTributes
+       * is currently available.
+       */
+      new Set<string>(),
     );
+
+    if (!selection) {
+      /*
+       * This definition is globally eligible
+       * but none of the remaining tributes can
+       * satisfy its role requirements.
+       *
+       * Remove it and try another acquisition
+       * definition rather than aborting the
+       * complete Bloodbath.
+       */
+      candidateDefinitions = candidateDefinitions.filter(
+        (candidate) => candidate.id !== definition.id,
+      );
+
+      continue;
+    }
+
+    if (selection.participantTributeIds.length !== 1) {
+      throw new Error(
+        `Bloodbath acquisition event ` +
+          `"${definition.id}" selected ` +
+          `${selection.participantTributeIds.length} ` +
+          "participants; expected exactly one.",
+      );
+    }
+
+    const selectedTributeId = selection.participantTributeIds[0];
+
+    if (!selectedTributeId) {
+      throw new Error(
+        `Bloodbath acquisition event ` + `"${definition.id}" selected ` + "no participant.",
+      );
+    }
+
+    const selectedIndex = remainingTributes.findIndex(
+      (tribute) => tribute.id === selectedTributeId,
+    );
+
+    if (selectedIndex < 0) {
+      throw new Error(
+        `Bloodbath acquisition event ` +
+          `"${definition.id}" selected ` +
+          `unavailable tribute ` +
+          `"${selectedTributeId}".`,
+      );
+    }
+
+    /*
+     * Each tribute receives exactly one
+     * Bloodbath event.
+     */
+    remainingTributes.splice(selectedIndex, 1);
+
+    return {
+      definition,
+
+      participantsByRole: selection.participantsByRole,
+    };
   }
 
-  remainingTributes.splice(selectedIndex, 1);
-
-  return selection.participantsByRole;
+  throw new Error(
+    "No Bloodbath acquisition event could " + "select any remaining Cornucopia tribute.",
+  );
 }
 
 function sequenceCornucopiaEvents(
@@ -259,34 +316,30 @@ function sequenceCornucopiaEvents(
       };
     } else {
       /*
-       * Once the soft target is reached—or only one entrant
-       * remains—the sequencer falls back to lower-risk
-       * acquisition events.
+       * Once the soft target is reached—or only
+       * one entrant remains—the sequencer falls
+       * back to lower-risk acquisition events.
        *
-       * Select the acquisition definition first, then use its
-       * participant-role weighting to choose which remaining
-       * tribute attempts it.
+       * The acquisition selector must consider
+       * both:
        *
-       * This ensures:
+       * - event-level eligibility;
+       * - participant-role eligibility.
        *
-       * - strong tributes are favoured for heavy weapons;
-       * - Brains-oriented tributes are favoured for tactical gear;
-       * - low-Brawn tactical preferences are actually applied.
+       * An event such as the tactical cache may
+       * be valid in this round while still being
+       * impossible for every remaining tribute.
        */
-      const acquisitionContext: EventSelectionContext = {
-        ...context,
-        livingTributes: remainingTributes,
-      };
-
-      definition = selectDefinition(CORNUCOPIA_ACQUISITION_EVENTS, acquisitionContext, random);
-
-      participantsByRole = selectBloodbathAcquisitionParticipants(
+      const acquisitionSelection = selectBloodbathAcquisitionEvent(
         state,
         round,
         remainingTributes,
-        definition,
         random,
       );
+
+      definition = acquisitionSelection.definition;
+
+      participantsByRole = acquisitionSelection.participantsByRole;
     }
 
     const event = resolveBloodbathEvent({

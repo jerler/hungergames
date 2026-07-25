@@ -1,6 +1,7 @@
 import { selectRandomItem, selectWeightedItem, type RandomSource } from "~/game/engine/random";
 import { ITEM_CATALOGUE, getItemDefinition } from "~/game/items/item-catalogue";
-
+import { isItemDefinitionUsableBy } from "~/game/items/item-usability";
+import type { GameTribute } from "~/game/types/game-state";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 
 export const CORNUCOPIA_RARITY_WEIGHTS = {
@@ -428,6 +429,16 @@ export function validateCornucopiaItemPools(): void {
     },
   ]);
 
+  validatePoolHasUnrestrictedItem(
+    "Cornucopia pack pool",
+    CORNUCOPIA_PACK_ITEM_POOL.map((entry) => entry.itemId),
+  );
+
+  validatePoolHasUnrestrictedItem(
+    "Cornucopia contested direct-weapon pool",
+    CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS,
+  );
+
   validateContestedWeaponCoverage();
   validateManufacturedItemCoverage();
 }
@@ -436,11 +447,58 @@ function getEntryWeight(entry: CornucopiaPackItemPoolEntry): number {
   return CORNUCOPIA_RARITY_WEIGHTS[entry.rarity];
 }
 
-export function selectCornucopiaPackItem(random: RandomSource): ItemDefinitionId {
-  return selectWeightedItem(CORNUCOPIA_PACK_ITEM_POOL, getEntryWeight, random).itemId;
+function getUsableItemIds(
+  tribute: GameTribute,
+  itemIds: readonly ItemDefinitionId[],
+): ItemDefinitionId[] {
+  return itemIds.filter((itemId) => isItemDefinitionUsableBy(tribute, itemId));
+}
+
+function getUsablePackEntries(tribute: GameTribute): CornucopiaPackItemPoolEntry[] {
+  return CORNUCOPIA_PACK_ITEM_POOL.filter((entry) =>
+    isItemDefinitionUsableBy(tribute, entry.itemId),
+  );
+}
+
+function requireNonEmptyPool<T>(pool: readonly T[], label: string): readonly T[] {
+  if (pool.length === 0) {
+    throw new Error(`${label} has no usable items for the selected tribute.`);
+  }
+
+  return pool;
+}
+
+export function hasUsableCornucopiaPackItem(tribute: GameTribute): boolean {
+  return getUsablePackEntries(tribute).length > 0;
+}
+
+export function hasUsableCornucopiaEdgeDirectWeapon(tribute: GameTribute): boolean {
+  return getUsableItemIds(tribute, CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS).length > 0;
+}
+
+export function hasUsableCornucopiaHeavyDirectWeapon(tribute: GameTribute): boolean {
+  return getUsableItemIds(tribute, CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS).length > 0;
+}
+
+export function hasUsableCornucopiaBrainsOffenseItem(tribute: GameTribute): boolean {
+  return getUsableItemIds(tribute, CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS).length > 0;
+}
+
+export function hasUsableCornucopiaContestedDirectWeapon(tribute: GameTribute): boolean {
+  return getUsableItemIds(tribute, CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS).length > 0;
+}
+
+export function selectCornucopiaPackItem(
+  tribute: GameTribute,
+  random: RandomSource,
+): ItemDefinitionId {
+  const usableEntries = requireNonEmptyPool(getUsablePackEntries(tribute), "Cornucopia pack pool");
+
+  return selectWeightedItem(usableEntries, getEntryWeight, random).itemId;
 }
 
 export function selectDistinctCornucopiaPackItems(
+  tribute: GameTribute,
   count: number,
   random: RandomSource,
 ): ItemDefinitionId[] {
@@ -448,7 +506,7 @@ export function selectDistinctCornucopiaPackItems(
     throw new Error("Cornucopia pack item count must be a non-negative integer.");
   }
 
-  const remainingEntries = [...CORNUCOPIA_PACK_ITEM_POOL];
+  const remainingEntries = [...getUsablePackEntries(tribute)];
 
   const selectedItemIds: ItemDefinitionId[] = [];
 
@@ -464,6 +522,7 @@ export function selectDistinctCornucopiaPackItems(
 }
 
 function selectDistinctFromItemPool(
+  tribute: GameTribute,
   itemIds: readonly ItemDefinitionId[],
   count: number,
   random: RandomSource,
@@ -472,7 +531,8 @@ function selectDistinctFromItemPool(
     throw new Error("Distinct item count must be a non-negative integer.");
   }
 
-  const remainingItemIds = [...itemIds];
+  const remainingItemIds = getUsableItemIds(tribute, itemIds);
+
   const selectedItemIds: ItemDefinitionId[] = [];
 
   while (selectedItemIds.length < count && remainingItemIds.length > 0) {
@@ -486,25 +546,78 @@ function selectDistinctFromItemPool(
   return selectedItemIds;
 }
 
-export function selectCornucopiaEdgeDirectWeapon(random: RandomSource): ItemDefinitionId {
-  return selectRandomItem(CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS, random);
+export function selectCornucopiaEdgeDirectWeapon(
+  tribute: GameTribute,
+  random: RandomSource,
+): ItemDefinitionId {
+  const usableItemIds = requireNonEmptyPool(
+    getUsableItemIds(tribute, CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS),
+    "Cornucopia edge direct-weapon pool",
+  );
+
+  return selectRandomItem(usableItemIds, random);
 }
 
-export function selectCornucopiaHeavyDirectWeapon(random: RandomSource): ItemDefinitionId {
-  return selectRandomItem(CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS, random);
+export function selectCornucopiaHeavyDirectWeapon(
+  tribute: GameTribute,
+  random: RandomSource,
+): ItemDefinitionId {
+  const usableItemIds = requireNonEmptyPool(
+    getUsableItemIds(tribute, CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS),
+    "Cornucopia heavy direct-weapon pool",
+  );
+
+  return selectRandomItem(usableItemIds, random);
 }
 
-export function selectCornucopiaBrainsOffenseItem(random: RandomSource): ItemDefinitionId {
-  return selectRandomItem(CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS, random);
+export function selectCornucopiaBrainsOffenseItem(
+  tribute: GameTribute,
+  random: RandomSource,
+): ItemDefinitionId {
+  const usableItemIds = requireNonEmptyPool(
+    getUsableItemIds(tribute, CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS),
+    "Cornucopia Brains-offense pool",
+  );
+
+  return selectRandomItem(usableItemIds, random);
 }
 
 export function selectDistinctCornucopiaBrainsOffenseItems(
+  tribute: GameTribute,
   count: number,
   random: RandomSource,
 ): ItemDefinitionId[] {
-  return selectDistinctFromItemPool(CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS, count, random);
+  return selectDistinctFromItemPool(tribute, CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS, count, random);
 }
 
-export function selectCornucopiaContestedDirectWeapon(random: RandomSource): ItemDefinitionId {
-  return selectRandomItem(CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS, random);
+export function selectCornucopiaContestedDirectWeapon(
+  tribute: GameTribute,
+  random: RandomSource,
+): ItemDefinitionId {
+  const usableItemIds = requireNonEmptyPool(
+    getUsableItemIds(tribute, CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS),
+    "Cornucopia contested direct-weapon pool",
+  );
+
+  return selectRandomItem(usableItemIds, random);
+}
+
+function validatePoolHasUnrestrictedItem(
+  label: string,
+  itemIds: readonly ItemDefinitionId[],
+): void {
+  const hasUnrestrictedItem = itemIds.some((itemId) => {
+    const minimumStats = getItemDefinition(itemId).minimumStats;
+
+    return (
+      minimumStats === undefined ||
+      Object.values(minimumStats).every((minimumValue) => minimumValue === undefined)
+    );
+  });
+
+  if (!hasUnrestrictedItem) {
+    throw new Error(
+      `${label} must contain at least one item ` + "without minimum-stat requirements.",
+    );
+  }
 }

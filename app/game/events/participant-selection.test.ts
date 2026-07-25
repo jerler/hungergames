@@ -804,6 +804,151 @@ describe("item-based participant selection", () => {
 
     expect(selection?.participantTributeIds).toEqual([viableThief.id, target.id]);
   });
+
+  it("evaluates a required owned item using an earlier role participant", () => {
+    const originalState = createTestGame("delegated-item-usability");
+
+    const [originalUser, originalOwner] = originalState.tributes;
+
+    const warhammer = createInventoryItemInstance(
+      "delegated-usability-warhammer",
+      originalOwner.id,
+      "warhammer",
+      {
+        day: 1,
+        period: "day",
+      },
+    );
+
+    /*
+     * Keep the owner qualified for the warhammer.
+     *
+     * This is important: when the user has Brawn 4,
+     * selection must fail even though the owner has
+     * Brawn 5. That proves usability is delegated
+     * to the earlier role.
+     */
+    const owner: GameTribute = {
+      ...originalOwner,
+
+      snapshot: {
+        ...originalOwner.snapshot,
+
+        stats: {
+          ...originalOwner.snapshot.stats,
+          brawn: 5,
+        },
+      },
+
+      inventory: [warhammer],
+    };
+
+    function selectWithUserBrawn(brawn: 4 | 5) {
+      const user: GameTribute = {
+        ...originalUser,
+
+        snapshot: {
+          ...originalUser.snapshot,
+
+          stats: {
+            ...originalUser.snapshot.stats,
+            brawn,
+          },
+        },
+
+        inventory: [],
+      };
+
+      const state: GameState = {
+        ...originalState,
+
+        tributes: originalState.tributes.map((tribute) => {
+          if (tribute.id === user.id) {
+            return user;
+          }
+
+          if (tribute.id === owner.id) {
+            return owner;
+          }
+
+          return tribute;
+        }),
+      };
+
+      const definition: EventDefinition = {
+        id: "delegated-item-usability-test",
+
+        category: "hazard",
+        tags: ["hazard", "item"],
+        periods: ["day"],
+        baseWeight: 1,
+
+        roles: [
+          {
+            id: "user",
+            count: 1,
+
+            isEligible: (tribute) => tribute.id === user.id,
+          },
+          {
+            id: "owner",
+            count: 1,
+
+            isEligible: (tribute) => tribute.id === owner.id,
+
+            itemAccess: "owned",
+
+            requiredItemDefinitionIds: ["warhammer"],
+
+            requiredItemUsableByRoleId: "user",
+          },
+        ],
+
+        resolve: () => ({
+          text: "Delegated item usability test.",
+
+          changes: [],
+        }),
+      };
+
+      return selectEventParticipants(
+        definition,
+        {
+          state,
+
+          round: {
+            day: 1,
+            period: "day",
+          },
+
+          livingTributes: [user, owner],
+        },
+        () => 0,
+        new Set<string>(),
+        new Set<string>(),
+      );
+    }
+
+    const unqualifiedSelection = selectWithUserBrawn(4);
+
+    expect(unqualifiedSelection).toBeNull();
+
+    const qualifiedSelection = selectWithUserBrawn(5);
+
+    expect(qualifiedSelection).not.toBeNull();
+
+    expect(qualifiedSelection?.participantsByRole.user[0].id).toBe(originalUser.id);
+
+    expect(qualifiedSelection?.participantsByRole.owner[0].id).toBe(owner.id);
+
+    expect(qualifiedSelection?.itemsByRole.owner[0].owner.id).toBe(owner.id);
+
+    expect(qualifiedSelection?.itemsByRole.owner[0].item.id).toBe(warhammer.id);
+
+    expect(qualifiedSelection?.itemsByRole.owner[0].userTributeId).toBe(owner.id);
+
+    expect(qualifiedSelection?.selectedItemInstanceIds).toEqual([warhammer.id]);
+  });
 });
 
 describe("participant item-access modes", () => {

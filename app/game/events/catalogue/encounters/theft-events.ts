@@ -23,11 +23,11 @@ import {
   type ParticipantSelectionContext,
 } from "~/game/events/event-schema";
 import { ITEM_CATALOGUE } from "~/game/items/item-catalogue";
-import { findUsableInventoryItem } from "~/game/items/inventory-engine";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { GameChange, GameTribute, InventoryItem } from "~/game/types/game-state";
 import type { TributeStatValue } from "~/game/types/tribute";
 import { getTributePronouns } from "~/game/tributes/pronouns";
+import { isItemUsableBy } from "~/game/items/item-usability";
 
 const THEFT_EVENT_ID = "steal-from-stronger-tribute";
 
@@ -83,6 +83,7 @@ function itemHasRemainingUses(item: InventoryItem): boolean {
  */
 function requireTheftTargetItem(
   context: EventResolutionContext,
+  thief: GameTribute,
   target: GameTribute,
 ): InventoryItem {
   const selectedItem = context.itemsByRole?.target?.find(
@@ -98,26 +99,53 @@ function requireTheftTargetItem(
       );
     }
 
+    if (!isItemUsableBy(thief, selectedItem.item)) {
+      throw new Error(
+        `Theft target "${target.id}" ` +
+          "selected an item that is not " +
+          `usable by thief "${thief.id}".`,
+      );
+    }
+
     return selectedItem.item;
   }
 
-  const fallbackItem = findUsableInventoryItem(target, {
-    definitionIds: STEALABLE_ITEM_DEFINITION_IDS,
-
-    unavailableItemInstanceIds: context.unavailableItemInstanceIds,
-  });
+  const fallbackItem =
+    target.inventory.find(
+      (item) =>
+        STEALABLE_ITEM_DEFINITION_IDS.includes(item.definitionId) &&
+        itemHasRemainingUses(item) &&
+        !context.unavailableItemInstanceIds?.has(item.id) &&
+        isItemUsableBy(thief, item),
+    ) ?? null;
 
   if (!fallbackItem) {
     throw new Error(
-      `Theft target "${target.id}" ` + "does not personally own a " + "usable unreserved item.",
+      `Theft target "${target.id}" ` +
+        "does not personally own an " +
+        "unreserved item usable by " +
+        `thief "${thief.id}".`,
     );
   }
 
   return fallbackItem;
 }
 
+function getSelectedTheftSlingshot(
+  context: EventResolutionContext,
+  thief: GameTribute,
+): InventoryItem | null {
+  const selection = context.itemsByRole?.thief?.find(
+    (candidate) =>
+      candidate.userTributeId === thief.id && candidate.item.definitionId === "slingshot",
+  );
+
+  return selection?.item ?? null;
+}
+
 function findAdditionalTheftItem(
   context: EventResolutionContext,
+  thief: GameTribute,
   target: GameTribute,
   primaryItem: InventoryItem,
 ): InventoryItem | null {
@@ -125,6 +153,7 @@ function findAdditionalTheftItem(
     (item) =>
       item.id !== primaryItem.id &&
       itemHasRemainingUses(item) &&
+      isItemUsableBy(thief, item) &&
       !context.unavailableItemInstanceIds?.has(item.id),
   );
 
@@ -176,6 +205,10 @@ export const STEAL_FROM_STRONGER_TRIBUTE_EVENT = {
       id: "thief",
       count: 1,
 
+      optionalItemDefinitionIds: ["slingshot"],
+
+      optionalItemAccess: "accessible",
+
       getWeight: getTheftThiefWeight,
     },
 
@@ -189,6 +222,7 @@ export const STEAL_FROM_STRONGER_TRIBUTE_EVENT = {
 
       itemAccess: "owned",
       requiredItemDefinitionIds: STEALABLE_ITEM_DEFINITION_IDS,
+      requiredItemUsableByRoleId: "thief",
 
       isEligible: isEligibleTheftTarget,
       getWeight: getTheftTargetSelectionWeight,
@@ -205,7 +239,8 @@ export const STEAL_FROM_STRONGER_TRIBUTE_EVENT = {
 
     const target = requireSingleParticipant(participantsByRole, "target");
 
-    const primaryItem = requireTheftTargetItem(context, target);
+    const slingshot = getSelectedTheftSlingshot(context, thief);
+    const primaryItem = requireTheftTargetItem(context, thief, target);
 
     const primaryItemLabel = getItemLabel(primaryItem.definitionId);
 
@@ -214,6 +249,7 @@ export const STEAL_FROM_STRONGER_TRIBUTE_EVENT = {
       "brains",
       getTheftDifficulty(target, context.round),
       random,
+      slingshot ? 1 : 0,
     );
 
     switch (outcome) {
@@ -245,12 +281,21 @@ export const STEAL_FROM_STRONGER_TRIBUTE_EVENT = {
       }
 
       case "failure": {
-        const text =
-          `${target.snapshot.name} catches ` +
-          `${thief.snapshot.name} trying to steal ` +
-          `the ${primaryItemLabel}. ` +
-          `${thief.snapshot.name} escapes, but ` +
-          `${target.snapshot.name} begins hunting ${thiefPronouns.object}.`;
+        const text = slingshot
+          ? `${thief.snapshot.name} fires a ` +
+            `stone into the trees and draws ` +
+            `${target.snapshot.name} away, ` +
+            "but the distraction ends before " +
+            `${thief.snapshot.name} can escape ` +
+            `with the ${primaryItemLabel}. ` +
+            `${target.snapshot.name} begins ` +
+            `hunting ${thiefPronouns.object}.`
+          : `${target.snapshot.name} catches ` +
+            `${thief.snapshot.name} trying to ` +
+            `steal the ${primaryItemLabel}. ` +
+            `${thief.snapshot.name} escapes, ` +
+            `but ${target.snapshot.name} begins ` +
+            `hunting ${thiefPronouns.object}.`;
 
         return {
           text,
@@ -260,10 +305,21 @@ export const STEAL_FROM_STRONGER_TRIBUTE_EVENT = {
       }
 
       case "success": {
-        const text =
-          `${thief.snapshot.name} steals ` +
-          `the ${primaryItemLabel} from ` +
-          `${target.snapshot.name} without being noticed.`;
+        const text = slingshot
+          ? `${thief.snapshot.name} fires a ` +
+            `stone into the trees and draws ` +
+            `${target.snapshot.name} away, ` +
+            "but the distraction ends before " +
+            `${thief.snapshot.name} can escape ` +
+            `with the ${primaryItemLabel}. ` +
+            `${target.snapshot.name} begins ` +
+            `hunting ${thiefPronouns.object}.`
+          : `${target.snapshot.name} catches ` +
+            `${thief.snapshot.name} trying to ` +
+            `steal the ${primaryItemLabel}. ` +
+            `${thief.snapshot.name} escapes, ` +
+            `but ${target.snapshot.name} begins ` +
+            `hunting ${thiefPronouns.object}.`;
 
         return {
           text,
@@ -277,12 +333,23 @@ export const STEAL_FROM_STRONGER_TRIBUTE_EVENT = {
       }
 
       case "exceptional-success": {
-        const additionalItem = findAdditionalTheftItem(context, target, primaryItem);
+        const additionalItem = findAdditionalTheftItem(context, thief, target, primaryItem);
 
         const stolenItems = additionalItem ? [primaryItem, additionalItem] : [primaryItem];
 
-        const text =
-          stolenItems.length === 2
+        const text = slingshot
+          ? stolenItems.length === 2
+            ? `${thief.snapshot.name} creates ` +
+              "a perfect diversion with the " +
+              `slingshot and steals ` +
+              `${formatStolenItems(stolenItems)} ` +
+              `from ${target.snapshot.name}.`
+            : `${thief.snapshot.name} creates ` +
+              "a perfect diversion with the " +
+              `slingshot and steals the ` +
+              `${primaryItemLabel} from ` +
+              `${target.snapshot.name}.`
+          : stolenItems.length === 2
             ? `${thief.snapshot.name} slips past ` +
               `${target.snapshot.name} and steals ` +
               `${formatStolenItems(stolenItems)} ` +

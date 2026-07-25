@@ -33,6 +33,14 @@ export interface InventoryItemRequirements {
   unavailableItemInstanceIds?: ReadonlySet<string>;
   //Set false for narrative ownership/access checks where the item will not actually be used.
   requireUsable?: boolean;
+  /**
+   * Overrides which tribute's effective stats are
+   * used for item-usability evaluation.
+   *
+   * Inventory ownership and access are still determined
+   * using the acting tribute passed to the search function.
+   */
+  usabilityTribute?: GameTribute;
 }
 
 export interface AccessibleInventoryItem {
@@ -62,9 +70,11 @@ function itemMatchesRequirements(
     return false;
   }
 
+  const usabilityTribute = requirements.usabilityTribute ?? actingTribute;
+
   const requireUsable = requirements.requireUsable ?? true;
 
-  if (requireUsable && !isItemUsableBy(actingTribute, item)) {
+  if (requireUsable && !isItemUsableBy(usabilityTribute, item)) {
     return false;
   }
 

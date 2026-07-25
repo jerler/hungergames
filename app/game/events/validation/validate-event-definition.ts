@@ -74,6 +74,7 @@ function validateRole(
   eventId: string,
   role: ParticipantRoleDefinition,
   knownRoleIds: ReadonlySet<string>,
+  earlierRoleIds: ReadonlySet<string>,
 ): void {
   if (!role.id.trim()) {
     throw new Error(`Event "${eventId}" contains an empty participant role ID.`);
@@ -126,6 +127,52 @@ function validateRole(
   const hasRequiredItem = requiredItemDefinitionIds.length > 0 || requiredItemTags.length > 0;
 
   const hasOptionalItem = optionalItemDefinitionIds.length > 0 || optionalItemTags.length > 0;
+
+  const requiredItemUsableByRoleId = role.requiredItemUsableByRoleId;
+
+  if (requiredItemUsableByRoleId !== undefined) {
+    if (!requiredItemUsableByRoleId.trim()) {
+      throw new Error(
+        `Event "${eventId}" role ` +
+          `"${role.id}" declares an empty ` +
+          "required-item usability role.",
+      );
+    }
+
+    if (!hasRequiredItem) {
+      throw new Error(
+        `Event "${eventId}" role ` +
+          `"${role.id}" declares delegated ` +
+          "required-item usability without " +
+          "a required item.",
+      );
+    }
+
+    if (requiredItemUsableByRoleId === role.id) {
+      throw new Error(
+        `Event "${eventId}" role ` +
+          `"${role.id}" cannot evaluate ` +
+          "required-item usability against itself.",
+      );
+    }
+
+    if (!knownRoleIds.has(requiredItemUsableByRoleId)) {
+      throw new Error(
+        `Event "${eventId}" role ` +
+          `"${role.id}" references unknown ` +
+          `usability role ` +
+          `"${requiredItemUsableByRoleId}".`,
+      );
+    }
+
+    if (!earlierRoleIds.has(requiredItemUsableByRoleId)) {
+      throw new Error(
+        `Event "${eventId}" role ` +
+          `"${role.id}" must reference an ` +
+          "earlier role for required-item usability.",
+      );
+    }
+  }
 
   if (hasRequiredItem && hasOptionalItem) {
     throw new Error(
@@ -239,8 +286,12 @@ export function validateEventDefinition(definition: EventDefinition): void {
 
   const knownRoleIds = new Set(roleIds);
 
+  const earlierRoleIds = new Set<string>();
+
   for (const role of definition.roles) {
-    validateRole(definition.id, role, knownRoleIds);
+    validateRole(definition.id, role, knownRoleIds, earlierRoleIds);
+
+    earlierRoleIds.add(role.id);
   }
 
   if (definition.isEligible !== undefined && typeof definition.isEligible !== "function") {

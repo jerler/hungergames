@@ -106,6 +106,15 @@ export interface ParticipantRoleDefinition {
   requiredItemRequireUsable?: boolean;
 
   /**
+   * Evaluates a required item's stat requirements using
+   * the first participant selected for an earlier role.
+   *
+   * The current role still controls the item's owner,
+   * access rules, and reservation.
+   */
+  requiredItemUsableByRoleId?: string;
+
+  /**
    * Optionally selects and reserves an item for this role.
    *
    * Unlike required-item fields, the participant remains eligible

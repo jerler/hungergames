@@ -12,11 +12,18 @@ import {
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
-import type { GameChange, GameState, ResolvedEvent, RoundReference } from "~/game/types/game-state";
+import type {
+  GameChange,
+  GameState,
+  GameTribute,
+  ResolvedEvent,
+  RoundReference,
+} from "~/game/types/game-state";
 import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 import { createInventoryItemInstance } from "~/game/items/inventory-engine";
 import { createEvenTruceInventoryRedistributionChanges } from "~/game/truces/truce-inventory";
 import { createSeededRandom } from "~/game/engine/random";
+import { isItemUsableBy } from "~/game/items/item-usability";
 
 const DAY_ONE = {
   day: 1,
@@ -506,6 +513,212 @@ describe("truce engine", () => {
     });
 
     expect(() => assertGameStateInvariants(transferredState)).not.toThrow();
+  });
+
+  it("allows truce redistribution to give a tribute an unusable item", () => {
+    const originalGame = createGame();
+
+    const [originalSource, originalRecipient] = originalGame.tributes;
+
+    /*
+     * The original owner can use the warhammer.
+     */
+    const source: GameTribute = {
+      ...originalSource,
+
+      snapshot: {
+        ...originalSource.snapshot,
+
+        stats: {
+          ...originalSource.snapshot.stats,
+
+          brawn: 5,
+        },
+      },
+    };
+
+    /*
+     * The recipient cannot use the warhammer.
+     */
+    const recipient: GameTribute = {
+      ...originalRecipient,
+
+      snapshot: {
+        ...originalRecipient.snapshot,
+
+        stats: {
+          ...originalRecipient.snapshot.stats,
+
+          brawn: 4,
+        },
+      },
+    };
+
+    const game: GameState = {
+      ...originalGame,
+
+      tributes: originalGame.tributes.map((tribute) => {
+        if (tribute.id === source.id) {
+          return source;
+        }
+
+        if (tribute.id === recipient.id) {
+          return recipient;
+        }
+
+        return tribute;
+      }),
+    };
+
+    const warhammer = createInventoryItemInstance(
+      "warhammer-found",
+      source.id,
+      "warhammer",
+      DAY_ONE,
+    );
+
+    const stateWithItem = applyResolvedEvent(
+      game,
+
+      createEvent(
+        "warhammer-found",
+
+        [
+          {
+            type: "acquire-item",
+
+            tributeId: source.id,
+
+            acquisitionSource: "cornucopia",
+
+            item: warhammer,
+          },
+        ],
+
+        [source.id],
+      ),
+    );
+
+    const truce = createTruceInstance(
+      "redistribution-truce",
+
+      [source.id, recipient.id],
+
+      DAY_ONE,
+      NIGHT_ONE,
+    );
+
+    const stateWithTruce = applyResolvedEvent(
+      stateWithItem,
+
+      createEvent(
+        "redistribution-truce",
+
+        [
+          {
+            type: "form-truce",
+            truce,
+          },
+        ],
+
+        truce.tributeIds,
+      ),
+    );
+
+    /*
+     * With one pooled item and two members,
+     * random zero reverses the recipient order,
+     * assigning the source's item to the other
+     * tribute.
+     */
+    const redistributionChanges = createEvenTruceInventoryRedistributionChanges(
+      stateWithTruce,
+      truce,
+      () => 0,
+      "amicable-redistribution",
+    );
+
+    expect(redistributionChanges).toEqual([
+      {
+        type: "transfer-item",
+
+        itemInstanceId: warhammer.id,
+
+        fromTributeId: source.id,
+
+        toTributeId: recipient.id,
+
+        reason: "amicable-redistribution",
+      },
+    ]);
+
+    const separatedState = applyResolvedEvent(
+      stateWithTruce,
+
+      createEvent(
+        "amicable-separation",
+
+        [
+          ...redistributionChanges,
+
+          {
+            type: "break-truce",
+
+            truceId: truce.id,
+
+            reason: "amicable",
+          },
+        ],
+
+        truce.tributeIds,
+      ),
+    );
+
+    const finalSource = separatedState.tributes.find((tribute) => tribute.id === source.id);
+
+    const finalRecipient = separatedState.tributes.find((tribute) => tribute.id === recipient.id);
+
+    if (!finalSource || !finalRecipient) {
+      throw new Error("Expected both truce members to remain in state.");
+    }
+
+    expect(separatedState.truces).toEqual([]);
+
+    expect(finalSource.inventory).toEqual([]);
+
+    const redistributedWarhammer = finalRecipient.inventory.find(
+      (item) => item.id === warhammer.id,
+    );
+
+    expect(redistributedWarhammer).toEqual(warhammer);
+
+    if (!redistributedWarhammer) {
+      throw new Error("Expected the recipient to receive the warhammer.");
+    }
+
+    /*
+     * Redistribution preserves the item even
+     * though its new owner cannot use it.
+     */
+    expect(isItemUsableBy(finalRecipient, redistributedWarhammer)).toBe(false);
+
+    expect(separatedState.itemTransactions.at(-1)).toMatchObject({
+      type: "transferred",
+
+      tributeId: recipient.id,
+
+      fromTributeId: source.id,
+
+      toTributeId: recipient.id,
+
+      itemInstanceId: warhammer.id,
+
+      definitionId: "warhammer",
+
+      sourceId: "amicable-redistribution",
+    });
+
+    expect(() => assertGameStateInvariants(separatedState)).not.toThrow();
   });
 
   it("redistributes truce inventory evenly and deterministically", () => {

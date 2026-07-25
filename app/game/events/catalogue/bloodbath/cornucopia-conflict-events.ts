@@ -57,7 +57,7 @@ interface ConflictDefinitionOptions {
   id: string;
   baseWeight: number;
 
-  selectItem: (random: RandomSource) => ItemDefinitionId;
+  selectItem: (recipient: GameTribute, random: RandomSource) => ItemDefinitionId;
 
   resourceDescription: string;
 }
@@ -175,7 +175,7 @@ function createPairConflictEvent({
 
       switch (outcome) {
         case "attacker-dies": {
-          const itemId = selectItem(random);
+          const itemId = selectItem(defender, random);
 
           const text =
             `${attacker.snapshot.name} attacks ` +
@@ -219,7 +219,7 @@ function createPairConflictEvent({
           };
 
         case "attacker-wins": {
-          const itemId = selectItem(random);
+          const itemId = selectItem(attacker, random);
 
           return {
             text:
@@ -244,7 +244,7 @@ function createPairConflictEvent({
         }
 
         case "defender-dies": {
-          const itemId = selectItem(random);
+          const itemId = selectItem(attacker, random);
 
           const text =
             `${attacker.snapshot.name} kills ` +
@@ -330,7 +330,7 @@ function createGroupConflictEvent({
 
           const victims = contenders.filter((tribute) => tribute.id !== winner.id);
 
-          const itemId = selectItem(random);
+          const itemId = selectItem(winner, random);
 
           const text =
             `${winner.snapshot.name} survives a brutal ` +
@@ -370,7 +370,7 @@ function createGroupConflictEvent({
             throw new Error(`Event "${id}" could not resolve its escaping contender.`);
           }
 
-          const itemId = selectItem(random);
+          const itemId = selectItem(winner, random);
 
           const escapeStatus = random() < 0.5 ? "injured" : "exhausted";
 

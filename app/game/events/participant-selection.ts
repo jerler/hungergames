@@ -49,11 +49,22 @@ function findAvailableRoleItem(
   context: EventSelectionContext,
   tribute: GameTribute,
   role: ParticipantRoleDefinition,
+  participantsByRole: ParticipantsByRole,
   reservedItemInstanceIds: ReadonlySet<string>,
   unavailableTributeIds: ReadonlySet<string>,
 ): AccessibleInventoryItem | null {
   const required = roleRequiresItem(role);
+  const usabilityRoleId = required ? role.requiredItemUsableByRoleId : undefined;
 
+  const usabilityTribute = usabilityRoleId ? participantsByRole[usabilityRoleId]?.[0] : tribute;
+
+  if (usabilityRoleId && !usabilityTribute) {
+    throw new Error(
+      `Role "${role.id}" requires ` +
+        `usability role "${usabilityRoleId}" ` +
+        "to be selected first.",
+    );
+  }
   const definitionIds = required ? role.requiredItemDefinitionIds : role.optionalItemDefinitionIds;
 
   const requirements = {
@@ -64,6 +75,8 @@ function findAvailableRoleItem(
     unavailableItemInstanceIds: reservedItemInstanceIds,
 
     requireUsable: required ? (role.requiredItemRequireUsable ?? true) : true,
+
+    usabilityTribute,
   };
 
   const access = required ? role.itemAccess : role.optionalItemAccess;
@@ -255,6 +268,7 @@ export function selectEventParticipants(
               context,
               tribute,
               role,
+              participantsByRole,
               state.reservedItemInstanceIds,
               state.selectedTributeIds,
             )

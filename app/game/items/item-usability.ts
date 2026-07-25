@@ -2,6 +2,7 @@ import { getEffectiveStats } from "~/game/engine/effective-stats";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import type { GameTribute, InventoryItem } from "~/game/types/game-state";
 import type { TributeStats } from "~/game/types/tribute";
+import type { ItemDefinitionId, ItemMinimumStats } from "~/game/items/item-schema";
 
 const ITEM_USABILITY_STATS = [
   "brains",
@@ -20,26 +21,15 @@ export interface ItemUsability {
   reasons: readonly string[];
 }
 
-/**
- * Determines whether the acting tribute can use one
- * exact physical item instance.
- *
- * Ownership is intentionally irrelevant here. Borrowed
- * items are evaluated using the acting tribute's stats.
- */
-export function getItemUsability(tribute: GameTribute, item: InventoryItem): ItemUsability {
-  const definition = getItemDefinition(item.definitionId);
-
+function getMinimumStatRequirementReasons(
+  tribute: GameTribute,
+  minimumStats: ItemMinimumStats | undefined,
+): string[] {
+  const effectiveStats = getEffectiveStats(tribute);
   const reasons: string[] = [];
 
-  if (item.usesRemaining !== null && item.usesRemaining <= 0) {
-    reasons.push("No uses remain.");
-  }
-
-  const effectiveStats = getEffectiveStats(tribute);
-
   for (const stat of ITEM_USABILITY_STATS) {
-    const minimumValue = definition.minimumStats?.[stat];
+    const minimumValue = minimumStats?.[stat];
 
     if (minimumValue === undefined || effectiveStats[stat] >= minimumValue) {
       continue;
@@ -52,6 +42,41 @@ export function getItemUsability(tribute: GameTribute, item: InventoryItem): Ite
         `${effectiveStats[stat]}.`,
     );
   }
+
+  return reasons;
+}
+
+export function getItemDefinitionUsability(
+  tribute: GameTribute,
+  itemDefinitionId: ItemDefinitionId,
+): ItemUsability {
+  const definition = getItemDefinition(itemDefinitionId);
+
+  const reasons = getMinimumStatRequirementReasons(tribute, definition.minimumStats);
+
+  return {
+    usable: reasons.length === 0,
+    reasons,
+  };
+}
+
+export function isItemDefinitionUsableBy(
+  tribute: GameTribute,
+  itemDefinitionId: ItemDefinitionId,
+): boolean {
+  return getItemDefinitionUsability(tribute, itemDefinitionId).usable;
+}
+
+export function getItemUsability(tribute: GameTribute, item: InventoryItem): ItemUsability {
+  const definition = getItemDefinition(item.definitionId);
+
+  const reasons: string[] = [];
+
+  if (item.usesRemaining !== null && item.usesRemaining <= 0) {
+    reasons.push("No uses remain.");
+  }
+
+  reasons.push(...getMinimumStatRequirementReasons(tribute, definition.minimumStats));
 
   return {
     usable: reasons.length === 0,

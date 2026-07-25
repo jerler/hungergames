@@ -18,6 +18,10 @@ import {
   selectCornucopiaPackItem,
   selectDistinctCornucopiaBrainsOffenseItems,
   selectDistinctCornucopiaPackItems,
+  hasUsableCornucopiaBrainsOffenseItem,
+  hasUsableCornucopiaEdgeDirectWeapon,
+  hasUsableCornucopiaHeavyDirectWeapon,
+  hasUsableCornucopiaPackItem,
 } from "./cornucopia-item-pool";
 
 function getEdgeWeaponAcquisitionWeight(tribute: GameTribute): number {
@@ -52,6 +56,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
       {
         id: "tribute",
         count: 1,
+        isEligible: hasUsableCornucopiaPackItem,
       },
     ],
 
@@ -82,7 +87,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
           };
 
         case "success": {
-          const itemId = selectCornucopiaPackItem(random);
+          const itemId = selectCornucopiaPackItem(tribute, random);
 
           return {
             text:
@@ -100,7 +105,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
         }
 
         case "exceptional-success": {
-          const itemIds = selectDistinctCornucopiaPackItems(2, random);
+          const itemIds = selectDistinctCornucopiaPackItems(tribute, 2, random);
 
           const itemLabels = itemIds.map(getItemLabel);
 
@@ -135,6 +140,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
         id: "tribute",
         count: 1,
         getWeight: getEdgeWeaponAcquisitionWeight,
+        isEligible: hasUsableCornucopiaEdgeDirectWeapon,
       },
     ],
 
@@ -165,7 +171,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
           };
 
         case "success": {
-          const itemId = selectCornucopiaEdgeDirectWeapon(random);
+          const itemId = selectCornucopiaEdgeDirectWeapon(tribute, random);
 
           return {
             text:
@@ -184,7 +190,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
         }
 
         case "exceptional-success": {
-          const itemId = selectCornucopiaEdgeDirectWeapon(random);
+          const itemId = selectCornucopiaEdgeDirectWeapon(tribute, random);
 
           return {
             text:
@@ -220,6 +226,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
         id: "tribute",
         count: 1,
         getWeight: getHeavyWeaponAcquisitionWeight,
+        isEligible: hasUsableCornucopiaHeavyDirectWeapon,
       },
     ],
 
@@ -252,7 +259,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
           };
 
         case "success": {
-          const itemId = selectCornucopiaHeavyDirectWeapon(random);
+          const itemId = selectCornucopiaHeavyDirectWeapon(tribute, random);
 
           return {
             text:
@@ -271,7 +278,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
         }
 
         case "exceptional-success": {
-          const itemId = selectCornucopiaHeavyDirectWeapon(random);
+          const itemId = selectCornucopiaHeavyDirectWeapon(tribute, random);
 
           return {
             text:
@@ -307,6 +314,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
         id: "tribute",
         count: 1,
         getWeight: getBrainsOffenseAcquisitionWeight,
+        isEligible: hasUsableCornucopiaBrainsOffenseItem,
       },
     ],
 
@@ -339,7 +347,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
           };
 
         case "success": {
-          const itemId = selectCornucopiaBrainsOffenseItem(random);
+          const itemId = selectCornucopiaBrainsOffenseItem(tribute, random);
 
           return {
             text:
@@ -358,7 +366,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
         }
 
         case "exceptional-success": {
-          const itemIds = selectDistinctCornucopiaBrainsOffenseItems(2, random);
+          const itemIds = selectDistinctCornucopiaBrainsOffenseItems(tribute, 2, random);
 
           const itemLabels = itemIds.map(getItemLabel);
 

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createSeededRandom } from "~/game/engine/random";
 
 import { getItemDefinition } from "~/game/items/item-catalogue";
-
+import { createAuthoringTestTribute } from "~/game/events/authoring/testing/authoring-test-fixtures";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import {
   CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS,
@@ -11,6 +11,7 @@ import {
   CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS,
   CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS,
   CORNUCOPIA_PACK_ITEM_POOL,
+  selectCornucopiaHeavyDirectWeapon,
   selectCornucopiaPackItem,
   selectDistinctCornucopiaBrainsOffenseItems,
   selectDistinctCornucopiaPackItems,
@@ -67,6 +68,14 @@ const DEFENSE_ITEM_IDS = [
   "reinforced-armour",
 ] as const satisfies readonly ItemDefinitionId[];
 
+const FULLY_QUALIFIED_TRIBUTE = createAuthoringTestTribute({
+  stats: {
+    brains: 5,
+    brawn: 5,
+    luck: 5,
+  },
+});
+
 function selectSequence(seed: string): ItemDefinitionId[] {
   const random = createSeededRandom(seed);
 
@@ -75,7 +84,7 @@ function selectSequence(seed: string): ItemDefinitionId[] {
       length: 100,
     },
 
-    () => selectCornucopiaPackItem(random),
+    () => selectCornucopiaPackItem(FULLY_QUALIFIED_TRIBUTE, random),
   );
 }
 
@@ -102,6 +111,7 @@ describe("Cornucopia item pool", () => {
 
   it("selects distinct items without replacement", () => {
     const selectedItemIds = selectDistinctCornucopiaPackItems(
+      FULLY_QUALIFIED_TRIBUTE,
       2,
 
       createSeededRandom("distinct-cornucopia"),
@@ -129,7 +139,7 @@ describe("Cornucopia item pool", () => {
     const sampleSize = 20_000;
 
     for (let index = 0; index < sampleSize; index += 1) {
-      const itemId = selectCornucopiaPackItem(random);
+      const itemId = selectCornucopiaPackItem(FULLY_QUALIFIED_TRIBUTE, random);
 
       const rarity = rarityByItemId.get(itemId);
 
@@ -242,11 +252,13 @@ describe("Cornucopia item pool", () => {
 
   it("selects tactical items deterministically without replacement", () => {
     const first = selectDistinctCornucopiaBrainsOffenseItems(
+      FULLY_QUALIFIED_TRIBUTE,
       2,
       createSeededRandom("tactical-cache"),
     );
 
     const second = selectDistinctCornucopiaBrainsOffenseItems(
+      FULLY_QUALIFIED_TRIBUTE,
       2,
       createSeededRandom("tactical-cache"),
     );
@@ -254,5 +266,45 @@ describe("Cornucopia item pool", () => {
     expect(second).toEqual(first);
     expect(first).toHaveLength(2);
     expect(new Set(first).size).toBe(2);
+  });
+
+  it("never gives a Brawn 4 tribute a warhammer", () => {
+    const tribute = createAuthoringTestTribute({
+      stats: {
+        brains: 5,
+        brawn: 4,
+        luck: 5,
+      },
+    });
+
+    const random = createSeededRandom("no-warhammer-at-four");
+
+    const selections = Array.from(
+      { length: 1_000 },
+
+      () => selectCornucopiaHeavyDirectWeapon(tribute, random),
+    );
+
+    expect(selections).not.toContain("warhammer");
+  });
+
+  it("allows a Brawn 5 tribute to receive a warhammer", () => {
+    const tribute = createAuthoringTestTribute({
+      stats: {
+        brains: 5,
+        brawn: 5,
+        luck: 5,
+      },
+    });
+
+    const random = createSeededRandom("warhammer-at-five");
+
+    const selections = Array.from(
+      { length: 2_000 },
+
+      () => selectCornucopiaHeavyDirectWeapon(tribute, random),
+    );
+
+    expect(selections).toContain("warhammer");
   });
 });

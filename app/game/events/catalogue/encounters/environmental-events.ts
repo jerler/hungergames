@@ -51,7 +51,7 @@ const ARENA_GOOSE_RESULTS = {
   exceptionalSuccess: result({
     text: ({ tribute }) =>
       `${tribute.name} befriends an arena goose, which leads ${tribute.pronouns.object} to a patch of edible plants.`,
-    effects: [acquireNaturalResource("tribute", "wild-fruit-and-berries"), survived("tribute")],
+    effects: [acquireNaturalResource("tribute", "wild-fruit"), survived("tribute")],
   }),
 } as const;
 
@@ -73,7 +73,7 @@ const BRUSHFIRE_RESULTS = {
 
   exceptionalFood: result({
     append: ", reaches safety, and discovers a patch of edible plants beyond the burned ground.",
-    effects: [acquireNaturalResource("tribute", "wild-fruit-and-berries"), survived("tribute")],
+    effects: [acquireNaturalResource("tribute", "wild-fruit"), survived("tribute")],
   }),
 
   exceptionalWater: result({
@@ -193,7 +193,7 @@ export const ENVIRONMENTAL_EVENTS = [
   createEvent("arena-goose")
     .solo("tribute", {
       getWeight: getVulnerabilityWeight,
-      optionalItem: { definitionIds: ["wild-fruit-and-berries"], access: "owned" },
+      optionalItem: { definitionIds: ["wild-fruit"], access: "owned" },
     })
     .category("hazard")
     .tags("hazard", "status", "resource")

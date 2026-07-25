@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { getForagingScore } from "~/game/engine/stat-formulas";
-
+import { applyResolvedEvent } from "~/game/engine/apply-game-change";
 import {
+  AUTHORING_TEST_ROUND,
   createAuthoringTestGame,
   createAuthoringTestTribute,
   withAuthoringTestItem,
 } from "~/game/events/authoring/testing/authoring-test-fixtures";
+import { createStatusEffectInstance } from "~/game/statuses/status-engine";
+import type { ResolvedEvent } from "~/game/types/game-state";
 
 import {
   getAcquiredItemIds,
@@ -123,7 +126,11 @@ describe("createHuntedFoodEvent", () => {
     expect(selection.selectedItemInstanceIds).toEqual([tribute.inventory[0]?.id]);
 
     expect(getAcquiredItemIds(resolution)).toEqual(["rabbit"]);
-
+    expect(resolution.changes).not.toContainEqual(
+      expect.objectContaining({
+        type: "satisfy-survival-need",
+      }),
+    );
     expect(resolution.changes).toContainEqual({
       type: "consume-item",
 
@@ -254,8 +261,8 @@ describe("createHuntedFoodEvent", () => {
     ]);
   });
 
-  it("applies well-fed on exceptional success", () => {
-    const tribute = createAuthoringTestTribute({
+  it("satisfies hunger and applies well-fed on exceptional success", () => {
+    const baseTribute = createAuthoringTestTribute({
       id: "exceptional-hunter",
 
       stats: {
@@ -264,6 +271,25 @@ describe("createHuntedFoodEvent", () => {
         luck: 3,
       },
     });
+
+    const tribute = {
+      ...baseTribute,
+
+      survival: {
+        ...baseTribute.survival,
+        roundsWithoutFood: 6,
+      },
+
+      statuses: [
+        createStatusEffectInstance(
+          "existing-starvation",
+          baseTribute.id,
+          "starving",
+          1,
+          AUTHORING_TEST_ROUND,
+        ),
+      ],
+    };
 
     const state = createAuthoringTestGame([tribute]);
 
@@ -286,12 +312,46 @@ describe("createHuntedFoodEvent", () => {
 
     expect(getAcquiredItemIds(resolution)).toEqual(["eggs"]);
 
+    expect(resolution.changes).toContainEqual({
+      type: "satisfy-survival-need",
+      tributeId: tribute.id,
+      need: "food",
+    });
+
     expect(getAppliedStatuses(resolution)).toEqual([
       expect.objectContaining({
         definitionId: "well-fed",
-
         severity: 1,
       }),
     ]);
+
+    const resolvedEvent = {
+      id: `test:${definition.id}`,
+      definitionId: definition.id,
+
+      kind: "primary",
+      resolutionMode: "standard",
+
+      round: AUTHORING_TEST_ROUND,
+      participantTributeIds: [tribute.id],
+
+      text: resolution.text,
+      changes: resolution.changes,
+    } satisfies ResolvedEvent;
+
+    const appliedState = applyResolvedEvent(state, resolvedEvent);
+    const appliedTribute = appliedState.tributes.find((candidate) => candidate.id === tribute.id);
+
+    if (!appliedTribute) {
+      throw new Error("Expected the exceptional hunter after applying the event.");
+    }
+
+    expect(appliedTribute.survival.roundsWithoutFood).toBe(0);
+
+    expect(appliedTribute.statuses.map((status) => status.definitionId)).toContain("well-fed");
+
+    expect(appliedTribute.statuses.map((status) => status.definitionId)).not.toContain("hungry");
+
+    expect(appliedTribute.statuses.map((status) => status.definitionId)).not.toContain("starving");
   });
 });

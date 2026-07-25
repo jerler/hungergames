@@ -5,6 +5,8 @@ import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import type { StatusEffectId, StatusModifiers } from "~/game/statuses/status-schema";
 import type { GameState, GameTribute, RoundReference, StatusEffect } from "~/game/types/game-state";
 
+import { removeConflictingStatuses } from "./status-conflicts";
+
 export type StatusScoreKey = "combat" | "survival" | "awareness" | "foraging";
 
 const STATUS_MODIFIER_KEYS = {
@@ -13,6 +15,22 @@ const STATUS_MODIFIER_KEYS = {
   awareness: "awarenessPerSeverity",
   foraging: "foragingPerSeverity",
 } satisfies Record<StatusScoreKey, keyof StatusModifiers>;
+
+function mergeStatusDuration(
+  existingDuration: number | null,
+
+  incomingDuration: number | null,
+): number | null {
+  if (existingDuration === null || incomingDuration === null) {
+    if (existingDuration !== incomingDuration) {
+      throw new Error("Cannot merge timed and persistent instances of the same status.");
+    }
+
+    return null;
+  }
+
+  return Math.max(existingDuration, incomingDuration);
+}
 
 export function createStatusEffectInstance(
   eventId: string,
@@ -54,6 +72,51 @@ export function createStatusEffectInstance(
       ...round,
     },
   };
+}
+
+/**
+ * Adds or merges a status while enforcing the centralized
+ * latest-status-wins conflict policy.
+ */
+export function upsertStatusEffect(
+  statuses: readonly StatusEffect[],
+
+  incomingStatus: StatusEffect,
+): StatusEffect[] {
+  const statusesWithoutConflicts = removeConflictingStatuses(statuses, incomingStatus.definitionId);
+
+  const existingStatus = statusesWithoutConflicts.find(
+    (status) => status.definitionId === incomingStatus.definitionId,
+  );
+
+  if (!existingStatus) {
+    return [...statusesWithoutConflicts, incomingStatus];
+  }
+
+  const definition = getStatusDefinition(incomingStatus.definitionId);
+
+  return statusesWithoutConflicts.map((status) => {
+    if (status.id !== existingStatus.id) {
+      return status;
+    }
+
+    return {
+      ...status,
+
+      /*
+       * Preserve the existing additive merge rule:
+       *
+       * Injured 1 plus Injured 2 becomes Injured 3,
+       * capped by the catalogue maximum.
+       */
+      severity: Math.min(
+        definition.maxSeverity,
+        status.severity + incomingStatus.severity,
+      ) as StatusEffect["severity"],
+
+      remainingRounds: mergeStatusDuration(status.remainingRounds, incomingStatus.remainingRounds),
+    };
+  });
 }
 
 export function getStatusModifier(tribute: GameTribute, scoreKey: StatusScoreKey): number {

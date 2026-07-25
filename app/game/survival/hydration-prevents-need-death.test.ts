@@ -14,7 +14,7 @@ import type { GameTribute, ResolvedEvent } from "~/game/types/game-state";
 import { advanceSurvivalNeedsAfterRound } from "./survival-needs-engine";
 
 describe("hydration before fatal need resolution", () => {
-  it("prevents a tribute at three deprived rounds from dying", () => {
+  it("prevents a tribute at five deprived rounds from dying", () => {
     const baseTribute = createAuthoringTestTribute({
       id: "thirsty-tribute",
     });
@@ -26,7 +26,7 @@ describe("hydration before fatal need resolution", () => {
         survival: {
           ...baseTribute.survival,
 
-          roundsWithoutWater: 3,
+          roundsWithoutWater: 5,
         },
 
         statuses: [
@@ -94,7 +94,7 @@ describe("hydration before fatal need resolution", () => {
 
     expect(resolvedTribute?.survival.roundsWithoutWater).toBe(1);
 
-    expect(resolvedTribute?.statuses.map((status) => status.definitionId)).toContain("thirsty");
+    expect(resolvedTribute?.statuses.map((status) => status.definitionId)).not.toContain("thirsty");
 
     expect(resolvedTribute?.statuses.map((status) => status.definitionId)).not.toContain(
       "dehydrated",

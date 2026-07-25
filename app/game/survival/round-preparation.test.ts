@@ -169,7 +169,7 @@ describe("prepareRound", () => {
 
       survival: {
         roundsWithoutFood: 3,
-        roundsWithoutWater: 2,
+        roundsWithoutWater: 4,
         lastNightRest: null,
       },
     };
@@ -180,7 +180,7 @@ describe("prepareRound", () => {
 
     tribute = withAuthoringTestItem(tribute, "water");
 
-    tribute = withAuthoringTestItem(tribute, "wild-fruit-and-berries");
+    tribute = withAuthoringTestItem(tribute, "wild-fruit");
 
     const prepared = prepareRound(createAuthoringTestGame([tribute]), ROUND);
 

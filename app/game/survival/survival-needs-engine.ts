@@ -1,7 +1,8 @@
 import { applyAutomaticResolutionEvents } from "~/game/engine/apply-automatic-resolution-events";
 import { chooseSimultaneousFatalitySurvivor } from "~/game/engine/simultaneous-fatality";
 import { createFatalNeedResolutionEvent } from "~/game/events/catalogue/survival/need-resolution-events";
-import { createStatusEffectInstance } from "~/game/statuses/status-engine";
+import { createStatusEffectInstance, upsertStatusEffect } from "~/game/statuses/status-engine";
+import { getConflictingStatusIds } from "~/game/statuses/status-conflicts";
 import type { GameState, GameTribute, RoundReference, StatusEffect } from "~/game/types/game-state";
 
 import type { SurvivalNeed } from "./survival-schema";
@@ -57,31 +58,61 @@ function synchronizeSingleSurvivalNeed(
     isNeedStatus(status, needStatusIds),
   );
 
-  if (
-    expectedStage &&
-    existingNeedStatuses.length === 1 &&
-    existingNeedStatuses[0]?.definitionId === expectedStage.statusId
-  ) {
-    return tribute;
-  }
-
-  if (!expectedStage && existingNeedStatuses.length === 0) {
-    return tribute;
-  }
-
-  const unrelatedStatuses = tribute.statuses.filter(
-    (status) => !isNeedStatus(status, needStatusIds),
-  );
-
+  /*
+   * No need stage should currently be active.
+   *
+   * Preserve the original tribute object when nothing
+   * needs to change.
+   */
   if (!expectedStage) {
+    if (existingNeedStatuses.length === 0) {
+      return tribute;
+    }
+
     return {
       ...tribute,
-      statuses: unrelatedStatuses,
+
+      statuses: tribute.statuses.filter((status) => !isNeedStatus(status, needStatusIds)),
     };
   }
 
   const existingExpectedStatus = existingNeedStatuses.find(
     (status) => status.definitionId === expectedStage.statusId,
+  );
+
+  const conflictingStatusIds = new Set(getConflictingStatusIds(expectedStage.statusId));
+
+  const hasConflictingStatus = tribute.statuses.some((status) =>
+    conflictingStatusIds.has(status.definitionId),
+  );
+
+  /*
+   * Preserve the original tribute object when it already
+   * has exactly the correct need stage and no conflict.
+   *
+   * The conflict check is important. Without it, a tribute
+   * with both hungry and well-fed would incorrectly return
+   * unchanged.
+   */
+  if (
+    existingNeedStatuses.length === 1 &&
+    existingExpectedStatus !== undefined &&
+    !hasConflictingStatus
+  ) {
+    return tribute;
+  }
+
+  /*
+   * Remove every existing stage for this need before
+   * inserting the counter-appropriate stage.
+   *
+   * This handles invalid combinations such as:
+   *
+   * thirsty + dehydrated
+   * hungry + starving
+   */
+  const statusesWithoutNeedStages = tribute.statuses.filter(
+    (status) => !isNeedStatus(status, needStatusIds),
   );
 
   const expectedStatus =
@@ -98,7 +129,14 @@ function synchronizeSingleSurvivalNeed(
   return {
     ...tribute,
 
-    statuses: [...unrelatedStatuses, expectedStatus],
+    /*
+     * upsertStatusEffect also removes statuses that
+     * conflict with the need stage.
+     *
+     * Therefore hungry or starving automatically removes
+     * well-fed.
+     */
+    statuses: upsertStatusEffect(statusesWithoutNeedStages, expectedStatus),
   };
 }
 

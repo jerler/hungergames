@@ -351,6 +351,18 @@ export function compileEffects(
       case "increase-survival-deprivation":
         return compileSurvivalDeprivationEffect(effect, context);
 
+      case "satisfy-survival-need": {
+        const tribute = requireSingleParticipant(context.participantsByRole, effect.roleId);
+
+        return [
+          {
+            type: "satisfy-survival-need",
+            tributeId: tribute.id,
+            need: effect.need,
+          },
+        ];
+      }
+
       case "acquire-natural-resource": {
         const tribute = requireSingleParticipant(context.participantsByRole, effect.roleId);
 

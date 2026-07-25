@@ -13,6 +13,7 @@ import { getRoundSequence } from "~/game/engine/rounds";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
 import type { SurvivalNeed } from "~/game/survival/survival-schema";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
+import { assertValidStatusCombination } from "~/game/statuses/status-conflicts";
 
 import {
   getSurvivalNeedProgression,
@@ -610,6 +611,8 @@ export function assertGameStateInvariants(state: GameState): void {
     );
 
     assertTributeSurvivalState(tribute, state.phase === "round-events");
+
+    assertValidStatusCombination(tribute);
 
     assertUniqueValues(
       tribute.statuses.map((status) => status.id),

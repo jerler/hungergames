@@ -112,6 +112,55 @@ describe("game-state invariants", () => {
     expect(() => assertGameStateInvariants(createGame())).not.toThrow();
   });
 
+  it("rejects conflicting hunger statuses", () => {
+    const state = createGame();
+    const tribute = state.tributes[0];
+
+    if (!tribute) {
+      throw new Error("Invariant test tribute is missing.");
+    }
+
+    const invalidState = updateTribute(state, tribute.id, (candidate) => ({
+      ...candidate,
+
+      survival: {
+        ...candidate.survival,
+        roundsWithoutFood: 4,
+      },
+
+      statuses: [
+        createStatusEffectInstance("well-fed-conflict", candidate.id, "well-fed", 1, DAY_ONE),
+
+        createStatusEffectInstance("hungry-conflict", candidate.id, "hungry", 1, DAY_ONE),
+      ],
+    }));
+
+    expect(() => assertGameStateInvariants(invalidState)).toThrow(
+      /cannot have both.*well-fed.*hungry/i,
+    );
+  });
+
+  it("allows alert and well-rested to coexist", () => {
+    const state = createGame();
+    const tribute = state.tributes[0];
+
+    if (!tribute) {
+      throw new Error("Invariant test tribute is missing.");
+    }
+
+    const validState = updateTribute(state, tribute.id, (candidate) => ({
+      ...candidate,
+
+      statuses: [
+        createStatusEffectInstance("alert-compatible", candidate.id, "alert", 1, DAY_ONE),
+
+        createStatusEffectInstance("rest-compatible", candidate.id, "well-rested", 1, DAY_ONE),
+      ],
+    }));
+
+    expect(() => assertGameStateInvariants(validState)).not.toThrow();
+  });
+
   it("rejects negative survival-need counters", () => {
     const state = createGame();
     const tribute = state.tributes[0];
@@ -175,7 +224,7 @@ describe("game-state invariants", () => {
 
       survival: {
         ...candidate.survival,
-        roundsWithoutWater: 2,
+        roundsWithoutWater: 4,
       },
 
       statuses: [
@@ -184,7 +233,7 @@ describe("game-state invariants", () => {
     }));
 
     expect(() => assertGameStateInvariants(invalidState)).toThrow(
-      /counter 2 requires "dehydrated"/i,
+      /counter 4 requires "dehydrated"/i,
     );
   });
 
@@ -199,7 +248,7 @@ describe("game-state invariants", () => {
     const thirstyStatus = {
       ...createStatusEffectInstance("persistent-duration", tribute.id, "thirsty", 1, DAY_ONE),
 
-      remainingRounds: 1,
+      remainingRounds: 2,
     };
 
     const invalidState = updateTribute(state, tribute.id, (candidate) => ({
@@ -207,7 +256,7 @@ describe("game-state invariants", () => {
 
       survival: {
         ...candidate.survival,
-        roundsWithoutWater: 1,
+        roundsWithoutWater: 2,
       },
 
       statuses: [thirstyStatus],

@@ -140,6 +140,92 @@ describe("camouflage preparation", () => {
     );
   });
 
+  it("applies Hidden 1 when camouflage paint succeeds", () => {
+    let tribute = createAuthoringTestTribute({
+      id: "successful-paint-camouflage",
+
+      stats: {
+        brains: 5,
+        brawn: 3,
+        luck: 3,
+      },
+    });
+
+    tribute = withAuthoringTestItem(tribute, "camouflage-paint");
+
+    const state = createAuthoringTestGame([tribute]);
+    const plan = requirePlan(state, tribute);
+
+    const attempt = resolveCamouflagePreparationAttempt({
+      eventId: "successful-paint-camouflage",
+
+      round: ROUND,
+      random: () => 0.6,
+
+      tribute,
+      plan,
+    });
+
+    expect(attempt.outcome).toBe("success");
+
+    expect(attempt.changes).toContainEqual(
+      expect.objectContaining({
+        type: "apply-status",
+        tributeId: tribute.id,
+
+        status: expect.objectContaining({
+          definitionId: "hidden",
+          severity: 1,
+        }),
+      }),
+    );
+  });
+
+  it.each(["camouflage-net", "camouflage-paint"] as const)(
+    "applies Hidden 3 when %s achieves exceptional success",
+    (itemId) => {
+      let tribute = createAuthoringTestTribute({
+        id: `exceptional-${itemId}`,
+
+        stats: {
+          brains: 5,
+          brawn: 3,
+          luck: 5,
+        },
+      });
+
+      tribute = withAuthoringTestItem(tribute, itemId);
+
+      const state = createAuthoringTestGame([tribute]);
+      const plan = requirePlan(state, tribute);
+
+      const attempt = resolveCamouflagePreparationAttempt({
+        eventId: `exceptional-${itemId}`,
+
+        round: ROUND,
+        random: () => 0.999,
+
+        tribute,
+        plan,
+      });
+
+      expect(attempt.outcome).toBe("exceptional-success");
+      expect(attempt.affectedStatusIds).toEqual(["hidden"]);
+
+      expect(attempt.changes).toContainEqual(
+        expect.objectContaining({
+          type: "apply-status",
+          tributeId: tribute.id,
+
+          status: expect.objectContaining({
+            definitionId: "hidden",
+            severity: 3,
+          }),
+        }),
+      );
+    },
+  );
+
   it("uses either strong Brains or strong Luck", () => {
     let brainyTribute = createAuthoringTestTribute({
       id: "brainy-camouflage",

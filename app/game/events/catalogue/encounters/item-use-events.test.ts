@@ -71,7 +71,7 @@ describe("item-use event content", () => {
 
     const success = resolveItemEvent("slingshot-trick-shot", "slingshot", 0.6);
 
-    expect(getAcquiredItemIds(success.resolution)).toEqual(["wild-fruit-and-berries"]);
+    expect(getAcquiredItemIds(success.resolution)).toEqual(["wild-fruit"]);
 
     expect(hasSurvivalCredit(success.resolution, success.tribute.id)).toBe(true);
   });
@@ -83,7 +83,7 @@ describe("item-use event content", () => {
       0.999,
     );
 
-    expect(getAcquiredItemIds(resolution)).toEqual(["wild-fruit-and-berries", "water"]);
+    expect(getAcquiredItemIds(resolution)).toEqual(["wild-fruit", "water"]);
 
     expect(hasSurvivalCredit(resolution, tribute.id)).toBe(true);
   });

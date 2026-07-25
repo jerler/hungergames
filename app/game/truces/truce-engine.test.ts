@@ -517,7 +517,7 @@ describe("truce engine", () => {
       "water",
 
       // Safe natural food
-      "wild-fruit-and-berries",
+      "wild-fruit",
       "mushrooms",
       "eggs",
       "rabbit",

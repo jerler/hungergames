@@ -2,7 +2,7 @@ import type { RandomSource } from "~/game/engine/random";
 
 import { createItemUseChange, createStatusChange } from "~/game/events/event-change-builders";
 
-import { isSuccessfulStatCheckOutcome, type StatCheckOutcome } from "~/game/events/event-outcomes";
+import type { StatCheckOutcome } from "~/game/events/event-outcomes";
 
 import { resolveLuckAdjustedBestStatCheck } from "~/game/events/event-resolution-helpers";
 
@@ -162,8 +162,12 @@ export function resolveCamouflagePreparationAttempt({
     changes.push(createStatusChange(eventId, tribute, "disoriented", 1, round));
 
     affectedStatusIds.push("disoriented");
-  } else if (isSuccessfulStatCheckOutcome(outcome)) {
+  } else if (outcome === "success") {
     changes.push(createStatusChange(eventId, tribute, "hidden", plan.hiddenSeverity, round));
+
+    affectedStatusIds.push("hidden");
+  } else if (outcome === "exceptional-success") {
+    changes.push(createStatusChange(eventId, tribute, "hidden", 3, round));
 
     affectedStatusIds.push("hidden");
   }

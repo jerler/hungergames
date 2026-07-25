@@ -33,7 +33,7 @@ function createOptionalItemEvent(access: "accessible" | "owned" = "accessible") 
   return createEvent("optional-item-selection")
     .solo("tribute", {
       optionalItem: {
-        definitionIds: ["wild-fruit-and-berries"],
+        definitionIds: ["wild-fruit"],
         access,
       },
     })
@@ -91,7 +91,7 @@ describe("optional authored role items", () => {
       createAuthoringTestTribute({
         id: "owner",
       }),
-      "wild-fruit-and-berries",
+      "wild-fruit",
     );
 
     const state = createAuthoringTestGame([tribute]);
@@ -106,7 +106,7 @@ describe("optional authored role items", () => {
       },
       item: {
         id: food.id,
-        definitionId: "wild-fruit-and-berries",
+        definitionId: "wild-fruit",
       },
     });
 
@@ -122,7 +122,7 @@ describe("optional authored role items", () => {
       createAuthoringTestTribute({
         id: "partner",
       }),
-      "wild-fruit-and-berries",
+      "wild-fruit",
     );
 
     const truce = createTruceInstance(
@@ -151,7 +151,7 @@ describe("optional authored role items", () => {
       },
       item: {
         id: food.id,
-        definitionId: "wild-fruit-and-berries",
+        definitionId: "wild-fruit",
       },
     });
 
@@ -163,7 +163,7 @@ describe("optional authored role items", () => {
       createAuthoringTestTribute({
         id: "reserved-owner",
       }),
-      "wild-fruit-and-berries",
+      "wild-fruit",
     );
 
     const state = createAuthoringTestGame([tribute]);
@@ -185,7 +185,7 @@ describe("optional authored role items", () => {
       createAuthoringTestTribute({
         id: "owned-partner",
       }),
-      "wild-fruit-and-berries",
+      "wild-fruit",
     );
 
     const truce = createTruceInstance(
@@ -218,7 +218,7 @@ describe("optional authored role items", () => {
       createAuthoringTestTribute({
         id: "unavailable-owner",
       }),
-      "wild-fruit-and-berries",
+      "wild-fruit",
     );
 
     const truce = createTruceInstance(
@@ -273,7 +273,7 @@ describe("optional authored role items", () => {
       createEvent("conflicting-item-selection")
         .solo("tribute", {
           optionalItem: {
-            definitionIds: ["wild-fruit-and-berries"],
+            definitionIds: ["wild-fruit"],
           },
         })
         .when(

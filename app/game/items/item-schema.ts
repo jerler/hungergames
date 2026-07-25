@@ -6,7 +6,7 @@ export type ItemDefinitionId =
   | "water"
 
   // Safe natural food
-  | "wild-fruit-and-berries"
+  | "wild-fruit"
   | "mushrooms"
   | "eggs"
   | "rabbit"

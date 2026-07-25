@@ -4,7 +4,7 @@ import { ITEM_CATALOGUE, getItemDefinition } from "./item-catalogue";
 import type { ItemDefinitionId, ItemOrigin } from "./item-schema";
 
 const SAFE_NATURAL_FOOD_ITEM_IDS = [
-  "wild-fruit-and-berries",
+  "wild-fruit",
   "mushrooms",
   "eggs",
   "rabbit",

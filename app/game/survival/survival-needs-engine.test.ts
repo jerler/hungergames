@@ -55,19 +55,33 @@ function requireFirstTribute(state: GameState): GameTribute {
 }
 
 describe("advanceSurvivalNeedsAfterRound", () => {
-  it("applies thirsty after one round without water", () => {
+  it("applies no water status after one round without water", () => {
     const advanced = advanceSurvivalNeedsAfterRound(createGameWithCounters());
 
     const tribute = requireFirstTribute(advanced);
 
     expect(tribute.survival.roundsWithoutWater).toBe(1);
 
-    expect(getStatusIds(tribute)).toContain("thirsty");
-
+    expect(getStatusIds(tribute)).not.toContain("thirsty");
     expect(getStatusIds(tribute)).not.toContain("dehydrated");
   });
 
-  it("replaces thirsty with dehydrated after two rounds without water", () => {
+  it("applies thirsty after two rounds without water", () => {
+    const advanced = advanceSurvivalNeedsAfterRound(
+      createGameWithCounters({
+        roundsWithoutWater: 1,
+      }),
+    );
+
+    const tribute = requireFirstTribute(advanced);
+
+    expect(tribute.survival.roundsWithoutWater).toBe(2);
+
+    expect(getStatusIds(tribute)).toContain("thirsty");
+    expect(getStatusIds(tribute)).not.toContain("dehydrated");
+  });
+
+  it("replaces thirsty with dehydrated after four rounds without water", () => {
     const baseTribute = createAuthoringTestTribute();
 
     const thirsty = createStatusEffectInstance(
@@ -84,7 +98,7 @@ describe("advanceSurvivalNeedsAfterRound", () => {
 
         survival: {
           ...baseTribute.survival,
-          roundsWithoutWater: 1,
+          roundsWithoutWater: 3,
         },
 
         statuses: [thirsty],
@@ -92,13 +106,11 @@ describe("advanceSurvivalNeedsAfterRound", () => {
     ]);
 
     const advanced = advanceSurvivalNeedsAfterRound(game);
-
     const tribute = requireFirstTribute(advanced);
 
-    expect(tribute.survival.roundsWithoutWater).toBe(2);
+    expect(tribute.survival.roundsWithoutWater).toBe(4);
 
     expect(getStatusIds(tribute)).toContain("dehydrated");
-
     expect(getStatusIds(tribute)).not.toContain("thirsty");
   });
 
@@ -176,7 +188,7 @@ describe("advanceSurvivalNeedsAfterRound", () => {
     const advanced = advanceSurvivalNeedsAfterRound(
       createGameWithCounters({
         roundsWithoutFood: 3,
-        roundsWithoutWater: 0,
+        roundsWithoutWater: 1,
       }),
     );
 
@@ -184,7 +196,7 @@ describe("advanceSurvivalNeedsAfterRound", () => {
 
     expect(tribute.survival).toMatchObject({
       roundsWithoutFood: 4,
-      roundsWithoutWater: 1,
+      roundsWithoutWater: 2,
     });
 
     expect(getStatusIds(tribute)).toEqual(expect.arrayContaining(["hungry", "thirsty"]));
@@ -296,6 +308,50 @@ describe("synchronizeSurvivalNeedStatuses", () => {
     expect(getStatusIds(synchronized)).not.toContain("starving");
   });
 
+  it.each([
+    {
+      roundsWithoutFood: 4,
+
+      expectedStatusId: "hungry",
+    },
+
+    {
+      roundsWithoutFood: 6,
+
+      expectedStatusId: "starving",
+    },
+  ] as const)(
+    "replaces well-fed with $expectedStatusId when food deprivation reaches $roundsWithoutFood rounds",
+    ({ roundsWithoutFood, expectedStatusId }) => {
+      const baseTribute = createAuthoringTestTribute();
+
+      const wellFed = createStatusEffectInstance(
+        "existing-well-fed",
+        baseTribute.id,
+        "well-fed",
+        1,
+        PREVIOUS_ROUND,
+      );
+
+      const tribute: GameTribute = {
+        ...baseTribute,
+
+        survival: {
+          ...baseTribute.survival,
+          roundsWithoutFood,
+        },
+
+        statuses: [wellFed],
+      };
+
+      const synchronized = synchronizeSurvivalNeedStatuses(tribute, AUTHORING_TEST_ROUND);
+
+      expect(getStatusIds(synchronized)).toContain(expectedStatusId);
+
+      expect(getStatusIds(synchronized)).not.toContain("well-fed");
+    },
+  );
+
   it("keeps only the counter-appropriate stage when need stages coexist", () => {
     const baseTribute = createAuthoringTestTribute();
 
@@ -306,7 +362,7 @@ describe("synchronizeSurvivalNeedStatuses", () => {
         ...baseTribute.survival,
 
         roundsWithoutFood: 6,
-        roundsWithoutWater: 2,
+        roundsWithoutWater: 4,
       },
 
       statuses: [
@@ -365,7 +421,7 @@ describe("synchronizeSurvivalNeedStatuses", () => {
 
       survival: {
         ...baseTribute.survival,
-        roundsWithoutWater: 1,
+        roundsWithoutWater: 2,
       },
 
       statuses: [thirsty],

@@ -55,11 +55,11 @@ export const ITEM_CATALOGUE = [
 
   // Safe natural food
   {
-    id: "wild-fruit-and-berries",
+    id: "wild-fruit",
 
-    label: "Wild fruit and berries",
+    label: "Wild fruit",
 
-    description: "Safely identified wild fruit and berries gathered from the arena.",
+    description: "Safely identified wild fruit gathered from the arena.",
 
     origin: "natural-resource",
 

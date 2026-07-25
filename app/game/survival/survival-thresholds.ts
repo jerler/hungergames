@@ -31,18 +31,18 @@ export const SURVIVAL_NEED_PROGRESSIONS = {
 
     stages: [
       {
-        minimumRounds: 1,
+        minimumRounds: 2,
         statusId: "thirsty",
         severity: 1,
       },
       {
-        minimumRounds: 2,
+        minimumRounds: 4,
         statusId: "dehydrated",
         severity: 1,
       },
     ],
 
-    fatalAtRounds: 4,
+    fatalAtRounds: 6,
   },
 
   food: {

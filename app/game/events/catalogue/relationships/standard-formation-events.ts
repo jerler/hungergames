@@ -21,7 +21,7 @@ import type { GameChange, GameTribute } from "~/game/types/game-state";
 
 const FORMATION_BASE_WEIGHT = 7;
 
-const SHARED_SUPPLY_IDS = ["wild-fruit-and-berries", "water"] satisfies readonly ItemDefinitionId[];
+const SHARED_SUPPLY_IDS = ["wild-fruit", "water"] satisfies readonly ItemDefinitionId[];
 
 type FormationTheme = "travel-together" | "split-supplies";
 

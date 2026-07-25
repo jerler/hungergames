@@ -408,14 +408,11 @@ describe("environmental events", () => {
   it("lets the goose steal the tribute's own food", () => {
     const originalGame = createTestGame();
 
-    const tribute = withItem(
-      withStats(originalGame.tributes[0], BALANCED_STATS),
-      "wild-fruit-and-berries",
-    );
+    const tribute = withItem(withStats(originalGame.tributes[0], BALANCED_STATS), "wild-fruit");
 
     const game = replaceTributes(originalGame, [tribute]);
 
-    const food = tribute.inventory.find((item) => item.definitionId === "wild-fruit-and-berries");
+    const food = tribute.inventory.find((item) => item.definitionId === "wild-fruit");
 
     const resolution = resolveEvent(
       requireEvent("arena-goose"),
@@ -447,19 +444,14 @@ describe("environmental events", () => {
 
     const tribute = withStats(originalGame.tributes[0], BALANCED_STATS);
 
-    const itemOwner = withItem(
-      withStats(originalGame.tributes[1], BALANCED_STATS),
-      "wild-fruit-and-berries",
-    );
+    const itemOwner = withItem(withStats(originalGame.tributes[1], BALANCED_STATS), "wild-fruit");
 
     const game = addTruce(replaceTributes(originalGame, [tribute, itemOwner]), [
       tribute,
       itemOwner,
     ]);
 
-    const partnerFood = itemOwner.inventory.find(
-      (item) => item.definitionId === "wild-fruit-and-berries",
-    );
+    const partnerFood = itemOwner.inventory.find((item) => item.definitionId === "wild-fruit");
 
     if (!partnerFood) {
       throw new Error("Expected the truce partner to own food.");
@@ -497,17 +489,14 @@ describe("environmental events", () => {
 
     const tribute = withStats(originalGame.tributes[0], BALANCED_STATS);
 
-    const itemOwner = withItem(
-      withStats(originalGame.tributes[1], BALANCED_STATS),
-      "wild-fruit-and-berries",
-    );
+    const itemOwner = withItem(withStats(originalGame.tributes[1], BALANCED_STATS), "wild-fruit");
 
     const game = addTruce(replaceTributes(originalGame, [tribute, itemOwner]), [
       tribute,
       itemOwner,
     ]);
 
-    const food = itemOwner.inventory.find((item) => item.definitionId === "wild-fruit-and-berries");
+    const food = itemOwner.inventory.find((item) => item.definitionId === "wild-fruit");
 
     if (!food) {
       throw new Error("Test truce partner has no food.");
@@ -693,8 +682,7 @@ describe("environmental events", () => {
         tributeId: tribute.id,
 
         status: expect.objectContaining({
-          definitionId: "dehydrated",
-
+          definitionId: "thirsty",
           remainingRounds: null,
         }),
       }),

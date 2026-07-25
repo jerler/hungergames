@@ -26,7 +26,7 @@ describe("foraging event content", () => {
     {
       eventId: "identifies-wild-berries",
 
-      safeItemId: "wild-fruit-and-berries",
+      safeItemId: "wild-fruit",
     },
 
     {

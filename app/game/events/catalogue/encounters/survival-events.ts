@@ -20,7 +20,7 @@ import type { EventDefinition } from "~/game/events/event-schema";
 export const SURVIVAL_EVENTS = [
   /* Day Only */
   createNaturalResourceEvent("forages-for-resources", {
-    resources: ["wild-fruit-and-berries", "water"],
+    resources: ["wild-fruit", "water"],
     text: ({ tribute }, itemId) =>
       itemId === "water"
         ? `${tribute.name} follows animal tracks to a clean spring and collects water.`
@@ -56,7 +56,7 @@ export const SURVIVAL_EVENTS = [
             text: ({ tribute }) =>
               `${tribute.name} correctly reads ${tribute.pronouns.possessiveAdjective} map and follows it to a patch of edible plants.`,
             effects: [
-              acquireNaturalResource("tribute", "wild-fruit-and-berries"),
+              acquireNaturalResource("tribute", "wild-fruit"),
               survived("tribute"),
               consumeRequiredItem("tribute", { reason: "upside-down-map" }),
             ],

@@ -300,7 +300,7 @@ describe("item acquisition provenance", () => {
     const { event } = createAcquisitionEvent(
       game,
       "valid-foraging",
-      "wild-fruit-and-berries",
+      "wild-fruit",
       "natural-foraging",
       DAY_TWO,
     );

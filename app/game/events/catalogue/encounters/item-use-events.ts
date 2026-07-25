@@ -73,14 +73,14 @@ export const ITEM_USE_EVENTS = [
       success: result({
         text: ({ tribute }) =>
           `${tribute.name} uses a careful slingshot shot to knock edible fruit from a high branch.`,
-        effects: [acquireNaturalResource("tribute", "wild-fruit-and-berries"), survived("tribute")],
+        effects: [acquireNaturalResource("tribute", "wild-fruit"), survived("tribute")],
       }),
 
       exceptionalSuccess: result({
         text: ({ tribute }) =>
           `${tribute.name} performs an impossible-looking trick shot, collects the fallen food, and feels extremely pleased with ${tribute.pronouns.reflexive}.`,
         effects: [
-          acquireNaturalResource("tribute", "wild-fruit-and-berries"),
+          acquireNaturalResource("tribute", "wild-fruit"),
           applyStatus("tribute", "inspired", 1),
           survived("tribute"),
         ],
@@ -123,7 +123,7 @@ export const ITEM_USE_EVENTS = [
         text: ({ tribute }) =>
           `${tribute.name} uses ${tribute.pronouns.possessiveAdjective} shield as a sled and glides into a sheltered hollow containing edible plants and a clean spring.`,
         effects: [
-          acquireNaturalResource("tribute", "wild-fruit-and-berries"),
+          acquireNaturalResource("tribute", "wild-fruit"),
           acquireNaturalResource("tribute", "water"),
           survived("tribute"),
         ],

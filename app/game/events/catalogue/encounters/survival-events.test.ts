@@ -188,7 +188,7 @@ describe("survival events", () => {
   it.each([
     {
       randomValue: 0,
-      expectedItemId: "wild-fruit-and-berries",
+      expectedItemId: "wild-fruit",
       expectedTextFragment: "gathers enough for a meal",
     },
     {

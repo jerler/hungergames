@@ -158,7 +158,7 @@ describe("truce formation events", () => {
     expect(acquiredItems).toEqual([
       {
         tributeId: participants[0].id,
-        definitionId: "wild-fruit-and-berries",
+        definitionId: "wild-fruit",
       },
       {
         tributeId: participants[1].id,
@@ -166,7 +166,7 @@ describe("truce formation events", () => {
       },
       {
         tributeId: participants[2].id,
-        definitionId: "wild-fruit-and-berries",
+        definitionId: "wild-fruit",
       },
       {
         tributeId: participants[3].id,

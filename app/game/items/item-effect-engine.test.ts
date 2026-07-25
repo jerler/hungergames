@@ -24,12 +24,7 @@ describe("item effect compilation", () => {
       statuses: [createStatusEffectInstance("hunger-event", "acting-tribute", "hungry", 1, ROUND)],
     };
 
-    const food = createInventoryItemInstance(
-      "food-event",
-      owner.id,
-      "wild-fruit-and-berries",
-      ROUND,
-    );
+    const food = createInventoryItemInstance("food-event", owner.id, "wild-fruit", ROUND);
 
     const changes = compileItemUseEffects({
       eventId: "use-natural-food",

@@ -42,14 +42,14 @@ function requireTribute(state: GameState, tributeId: string): GameTribute {
 }
 
 describe("fatal survival need resolution", () => {
-  it("kills a tribute after four rounds without water", () => {
+  it("kills a tribute after six rounds without water", () => {
     const victim = withNeeds(
       createAuthoringTestTribute({
         id: "victim",
         name: "Victim",
       }),
       {
-        water: 3,
+        water: 5,
       },
     );
 
@@ -117,7 +117,7 @@ describe("fatal survival need resolution", () => {
           id: "victim",
         }),
         {
-          water: 3,
+          water: 5,
         },
       ),
       "blanket",
@@ -167,7 +167,7 @@ describe("fatal survival need resolution", () => {
         id: "victim",
       }),
       {
-        water: 3,
+        water: 5,
         food: 7,
       },
     );
@@ -201,7 +201,7 @@ describe("fatal survival need resolution", () => {
         },
       }),
       {
-        water: 3,
+        water: 5,
       },
     );
 
@@ -216,7 +216,7 @@ describe("fatal survival need resolution", () => {
         },
       }),
       {
-        water: 3,
+        water: 5,
       },
     );
 
@@ -228,7 +228,7 @@ describe("fatal survival need resolution", () => {
 
     expect(spared.isAlive).toBe(true);
 
-    expect(spared.survival.roundsWithoutWater).toBe(3);
+    expect(spared.survival.roundsWithoutWater).toBe(5);
 
     expect(spared.statuses.map((status) => status.definitionId)).toContain("dehydrated");
 
@@ -243,7 +243,7 @@ describe("fatal survival need resolution", () => {
         id: "victim",
       }),
       {
-        water: 3,
+        water: 5,
       },
     );
 

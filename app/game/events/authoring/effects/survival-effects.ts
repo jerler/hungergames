@@ -1,6 +1,6 @@
 import type { SurvivalNeed } from "~/game/survival/survival-schema";
 
-import type { IncreaseSurvivalDeprivationEffect } from "./effect-schema";
+import type { IncreaseSurvivalDeprivationEffect, SatisfySurvivalNeedEffect } from "./effect-schema";
 
 export function increaseSurvivalDeprivation(
   roleId: string,
@@ -16,5 +16,13 @@ export function increaseSurvivalDeprivation(
     roleId,
     need,
     rounds,
+  };
+}
+
+export function satisfySurvivalNeed(roleId: string, need: SurvivalNeed): SatisfySurvivalNeedEffect {
+  return {
+    type: "satisfy-survival-need",
+    roleId,
+    need,
   };
 }

@@ -40,7 +40,7 @@ describe("selected role item helpers", () => {
   });
 
   it.each([
-    { itemId: "wild-fruit-and-berries", expectedType: "consume-item" },
+    { itemId: "wild-fruit", expectedType: "consume-item" },
     { itemId: "shield", expectedType: "use-item" },
   ] as const)("records $expectedType against the physical owner", ({ itemId, expectedType }) => {
     const context = createContext(itemId);

@@ -39,7 +39,7 @@ const INVENTORY_DEFINITIONS = [
   "water",
 
   // Safe natural food
-  "wild-fruit-and-berries",
+  "wild-fruit",
   "mushrooms",
   "eggs",
   "rabbit",

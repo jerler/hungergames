@@ -25,7 +25,7 @@ describe("kill", () => {
     const food = createInventoryItemInstance(
       "victim-loot",
       victimBase.id,
-      "wild-fruit-and-berries",
+      "wild-fruit",
       AUTHORING_TEST_ROUND,
     );
 

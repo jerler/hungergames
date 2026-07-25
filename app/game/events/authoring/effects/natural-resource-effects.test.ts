@@ -24,7 +24,7 @@ describe("acquireNaturalResource", () => {
           result({
             text: "The tribute gathers food.",
 
-            effects: [acquireNaturalResource("tribute", "wild-fruit-and-berries")],
+            effects: [acquireNaturalResource("tribute", "wild-fruit")],
           }),
         ),
       );
@@ -46,9 +46,9 @@ describe("acquireNaturalResource", () => {
         acquisitionSource: "natural-foraging",
 
         item: {
-          id: "test:natural-resource-acquisition:forager:wild-fruit-and-berries",
+          id: "test:natural-resource-acquisition:forager:wild-fruit",
 
-          definitionId: "wild-fruit-and-berries",
+          definitionId: "wild-fruit",
           usesRemaining: 1,
 
           sourceEventId: "test:natural-resource-acquisition",

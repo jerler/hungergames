@@ -1,7 +1,7 @@
 import { createEvent } from "~/game/events/authoring/builder/create-event";
 
 import type { EventText } from "~/game/events/authoring/characters/event-text-context";
-
+import { satisfySurvivalNeed } from "~/game/events/authoring/effects/survival-effects";
 import { acquireNaturalResource } from "~/game/events/authoring/effects/natural-resource-effects";
 
 import { applyStatus } from "~/game/events/authoring/effects/status-effects";
@@ -140,6 +140,8 @@ export function createHuntedFoodEvent(
 
       effects: [
         acquireNaturalResource(roleId, foodId),
+
+        satisfySurvivalNeed(roleId, "food"),
 
         applyStatus(roleId, "well-fed", 1),
 

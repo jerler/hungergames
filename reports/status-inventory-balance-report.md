@@ -167,43 +167,43 @@ Overall result: **PASS**
 
 ### Most acquired items
 
-| Item                   | Acquisitions |
-| ---------------------- | -----------: |
-| Wild fruit and berries |          409 |
-| Fresh water            |          361 |
-| Knife                  |           47 |
-| Rapier                 |           46 |
-| Crossbow               |           44 |
-| Longbow                |           41 |
-| Spear                  |           40 |
-| Short sword            |           38 |
-| Trident                |           38 |
-| Bow and arrows         |           36 |
-| Pike                   |           36 |
-| Warhammer              |           35 |
-| Club                   |           33 |
-| Axe                    |           30 |
-| Eggs                   |           30 |
+| Item           | Acquisitions |
+| -------------- | -----------: |
+| Wild fruit     |          409 |
+| Fresh water    |          361 |
+| Knife          |           47 |
+| Rapier         |           46 |
+| Crossbow       |           44 |
+| Longbow        |           41 |
+| Spear          |           40 |
+| Short sword    |           38 |
+| Trident        |           38 |
+| Bow and arrows |           36 |
+| Pike           |           36 |
+| Warhammer      |           35 |
+| Club           |           33 |
+| Axe            |           30 |
+| Eggs           |           30 |
 
 ### Most consumed items
 
-| Item                   | Uses consumed |
-| ---------------------- | ------------: |
-| Fresh water            |           323 |
-| Wild fruit and berries |            56 |
-| Lighter                |            54 |
-| Bottled water          |            52 |
-| Soup                   |            20 |
-| Camouflage paint       |            19 |
-| Energy drink           |            15 |
-| Hot chocolate          |            15 |
-| Coca-Cola              |            14 |
-| Coffee                 |            14 |
-| Herbal tea             |            13 |
-| Matches                |            11 |
-| Eggs                   |             3 |
-| Arena map              |             2 |
-| Trap kit               |             2 |
+| Item             | Uses consumed |
+| ---------------- | ------------: |
+| Fresh water      |           323 |
+| Wild fruit       |            56 |
+| Lighter          |            54 |
+| Bottled water    |            52 |
+| Soup             |            20 |
+| Camouflage paint |            19 |
+| Energy drink     |            15 |
+| Hot chocolate    |            15 |
+| Coca-Cola        |            14 |
+| Coffee           |            14 |
+| Herbal tea       |            13 |
+| Matches          |            11 |
+| Eggs             |             3 |
+| Arena map        |             2 |
+| Trap kit         |             2 |
 
 ## Event-family coverage
 

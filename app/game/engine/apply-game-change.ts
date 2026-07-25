@@ -1,4 +1,3 @@
-import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import type {
   GameChange,
   GameState,
@@ -13,6 +12,7 @@ import { getItemDefinition } from "~/game/items/item-catalogue";
 import { getRoundSequence } from "~/game/engine/rounds";
 import { createAccidentalTruceDissolutionEvents } from "~/game/truces/truce-aftermath";
 import type { SurvivalNeed } from "~/game/survival/survival-schema";
+import { upsertStatusEffect } from "~/game/statuses/status-engine";
 
 function updateTribute(
   state: GameState,
@@ -46,21 +46,6 @@ function getSurvivalNeedCounterKey(need: SurvivalNeed): SurvivalNeedCounterKey {
   }
 
   throw new Error(`Unknown survival need "${String(need)}".`);
-}
-
-function mergeStatusDuration(
-  existingDuration: number | null,
-  incomingDuration: number | null,
-): number | null {
-  if (existingDuration === null || incomingDuration === null) {
-    if (existingDuration !== incomingDuration) {
-      throw new Error("Cannot merge timed and persistent instances of the same status.");
-    }
-
-    return null;
-  }
-
-  return Math.max(existingDuration, incomingDuration);
 }
 
 function requireNonNegativeInteger(value: number, description: string): void {
@@ -429,43 +414,11 @@ export function applyGameChange(
     }
 
     case "apply-status":
-      return updateTribute(state, change.tributeId, (tribute) => {
-        const definition = getStatusDefinition(change.status.definitionId);
+      return updateTribute(state, change.tributeId, (tribute) => ({
+        ...tribute,
 
-        const existingStatus = tribute.statuses.find(
-          (status) => status.definitionId === change.status.definitionId,
-        );
-
-        if (!existingStatus) {
-          return {
-            ...tribute,
-            statuses: [...tribute.statuses, change.status],
-          };
-        }
-
-        return {
-          ...tribute,
-
-          statuses: tribute.statuses.map((status) =>
-            status.id === existingStatus.id
-              ? {
-                  ...status,
-
-                  severity: Math.min(
-                    definition.maxSeverity,
-                    status.severity + change.status.severity,
-                  ) as 1 | 2 | 3,
-
-                  remainingRounds: mergeStatusDuration(
-                    status.remainingRounds,
-                    change.status.remainingRounds,
-                  ),
-                }
-              : status,
-          ),
-        };
-      });
-
+        statuses: upsertStatusEffect(tribute.statuses, change.status),
+      }));
     case "remove-status":
       return updateTribute(state, change.tributeId, (tribute) => ({
         ...tribute,

@@ -30,7 +30,7 @@ const BERRY_EVENT = createForageIdentificationEvent("test-berry-foraging", {
   forageLabel: "berries",
 
   items: {
-    safe: "wild-fruit-and-berries",
+    safe: "wild-fruit",
 
     hallucinogenic: "hallucinogenic-berries",
 
@@ -119,7 +119,7 @@ describe("createForageIdentificationEvent", () => {
       randomValues: [0.1, 0],
     });
 
-    expect(getAcquiredItemIds(resolution)).toEqual(["wild-fruit-and-berries"]);
+    expect(getAcquiredItemIds(resolution)).toEqual(["wild-fruit"]);
 
     expect(resolution.changes).toContainEqual(
       expect.objectContaining({
@@ -128,7 +128,7 @@ describe("createForageIdentificationEvent", () => {
         acquisitionSource: "natural-foraging",
 
         item: expect.objectContaining({
-          definitionId: "wild-fruit-and-berries",
+          definitionId: "wild-fruit",
         }),
       }),
     );

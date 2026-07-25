@@ -4,7 +4,7 @@ import { createInitialGameState } from "~/game/engine/create-initial-game-state"
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
-import { CURRENT_GAME_STATE_SCHEMA_VERSION } from "~/game/types/game-state";
+import { CURRENT_GAME_STATE_SCHEMA_VERSION, type ResolvedEvent } from "~/game/types/game-state";
 
 import { loadGameState, UnsupportedGameStateSchemaError } from "./game-state-loader";
 
@@ -37,6 +37,74 @@ describe("loadGameState", () => {
 
     expect(loadGameState(game)).toBe(game);
     expect(game.schemaVersion).toBe(CURRENT_GAME_STATE_SCHEMA_VERSION);
+  });
+
+  it("removes legacy preparation events while preserving reveal progress", () => {
+    const game = createGame();
+    const tribute = game.tributes[0];
+
+    if (!tribute) {
+      throw new Error("Loader migration test requires a tribute.");
+    }
+
+    const round = {
+      day: 2,
+      period: "day",
+    } as const;
+
+    const automaticEvent: ResolvedEvent = {
+      id: "legacy-morning-rest",
+      definitionId: "automatic-morning-rest-resolution",
+      kind: "preparation",
+      resolutionMode: "standard",
+      round,
+      participantTributeIds: [tribute.id],
+      text: `${tribute.snapshot.name} wakes after a sheltered night.`,
+      changes: [],
+      preparation: {
+        mechanic: "morning-rest-resolution",
+        actingTributeId: tribute.id,
+        restQuality: "sheltered",
+        affectedStatusIds: [],
+      },
+    };
+
+    const firstPrimaryEvent: ResolvedEvent = {
+      id: "legacy-primary-one",
+      definitionId: "legacy-primary-one",
+      kind: "primary",
+      resolutionMode: "standard",
+      round,
+      participantTributeIds: [tribute.id],
+      text: `${tribute.snapshot.name} watches the arena.`,
+      changes: [],
+    };
+
+    const secondPrimaryEvent: ResolvedEvent = {
+      id: "legacy-primary-two",
+      definitionId: "legacy-primary-two",
+      kind: "primary",
+      resolutionMode: "standard",
+      round,
+      participantTributeIds: [tribute.id],
+      text: `${tribute.snapshot.name} moves on.`,
+      changes: [],
+    };
+
+    const legacyGame = {
+      ...game,
+      phase: "round-events" as const,
+      currentRound: round,
+      roundEvents: [automaticEvent, firstPrimaryEvent, secondPrimaryEvent],
+      revealedEventCount: 2,
+      eventHistory: [automaticEvent, firstPrimaryEvent],
+    };
+
+    const loadedGame = loadGameState(legacyGame);
+
+    expect(loadedGame.roundEvents).toEqual([firstPrimaryEvent, secondPrimaryEvent]);
+    expect(loadedGame.revealedEventCount).toBe(1);
+    expect(loadedGame.eventHistory).toEqual([automaticEvent, firstPrimaryEvent]);
   });
 
   it("rejects schema-1 games intentionally", () => {

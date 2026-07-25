@@ -1,6 +1,6 @@
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
-import type { SurvivalNeed } from "~/game/survival/survival-schema";
+import type { NightRestQuality, SurvivalNeed } from "~/game/survival/survival-schema";
 
 export interface SurvivedEffect {
   type: "survived";
@@ -20,6 +20,20 @@ export interface SatisfySurvivalNeedEffect {
 
   roleId: string;
   need: SurvivalNeed;
+}
+
+export interface RecordNightRestEffect {
+  type: "record-night-rest";
+
+  roleId: string;
+
+  /**
+   * Ordinary shelter events record either success or failure.
+   *
+   * Comfortable rest remains available to explicit item-driven
+   * event mechanics through applyRequiredItemRest().
+   */
+  quality: Extract<NightRestQuality, "sheltered" | "unsheltered">;
 }
 
 export interface ApplyStatusEffect {
@@ -84,6 +98,7 @@ export type EventEffect =
   | SurvivedEffect
   | IncreaseSurvivalDeprivationEffect
   | SatisfySurvivalNeedEffect
+  | RecordNightRestEffect
   | ApplyStatusEffect
   | AcquireNaturalResourceEffect
   | RequiredItemEffect

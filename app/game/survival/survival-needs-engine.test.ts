@@ -22,6 +22,16 @@ function getStatusIds(tribute: GameTribute): string[] {
   return tribute.statuses.map((status) => status.definitionId);
 }
 
+function createCompletedNightGame(
+  tributes: Parameters<typeof createAuthoringTestGame>[0],
+): GameState {
+  return {
+    ...createAuthoringTestGame(tributes),
+
+    currentRound: PREVIOUS_ROUND,
+  };
+}
+
 function createGameWithCounters({
   roundsWithoutFood = 0,
   roundsWithoutWater = 0,
@@ -31,7 +41,7 @@ function createGameWithCounters({
 } = {}): GameState {
   const tribute = createAuthoringTestTribute();
 
-  return createAuthoringTestGame([
+  const game = createAuthoringTestGame([
     {
       ...tribute,
 
@@ -42,6 +52,11 @@ function createGameWithCounters({
       },
     },
   ]);
+
+  return {
+    ...game,
+    currentRound: PREVIOUS_ROUND,
+  };
 }
 
 function requireFirstTribute(state: GameState): GameTribute {
@@ -55,7 +70,7 @@ function requireFirstTribute(state: GameState): GameTribute {
 }
 
 describe("advanceSurvivalNeedsAfterRound", () => {
-  it("applies no water status after one round without water", () => {
+  it("applies no water status after one day without water", () => {
     const advanced = advanceSurvivalNeedsAfterRound(createGameWithCounters());
 
     const tribute = requireFirstTribute(advanced);
@@ -66,7 +81,7 @@ describe("advanceSurvivalNeedsAfterRound", () => {
     expect(getStatusIds(tribute)).not.toContain("dehydrated");
   });
 
-  it("applies thirsty after two rounds without water", () => {
+  it("applies thirsty after two days without water", () => {
     const advanced = advanceSurvivalNeedsAfterRound(
       createGameWithCounters({
         roundsWithoutWater: 1,
@@ -81,7 +96,7 @@ describe("advanceSurvivalNeedsAfterRound", () => {
     expect(getStatusIds(tribute)).not.toContain("dehydrated");
   });
 
-  it("replaces thirsty with dehydrated after four rounds without water", () => {
+  it("replaces thirsty with dehydrated after four days without water", () => {
     const baseTribute = createAuthoringTestTribute();
 
     const thirsty = createStatusEffectInstance(
@@ -92,7 +107,7 @@ describe("advanceSurvivalNeedsAfterRound", () => {
       PREVIOUS_ROUND,
     );
 
-    const game = createAuthoringTestGame([
+    const game = createCompletedNightGame([
       {
         ...baseTribute,
 
@@ -115,7 +130,7 @@ describe("advanceSurvivalNeedsAfterRound", () => {
   });
 
   it.each([0, 1, 2])(
-    "applies no food status after advancing from %s deprived rounds",
+    "applies no food status after advancing from %s deprived days",
     (startingRounds) => {
       const advanced = advanceSurvivalNeedsAfterRound(
         createGameWithCounters({
@@ -133,7 +148,7 @@ describe("advanceSurvivalNeedsAfterRound", () => {
     },
   );
 
-  it("applies hungry after four rounds without food", () => {
+  it("applies hungry after four days without food", () => {
     const advanced = advanceSurvivalNeedsAfterRound(
       createGameWithCounters({
         roundsWithoutFood: 3,
@@ -149,7 +164,7 @@ describe("advanceSurvivalNeedsAfterRound", () => {
     expect(getStatusIds(tribute)).not.toContain("starving");
   });
 
-  it("replaces hungry with starving after six rounds without food", () => {
+  it("replaces hungry with starving after six days without food", () => {
     const baseTribute = createAuthoringTestTribute();
 
     const hungry = createStatusEffectInstance(
@@ -160,7 +175,7 @@ describe("advanceSurvivalNeedsAfterRound", () => {
       PREVIOUS_ROUND,
     );
 
-    const game = createAuthoringTestGame([
+    const game = createCompletedNightGame([
       {
         ...baseTribute,
 
@@ -202,6 +217,20 @@ describe("advanceSurvivalNeedsAfterRound", () => {
     expect(getStatusIds(tribute)).toEqual(expect.arrayContaining(["hungry", "thirsty"]));
   });
 
+  it("does not advance needs when a daytime round completes", () => {
+    const nightReadyState = createGameWithCounters({
+      roundsWithoutFood: 3,
+      roundsWithoutWater: 1,
+    });
+
+    const daytimeState: GameState = {
+      ...nightReadyState,
+      currentRound: AUTHORING_TEST_ROUND,
+    };
+
+    expect(advanceSurvivalNeedsAfterRound(daytimeState)).toBe(daytimeState);
+  });
+
   it("does not advance dead tributes", () => {
     const baseTribute = createAuthoringTestTribute();
 
@@ -230,7 +259,7 @@ describe("advanceSurvivalNeedsAfterRound", () => {
       },
     };
 
-    const game = createAuthoringTestGame([deadTribute]);
+    const game = createCompletedNightGame([deadTribute]);
 
     const advanced = advanceSurvivalNeedsAfterRound(game);
 

@@ -384,6 +384,50 @@ describe("environmental events", () => {
     ).toBe(true);
   });
 
+  it("keeps acute dehydration below the fatal daily threshold", () => {
+    const originalGame = createTestGame();
+
+    const originalTribute = originalGame.tributes[0];
+
+    const tribute: GameTribute = {
+      ...withStats(originalTribute, BALANCED_STATS, "Hazel"),
+
+      survival: {
+        ...originalTribute.survival,
+
+        roundsWithoutWater: 4,
+      },
+    };
+
+    const game = replaceTributes(originalGame, [tribute]);
+
+    const resolution = resolveEvent(
+      requireEvent("contaminated-water"),
+      game,
+
+      {
+        tribute: [tribute],
+      },
+
+      [0.5],
+    );
+
+    expect(resolution.changes).toContainEqual({
+      type: "increment-survival-need-counter",
+
+      tributeId: tribute.id,
+
+      need: "water",
+      amount: 1,
+    });
+
+    expect(getAppliedStatuses(resolution)).toContainEqual(
+      expect.objectContaining({
+        definitionId: "dehydrated",
+      }),
+    );
+  });
+
   it("applies exhaustion after losing a prolonged goose confrontation", () => {
     const game = createTestGame();
 

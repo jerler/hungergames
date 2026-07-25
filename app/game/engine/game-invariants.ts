@@ -403,89 +403,6 @@ function assertPreparationEvent(event: ResolvedEvent, tributeIds: ReadonlySet<st
   }
 }
 
-function assertCurrentNightRestCoverage(state: GameState): void {
-  const round = state.currentRound;
-
-  if (!round || round.period !== "night") {
-    return;
-  }
-
-  /*
-   * Some focused tests construct an in-progress
-   * night state directly without passing through
-   * beginNextRound() and prepareRound().
-   *
-   * Enforce full rest coverage once the current
-   * round contains preparation output, which marks
-   * it as a planner-produced round.
-   */
-  const currentPreparationEvents = state.roundEvents.filter(
-    (event) => event.kind === "preparation" && roundsMatch(event.round, round),
-  );
-
-  if (currentPreparationEvents.length === 0) {
-    return;
-  }
-
-  const nightRestEvents = currentPreparationEvents.filter(
-    (event) => event.preparation?.mechanic === "night-rest-preparation",
-  );
-
-  const eventByTributeId = new Map<string, ResolvedEvent>();
-
-  for (const event of nightRestEvents) {
-    const details = event.preparation;
-
-    assert(
-      details?.mechanic === "night-rest-preparation",
-
-      `night-rest event "${event.id}" is missing its preparation details.`,
-    );
-
-    assert(
-      !eventByTributeId.has(details.actingTributeId),
-
-      `tribute "${details.actingTributeId}" has multiple night-rest preparation events.`,
-    );
-
-    eventByTributeId.set(details.actingTributeId, event);
-  }
-
-  for (const tribute of state.tributes) {
-    if (!tribute.isAlive) {
-      continue;
-    }
-
-    const event = eventByTributeId.get(tribute.id);
-
-    assert(
-      event !== undefined,
-
-      `living tribute "${tribute.id}" has no rest preparation for the current night.`,
-    );
-
-    const rest = tribute.survival.lastNightRest;
-
-    assert(
-      rest !== null,
-
-      `living tribute "${tribute.id}" has no recorded rest for the current night.`,
-    );
-
-    assert(
-      roundsMatch(rest.round, round),
-
-      `living tribute "${tribute.id}" has a stale rest result during the current night.`,
-    );
-
-    assert(
-      rest.quality === event.preparation?.restQuality,
-
-      `living tribute "${tribute.id}" has rest state that disagrees with its preparation event.`,
-    );
-  }
-}
-
 export function assertGameStateInvariants(state: GameState): void {
   assert(
     state.schemaVersion === CURRENT_GAME_STATE_SCHEMA_VERSION,
@@ -1021,6 +938,13 @@ export function assertGameStateInvariants(state: GameState): void {
     "Current round event IDs",
   );
 
+  for (const event of state.roundEvents) {
+    assert(
+      event.kind !== "preparation",
+      `current round event "${event.id}" cannot be a preparation event.`,
+    );
+  }
+
   assertUniqueValues(
     state.eventHistory.map((event) => event.id),
     "Event history IDs",
@@ -1040,7 +964,8 @@ export function assertGameStateInvariants(state: GameState): void {
   /*
    * Item reservations govern planned events:
    *
-   * - preparation events are resolved first
+   * - automatic preparation events are resolved first and
+   *   retained only in event history
    * - primary events are then sequenced around those commitments
    *
    * Derived aftermath and resolution events are created while
@@ -1048,9 +973,18 @@ export function assertGameStateInvariants(state: GameState): void {
    * sequencer selections and therefore do not participate in
    * this reservation boundary.
    */
-  const plannedRoundEvents = state.roundEvents.filter(
-    (event) => event.kind === "preparation" || event.kind === "primary",
-  );
+  const currentRoundPreparationEvents = state.currentRound
+    ? state.eventHistory.filter(
+        (event) =>
+          event.kind === "preparation" &&
+          roundsMatch(event.round, state.currentRound as RoundReference),
+      )
+    : [];
+
+  const plannedRoundEvents = [
+    ...currentRoundPreparationEvents,
+    ...state.roundEvents.filter((event) => event.kind === "primary"),
+  ];
 
   const eventIdByCommittedItemId = new Map<string, string>();
 
@@ -1092,8 +1026,6 @@ export function assertGameStateInvariants(state: GameState): void {
       );
     }
   }
-
-  assertCurrentNightRestCoverage(state);
 
   const eliminationChanges = state.eventHistory.flatMap((event) =>
     event.changes

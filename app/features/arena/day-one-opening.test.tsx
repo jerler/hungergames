@@ -15,7 +15,7 @@ describe("DayOneOpening", () => {
       }),
     ).toBeInTheDocument();
 
-    expect(screen.getByText(/The 12 tributes stand on their launch plates/i)).toBeInTheDocument();
+    expect(screen.getByText(/The 12 tributes stand on their platforms/i)).toBeInTheDocument();
 
     expect(handleFireCannon).not.toHaveBeenCalled();
 

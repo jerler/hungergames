@@ -70,7 +70,7 @@ describe("truce formation events", () => {
   it.each(TRUCE_GROUP_SIZE_WEIGHTS)(
     "creates size-$size variants with the intended weight",
     ({ size, weight }) => {
-      for (const theme of ["travel-together", "split-supplies"] as const) {
+      for (const theme of ["travel-together", "keep-watch"] as const) {
         const event = requireEvent(`${theme}-truce-${size}`);
 
         expect(event.roles[0].count).toBe(size);
@@ -121,12 +121,12 @@ describe("truce formation events", () => {
     expect(resolution.text).not.toMatch(/shelter|sleep|rest/i);
   });
 
-  it("distributes supplies across every member", () => {
+  it("forms a night watch truce without creating resources", () => {
     const game = createGame();
 
     const participants = game.tributes.slice(0, 4);
 
-    const event = requireEvent("split-supplies-truce-4");
+    const event = requireEvent("keep-watch-truce-4");
 
     const resolution = event.resolve({
       state: game,
@@ -134,8 +134,7 @@ describe("truce formation events", () => {
 
       livingTributes: game.tributes,
 
-      eventId: "split-supplies-test",
-
+      eventId: "keep-watch-test",
       random: () => 0.5,
 
       participantsByRole: {
@@ -143,36 +142,26 @@ describe("truce formation events", () => {
       },
     });
 
-    const acquiredItems = resolution.changes.flatMap((change) =>
-      change.type === "acquire-item"
-        ? [
-            {
-              tributeId: change.tributeId,
+    const formedTruce = resolution.changes.find((change) => change.type === "form-truce");
 
-              definitionId: change.item.definitionId,
-            },
-          ]
-        : [],
-    );
+    expect(formedTruce).toMatchObject({
+      type: "form-truce",
 
-    expect(acquiredItems).toEqual([
-      {
-        tributeId: participants[0].id,
-        definitionId: "wild-fruit",
+      truce: {
+        kind: "standard",
+        tributeIds: participants.map((tribute) => tribute.id),
+        createdRound: NIGHT_ONE,
+
+        expiresAfterRound: {
+          day: 2,
+          period: "day",
+        },
       },
-      {
-        tributeId: participants[1].id,
-        definitionId: "water",
-      },
-      {
-        tributeId: participants[2].id,
-        definitionId: "wild-fruit",
-      },
-      {
-        tributeId: participants[3].id,
-        definitionId: "water",
-      },
-    ]);
+    });
+
+    expect(resolution.changes.some((change) => change.type === "acquire-item")).toBe(false);
+    expect(resolution.text).toMatch(/warmth|keeping watch/i);
+    expect(event.periods).toEqual(["night"]);
   });
 
   it("does not form a group when too few unaligned tributes remain", () => {

@@ -155,7 +155,6 @@ export default function GamePlayPage() {
                 events={revealedEvents}
                 round={activeGame.currentRound}
                 totalPrimaryEventCount={totalPrimaryEventCount}
-                tributes={activeGame.tributes}
               />
 
               <footer className="arena-controls">

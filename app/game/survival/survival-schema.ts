@@ -4,6 +4,12 @@ export type SurvivalNeed = "food" | "water";
 export type NightRestQuality = "comfortable" | "sheltered" | "unsheltered";
 
 export interface TributeSurvivalState {
+  /**
+   * Legacy field names retained for save compatibility.
+   *
+   * Each counter advances once after a night round completes,
+   * so one increment now represents one full arena day.
+   */
   roundsWithoutFood: number;
   roundsWithoutWater: number;
   lastNightRest: {

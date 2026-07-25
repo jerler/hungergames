@@ -1,11 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { createAuthoringTestTribute } from "~/game/events/authoring/testing/authoring-test-fixtures";
 import type {
   EliminateTributeChange,
   EventFeedGroup,
-  GameTribute,
   ResolvedEvent,
   ResolvedEventKind,
 } from "~/game/types/game-state";
@@ -16,25 +14,6 @@ const TEST_ROUND = {
   day: 1,
   period: "day",
 } as const;
-
-function createNamedTribute(id: string, name: string): GameTribute {
-  const tribute = createAuthoringTestTribute({
-    id,
-  });
-
-  return {
-    ...tribute,
-
-    snapshot: {
-      ...tribute.snapshot,
-      name,
-    },
-  };
-}
-
-const ACTOR = createNamedTribute("actor", "Katniss");
-
-const OWNER = createNamedTribute("owner", "Peeta");
 
 interface CreateEventOptions {
   id?: string;
@@ -80,13 +59,30 @@ function createEvent(
   };
 }
 
+function createPreparationEvent(): ResolvedEvent {
+  return {
+    id: "preparation-water",
+    definitionId: "automatic-hydration-consumption",
+    kind: "preparation",
+    resolutionMode: "standard",
+    round: TEST_ROUND,
+    participantTributeIds: ["tribute-1"],
+    text: "Katniss drinks fresh water.",
+    changes: [],
+    preparation: {
+      mechanic: "hydration-consumption",
+      actingTributeId: "tribute-1",
+      affectedNeed: "water",
+    },
+  };
+}
+
 function renderFeed(events: readonly ResolvedEvent[], totalPrimaryEventCount = 1) {
   return render(
     <RoundEventFeed
       events={events}
       round={TEST_ROUND}
       totalPrimaryEventCount={totalPrimaryEventCount}
-      tributes={[ACTOR, OWNER]}
     />,
   );
 }
@@ -133,175 +129,36 @@ describe("RoundEventFeed", () => {
     },
   );
 
-  it("groups preparation separately from primary events", () => {
-    const preparationEvent: ResolvedEvent = {
-      id: "preparation-water",
+  it("does not render automatic preparation events", () => {
+    renderFeed([createPreparationEvent(), createEvent([])], 2);
 
-      definitionId: "automatic-hydration-consumption",
-
-      kind: "preparation",
-      resolutionMode: "standard",
-
-      round: TEST_ROUND,
-
-      participantTributeIds: [ACTOR.id, OWNER.id],
-
-      text: "Katniss drinks Peeta's water bottle.",
-
-      changes: [],
-
-      preparation: {
-        mechanic: "hydration-consumption",
-
-        actingTributeId: ACTOR.id,
-
-        itemInstanceId: "water-instance",
-
-        itemDefinitionId: "water",
-
-        itemOwnerTributeId: OWNER.id,
-
-        usesRemainingAfter: 0,
-
-        affectedNeed: "water",
-
-        affectedStatusIds: ["thirsty"],
-      },
-    };
-
-    renderFeed([preparationEvent, createEvent([])], 2);
+    expect(screen.queryByText("Katniss drinks fresh water.")).not.toBeInTheDocument();
 
     expect(
-      screen.getByRole("heading", {
+      screen.queryByRole("heading", {
         name: "Before the round",
       }),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
 
-    expect(
-      screen.getByText("Katniss", {
-        selector: "strong",
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Several cannons echo across the arena.")).toBeInTheDocument();
 
-    expect(screen.getByText("Item: Fresh water")).toBeInTheDocument();
-
-    expect(screen.getByText("Borrowed from: Peeta")).toBeInTheDocument();
-
-    expect(
-      screen.getByRole("heading", {
-        name: "Food and hydration",
-      }),
-    ).toBeInTheDocument();
-
-    expect(screen.getByText("No uses remaining")).toBeInTheDocument();
-
-    expect(screen.getByText("Need restored: Hydration.")).toBeInTheDocument();
-
-    expect(screen.getByText("Statuses resolved: Thirsty.")).toBeInTheDocument();
     expect(screen.getByText("1 of 2 arena events revealed")).toBeInTheDocument();
   });
 
-  it("shows preparation before any primary event is revealed", () => {
-    const preparationEvent: ResolvedEvent = {
-      id: "night-preparation",
-
-      definitionId: "automatic-night-rest-preparation",
-
-      kind: "preparation",
-      resolutionMode: "standard",
-
-      round: TEST_ROUND,
-
-      participantTributeIds: [ACTOR.id],
-
-      text: "Katniss settles in for the night.",
-
-      changes: [],
-
-      preparation: {
-        mechanic: "night-rest-preparation",
-
-        actingTributeId: ACTOR.id,
-
-        restQuality: "comfortable",
-      },
-    };
-
-    renderFeed([preparationEvent], 3);
-
-    expect(
-      screen.getByRole("heading", {
-        name: "Rest and shelter",
-      }),
-    ).toBeInTheDocument();
-
-    expect(screen.getByText("Rest result: Comfortable rest.")).toBeInTheDocument();
+  it("shows the empty state when only an automatic event is supplied", () => {
+    renderFeed([createPreparationEvent()], 3);
 
     expect(screen.getByText("0 of 3 arena events revealed")).toBeInTheDocument();
 
     expect(screen.getByText(/reveal the first event/i)).toBeInTheDocument();
   });
 
-  it("keeps preparation groups separate while preserving primary numbering", () => {
-    const medicalEvent: ResolvedEvent = {
-      id: "medical-preparation",
-      definitionId: "automatic-medical-treatment",
-
-      kind: "preparation",
-      resolutionMode: "standard",
-
-      round: TEST_ROUND,
-
-      participantTributeIds: [ACTOR.id],
-
-      text: "Katniss treats her injuries.",
-
-      changes: [],
-
-      preparation: {
-        mechanic: "medical-treatment",
-
-        actingTributeId: ACTOR.id,
-
-        affectedStatusIds: ["injured"],
-      },
-    };
-
-    const hydrationEvent: ResolvedEvent = {
-      id: "hydration-preparation",
-      definitionId: "automatic-hydration-consumption",
-
-      kind: "preparation",
-      resolutionMode: "standard",
-
-      round: TEST_ROUND,
-
-      participantTributeIds: [OWNER.id],
-
-      text: "Peeta drinks fresh water.",
-
-      changes: [],
-
-      preparation: {
-        mechanic: "hydration-consumption",
-
-        actingTributeId: OWNER.id,
-
-        affectedNeed: "water",
-      },
-    };
-
-    renderFeed([hydrationEvent, medicalEvent, createEvent([])], 2);
-
-    const headings = screen.getAllByRole("heading");
-
-    expect(headings.map((heading) => heading.textContent)).toEqual(
-      expect.arrayContaining(["Before the round", "Medical care", "Food and hydration"]),
-    );
+  it("preserves arena-event numbering when an automatic event is supplied", () => {
+    renderFeed([createPreparationEvent(), createEvent([])], 2);
 
     expect(screen.getByText("01")).toBeInTheDocument();
 
-    expect(screen.getByText("1 of 2 arena events revealed")).toBeInTheDocument();
+    expect(screen.queryByText("02")).not.toBeInTheDocument();
   });
 
   it("groups Bloodbath events while preserving global event numbering", () => {

@@ -1,26 +1,11 @@
 import { formatRoundLabel } from "~/game/engine/rounds";
 
-import {
-  createPreparationFeedPresentation,
-  type PreparationEventPresentation,
-} from "~/game/survival/preparation-presentation";
-
-import type {
-  EventFeedGroup,
-  GameTribute,
-  ResolvedEvent,
-  RoundReference,
-} from "~/game/types/game-state";
+import type { EventFeedGroup, ResolvedEvent, RoundReference } from "~/game/types/game-state";
 
 interface RoundEventFeedProps {
   events: readonly ResolvedEvent[];
   round: RoundReference;
   totalPrimaryEventCount: number;
-  tributes: readonly GameTribute[];
-}
-
-interface PreparationEventCardProps {
-  event: PreparationEventPresentation;
 }
 
 interface IndexedArenaEvent {
@@ -57,42 +42,6 @@ function isBloodbathEventFeedGroup(
   feedGroup: EventFeedGroup | undefined,
 ): feedGroup is EventFeedGroup {
   return feedGroup !== undefined && BLOODBATH_EVENT_FEED_GROUP_IDS.has(feedGroup);
-}
-
-function PreparationEventCard({ event }: PreparationEventCardProps) {
-  return (
-    <li className="preparation-card" data-impact-tone={event.impactTone}>
-      <div className="preparation-card__body">
-        <strong>{event.actingTributeName}</strong>
-
-        <p>{event.text}</p>
-      </div>
-
-      {event.itemLabel || event.borrowedFromLabel || event.remainingUsesLabel ? (
-        <ul
-          className="preparation-card__details"
-          aria-label={`${event.actingTributeName} preparation items`}
-        >
-          {event.itemLabel ? <li>Item: {event.itemLabel}</li> : null}
-
-          {event.borrowedFromLabel ? <li>Borrowed from: {event.borrowedFromLabel}</li> : null}
-
-          {event.remainingUsesLabel ? <li>{event.remainingUsesLabel}</li> : null}
-        </ul>
-      ) : null}
-
-      {event.impactDetails.length > 0 ? (
-        <ul
-          className="preparation-card__impact"
-          aria-label={`${event.actingTributeName} preparation impact`}
-        >
-          {event.impactDetails.map((detail) => (
-            <li key={detail}>{detail}</li>
-          ))}
-        </ul>
-      ) : null}
-    </li>
-  );
 }
 
 interface ArenaEventCardProps {
@@ -152,16 +101,12 @@ function ArenaEventGroup({ id, label, description, events }: ArenaEventGroupProp
   );
 }
 
-export function RoundEventFeed({
-  events,
-  round,
-  totalPrimaryEventCount,
-  tributes,
-}: RoundEventFeedProps) {
-  const preparationEvents = events.filter((event) => event.kind === "preparation");
-
-  const preparationGroups = createPreparationFeedPresentation(preparationEvents, tributes);
-
+export function RoundEventFeed({ events, round, totalPrimaryEventCount }: RoundEventFeedProps) {
+  /*
+   * Preparation events are not expected after Phase 2, but retaining
+   * this boundary guard keeps the component safe for focused tests
+   * and stale in-memory state created before migration.
+   */
   const arenaEvents = events.filter((event) => event.kind !== "preparation");
 
   const indexedArenaEvents = arenaEvents.map((event, index) => ({
@@ -202,43 +147,6 @@ export function RoundEventFeed({
           {revealedPrimaryEventCount} of {totalPrimaryEventCount} arena events revealed
         </p>
       </header>
-
-      {preparationGroups.length > 0 ? (
-        <section className="preparation-feed" aria-labelledby="preparation-feed-title">
-          <header className="preparation-feed__header">
-            <p className="eyebrow">Before the round</p>
-
-            <h3 id="preparation-feed-title">Before the round</h3>
-          </header>
-
-          <div className="preparation-feed__groups">
-            {preparationGroups.map((group) => {
-              const titleId = `preparation-group-${group.id}-title`;
-
-              return (
-                <section
-                  className="preparation-group"
-                  data-preparation-group={group.id}
-                  aria-labelledby={titleId}
-                  key={group.id}
-                >
-                  <header className="preparation-group__header">
-                    <h4 id={titleId}>{group.label}</h4>
-
-                    <p>{group.description}</p>
-                  </header>
-
-                  <ol className="preparation-group__list">
-                    {group.events.map((event) => (
-                      <PreparationEventCard event={event} key={event.id} />
-                    ))}
-                  </ol>
-                </section>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
 
       {arenaEvents.length === 0 ? (
         <div className="event-feed__empty">

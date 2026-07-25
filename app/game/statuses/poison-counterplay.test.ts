@@ -155,7 +155,9 @@ describe("poison counterplay and delayed attribution", () => {
       );
 
       expect(
-        prepared.events.some((event) => event.preparation?.mechanic === "medical-treatment"),
+        prepared.automaticEvents.some(
+          (event) => event.preparation?.mechanic === "medical-treatment",
+        ),
       ).toBe(true);
 
       const afterRound = advanceStatusDurations({

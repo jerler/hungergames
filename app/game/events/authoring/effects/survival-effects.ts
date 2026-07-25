@@ -1,6 +1,10 @@
-import type { SurvivalNeed } from "~/game/survival/survival-schema";
+import type { NightRestQuality, SurvivalNeed } from "~/game/survival/survival-schema";
 
-import type { IncreaseSurvivalDeprivationEffect, SatisfySurvivalNeedEffect } from "./effect-schema";
+import type {
+  IncreaseSurvivalDeprivationEffect,
+  RecordNightRestEffect,
+  SatisfySurvivalNeedEffect,
+} from "./effect-schema";
 
 export function increaseSurvivalDeprivation(
   roleId: string,
@@ -16,6 +20,17 @@ export function increaseSurvivalDeprivation(
     roleId,
     need,
     rounds,
+  };
+}
+
+export function recordNightRest(
+  roleId: string,
+  quality: Extract<NightRestQuality, "sheltered" | "unsheltered">,
+): RecordNightRestEffect {
+  return {
+    type: "record-night-rest",
+    roleId,
+    quality,
   };
 }
 

@@ -84,7 +84,14 @@ describe("hydration before fatal need resolution", () => {
 
     const hydratedState = applyResolvedEvent(game, hydrationEvent);
 
-    const completedState = advanceSurvivalNeedsAfterRound(hydratedState);
+    const completedState = advanceSurvivalNeedsAfterRound({
+      ...hydratedState,
+
+      currentRound: {
+        day: 2,
+        period: "night",
+      },
+    });
 
     const resolvedTribute = completedState.tributes.find(
       (tribute) => tribute.id === endangeredTribute.id,

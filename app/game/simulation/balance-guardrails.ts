@@ -212,15 +212,17 @@ export function evaluateBalanceGuardrails(metrics: BalanceMetrics): BalanceGuard
     ),
 
     createResult(
-      "night-rest-preparation",
+      "event-driven-night-rest",
 
-      "Night-rest preparation is exercised",
+      "Event-driven night rest is exercised",
 
-      metrics.preparation.byMechanic["night-rest-preparation"] > 0,
+      metrics.preparation.restQuality.sheltered + metrics.preparation.restQuality.unsheltered > 0,
 
-      String(metrics.preparation.byMechanic["night-rest-preparation"]),
+      String(
+        metrics.preparation.restQuality.sheltered + metrics.preparation.restQuality.unsheltered,
+      ),
 
-      "at least one event",
+      "at least one recorded rest outcome",
     ),
   ];
 

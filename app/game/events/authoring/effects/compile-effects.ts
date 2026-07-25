@@ -182,7 +182,21 @@ function compileSurvivalDeprivationEffect(
 
   const currentRounds = tribute.survival[progression.counterKey];
 
-  const projectedRounds = currentRounds + effect.rounds;
+  /*
+   * Authored deprivation effects such as contaminated water
+   * describe a worsening condition, not an implicit fatality.
+   *
+   * They may accelerate a tribute to the final nonfatal day,
+   * but only the daily survival tick creates starvation or
+   * dehydration death events.
+   */
+  const projectedRounds = Math.min(
+    currentRounds + effect.rounds,
+
+    progression.fatalAtRounds - 1,
+  );
+
+  const appliedRounds = projectedRounds - currentRounds;
 
   const expectedStage = getSurvivalNeedStage(effect.need, projectedRounds);
 
@@ -202,12 +216,14 @@ function compileSurvivalDeprivationEffect(
       : [],
   );
 
-  changes.push({
-    type: "increment-survival-need-counter",
-    tributeId: tribute.id,
-    need: effect.need,
-    amount: effect.rounds,
-  });
+  if (appliedRounds > 0) {
+    changes.push({
+      type: "increment-survival-need-counter",
+      tributeId: tribute.id,
+      need: effect.need,
+      amount: appliedRounds,
+    });
+  }
 
   if (expectedStage) {
     changes.push(
@@ -359,6 +375,23 @@ export function compileEffects(
             type: "satisfy-survival-need",
             tributeId: tribute.id,
             need: effect.need,
+          },
+        ];
+      }
+
+      case "record-night-rest": {
+        const tribute = requireSingleParticipant(context.participantsByRole, effect.roleId);
+
+        return [
+          {
+            type: "record-night-rest",
+            tributeId: tribute.id,
+
+            round: {
+              ...context.round,
+            },
+
+            quality: effect.quality,
           },
         ];
       }

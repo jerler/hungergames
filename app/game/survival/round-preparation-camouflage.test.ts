@@ -20,13 +20,13 @@ const DAY_TWO = {
 } as const;
 
 function getCamouflageEvents(prepared: PreparedRound) {
-  return prepared.events.filter(
+  return prepared.automaticEvents.filter(
     (event) => event.preparation?.mechanic === "camouflage-preparation",
   );
 }
 
 describe("round camouflage preparation", () => {
-  it("emits a visible camouflage preparation event", () => {
+  it("records an automatic camouflage preparation event", () => {
     let tribute = createAuthoringTestTribute({
       id: "visible-camouflage",
     });

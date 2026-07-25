@@ -111,10 +111,7 @@ describe("GameConfigurationForm", () => {
     await enableTributeGifts(user);
 
     for (const gift of GIFT_DEFINITIONS) {
-      await user.selectOptions(
-        screen.getByLabelText(`Frequency for ${gift.name}`),
-        "disabled",
-      );
+      await user.selectOptions(screen.getByLabelText(`Frequency for ${gift.name}`), "disabled");
     }
 
     await user.click(

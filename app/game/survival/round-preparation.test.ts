@@ -8,10 +8,7 @@ import {
 import { createStatusEffectInstance } from "~/game/statuses/status-engine";
 import { createTruceInstance } from "~/game/truces/truce-engine";
 import type { GameState, GameTribute } from "~/game/types/game-state";
-import { isSuccessfulStatCheckOutcome } from "~/game/events/event-outcomes";
-
-import { resolveNaturalShelterCheck } from "./natural-shelter";
-import { createPreparationRandom, createPreparationSeed, prepareRound } from "./round-preparation";
+import { createPreparationSeed, prepareRound } from "./round-preparation";
 
 const ROUND = {
   day: 2,
@@ -82,7 +79,7 @@ function createDeadTestTribute(tribute: GameTribute): GameTribute {
 }
 
 describe("prepareRound", () => {
-  it("visibly applies specific medical treatment", () => {
+  it("applies specific medical treatment automatically", () => {
     let tribute = createAuthoringTestTribute({
       id: "patient",
       name: "Katniss",
@@ -106,9 +103,9 @@ describe("prepareRound", () => {
       ROUND,
     );
 
-    expect(prepared.events).toHaveLength(1);
+    expect(prepared.automaticEvents).toHaveLength(1);
 
-    expect(prepared.events[0]).toMatchObject({
+    expect(prepared.automaticEvents[0]).toMatchObject({
       kind: "preparation",
 
       preparation: {
@@ -150,9 +147,9 @@ describe("prepareRound", () => {
       ROUND,
     );
 
-    expect(prepared.events).toHaveLength(1);
+    expect(prepared.automaticEvents).toHaveLength(1);
 
-    expect(prepared.events[0].preparation).toMatchObject({
+    expect(prepared.automaticEvents[0].preparation).toMatchObject({
       mechanic: "medical-treatment",
 
       itemDefinitionId: "burn-kit",
@@ -184,7 +181,7 @@ describe("prepareRound", () => {
 
     const prepared = prepareRound(createAuthoringTestGame([tribute]), ROUND);
 
-    expect(prepared.events.map((event) => event.preparation?.mechanic)).toEqual([
+    expect(prepared.automaticEvents.map((event) => event.preparation?.mechanic)).toEqual([
       "hydration-consumption",
       "food-consumption",
     ]);
@@ -196,6 +193,52 @@ describe("prepareRound", () => {
     expect(preparedTribute.survival.roundsWithoutFood).toBe(0);
 
     expect(preparedTribute.statuses).toEqual([]);
+  });
+
+  it("waits until morning to consume food and water", () => {
+    let tribute: GameTribute = {
+      ...createAuthoringTestTribute({
+        id: "overnight-supplies",
+      }),
+
+      survival: {
+        roundsWithoutFood: 4,
+        roundsWithoutWater: 4,
+        lastNightRest: null,
+      },
+    };
+
+    tribute = withStatus(tribute, "dehydrated");
+    tribute = withStatus(tribute, "hungry");
+    tribute = withAuthoringTestItem(tribute, "water");
+    tribute = withAuthoringTestItem(tribute, "wild-fruit");
+
+    const prepared = prepareRound(createAuthoringTestGame([tribute]), NIGHT_TWO);
+
+    const itemPreparationMechanics = prepared.automaticEvents.flatMap((event) => {
+      const mechanic = event.preparation?.mechanic;
+
+      return mechanic === "hydration-consumption" || mechanic === "food-consumption"
+        ? [mechanic]
+        : [];
+    });
+
+    expect(itemPreparationMechanics).toEqual([]);
+
+    const preparedTribute = prepared.state.tributes[0];
+
+    expect(preparedTribute?.survival).toMatchObject({
+      roundsWithoutFood: 4,
+      roundsWithoutWater: 4,
+    });
+
+    expect(preparedTribute?.statuses.map((status) => status.definitionId)).toEqual(
+      expect.arrayContaining(["dehydrated", "hungry"]),
+    );
+
+    expect(preparedTribute?.inventory.map((item) => item.definitionId)).toEqual(
+      expect.arrayContaining(["water", "wild-fruit"]),
+    );
   });
 
   it("shows borrowed medical treatment in preparation text", () => {
@@ -246,7 +289,7 @@ describe("prepareRound", () => {
 
     const prepared = prepareRound(game, ROUND);
 
-    const event = prepared.events[0];
+    const event = prepared.automaticEvents[0];
 
     expect(event.text).toBe("Katniss uses Peeta's antidote to treat their poisoning.");
 
@@ -313,9 +356,9 @@ describe("prepareRound", () => {
 
     const prepared = prepareRound(game, ROUND);
 
-    expect(prepared.events).toHaveLength(1);
+    expect(prepared.automaticEvents).toHaveLength(1);
 
-    expect(prepared.events[0].preparation?.actingTributeId).toBe(first.id);
+    expect(prepared.automaticEvents[0].preparation?.actingTributeId).toBe(first.id);
   });
 
   it("uses isolated deterministic preparation seeds", () => {
@@ -338,9 +381,9 @@ describe("prepareRound", () => {
       createPreparationSeed("game-seed", ROUND, "hydration-consumption", "tribute-2"),
     ).not.toBe(firstSeed);
   });
-  it("records comfortable night rest with reusable equipment", () => {
+  it("does not assign rest or reserve comfort items when night begins", () => {
     let tribute = createAuthoringTestTribute({
-      id: "sleeper",
+      id: "event-driven-sleeper",
     });
 
     tribute = withAuthoringTestItem(tribute, "blanket");
@@ -351,77 +394,26 @@ describe("prepareRound", () => {
       throw new Error("Expected a blanket fixture.");
     }
 
-    const prepared = prepareRound(createAuthoringTestGame([tribute]), NIGHT_TWO);
+    const prepared = prepareRound(
+      createAuthoringTestGame([tribute]),
 
-    expect(prepared.events).toHaveLength(1);
-
-    expect(prepared.events[0]).toMatchObject({
-      kind: "preparation",
-
-      preparation: {
-        mechanic: "night-rest-preparation",
-
-        actingTributeId: tribute.id,
-        itemInstanceId: blanket.id,
-        itemOwnerTributeId: tribute.id,
-
-        usesRemainingAfter: null,
-        restQuality: "comfortable",
-      },
-    });
-
-    expect(prepared.state.tributes[0].survival.lastNightRest).toEqual({
-      round: NIGHT_TWO,
-      quality: "comfortable",
-    });
-
-    expect(prepared.state.tributes[0].inventory).toContainEqual(blanket);
-
-    expect(prepared.committedItemInstanceIds).toContain(blanket.id);
-  });
-
-  it("attempts deterministic natural shelter when no equipment is available", () => {
-    const tribute = createAuthoringTestTribute({
-      id: "natural-sleeper",
-    });
-
-    const game = createAuthoringTestGame([tribute]);
-
-    const expectedOutcome = resolveNaturalShelterCheck(
-      tribute,
-
-      createPreparationRandom(game.seed, NIGHT_TWO, "night-rest-preparation", tribute.id),
+      NIGHT_TWO,
     );
 
-    const expectedQuality = isSuccessfulStatCheckOutcome(expectedOutcome)
-      ? "sheltered"
-      : "unsheltered";
+    expect(
+      prepared.automaticEvents.some(
+        (event) => event.preparation?.mechanic === "night-rest-preparation",
+      ),
+    ).toBe(false);
 
-    const prepared = prepareRound(game, NIGHT_TWO);
+    expect(prepared.state.tributes[0]?.survival.lastNightRest).toBeNull();
 
-    expect(prepared.events).toHaveLength(1);
+    expect(prepared.committedItemInstanceIds).not.toContain(blanket.id);
 
-    expect(prepared.events[0]).toMatchObject({
-      kind: "preparation",
-
-      preparation: {
-        mechanic: "night-rest-preparation",
-
-        actingTributeId: tribute.id,
-
-        restQuality: expectedQuality,
-      },
-    });
-
-    expect(prepared.events[0]?.preparation?.itemInstanceId).toBeUndefined();
-
-    expect(prepared.state.tributes[0]?.survival.lastNightRest).toEqual({
-      round: NIGHT_TWO,
-      quality: expectedQuality,
-    });
+    expect(prepared.state.tributes[0]?.inventory).toContainEqual(blanket);
   });
 
-  it("gives sheltered sleep no morning benefit or penalty", () => {
+  it("turns sheltered sleep into well-rested and removes exhaustion", () => {
     const baseTribute = createAuthoringTestTribute({
       id: "sheltered-tribute",
     });
@@ -455,91 +447,24 @@ describe("prepareRound", () => {
       DAY_THREE,
     );
 
-    expect(prepared.events[0]?.preparation).toMatchObject({
+    expect(prepared.automaticEvents[0]?.preparation).toMatchObject({
       mechanic: "morning-rest-resolution",
 
       restQuality: "sheltered",
-      affectedStatusIds: [],
+
+      affectedStatusIds: expect.arrayContaining(["exhausted", "well-rested"]),
     });
 
-    expect(prepared.events[0]?.changes).toEqual([]);
+    const preparedStatuses = prepared.state.tributes[0]?.statuses ?? [];
 
-    expect(prepared.state.tributes[0]?.statuses).toEqual([exhausted]);
-  });
+    expect(preparedStatuses.some((status) => status.definitionId === "exhausted")).toBe(false);
 
-  it("reserves one shared rest item for only one tribute", () => {
-    let first = createAuthoringTestTribute({
-      id: "first-sleeper",
-    });
-
-    first = {
-      ...first,
-      district: 1,
-      districtPosition: 1,
-    };
-
-    let owner = createAuthoringTestTribute({
-      id: "blanket-owner",
-    });
-
-    owner = {
-      ...owner,
-      district: 1,
-      districtPosition: 2,
-    };
-
-    owner = withAuthoringTestItem(owner, "blanket");
-
-    const blanket = owner.inventory[0];
-
-    if (!blanket) {
-      throw new Error("Expected a blanket fixture.");
-    }
-
-    const game: GameState = {
-      ...createAuthoringTestGame([first, owner]),
-
-      truces: [
-        createTruceInstance("shared-blanket-truce", [first.id, owner.id], NIGHT_TWO, {
-          day: 3,
-          period: "night",
-        }),
-      ],
-    };
-
-    const prepared = prepareRound(game, NIGHT_TWO);
-
-    const ownerNaturalShelterOutcome = resolveNaturalShelterCheck(
-      owner,
-      createPreparationRandom(game.seed, NIGHT_TWO, "night-rest-preparation", owner.id),
+    expect(preparedStatuses).toContainEqual(
+      expect.objectContaining({
+        definitionId: "well-rested",
+        severity: 1,
+      }),
     );
-
-    const ownerExpectedQuality = isSuccessfulStatCheckOutcome(ownerNaturalShelterOutcome)
-      ? "sheltered"
-      : "unsheltered";
-
-    expect(
-      prepared.events.map((event) => ({
-        tributeId: event.preparation?.actingTributeId,
-
-        quality: event.preparation?.restQuality,
-
-        itemOwner: event.preparation?.itemOwnerTributeId,
-      })),
-    ).toEqual([
-      {
-        tributeId: first.id,
-        quality: "comfortable",
-        itemOwner: owner.id,
-      },
-      {
-        tributeId: owner.id,
-        quality: ownerExpectedQuality,
-        itemOwner: undefined,
-      },
-    ]);
-
-    expect(prepared.committedItemInstanceIds).toEqual(new Set([blanket.id]));
   });
 
   it("turns comfortable sleep into well-rested and removes exhaustion", () => {
@@ -572,7 +497,7 @@ describe("prepareRound", () => {
 
     const prepared = prepareRound(createAuthoringTestGame([tribute]), DAY_THREE);
 
-    expect(prepared.events[0].preparation).toMatchObject({
+    expect(prepared.automaticEvents[0].preparation).toMatchObject({
       mechanic: "morning-rest-resolution",
 
       restQuality: "comfortable",
@@ -631,164 +556,6 @@ describe("prepareRound", () => {
     );
   });
 
-  it("produces identical checked rest results for equivalent games", () => {
-    let tribute = createAuthoringTestTribute({
-      id: "deterministic-sleeper",
-
-      stats: {
-        brains: 2,
-        brawn: 3,
-        luck: 3,
-      },
-    });
-
-    tribute = withAuthoringTestItem(tribute, "matches");
-
-    const first = prepareRound(createAuthoringTestGame([tribute]), NIGHT_TWO);
-
-    const second = prepareRound(createAuthoringTestGame([tribute]), NIGHT_TWO);
-
-    expect(first.events).toEqual(second.events);
-
-    expect(first.state.tributes[0].survival.lastNightRest).toEqual(
-      second.state.tributes[0].survival.lastNightRest,
-    );
-  });
-
-  it("prefers a blanket over matches", () => {
-    let tribute = createAuthoringTestTribute({
-      id: "comfort-priority",
-    });
-
-    tribute = withAuthoringTestItem(tribute, "matches");
-
-    tribute = withAuthoringTestItem(tribute, "blanket");
-
-    const prepared = prepareRound(
-      createAuthoringTestGame([tribute]),
-
-      NIGHT_TWO,
-    );
-
-    expect(prepared.events).toHaveLength(1);
-
-    expect(prepared.events[0]?.preparation).toMatchObject({
-      mechanic: "night-rest-preparation",
-
-      itemDefinitionId: "blanket",
-
-      restQuality: "comfortable",
-
-      usesRemainingAfter: null,
-    });
-
-    expect(
-      prepared.state.tributes[0]?.inventory.some((item) => item.definitionId === "matches"),
-    ).toBe(true);
-  });
-
-  it("prefers matches over harder-to-use kindling", () => {
-    let tribute = createAuthoringTestTribute({
-      id: "checked-rest-priority",
-    });
-
-    tribute = withAuthoringTestItem(tribute, "kindling");
-
-    tribute = withAuthoringTestItem(tribute, "matches");
-
-    const prepared = prepareRound(
-      createAuthoringTestGame([tribute]),
-
-      NIGHT_TWO,
-    );
-
-    expect(prepared.events).toHaveLength(1);
-
-    expect(prepared.events[0]?.preparation).toMatchObject({
-      mechanic: "night-rest-preparation",
-
-      itemDefinitionId: "matches",
-    });
-
-    expect(
-      prepared.state.tributes[0]?.inventory.some((item) => item.definitionId === "kindling"),
-    ).toBe(true);
-  });
-
-  it("uses only one comfort item for a tribute", () => {
-    let tribute = createAuthoringTestTribute({
-      id: "single-comfort",
-    });
-
-    tribute = withAuthoringTestItem(tribute, "blanket");
-
-    tribute = withAuthoringTestItem(tribute, "blanket");
-
-    const prepared = prepareRound(
-      createAuthoringTestGame([tribute]),
-
-      NIGHT_TWO,
-    );
-
-    expect(prepared.events).toHaveLength(1);
-
-    expect(prepared.events[0]?.changes.filter((change) => change.type === "use-item")).toHaveLength(
-      1,
-    );
-
-    expect(prepared.committedItemInstanceIds.size).toBe(1);
-  });
-
-  it("records exactly one night-rest result for every living tribute", () => {
-    const first: GameTribute = {
-      ...createAuthoringTestTribute({
-        id: "living-first",
-      }),
-
-      district: 1,
-      districtPosition: 1,
-    };
-
-    const second: GameTribute = {
-      ...createAuthoringTestTribute({
-        id: "living-second",
-      }),
-
-      district: 1,
-      districtPosition: 2,
-    };
-
-    const dead = createDeadTestTribute({
-      ...createAuthoringTestTribute({
-        id: "dead-sleeper",
-      }),
-
-      district: 2,
-      districtPosition: 1,
-    });
-
-    const prepared = prepareRound(
-      createAuthoringTestGame([first, second, dead]),
-
-      NIGHT_TWO,
-    );
-
-    expect(prepared.events.map((event) => event.preparation?.actingTributeId)).toEqual([
-      first.id,
-      second.id,
-    ]);
-
-    expect(
-      prepared.events.every((event) => event.preparation?.mechanic === "night-rest-preparation"),
-    ).toBe(true);
-
-    expect(
-      prepared.events.flatMap((event) =>
-        event.changes.filter((change) => change.type === "record-night-rest"),
-      ),
-    ).toHaveLength(2);
-  });
-
   it("does not resolve morning rest for dead tributes", () => {
     const livingBase = createAuthoringTestTribute({
       id: "living-morning",
@@ -836,7 +603,9 @@ describe("prepareRound", () => {
       DAY_THREE,
     );
 
-    expect(prepared.events.map((event) => event.preparation?.actingTributeId)).toEqual([living.id]);
+    expect(prepared.automaticEvents.map((event) => event.preparation?.actingTributeId)).toEqual([
+      living.id,
+    ]);
 
     expect(prepared.state.tributes.find((tribute) => tribute.id === dead.id)?.statuses).toEqual([]);
   });

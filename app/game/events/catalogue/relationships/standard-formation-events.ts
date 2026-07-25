@@ -5,8 +5,6 @@ import {
   type EventResolution,
 } from "~/game/events/event-schema";
 import { createSurvivalChanges } from "~/game/events/event-change-builders";
-import { createInventoryItemInstance } from "~/game/items/inventory-engine";
-import type { ItemDefinitionId } from "~/game/items/item-schema";
 import {
   createTruceInstance,
   getActiveTruceForTribute,
@@ -17,13 +15,9 @@ import {
   TRUCE_GROUP_SIZE_WEIGHTS,
   type TruceGroupSize,
 } from "~/game/truces/truce-selection";
-import type { GameChange, GameTribute } from "~/game/types/game-state";
-
 const FORMATION_BASE_WEIGHT = 7;
 
-const SHARED_SUPPLY_IDS = ["wild-fruit", "water"] satisfies readonly ItemDefinitionId[];
-
-type FormationTheme = "travel-together" | "split-supplies";
+type FormationTheme = "travel-together" | "keep-watch";
 
 function formatNameList(names: readonly string[]): string {
   if (names.length === 0) {
@@ -41,23 +35,6 @@ function formatNameList(names: readonly string[]): string {
   return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
 }
 
-function createSupplyChanges(
-  eventId: string,
-  tributes: readonly GameTribute[],
-  round: Parameters<typeof createInventoryItemInstance>[3],
-): GameChange[] {
-  return tributes.map((tribute, index) => {
-    const itemId = SHARED_SUPPLY_IDS[index % SHARED_SUPPLY_IDS.length];
-
-    return {
-      type: "acquire-item",
-      tributeId: tribute.id,
-      acquisitionSource: "natural-foraging",
-      item: createInventoryItemInstance(eventId, tribute.id, itemId, round),
-    };
-  });
-}
-
 function createFormationEvent(
   theme: FormationTheme,
   groupSize: TruceGroupSize,
@@ -70,9 +47,7 @@ function createFormationEvent(
     id: eventId,
     category: "survival",
 
-    tags: travelsTogether
-      ? ["survival", "truce", "cooperative"]
-      : ["survival", "truce", "cooperative", "item", "resource"],
+    tags: ["survival", "truce", "cooperative"],
 
     periods: travelsTogether ? ["day"] : ["night"],
 
@@ -128,26 +103,21 @@ function createFormationEvent(
         getNextRound(round),
       );
 
-      const changes: GameChange[] = [
-        {
-          type: "form-truce",
-          truce,
-        },
-
-        ...createSurvivalChanges(tributes),
-      ];
-
-      if (!travelsTogether) {
-        changes.push(...createSupplyChanges(resolvedEventId, tributes, round));
-      }
-
       const text = travelsTogether
         ? `${formatNameList(names)} decide that travelling alone is too dangerous and agree to watch one another's backs through the coming night.`
-        : `${formatNameList(names)} gather food and water together and agree to travel together temporarily.`;
+        : `${formatNameList(names)} agree to share warmth and take turns keeping watch through the night.`;
 
       return {
         text,
-        changes,
+
+        changes: [
+          {
+            type: "form-truce",
+            truce,
+          },
+
+          ...createSurvivalChanges(tributes),
+        ],
       };
     },
   };
@@ -158,7 +128,7 @@ const STANDARD_DAY_FORMATION_EVENTS = TRUCE_GROUP_SIZE_WEIGHTS.map(({ size, weig
 );
 
 const STANDARD_NIGHT_FORMATION_EVENTS = TRUCE_GROUP_SIZE_WEIGHTS.map(({ size, weight }) =>
-  createFormationEvent("split-supplies", size, weight),
+  createFormationEvent("keep-watch", size, weight),
 );
 
 export const STANDARD_FORMATION_EVENTS = [

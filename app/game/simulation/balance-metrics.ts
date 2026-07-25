@@ -539,6 +539,14 @@ export function collectBalanceMetrics(runs: readonly SimulationRun[]): BalanceMe
 
           incrementCount(applicationCounts, change.status.definitionId);
         }
+
+        /*
+         * Rest is now recorded by visible primary events rather
+         * than automatic night-rest preparation.
+         */
+        if (change.type === "record-night-rest") {
+          restQuality[change.quality] += 1;
+        }
       }
 
       if (event.kind === "preparation" && event.preparation) {
@@ -551,13 +559,6 @@ export function collectBalanceMetrics(runs: readonly SimulationRun[]): BalanceMe
           event.preparation.itemOwnerTributeId !== event.preparation.actingTributeId
         ) {
           borrowedItemEventCount += 1;
-        }
-
-        if (
-          event.preparation.mechanic === "night-rest-preparation" &&
-          event.preparation.restQuality
-        ) {
-          restQuality[event.preparation.restQuality] += 1;
         }
 
         if (event.preparation.mechanic === "camouflage-preparation") {

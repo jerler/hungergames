@@ -418,8 +418,13 @@ describe("game-state invariants", () => {
       phase: "round-events",
       currentRound: DAY_ONE,
 
-      roundEvents: [preparationEvent, primaryEvent],
+      /*
+       * Automatic preparation is applied before the visible round
+       * and retained in history rather than the reveal queue.
+       */
+      eventHistory: [...state.eventHistory, preparationEvent],
 
+      roundEvents: [primaryEvent],
       revealedEventCount: 0,
     };
 
@@ -517,5 +522,47 @@ describe("game-state invariants", () => {
     });
 
     expect(() => assertGameStateInvariants(invalidState)).toThrow(/cause label.*disagrees/i);
+  });
+  it("rejects preparation events in the visible round queue", () => {
+    const game = createGame();
+    const tribute = game.tributes[0];
+
+    if (!tribute) {
+      throw new Error("Invariant test game has no tribute.");
+    }
+
+    const round = {
+      day: 2,
+      period: "day",
+    } as const;
+
+    const preparationEvent: ResolvedEvent = {
+      id: "invalid-visible-preparation",
+      definitionId: "automatic-morning-rest-resolution",
+      kind: "preparation",
+      resolutionMode: "standard",
+      round,
+      participantTributeIds: [tribute.id],
+      text: `${tribute.snapshot.name} wakes after a sheltered night.`,
+      changes: [],
+      preparation: {
+        mechanic: "morning-rest-resolution",
+        actingTributeId: tribute.id,
+        restQuality: "sheltered",
+        affectedStatusIds: [],
+      },
+    };
+
+    const invalidState: GameState = {
+      ...game,
+      phase: "round-events",
+      currentRound: round,
+      roundEvents: [preparationEvent],
+      revealedEventCount: 0,
+    };
+
+    expect(() => assertGameStateInvariants(invalidState)).toThrow(
+      /current round event.*cannot be a preparation event/i,
+    );
   });
 });

@@ -3,12 +3,9 @@ import { createSeededRandom, type RandomSource } from "~/game/engine/random";
 import { createStatusChange } from "~/game/events/event-change-builders";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { compileItemUseEffects } from "~/game/items/item-effect-engine";
-import { resolveItemRestAttempt } from "~/game/items/item-rest-engine";
-import { isSuccessfulStatCheckOutcome, type StatCheckOutcome } from "~/game/events/event-outcomes";
-import { resolveNaturalShelterCheck } from "./natural-shelter";
+import type { StatCheckOutcome } from "~/game/events/event-outcomes";
 import {
   findAccessibleInventoryItem,
-  getAccessibleInventoryItems,
   type AccessibleInventoryItem,
 } from "~/game/items/inventory-engine";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
@@ -30,14 +27,9 @@ import {
   type CamouflagePreparationPlan,
 } from "./camouflage-preparation";
 
-interface NightRestAttempt {
-  outcome: StatCheckOutcome | null;
-  changes: GameChange[];
-}
-
 export interface PreparedRound {
   state: GameState;
-  events: ResolvedEvent[];
+  automaticEvents: ResolvedEvent[];
   committedItemInstanceIds: Set<string>;
 }
 
@@ -398,7 +390,7 @@ function applyPreparationEvent(preparedRound: PreparedRound, event: ResolvedEven
   return {
     state: applyResolvedEvent(preparedRound.state, event),
 
-    events: [...preparedRound.events, event],
+    automaticEvents: [...preparedRound.automaticEvents, event],
 
     committedItemInstanceIds,
   };
@@ -561,251 +553,6 @@ function prepareAutomaticItemAction(
   return nextPreparedRound;
 }
 
-function getRestQualityRank(quality: NightRestQuality): number {
-  switch (quality) {
-    case "comfortable":
-      return 2;
-
-    case "sheltered":
-      return 1;
-
-    case "unsheltered":
-      return 0;
-  }
-}
-
-function compareRestSelections(
-  actingTribute: GameTribute,
-  first: AccessibleInventoryItem,
-  second: AccessibleInventoryItem,
-): number {
-  const firstDefinition = getItemDefinition(first.item.definitionId);
-
-  const secondDefinition = getItemDefinition(second.item.definitionId);
-
-  const firstRest = firstDefinition.rest;
-
-  const secondRest = secondDefinition.rest;
-
-  if (!firstRest || !secondRest) {
-    throw new Error("Rest selection contains an item without a rest capability.");
-  }
-
-  return (
-    getRestQualityRank(secondRest.quality) - getRestQualityRank(firstRest.quality) ||
-    Number(Boolean(firstRest.check)) - Number(Boolean(secondRest.check)) ||
-    (firstRest.check?.difficulty ?? 0) - (secondRest.check?.difficulty ?? 0) ||
-    Number(first.owner.id !== actingTribute.id) - Number(second.owner.id !== actingTribute.id) ||
-    Number(first.item.usesRemaining !== null) - Number(second.item.usesRemaining !== null) ||
-    firstDefinition.id.localeCompare(secondDefinition.id) ||
-    first.item.id.localeCompare(second.item.id)
-  );
-}
-
-function findBestAccessibleRestItem(
-  state: GameState,
-  tribute: GameTribute,
-  committedItemInstanceIds: ReadonlySet<string>,
-): AccessibleInventoryItem | null {
-  return (
-    getAccessibleInventoryItems(state, tribute, {
-      unavailableItemInstanceIds: committedItemInstanceIds,
-
-      requireUsable: true,
-    })
-      .filter((selection) => Boolean(getItemDefinition(selection.item.definitionId).rest))
-      .sort((first, second) => compareRestSelections(tribute, first, second))[0] ?? null
-  );
-}
-
-function getRecordedRestQuality(changes: readonly GameChange[]): NightRestQuality {
-  const restChange = changes.find(
-    (
-      change,
-    ): change is Extract<
-      GameChange,
-      {
-        type: "record-night-rest";
-      }
-    > => change.type === "record-night-rest",
-  );
-
-  if (!restChange) {
-    throw new Error("Night preparation did not record a rest result.");
-  }
-
-  return restChange.quality;
-}
-
-function createNaturalShelterRestAttempt(
-  state: GameState,
-  round: RoundReference,
-  tribute: GameTribute,
-): NightRestAttempt {
-  const outcome = resolveNaturalShelterCheck(
-    tribute,
-
-    createPreparationRandom(state.seed, round, "night-rest-preparation", tribute.id),
-  );
-
-  const quality = isSuccessfulStatCheckOutcome(outcome) ? "sheltered" : "unsheltered";
-
-  return {
-    outcome,
-
-    changes: [
-      {
-        type: "record-night-rest",
-
-        tributeId: tribute.id,
-
-        round: {
-          ...round,
-        },
-
-        quality,
-      },
-    ],
-  };
-}
-
-function createNightRestText(
-  tribute: GameTribute,
-  selection: AccessibleInventoryItem | null,
-  quality: NightRestQuality,
-  outcome: StatCheckOutcome | null,
-): string {
-  if (!selection) {
-    if (quality === "sheltered") {
-      return (
-        `${tribute.snapshot.name} finds a protected ` +
-        "natural hollow and prepares a sheltered place to sleep."
-      );
-    }
-
-    return (
-      `${tribute.snapshot.name} searches for natural shelter, ` +
-      "but cannot find a safe place before nightfall."
-    );
-  }
-
-  const itemPhrase = getItemPhrase(tribute, selection);
-
-  if (quality === "unsheltered" && outcome === "critical-failure") {
-    return (
-      `${tribute.snapshot.name} tries to use ` +
-      `${itemPhrase} to prepare camp, but burns ` +
-      "themself and fails to establish shelter."
-    );
-  }
-
-  if (quality === "unsheltered") {
-    return (
-      `${tribute.snapshot.name} tries to use ` +
-      `${itemPhrase} to prepare camp, but the ` +
-      "attempt fails and leaves them unsheltered."
-    );
-  }
-
-  if (quality === "comfortable") {
-    return (
-      `${tribute.snapshot.name} settles in with ` + `${itemPhrase} for a comfortable night's rest.`
-    );
-  }
-
-  return `${tribute.snapshot.name} uses ` + `${itemPhrase} to prepare a sheltered camp.`;
-}
-
-function createNightRestPreparationEvent(
-  state: GameState,
-  round: RoundReference,
-  tribute: GameTribute,
-  selection: AccessibleInventoryItem | null,
-): ResolvedEvent {
-  const eventId = createPreparationEventId(round, "night-rest-preparation", tribute.id);
-
-  const attempt: NightRestAttempt = selection
-    ? resolveItemRestAttempt({
-        eventId,
-        round,
-
-        random: createPreparationRandom(state.seed, round, "night-rest-preparation", tribute.id),
-
-        actingTribute: tribute,
-        owner: selection.owner,
-        item: selection.item,
-
-        reason: eventId,
-      })
-    : createNaturalShelterRestAttempt(state, round, tribute);
-
-  const restQuality = getRecordedRestQuality(attempt.changes);
-
-  return {
-    id: eventId,
-
-    definitionId: "automatic-night-rest-preparation",
-
-    kind: "preparation",
-    resolutionMode: "standard",
-
-    round,
-
-    participantTributeIds: getEventParticipantIds(tribute, selection ?? undefined),
-
-    text: createNightRestText(tribute, selection, restQuality, attempt.outcome),
-
-    changes: attempt.changes,
-
-    preparation: {
-      mechanic: "night-rest-preparation",
-
-      actingTributeId: tribute.id,
-
-      restQuality,
-
-      ...(selection
-        ? {
-            itemInstanceId: selection.item.id,
-
-            itemDefinitionId: selection.item.definitionId,
-
-            itemOwnerTributeId: selection.owner.id,
-
-            usesRemainingAfter: getUsesRemainingAfter(selection),
-          }
-        : {}),
-    },
-  };
-}
-
-function prepareNightRest(preparedRound: PreparedRound, round: RoundReference): PreparedRound {
-  let nextPreparedRound = preparedRound;
-
-  const tributeIds = getStableLivingTributeIds(nextPreparedRound.state);
-
-  for (const tributeId of tributeIds) {
-    const tribute = requireLivingTribute(nextPreparedRound.state, tributeId);
-
-    const selection = findBestAccessibleRestItem(
-      nextPreparedRound.state,
-      tribute,
-      nextPreparedRound.committedItemInstanceIds,
-    );
-
-    const event = createNightRestPreparationEvent(
-      nextPreparedRound.state,
-      round,
-      tribute,
-      selection,
-    );
-
-    nextPreparedRound = applyPreparationEvent(nextPreparedRound, event);
-  }
-
-  return nextPreparedRound;
-}
-
 function isPreviousNightRest(tribute: GameTribute, round: RoundReference): boolean {
   const rest = tribute.survival.lastNightRest;
 
@@ -853,12 +600,17 @@ function createMorningRestChanges(
       ];
 
     case "sheltered":
-      /*
-       * Sheltered rest creates no new benefit
-       * or penalty. Any benefit from an older
-       * comfortable night is cleared.
-       */
-      return createRemoveStatusChanges(tribute, "well-rested");
+      return [
+        ...createRemoveStatusChanges(tribute, "exhausted"),
+
+        /*
+         * Replace yesterday's benefit rather
+         * than stacking consecutive nights.
+         */
+        ...createRemoveStatusChanges(tribute, "well-rested"),
+
+        createStatusChange(eventId, tribute, "well-rested", 1, round),
+      ];
 
     case "unsheltered":
       return [
@@ -882,7 +634,7 @@ function getMorningAffectedStatusIds(
       return uniqueStatusIds([...(hasExhausted ? ["exhausted" as const] : []), "well-rested"]);
 
     case "sheltered":
-      return hasWellRested ? ["well-rested"] : [];
+      return uniqueStatusIds([...(hasExhausted ? ["exhausted" as const] : []), "well-rested"]);
 
     case "unsheltered":
       return uniqueStatusIds([...(hasWellRested ? ["well-rested" as const] : []), "exhausted"]);
@@ -897,7 +649,9 @@ function createMorningRestText(tribute: GameTribute, quality: NightRestQuality):
       );
 
     case "sheltered":
-      return `${tribute.snapshot.name} wakes after ` + "passing the night safely under shelter.";
+      return (
+        `${tribute.snapshot.name} wakes rested after ` + "passing the night safely under shelter."
+      );
 
     case "unsheltered":
       return `${tribute.snapshot.name} wakes exhausted ` + "after a cold and exposed night.";
@@ -968,7 +722,7 @@ function prepareMorningRestResolution(
 export function prepareRound(state: GameState, round: RoundReference): PreparedRound {
   let preparedRound: PreparedRound = {
     state,
-    events: [],
+    automaticEvents: [],
     committedItemInstanceIds: new Set<string>(),
   };
 
@@ -979,14 +733,17 @@ export function prepareRound(state: GameState, round: RoundReference): PreparedR
    */
   preparedRound = prepareMedicalTreatments(preparedRound, round);
 
-  for (const action of AUTOMATIC_ITEM_ACTIONS) {
-    preparedRound = prepareAutomaticItemAction(preparedRound, round, action);
-  }
-
   if (round.period === "day") {
+    /*
+     * Food and water are consumed once per daily survival
+     * cycle, after the previous night has advanced need
+     * counters and before daytime arena events begin.
+     */
+    for (const action of AUTOMATIC_ITEM_ACTIONS) {
+      preparedRound = prepareAutomaticItemAction(preparedRound, round, action);
+    }
+
     preparedRound = prepareMorningRestResolution(preparedRound, round);
-  } else {
-    preparedRound = prepareNightRest(preparedRound, round);
   }
 
   return prepareCamouflage(preparedRound, round);

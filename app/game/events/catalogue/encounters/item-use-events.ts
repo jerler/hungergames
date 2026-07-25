@@ -96,7 +96,7 @@ export const ITEM_USE_EVENTS = [
     itemId: "shield",
     check: brains(3),
     tags: ["tool", "item", "status", "resource"],
-    periods: ["day", "night"],
+    periods: ["day"],
     weight: 3.5,
     roleOptions: { getWeight: getVulnerabilityWeight },
 

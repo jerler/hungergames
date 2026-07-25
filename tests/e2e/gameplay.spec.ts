@@ -52,7 +52,7 @@ test("runs a local Game through its victory sequence", async ({ page }) => {
     }),
   ).toBeVisible();
 
-  await expect(page.getByText(/The 12 tributes stand on their launch plates/i)).toBeVisible();
+  await expect(page.getByText(/The 12 tributes stand on their platforms/i)).toBeVisible();
 
   await page
     .getByRole("button", {

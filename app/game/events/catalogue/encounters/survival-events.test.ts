@@ -11,7 +11,7 @@ import type { RandomSource } from "~/game/engine/random";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
-import type { GameState, GameTribute } from "~/game/types/game-state";
+import type { GameState, GameTribute, RoundReference } from "~/game/types/game-state";
 import type { TributeStats } from "~/game/types/tribute";
 import { SURVIVAL_EVENTS } from "./survival-events";
 import { selectEventParticipants } from "~/game/events/participant-selection";
@@ -20,6 +20,11 @@ import { getSurvivalSelectionWeight } from "~/game/engine/stat-formulas";
 const ROUND = {
   day: 1,
   period: "day",
+} as const;
+
+const NIGHT_ROUND = {
+  day: 1,
+  period: "night",
 } as const;
 
 const BALANCED_STATS = {
@@ -96,6 +101,7 @@ function resolveEvent(
   game: GameState,
   participantsByRole: ParticipantsByRole,
   randomValues: readonly number[],
+  round: RoundReference = ROUND,
 ): EventResolution {
   const livingTributes = Object.values(participantsByRole).flat();
 
@@ -103,7 +109,7 @@ function resolveEvent(
     definition,
     {
       state: game,
-      round: ROUND,
+      round,
       livingTributes,
     },
     () => 0,
@@ -113,7 +119,7 @@ function resolveEvent(
 
   return definition.resolve({
     state: game,
-    round: ROUND,
+    round,
 
     livingTributes,
 
@@ -234,7 +240,7 @@ describe("survival events", () => {
     },
   );
 
-  it("treats finds-hiding-place as concealment rather than rest", () => {
+  it("records successful shelter through a visible night event", () => {
     const game = createTestGame();
 
     const tribute = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
@@ -248,14 +254,13 @@ describe("survival events", () => {
 
       tags: ["survival", "status"],
 
-      periods: ["day", "night"],
+      periods: ["night"],
 
       baseWeight: 8,
 
       roles: [
         {
           id: "tribute",
-
           count: 1,
         },
       ],
@@ -271,29 +276,62 @@ describe("survival events", () => {
         tribute: [tribute],
       },
 
-      [0.5],
+      [0.6],
+
+      NIGHT_ROUND,
     );
 
-    expect(resolution.text).toBe(
-      "Hazel slips into dense undergrowth and remains hidden from the other tributes.",
-    );
-
-    expect(getAppliedStatuses(resolution)).toEqual([
-      expect.objectContaining({
-        definitionId: "hidden",
-
-        severity: 1,
-      }),
-    ]);
+    expect(resolution.text).toContain("protected hollow");
 
     expect(resolution.changes).toContainEqual({
-      type: "increment-statistic",
+      type: "record-night-rest",
 
       tributeId: tribute.id,
 
-      statistic: "eventsSurvived",
+      round: NIGHT_ROUND,
 
-      amount: 1,
+      quality: "sheltered",
     });
+
+    expect(
+      resolution.changes.some(
+        (change) => change.type === "apply-status" && change.status.definitionId === "well-rested",
+      ),
+    ).toBe(false);
+  });
+
+  it("records failed shelter attempts as unsheltered", () => {
+    const game = createTestGame();
+
+    const tribute = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
+
+    const resolution = resolveEvent(
+      requireEvent("finds-hiding-place"),
+      game,
+
+      {
+        tribute: [tribute],
+      },
+
+      [0.2],
+
+      NIGHT_ROUND,
+    );
+
+    expect(resolution.changes).toContainEqual({
+      type: "record-night-rest",
+
+      tributeId: tribute.id,
+
+      round: NIGHT_ROUND,
+
+      quality: "unsheltered",
+    });
+
+    expect(
+      resolution.changes.some(
+        (change) => change.type === "apply-status" && change.status.definitionId === "exhausted",
+      ),
+    ).toBe(false);
   });
 });

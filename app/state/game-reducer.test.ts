@@ -419,7 +419,7 @@ describe("gameReducer", () => {
     expect(() => assertGameStateInvariants(completedState)).not.toThrow();
   });
 
-  it("applies and reveals preparation before primary events", () => {
+  it("applies automatic preparation without queuing it for reveal", () => {
     const game = createTestGame("preparation-round-test");
 
     const tribute = game.tributes[0];
@@ -463,7 +463,7 @@ describe("gameReducer", () => {
       ...stateWithWater,
 
       phase: "round-complete",
-      currentRound: DAY_ONE,
+      currentRound: NIGHT_ONE,
 
       roundEvents: [],
       revealedEventCount: 0,
@@ -473,6 +473,12 @@ describe("gameReducer", () => {
           ? {
               ...candidate,
 
+              survival: {
+                ...candidate.survival,
+
+                roundsWithoutWater: 2,
+              },
+
               statuses: [
                 ...candidate.statuses,
 
@@ -481,7 +487,7 @@ describe("gameReducer", () => {
                   candidate.id,
                   "thirsty",
                   1,
-                  DAY_ONE,
+                  NIGHT_ONE,
                 ),
               ],
             }
@@ -498,15 +504,18 @@ describe("gameReducer", () => {
       throw new Error("The prepared Game disappeared.");
     }
 
-    const preparationEvents = nextState.roundEvents.filter((event) => event.kind === "preparation");
+    const automaticEvents = nextState.eventHistory.filter(
+      (event) =>
+        event.kind === "preparation" && event.round.day === 2 && event.round.period === "day",
+    );
 
-    expect(nextState.roundEvents[0]?.kind).toBe("preparation");
+    expect(
+      automaticEvents.some((event) => event.preparation?.mechanic === "hydration-consumption"),
+    ).toBe(true);
 
     expect(nextState.roundEvents.some((event) => event.kind === "primary")).toBe(true);
-
-    expect(nextState.revealedEventCount).toBe(preparationEvents.length);
-
-    expect(nextState.eventHistory).toContainEqual(nextState.roundEvents[0]);
+    expect(nextState.roundEvents.every((event) => event.kind !== "preparation")).toBe(true);
+    expect(nextState.revealedEventCount).toBe(0);
 
     expect(nextState.itemTransactions).toEqual(
       expect.arrayContaining([

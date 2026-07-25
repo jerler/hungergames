@@ -19,6 +19,11 @@ export interface SurvivalNeedProgressionDefinition {
   need: SurvivalNeed;
   counterKey: SurvivalNeedCounterKey;
 
+  /**
+   * Counter values represent completed days despite the
+   * legacy "roundsWithout..." persistence field names.
+   */
+
   stages: readonly SurvivalNeedStageDefinition[];
 
   fatalAtRounds: number;

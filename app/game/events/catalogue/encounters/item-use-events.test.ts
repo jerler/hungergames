@@ -76,6 +76,12 @@ describe("item-use event content", () => {
     expect(hasSurvivalCredit(success.resolution, success.tribute.id)).toBe(true);
   });
 
+  it("keeps resource-producing item experiments in daytime", () => {
+    const definition = requireEventDefinition(ITEM_USE_EVENTS, "shield-used-for-everything-else");
+
+    expect(definition.periods).toEqual(["day"]);
+  });
+
   it("an exceptional shield experiment finds both food and water", () => {
     const { tribute, resolution } = resolveItemEvent(
       "shield-used-for-everything-else",

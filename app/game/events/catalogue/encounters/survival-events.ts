@@ -2,20 +2,52 @@ import { getForagingScore, getSurvivalSelectionWeight } from "~/game/engine/stat
 
 import {
   acquireNaturalResource,
-  always,
   applyStatus,
   brains,
   createEvent,
   createNaturalResourceEvent,
+  customResolution,
   hasItem,
   randomResult,
+  recordNightRest,
   consumeRequiredItem,
   result,
   statCheck,
   survived,
 } from "~/game/events/authoring";
 
-import type { EventDefinition } from "~/game/events/event-schema";
+import { requireSingleParticipant, type EventDefinition } from "~/game/events/event-schema";
+import { resolveNaturalShelterCheck } from "~/game/survival/natural-shelter";
+
+const NATURAL_SHELTER_RESULTS = {
+  "critical-failure": result({
+    text: ({ tribute }) =>
+      `${tribute.name} searches desperately for shelter, but night falls before a safe place appears.`,
+    effects: [recordNightRest("tribute", "unsheltered"), survived("tribute")],
+  }),
+
+  failure: result({
+    text: ({ tribute }) =>
+      `${tribute.name} tries to settle beneath a thin patch of cover, but the shelter collapses and leaves ${tribute.pronouns.object} exposed to the night.`,
+    effects: [recordNightRest("tribute", "unsheltered"), survived("tribute")],
+  }),
+
+  success: result({
+    text: ({ tribute }) =>
+      `${tribute.name} finds a protected hollow and settles in beneath sturdy natural shelter.`,
+    effects: [recordNightRest("tribute", "sheltered"), survived("tribute")],
+  }),
+
+  "exceptional-success": result({
+    text: ({ tribute }) =>
+      `${tribute.name} discovers a concealed hollow that offers both shelter and cover from the other tributes.`,
+    effects: [
+      recordNightRest("tribute", "sheltered"),
+      applyStatus("tribute", "hidden", 1),
+      survived("tribute"),
+    ],
+  }),
+} as const;
 
 export const SURVIVAL_EVENTS = [
   /* Day Only */
@@ -83,23 +115,28 @@ export const SURVIVAL_EVENTS = [
       }),
     ),
 
-  /* Day and Night */
+  /* Night Only */
   createEvent("finds-hiding-place")
     .solo("tribute", {
       getWeight: getSurvivalSelectionWeight,
     })
     .category("survival")
     .tags("survival", "status")
-    .during("day", "night")
+    .during("night")
     .weight(8)
     .resolve(
-      always(
-        result({
-          text: ({ tribute }) =>
-            `${tribute.name} slips into dense undergrowth and remains hidden from the other tributes.`,
+      customResolution(
+        (context, { resolveResult }) => {
+          const tribute = requireSingleParticipant(context.participantsByRole, "tribute");
 
-          effects: [applyStatus("tribute", "hidden", 1), survived("tribute")],
-        }),
+          const outcome = resolveNaturalShelterCheck(tribute, context.random);
+
+          return resolveResult(NATURAL_SHELTER_RESULTS[outcome]);
+        },
+
+        {
+          possibleResults: Object.values(NATURAL_SHELTER_RESULTS),
+        },
       ),
     ),
 ] satisfies readonly EventDefinition[];

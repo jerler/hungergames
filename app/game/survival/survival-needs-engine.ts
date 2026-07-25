@@ -216,14 +216,23 @@ function spareTributeFromFatalNeeds(tribute: GameTribute, round: RoundReference)
 }
 
 /**
- * Advances persistent food and water deprivation after
- * the completed round, synchronizes visible need stages,
- * and resolves fatal thresholds as visible events.
+ * Advances persistent food and water deprivation after a
+ * completed night, synchronizes visible need stages, and
+ * resolves fatal thresholds as visible events.
+ *
+ * The legacy counter field names still say "rounds", but
+ * each increment now represents one complete arena day.
  */
 export function advanceSurvivalNeedsAfterRound(state: GameState): GameState {
   const completedRound = state.currentRound;
 
-  if (!completedRound) {
+  /*
+   * Food and water pressure advances once per completed day.
+   *
+   * Daytime completion is only the midpoint of that cycle;
+   * the counters advance after the corresponding night ends.
+   */
+  if (!completedRound || completedRound.period !== "night") {
     return state;
   }
 

@@ -5,6 +5,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function normalizeVisibleRoundQueue(state: GameState): GameState {
+  const containsAutomaticRoundEvents = state.roundEvents.some(
+    (event) => event.kind === "preparation",
+  );
+
+  if (!containsAutomaticRoundEvents) {
+    return state;
+  }
+
+  const revealedVisibleEventCount = state.roundEvents
+    .slice(0, state.revealedEventCount)
+    .filter((event) => event.kind !== "preparation").length;
+
+  return {
+    ...state,
+    roundEvents: state.roundEvents.filter((event) => event.kind !== "preparation"),
+    revealedEventCount: revealedVisibleEventCount,
+  };
+}
+
 export class UnsupportedGameStateSchemaError extends Error {
   readonly receivedSchemaVersion: unknown;
 
@@ -33,7 +53,7 @@ export function loadGameState(value: unknown): GameState {
     throw new UnsupportedGameStateSchemaError(value.schemaVersion);
   }
 
-  const state = value as unknown as GameState;
+  const state = normalizeVisibleRoundQueue(value as unknown as GameState);
 
   try {
     assertGameStateInvariants(state);

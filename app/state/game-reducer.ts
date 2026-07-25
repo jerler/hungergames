@@ -64,14 +64,13 @@ function beginNextRound(state: GameState, now: string): GameState {
     phase: "round-events",
     currentRound: nextRound,
 
-    roundEvents: [...preparedRound.events, ...primaryEvents],
-
     /*
-     * Preparation has already been applied and is
-     * immediately visible. The first hidden event is
-     * therefore the first primary event.
+     * Automatic preparation has already changed the state
+     * and entered event history. Only player-facing arena
+     * events belong in the reveal queue.
      */
-    revealedEventCount: preparedRound.events.length,
+    roundEvents: primaryEvents,
+    revealedEventCount: 0,
 
     updatedAt: now,
   });

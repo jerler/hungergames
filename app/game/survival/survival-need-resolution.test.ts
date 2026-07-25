@@ -41,8 +41,20 @@ function requireTribute(state: GameState, tributeId: string): GameTribute {
   return tribute;
 }
 
+const COMPLETED_NIGHT = {
+  day: 2,
+  period: "night",
+} as const;
+
+function createCompletedNightGame(tributes: readonly GameTribute[]): GameState {
+  return {
+    ...createAuthoringTestGame(tributes),
+    currentRound: COMPLETED_NIGHT,
+  };
+}
+
 describe("fatal survival need resolution", () => {
-  it("kills a tribute after six rounds without water", () => {
+  it("kills a tribute after six days without water", () => {
     const victim = withNeeds(
       createAuthoringTestTribute({
         id: "victim",
@@ -58,7 +70,7 @@ describe("fatal survival need resolution", () => {
       name: "Survivor",
     });
 
-    const resolved = advanceSurvivalNeedsAfterRound(createAuthoringTestGame([victim, survivor]));
+    const resolved = advanceSurvivalNeedsAfterRound(createCompletedNightGame([victim, survivor]));
 
     const resolvedVictim = requireTribute(resolved, victim.id);
 
@@ -85,7 +97,7 @@ describe("fatal survival need resolution", () => {
     expect(resolved.revealedEventCount).toBe(resolved.roundEvents.length);
   });
 
-  it("kills a tribute after eight rounds without food", () => {
+  it("kills a tribute after eight days without food", () => {
     const victim = withNeeds(
       createAuthoringTestTribute({
         id: "victim",
@@ -99,7 +111,7 @@ describe("fatal survival need resolution", () => {
       id: "survivor",
     });
 
-    const resolved = advanceSurvivalNeedsAfterRound(createAuthoringTestGame([victim, survivor]));
+    const resolved = advanceSurvivalNeedsAfterRound(createCompletedNightGame([victim, survivor]));
 
     expect(requireTribute(resolved, victim.id).death).toMatchObject({
       causeId: "survival-need:food",
@@ -134,7 +146,7 @@ describe("fatal survival need resolution", () => {
     }
 
     const resolved = advanceSurvivalNeedsAfterRound(
-      createAuthoringTestGame([victimWithItem, survivor]),
+      createCompletedNightGame([victimWithItem, survivor]),
     );
 
     const resolvedVictim = requireTribute(resolved, victimWithItem.id);
@@ -176,7 +188,7 @@ describe("fatal survival need resolution", () => {
       id: "survivor",
     });
 
-    const resolved = advanceSurvivalNeedsAfterRound(createAuthoringTestGame([victim, survivor]));
+    const resolved = advanceSurvivalNeedsAfterRound(createCompletedNightGame([victim, survivor]));
 
     const needEvents = resolved.roundEvents.filter((event) => event.kind === "need-resolution");
 
@@ -220,7 +232,7 @@ describe("fatal survival need resolution", () => {
       },
     );
 
-    const resolved = advanceSurvivalNeedsAfterRound(createAuthoringTestGame([lowLuck, highLuck]));
+    const resolved = advanceSurvivalNeedsAfterRound(createCompletedNightGame([lowLuck, highLuck]));
 
     expect(requireTribute(resolved, lowLuck.id).isAlive).toBe(false);
 
@@ -251,7 +263,7 @@ describe("fatal survival need resolution", () => {
       id: "survivor",
     });
 
-    const game = createAuthoringTestGame([victim, survivor]);
+    const game = createCompletedNightGame([victim, survivor]);
 
     const gameWithTruce: GameState = {
       ...game,

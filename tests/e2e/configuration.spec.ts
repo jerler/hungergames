@@ -23,6 +23,12 @@ test("configures tributes and creates an initial Game", async ({ page }) => {
 
   await page
     .getByRole("checkbox", {
+      name: "Enable tribute gifts",
+    })
+    .check();
+
+  await page
+    .getByRole("checkbox", {
       name: "Enable audience participation",
     })
     .check();
@@ -86,14 +92,17 @@ test("configures tributes and creates an initial Game", async ({ page }) => {
     })
     .first()
     .click();
-
   await expect(
     page.getByRole("heading", {
-      name: "The arena is ready.",
+      name: "The tributes enter the arena.",
     }),
   ).toBeVisible();
 
+  await expect(page.getByText(/The 12 tributes stand on their platforms/i)).toBeVisible();
+
   await expect(
-    page.getByText("12 tributes from 6 districts are waiting for the signal."),
+    page.getByRole("button", {
+      name: "Fire the cannon",
+    }),
   ).toBeVisible();
 });

@@ -164,11 +164,33 @@ describe("Bloodbath sequencer", () => {
 
         if (strategy === "cornucopia") {
           expect(cornucopiaEventIds.has(event.definitionId)).toBe(true);
+          expect(event.feedGroup).toBe("bloodbath-cornucopia");
         } else {
           expect(fleeEventIds.has(event.definitionId)).toBe(true);
+          expect(event.feedGroup).toBe("bloodbath-flee");
         }
       }
     }
+  });
+
+  it("places Cornucopia events before fleeing events", () => {
+    const game = createTestGame("grouped-bloodbath-feed");
+
+    const events = sequenceBloodbathEvents(game, DAY_ONE);
+
+    const firstFleeEventIndex = events.findIndex((event) => event.feedGroup === "bloodbath-flee");
+
+    expect(firstFleeEventIndex).toBeGreaterThan(0);
+
+    expect(
+      events
+        .slice(0, firstFleeEventIndex)
+        .every((event) => event.feedGroup === "bloodbath-cornucopia"),
+    ).toBe(true);
+
+    expect(
+      events.slice(firstFleeEventIndex).every((event) => event.feedGroup === "bloodbath-flee"),
+    ).toBe(true);
   });
 
   it("does not commit an item instance twice", () => {

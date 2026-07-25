@@ -48,13 +48,15 @@ test("runs a local Game through its victory sequence", async ({ page }) => {
 
   await expect(
     page.getByRole("heading", {
-      name: "The arena is ready.",
+      name: "The tributes enter the arena.",
     }),
   ).toBeVisible();
 
+  await expect(page.getByText(/The 12 tributes stand on their launch plates/i)).toBeVisible();
+
   await page
     .getByRole("button", {
-      name: "Begin Day 1",
+      name: "Fire the cannon",
     })
     .click();
 

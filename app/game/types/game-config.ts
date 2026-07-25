@@ -17,7 +17,7 @@ export interface GameConfig {
 export function createDefaultGameConfig(): GameConfig {
   return {
     districtCount: 12,
-    giftsEnabled: true,
+    giftsEnabled: false,
     audienceEnabled: false,
     giftVoteDurationSeconds: 60,
     giftFrequencies: {

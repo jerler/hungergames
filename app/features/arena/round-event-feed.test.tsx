@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { createAuthoringTestTribute } from "~/game/events/authoring/testing/authoring-test-fixtures";
 import type {
   EliminateTributeChange,
+  EventFeedGroup,
   GameTribute,
   ResolvedEvent,
   ResolvedEventKind,
@@ -35,9 +36,16 @@ const ACTOR = createNamedTribute("actor", "Katniss");
 
 const OWNER = createNamedTribute("owner", "Peeta");
 
+interface CreateEventOptions {
+  id?: string;
+  text?: string;
+  feedGroup?: EventFeedGroup;
+}
+
 function createEvent(
   eliminatedTributeIds: readonly string[],
   kind: ResolvedEventKind = "primary",
+  options: CreateEventOptions = {},
 ): ResolvedEvent {
   const changes = eliminatedTributeIds.map((tributeId): EliminateTributeChange => ({
     type: "eliminate-tribute",
@@ -54,17 +62,19 @@ function createEvent(
   }));
 
   return {
-    id: `test-event-${kind}`,
+    id: options.id ?? `test-event-${kind}`,
 
     definitionId: "test-event",
     kind,
     resolutionMode: "standard",
 
+    ...(options.feedGroup ? { feedGroup: options.feedGroup } : {}),
+
     round: TEST_ROUND,
 
     participantTributeIds: [...eliminatedTributeIds],
 
-    text: "Several cannons echo across the arena.",
+    text: options.text ?? "Several cannons echo across the arena.",
 
     changes,
   };
@@ -292,5 +302,88 @@ describe("RoundEventFeed", () => {
     expect(screen.getByText("01")).toBeInTheDocument();
 
     expect(screen.getByText("1 of 2 arena events revealed")).toBeInTheDocument();
+  });
+
+  it("groups Bloodbath events while preserving global event numbering", () => {
+    const cornucopiaEventOne = createEvent([], "primary", {
+      id: "cornucopia-one",
+      text: "Katniss runs for the Cornucopia.",
+      feedGroup: "bloodbath-cornucopia",
+    });
+
+    const cornucopiaEventTwo = createEvent([], "primary", {
+      id: "cornucopia-two",
+      text: "Peeta grabs a supply pack.",
+      feedGroup: "bloodbath-cornucopia",
+    });
+
+    const fleeEvent = createEvent([], "primary", {
+      id: "flee-one",
+      text: "Mothman disappears into the trees.",
+      feedGroup: "bloodbath-flee",
+    });
+
+    renderFeed([cornucopiaEventOne, cornucopiaEventTwo, fleeEvent], 3);
+
+    expect(
+      screen
+        .getAllByRole("heading", {
+          level: 3,
+        })
+        .map((heading) => heading.textContent),
+    ).toEqual(["Ran for the Cornucopia", "Ran for the trees"]);
+
+    expect(screen.getByText("01")).toBeInTheDocument();
+    expect(screen.getByText("02")).toBeInTheDocument();
+    expect(screen.getByText("03")).toBeInTheDocument();
+  });
+
+  it("does not render an empty Bloodbath group", () => {
+    const cornucopiaEvent = createEvent([], "primary", {
+      id: "cornucopia-only",
+      feedGroup: "bloodbath-cornucopia",
+    });
+
+    renderFeed([cornucopiaEvent]);
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Ran for the Cornucopia",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("heading", {
+        name: "Ran for the trees",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not hide an ungrouped event during a grouped Bloodbath feed", () => {
+    const cornucopiaEvent = createEvent([], "primary", {
+      id: "cornucopia-event",
+      feedGroup: "bloodbath-cornucopia",
+    });
+
+    const aftermathEvent = createEvent([], "aftermath", {
+      id: "aftermath-event",
+      text: "The cannons echo across the arena.",
+    });
+
+    renderFeed([cornucopiaEvent, aftermathEvent], 1);
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Arena aftermath",
+      }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("The cannons echo across the arena.")).toBeInTheDocument();
+  });
+
+  it("keeps ordinary rounds in the flat event-feed layout", () => {
+    const { container } = renderFeed([createEvent([])]);
+
+    expect(container.querySelector("[data-event-feed-group]")).not.toBeInTheDocument();
   });
 });

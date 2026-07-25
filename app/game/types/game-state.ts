@@ -323,6 +323,8 @@ export type GameChange =
 export type ResolvedEventKind =
   "primary" | "preparation" | "aftermath" | "status-resolution" | "need-resolution";
 
+export type EventFeedGroup = "bloodbath-cornucopia" | "bloodbath-flee";
+
 export type EventResolutionMode = "standard" | "safety";
 
 export type PreparationMechanic =
@@ -366,6 +368,14 @@ export interface ResolvedEvent {
   definitionId: string;
   kind: ResolvedEventKind;
   resolutionMode: EventResolutionMode;
+
+  /**
+   * Optional presentation metadata used to place related events
+   * into labelled sections in the arena feed.
+   *
+   * Most events do not need a feed group.
+   */
+  feedGroup?: EventFeedGroup;
 
   round: RoundReference;
   participantTributeIds: string[];

@@ -15,6 +15,7 @@ import {
   selectVictors,
 } from "~/game/selectors/game-selectors";
 import { useGameSession } from "~/state/game-session-context";
+import { DayOneOpening } from "~/features/arena/day-one-opening";
 
 export function meta() {
   return [
@@ -132,7 +133,7 @@ export default function GamePlayPage() {
           {activeGame.currentRound ? (
             <strong>{formatRoundLabel(activeGame.currentRound)}</strong>
           ) : (
-            <strong>Opening ceremony</strong>
+            <strong>Day 1 · Awaiting cannon</strong>
           )}
 
           <span>{livingTributes.length} tributes remain</span>
@@ -142,20 +143,7 @@ export default function GamePlayPage() {
       <div className="arena-layout">
         <main className="arena-main">
           {activeGame.phase === "opening" ? (
-            <section className="arena-opening">
-              <p className="eyebrow">The Reaping is complete</p>
-
-              <h1>The arena is ready.</h1>
-
-              <p>
-                {activeGame.tributes.length} tributes from {activeGame.config.districtCount}{" "}
-                districts are waiting for the signal.
-              </p>
-
-              <button className="arena-primary-button" type="button" onClick={beginRound}>
-                Begin Day 1<span aria-hidden="true">→</span>
-              </button>
-            </section>
+            <DayOneOpening tributeCount={activeGame.tributes.length} onFireCannon={beginRound} />
           ) : null}
 
           {activeGame.currentRound &&

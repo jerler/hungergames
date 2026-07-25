@@ -24,6 +24,7 @@ import type {
 } from "~/game/events/event-schema";
 import { getEventDefinitionWeight } from "~/game/events/event-weighting";
 import type {
+  EventFeedGroup,
   GameState,
   GameTribute,
   ResolvedEvent,
@@ -66,6 +67,7 @@ interface ResolveBloodbathEventOptions {
   definition: EventDefinition;
   participantsByRole: ParticipantsByRole;
   eventIndex: number;
+  feedGroup: EventFeedGroup;
   random: RandomSource;
   unavailableItemInstanceIds: Set<string>;
 }
@@ -77,6 +79,7 @@ function resolveBloodbathEvent({
   definition,
   participantsByRole,
   eventIndex,
+  feedGroup,
   random,
   unavailableItemInstanceIds,
 }: ResolveBloodbathEventOptions): ResolvedEvent {
@@ -116,6 +119,7 @@ function resolveBloodbathEvent({
     definitionId: definition.id,
     kind: "primary",
     resolutionMode: "standard",
+    feedGroup,
     round,
     participantTributeIds: Object.values(participantsByRole)
       .flat()
@@ -349,6 +353,7 @@ function sequenceCornucopiaEvents(
       definition,
       participantsByRole,
       eventIndex,
+      feedGroup: "bloodbath-cornucopia",
       random,
       unavailableItemInstanceIds,
     });
@@ -396,6 +401,7 @@ function sequenceFleeEvents(
       },
 
       eventIndex: startingEventIndex + offset,
+      feedGroup: "bloodbath-flee",
 
       random,
       unavailableItemInstanceIds,
@@ -482,14 +488,15 @@ export function sequenceBloodbathEvents(state: GameState, round: RoundReference)
     unavailableItemInstanceIds,
   );
 
+  /*
+   * Both sequence functions already randomize their participants.
+   *
+   * Keep the two strategy groups contiguous so the arena feed can
+   * present the Cornucopia events first and the fleeing events second.
+   */
   const events = [...cornucopiaSequence.events, ...fleeEvents];
 
   assertParticipantCoverage(livingTributes, events);
 
-  /*
-   * Resolve before shuffling so fatal-pressure decisions are
-   * made in a coherent sequence. Feed order remains seeded
-   * and does not expose strategy groups.
-   */
-  return shuffleItems(events, random);
+  return events;
 }

@@ -1,3 +1,16 @@
+export { createPoisonAttackEvent } from "./families/poison-attack-event";
+export { createTrapAttackEvent } from "./families/trap-attack-event";
+
+export type {
+  TrapAttackEventOptions,
+  TrapCriticalFailureStatus,
+} from "./families/trap-attack-event";
+
+export { createRiskyAreaAttackEvent } from "./families/risky-area-attack-event";
+
+export type { RiskyAreaAttackEventOptions } from "./families/risky-area-attack-event";
+export type { PoisonAttackEventOptions } from "./families/poison-attack-event";
+
 /* Event builder */
 
 export { createEvent } from "./builder/create-event";

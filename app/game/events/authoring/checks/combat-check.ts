@@ -1,9 +1,16 @@
-import type { RandomSource } from "~/game/engine/random";
-import { getCombatScore, getSurvivalScore } from "~/game/engine/stat-formulas";
 import type { EventItemSelection } from "~/game/events/event-schema";
-import { getItemDefinition } from "~/game/items/item-catalogue";
+
+import {
+  getBaseCombatScore,
+  getSelectedDirectAttackScore,
+  getSurvivalScore,
+} from "~/game/engine/stat-formulas";
+
+import { getCheckedAttackDefenseBonus } from "~/game/items/defensive-equipment";
+
+import type { RandomSource } from "~/game/engine/random";
+
 import type { GameState, GameTribute, RoundReference } from "~/game/types/game-state";
-import { getHostileDefenseItemBonus } from "~/game/items/item-contextual-capabilities";
 
 export type WeaponAttackOutcome = "failure" | "success";
 
@@ -22,19 +29,7 @@ export type WeaponAttackCheck = (context: WeaponAttackCheckContext) => WeaponAtt
 export type WeaponAttackModifier = (context: WeaponAttackCheckContext) => number;
 
 export interface OrdinaryAttackCheckOptions {
-  /**
-   * Extension point for positional, tactical, or status-based
-   * attacker advantages.
-   */
   attackerAdvantage?: WeaponAttackModifier;
-
-  /**
-   * Extension point for future active defense mechanics.
-   *
-   * Personal survival equipment is already represented in
-   * getSurvivalScore(). This hook is currently inactive unless
-   * explicitly supplied by an event.
-   */
   victimDefense?: WeaponAttackModifier;
 }
 
@@ -59,26 +54,18 @@ export function ordinaryAttackCheck({
   return (context) => {
     const { killer, victim, weapon, random } = context;
 
-    /*
-     * A borrowed weapon is not present in the acting tribute's
-     * inventory and therefore is not included in getCombatScore().
-     */
-    const sharedWeaponBonus =
-      weapon.owner.id === killer.id
-        ? 0
-        : (getItemDefinition(weapon.item.definitionId).combatBonus ?? 0);
-
     const attackScore = Math.max(
       0.25,
-      getCombatScore(killer) +
-        sharedWeaponBonus +
+
+      getSelectedDirectAttackScore(killer, weapon) +
         getModifier("attacker advantage", attackerAdvantage, context),
     );
 
     const defenseScore = Math.max(
       0.25,
+
       getSurvivalScore(victim) +
-        getHostileDefenseItemBonus(victim) +
+        getCheckedAttackDefenseBonus(victim) +
         getModifier("victim defense", victimDefense, context),
     );
 
@@ -87,3 +74,11 @@ export function ordinaryAttackCheck({
     return random() < successChance ? "success" : "failure";
   };
 }
+
+/**
+ * Exposed for tests and future tactical comparison logic.
+ *
+ * Ordinary checked attacks should normally call
+ * getSelectedDirectAttackScore instead.
+ */
+export { getBaseCombatScore };

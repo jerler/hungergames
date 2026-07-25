@@ -21,6 +21,7 @@ export function createStatusEffectInstance(
   severity: 1 | 2 | 3,
   round: RoundReference,
   durationRounds?: number,
+  sourceTributeId: string | null = null,
 ): StatusEffect {
   const definition = getStatusDefinition(definitionId);
 
@@ -32,16 +33,26 @@ export function createStatusEffectInstance(
     throw new Error(`Persistent status "${definitionId}" cannot receive a duration override.`);
   }
 
+  if (sourceTributeId === tributeId) {
+    throw new Error(`Tribute "${tributeId}" cannot be the attributed source of their own status.`);
+  }
+
   return {
     id: `${eventId}:${tributeId}:${definitionId}`,
     definitionId,
     severity,
+
     remainingRounds:
       definition.duration.kind === "timed"
         ? (durationRounds ?? definition.duration.defaultRounds)
         : null,
+
     sourceEventId: eventId,
-    appliedRound: { ...round },
+    sourceTributeId,
+
+    appliedRound: {
+      ...round,
+    },
   };
 }
 
@@ -158,17 +169,43 @@ export function advanceStatusDurations(state: GameState): GameState {
     }),
   };
 
-  const fatalEvents = fatalCandidates
-    .filter((tribute) => tribute.id !== sparedTributeId)
-    .map((tribute) => {
-      const fatalStatus = getFatalStatus(tribute);
+  let resolvedState = nextState;
 
-      if (!fatalStatus) {
-        throw new Error(`Fatal status could not be resolved ` + `for tribute "${tribute.id}".`);
-      }
+  /*
+   * Build and apply fatal status events one at a time.
+   *
+   * This ensures delayed death loot checks the attacker's
+   * current life state rather than the state that existed
+   * before all simultaneous fatalities were processed.
+   */
+  for (const candidate of fatalCandidates) {
+    if (candidate.id === sparedTributeId) {
+      continue;
+    }
 
-      return createFatalStatusResolutionEvent(tribute, fatalStatus, completedRound);
-    });
+    const tribute = resolvedState.tributes.find(
+      (currentTribute) => currentTribute.id === candidate.id,
+    );
 
-  return applyAutomaticResolutionEvents(nextState, fatalEvents);
+    if (!tribute || !tribute.isAlive) {
+      continue;
+    }
+
+    const fatalStatus = getFatalStatus(tribute);
+
+    if (!fatalStatus) {
+      throw new Error(`Fatal status could not be resolved ` + `for tribute "${tribute.id}".`);
+    }
+
+    const event = createFatalStatusResolutionEvent(
+      resolvedState,
+      tribute,
+      fatalStatus,
+      completedRound,
+    );
+
+    resolvedState = applyAutomaticResolutionEvents(resolvedState, [event]);
+  }
+
+  return resolvedState;
 }

@@ -8,11 +8,11 @@ import {
   createInventoryItemInstance,
   findAccessibleInventoryItem,
   findUsableInventoryItem,
-  getInventoryBonus,
 } from "~/game/items/inventory-engine";
 import { getItemUsability, isItemUsableBy } from "~/game/items/item-usability";
 import { createTruceInstance } from "~/game/truces/truce-engine";
 import type { GameState, GameTribute } from "~/game/types/game-state";
+import { getStrongestUsableDirectWeaponBonus } from "~/game/engine/stat-formulas";
 
 const ROUND = {
   day: 2,
@@ -117,7 +117,7 @@ describe("item usability", () => {
     });
   });
 
-  it("does not grant passive bonuses from unusable items", () => {
+  it("does not grant direct-weapon bonuses from unusable items", () => {
     const weakTribute = giveSpear(
       createAuthoringTestTribute({
         stats: {
@@ -140,9 +140,9 @@ describe("item usability", () => {
       }),
     );
 
-    expect(getInventoryBonus(weakTribute, "combatBonus")).toBe(0);
+    expect(getStrongestUsableDirectWeaponBonus(weakTribute)).toBe(0);
 
-    expect(getInventoryBonus(strongTribute, "combatBonus")).toBe(1.35);
+    expect(getStrongestUsableDirectWeaponBonus(strongTribute)).toBe(1.15);
   });
 
   it("lets a qualified borrower use another tribute's item", () => {

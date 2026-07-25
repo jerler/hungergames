@@ -625,6 +625,25 @@ export function assertGameStateInvariants(state: GameState): void {
       const definition = getStatusDefinition(status.definitionId);
 
       assert(
+        status.sourceTributeId === null ||
+          (typeof status.sourceTributeId === "string" && status.sourceTributeId.length > 0),
+        `status "${status.id}" has invalid source-tribute attribution.`,
+      );
+
+      if (status.sourceTributeId !== null) {
+        assert(
+          tributeIds.has(status.sourceTributeId),
+          `status "${status.id}" references missing source tribute ` +
+            `"${status.sourceTributeId}".`,
+        );
+
+        assert(
+          status.sourceTributeId !== tribute.id,
+          `status "${status.id}" attributes itself to its affected tribute.`,
+        );
+      }
+
+      assert(
         status.severity >= 1 && status.severity <= definition.maxSeverity,
         `status "${status.id}" has invalid severity.`,
       );

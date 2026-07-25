@@ -21,10 +21,12 @@ export function createStatusChange(
   severity: 1 | 2 | 3,
   round: EventResolutionContext["round"],
   durationRounds?: number,
+  sourceTributeId: string | null = null,
 ): GameChange {
   return {
     type: "apply-status",
     tributeId: tribute.id,
+
     status: createStatusEffectInstance(
       eventId,
       tribute.id,
@@ -32,6 +34,7 @@ export function createStatusChange(
       severity,
       round,
       durationRounds,
+      sourceTributeId,
     ),
   };
 }
@@ -42,8 +45,6 @@ export function createStatusChange(
  *
  * Every new item must declare the mechanism through which
  * it entered the arena inventory system.
- *
- * Pass `giftsReceived` when the acquired items came from sponsors.
  */
 export function createItemAcquisitionAndSurvivalChanges(
   eventId: string,
@@ -101,6 +102,61 @@ export function createItemUseChange(
   };
 }
 
+export function createEliminationChange(
+  victim: GameTribute,
+  causeId: string,
+  causeLabel: string,
+  summary: string,
+  killerTributeIds: readonly string[] = [],
+): GameChange {
+  return {
+    type: "eliminate-tribute",
+
+    tributeId: victim.id,
+
+    causeId,
+    causeLabel,
+    summary,
+
+    killerTributeIds: [...killerTributeIds],
+  };
+}
+
+export function createAttemptedKillChange(attacker: GameTribute): GameChange {
+  return {
+    type: "increment-statistic",
+
+    tributeId: attacker.id,
+
+    statistic: "attemptedKills",
+    amount: 1,
+  };
+}
+
+export function createKillCreditChange(killer: GameTribute): GameChange {
+  return {
+    type: "increment-statistic",
+
+    tributeId: killer.id,
+
+    statistic: "kills",
+    amount: 1,
+  };
+}
+
+export function createDeathLootChanges(victim: GameTribute, killer: GameTribute): GameChange[] {
+  return victim.inventory.map((item): GameChange => ({
+    type: "transfer-item",
+
+    itemInstanceId: item.id,
+
+    fromTributeId: victim.id,
+    toTributeId: killer.id,
+
+    reason: "death-loot",
+  }));
+}
+
 export function createFatalChanges(
   victim: GameTribute,
   causeId: string,
@@ -109,17 +165,7 @@ export function createFatalChanges(
   killer: GameTribute | null = null,
 ): GameChange[] {
   const changes: GameChange[] = [
-    {
-      type: "eliminate-tribute",
-
-      tributeId: victim.id,
-
-      causeId,
-      causeLabel,
-      summary,
-
-      killerTributeIds: killer ? [killer.id] : [],
-    },
+    createEliminationChange(victim, causeId, causeLabel, summary, killer ? [killer.id] : []),
   ];
 
   if (!killer) {
@@ -127,44 +173,45 @@ export function createFatalChanges(
   }
 
   changes.push(
-    {
-      type: "increment-statistic",
+    createAttemptedKillChange(killer),
 
-      tributeId: killer.id,
+    createKillCreditChange(killer),
 
-      statistic: "attemptedKills",
-      amount: 1,
-    },
-    {
-      type: "increment-statistic",
-
-      tributeId: killer.id,
-
-      statistic: "kills",
-      amount: 1,
-    },
+    ...createDeathLootChanges(victim, killer),
   );
 
-  /*
-   * A killer claims the victim's complete
-   * inventory after the elimination.
-   *
-   * The original item instances are moved,
-   * preserving their IDs, acquisition data,
-   * and remaining uses.
-   */
-  changes.push(
-    ...victim.inventory.map((item): GameChange => ({
-      type: "transfer-item",
+  return changes;
+}
 
-      itemInstanceId: item.id,
+/**
+ * Creates a fatality caused by an earlier attributed action.
+ *
+ * The original attack already recorded attemptedKills, so
+ * delayed resolution awards only the eventual kill.
+ *
+ * A dead attacker may still receive historical kill credit,
+ * but cannot receive newly transferred inventory.
+ */
+export function createDelayedFatalChanges(
+  victim: GameTribute,
+  causeId: string,
+  causeLabel: string,
+  summary: string,
+  killer: GameTribute | null,
+): GameChange[] {
+  const changes: GameChange[] = [
+    createEliminationChange(victim, causeId, causeLabel, summary, killer ? [killer.id] : []),
+  ];
 
-      fromTributeId: victim.id,
-      toTributeId: killer.id,
+  if (!killer) {
+    return changes;
+  }
 
-      reason: "death-loot",
-    })),
-  );
+  changes.push(createKillCreditChange(killer));
+
+  if (killer.isAlive) {
+    changes.push(...createDeathLootChanges(victim, killer));
+  }
 
   return changes;
 }

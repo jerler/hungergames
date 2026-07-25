@@ -343,7 +343,12 @@ describe("Bloodbath outcome coverage", () => {
 
           const acquisitions = getAcquisitions(changes);
 
-          if (statuses.some((status) => status.definitionId === "injured")) {
+          if (
+            statuses.some(
+              (status) =>
+                status.definitionId === "injured" || status.definitionId === "disoriented",
+            )
+          ) {
             return "critical-failure";
           }
 

@@ -8,12 +8,7 @@ const ITEM_TAG_SET = new Set<ItemTag>(ITEM_TAGS);
 
 const ACTIVE_USE_TAGS = new Set<ItemTag>(["consumable", "water", "food", "medicine", "tool"]);
 
-const PASSIVE_BONUS_KEYS = [
-  "combatBonus",
-  "survivalBonus",
-  "awarenessBonus",
-  "foragingBonus",
-] as const;
+const PASSIVE_BONUS_KEYS = ["survivalBonus", "awarenessBonus", "foragingBonus"] as const;
 
 function fail(itemId: string, message: string): never {
   throw new Error(`Invalid item "${itemId}": ${message}`);
@@ -243,6 +238,64 @@ function validateRest(definition: ItemDefinition): void {
   }
 }
 
+function validateOffense(definition: ItemDefinition): void {
+  const offense = definition.offense;
+
+  if (!offense) {
+    return;
+  }
+
+  if (!definition.tags.includes("weapon")) {
+    fail(definition.id, "declares offense without the weapon tag.");
+  }
+
+  switch (offense.strategy) {
+    case "direct":
+      if (!Number.isFinite(offense.attackBonus) || offense.attackBonus <= 0) {
+        fail(definition.id, "declares an invalid direct attack bonus.");
+      }
+
+      if (!definition.tags.includes("direct-weapon")) {
+        fail(definition.id, "declares direct offense without the direct-weapon tag.");
+      }
+
+      break;
+
+    case "poison":
+    case "trap":
+    case "risky-area":
+      if (!definition.tags.includes("tactical")) {
+        fail(definition.id, `declares ${offense.strategy} offense without the tactical tag.`);
+      }
+
+      break;
+  }
+}
+
+function validateDefense(definition: ItemDefinition): void {
+  const defense = definition.defense;
+
+  if (!defense) {
+    return;
+  }
+
+  if (!definition.tags.includes("defense")) {
+    fail(definition.id, "declares defense capabilities without the defense tag.");
+  }
+
+  if (!Number.isFinite(defense.checkedAttackBonus) || defense.checkedAttackBonus < 0) {
+    fail(definition.id, "declares an invalid checked attack defense bonus.");
+  }
+
+  if (
+    !Number.isFinite(defense.hostileTargetWeightMultiplier) ||
+    defense.hostileTargetWeightMultiplier <= 0 ||
+    defense.hostileTargetWeightMultiplier > 1
+  ) {
+    fail(definition.id, "declares an invalid hostile target weight multiplier.");
+  }
+}
+
 export function validateItemDefinition(definition: ItemDefinition): void {
   if (!definition.id.trim()) {
     fail(definition.id, "has an empty ID.");
@@ -319,6 +372,10 @@ export function validateItemDefinition(definition: ItemDefinition): void {
       fail(definition.id, "declares invalid nightAmbushTargetWeightMultiplier.");
     }
   }
+
+  validateOffense(definition);
+
+  validateDefense(definition);
 
   validateUseEffects(definition);
   validateRest(definition);

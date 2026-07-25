@@ -83,6 +83,13 @@ export function validateEventResolution({
           );
         }
 
+        if (change.status.sourceTributeId === change.tributeId) {
+          throw new Error(
+            `Event "${definitionId}" attributes status ` +
+              `"${change.status.id}" to its affected tribute.`,
+          );
+        }
+
         if (definition.duration.kind === "persistent") {
           if (change.status.remainingRounds !== null) {
             throw new Error(

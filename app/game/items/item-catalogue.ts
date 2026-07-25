@@ -764,74 +764,495 @@ export const ITEM_CATALOGUE = [
     foragingBonus: 0.7,
   },
 
-  // Defensive and offensive gear
+  // Hunting equipment that is not an ordinary lethal weapon
   {
     id: "slingshot",
     label: "Slingshot",
+
     description:
       "A light ranged weapon useful for hunting small animals and creating distractions.",
+
     origin: "manufactured",
+
     tags: ["weapon", "hunting"],
 
-    combatBonus: 0.65,
     awarenessBonus: 0.1,
     foragingBonus: 0.25,
   },
+
+  // Bladed direct weapons
   {
     id: "knife",
     label: "Knife",
-    description: "A compact weapon that is also useful as a tool.",
+
+    description: "A compact blade suited to close combat and general arena utility.",
+
     origin: "manufactured",
-    tags: ["weapon", "tool"],
-    combatBonus: 1,
+
+    tags: ["weapon", "direct-weapon", "tool"],
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 0.9,
+    },
+
     foragingBonus: 0.15,
   },
+
   {
-    id: "spear",
-    label: "Spear",
-    description: "A strong close- and medium-range weapon.",
+    id: "short-sword",
+    label: "Short sword",
+
+    description: "A compact sword that balances reach, speed, and manageable weight.",
+
     origin: "manufactured",
-    tags: ["weapon"],
+
+    tags: ["weapon", "direct-weapon"],
 
     minimumStats: {
       brawn: 2,
     },
 
-    combatBonus: 1.35,
+    offense: {
+      strategy: "direct",
+      attackBonus: 1.05,
+    },
   },
+
+  {
+    id: "rapier",
+    label: "Rapier",
+
+    description: "A light thrusting sword that rewards speed and careful positioning.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "direct-weapon"],
+
+    minimumStats: {
+      brawn: 2,
+    },
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 1.1,
+    },
+  },
+
+  {
+    id: "longsword",
+    label: "Longsword",
+
+    description: "A versatile two-handed sword requiring strength and control.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "direct-weapon"],
+
+    minimumStats: {
+      brawn: 3,
+    },
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 1.35,
+    },
+  },
+
+  {
+    id: "greatsword",
+    label: "Greatsword",
+
+    description: "An enormous sword capable of devastating attacks in sufficiently strong hands.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "direct-weapon"],
+
+    minimumStats: {
+      brawn: 4,
+    },
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 1.7,
+    },
+  },
+
+  // Pole weapons
+  {
+    id: "spear",
+    label: "Spear",
+
+    description: "A strong close- and medium-range weapon with excellent reach.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "direct-weapon", "hunting"],
+
+    minimumStats: {
+      brawn: 2,
+    },
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 1.15,
+    },
+  },
+
+  {
+    id: "pike",
+    label: "Pike",
+
+    description:
+      "A very long pole weapon that provides exceptional reach but requires room to manoeuvre.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "direct-weapon"],
+
+    minimumStats: {
+      brawn: 2,
+    },
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 1.35,
+    },
+  },
+
+  {
+    id: "trident",
+    label: "Trident",
+
+    description:
+      "A three-pronged pole weapon effective at controlling distance and trapping opponents.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "direct-weapon", "hunting"],
+
+    minimumStats: {
+      brawn: 2,
+    },
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 1.25,
+    },
+  },
+
+  // Ranged direct weapons
   {
     id: "bow",
     label: "Bow and arrows",
-    description: "A powerful ranged weapon with limited ammunition.",
+
+    description: "A flexible ranged weapon that rewards awareness and careful aim.",
+
     origin: "manufactured",
-    tags: ["weapon"],
-    combatBonus: 1.6,
+
+    tags: ["weapon", "direct-weapon", "hunting"],
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 1.2,
+    },
+
     awarenessBonus: 0.2,
   },
+
+  {
+    id: "longbow",
+    label: "Longbow",
+
+    description:
+      "A powerful long-range bow that requires substantial strength to draw effectively.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "direct-weapon", "hunting"],
+
+    minimumStats: {
+      brawn: 3,
+    },
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 1.5,
+    },
+
+    awarenessBonus: 0.2,
+  },
+
+  {
+    id: "crossbow",
+    label: "Crossbow",
+
+    description:
+      "A mechanical ranged weapon whose careful operation rewards technical understanding.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "direct-weapon"],
+
+    minimumStats: {
+      brains: 2,
+    },
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 1.3,
+    },
+  },
+
+  {
+    id: "blowgun",
+    label: "Blowgun",
+
+    description: "A quiet poison-delivery weapon that requires knowledge and precise preparation.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "tactical"],
+
+    minimumStats: {
+      brains: 3,
+    },
+
+    offense: {
+      strategy: "poison",
+    },
+  },
+
+  // Axes and blunt direct weapons
+  {
+    id: "hand-axe",
+    label: "Hand axe",
+
+    description: "A compact chopping weapon that can be handled quickly at close range.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "direct-weapon", "tool", "hunting"],
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 1,
+    },
+
+    foragingBonus: 0.15,
+  },
+
   {
     id: "axe",
     label: "Axe",
-    description:
-      "A heavy weapon that is also useful for chopping wood, clearing paths, and building shelter.",
-    origin: "manufactured",
-    tags: ["weapon", "tool", "hunting"],
 
-    combatBonus: 1.45,
+    description:
+      "A heavy weapon also useful for chopping wood, clearing paths, and preparing shelter.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "direct-weapon", "tool", "hunting"],
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 1.35,
+    },
+
     survivalBonus: 0.2,
     foragingBonus: 0.3,
   },
+
+  {
+    id: "club",
+    label: "Club",
+
+    description: "A simple blunt weapon requiring little specialized training.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "direct-weapon"],
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 0.7,
+    },
+  },
+
+  {
+    id: "warhammer",
+    label: "Warhammer",
+
+    description: "A brutally heavy weapon that is devastating only in exceptionally strong hands.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "direct-weapon"],
+
+    minimumStats: {
+      brawn: 5,
+    },
+
+    offense: {
+      strategy: "direct",
+      attackBonus: 1.9,
+    },
+  },
+
+  // Tactical offensive items
+  {
+    id: "poison-vial",
+    label: "Poison vial",
+
+    description:
+      "A single dose of concentrated poison requiring expert handling and careful delivery.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "tactical", "consumable"],
+
+    maxUses: 1,
+
+    minimumStats: {
+      brains: 4,
+    },
+
+    offense: {
+      strategy: "poison",
+    },
+  },
+
+  {
+    id: "bear-trap",
+    label: "Bear trap",
+
+    description:
+      "A powerful single-use trap capable of grievously injuring an unsuspecting tribute.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "tactical", "trap", "tool"],
+
+    maxUses: 1,
+
+    minimumStats: {
+      brains: 3,
+    },
+
+    offense: {
+      strategy: "trap",
+    },
+  },
+
+  {
+    id: "tripwire",
+    label: "Tripwire",
+
+    description:
+      "A single-use wire trap that turns terrain and momentum against an approaching tribute.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "tactical", "trap", "tool"],
+
+    maxUses: 1,
+
+    minimumStats: {
+      brains: 3,
+    },
+
+    offense: {
+      strategy: "trap",
+    },
+  },
+
+  {
+    id: "firebomb",
+    label: "Firebomb",
+
+    description:
+      "A dangerous single-use incendiary weapon that threatens both its target and its user.",
+
+    origin: "manufactured",
+
+    tags: ["weapon", "tactical", "consumable"],
+
+    maxUses: 1,
+
+    minimumStats: {
+      brains: 3,
+    },
+
+    offense: {
+      strategy: "risky-area",
+    },
+  },
+
+  // Defensive equipment
+  {
+    id: "helmet",
+    label: "Helmet",
+
+    description: "A sturdy helmet that provides modest protection against hostile attacks.",
+
+    origin: "manufactured",
+
+    tags: ["tool", "defense"],
+
+    defense: {
+      checkedAttackBonus: 0.35,
+      hostileTargetWeightMultiplier: 0.9,
+    },
+  },
+
+  {
+    id: "padded-armour",
+    label: "Padded armour",
+
+    description:
+      "Layered protective clothing that softens impacts and makes its wearer a less appealing target.",
+
+    origin: "manufactured",
+
+    tags: ["tool", "defense"],
+
+    defense: {
+      checkedAttackBonus: 0.6,
+      hostileTargetWeightMultiplier: 0.82,
+    },
+  },
+
   {
     id: "shield",
     label: "Shield",
-    description: "A sturdy shield that improves combat survivability and protection from hazards.",
-    origin: "manufactured",
-    tags: ["tool", "defense"],
-    contextual: {
-      hostileDefenseBonus: 0.75,
-    },
 
-    combatBonus: 0.45,
-    survivalBonus: 0.55,
+    description: "A sturdy shield that provides strong active protection against hostile attacks.",
+
+    origin: "manufactured",
+
+    tags: ["tool", "defense"],
+
+    defense: {
+      checkedAttackBonus: 0.75,
+      hostileTargetWeightMultiplier: 0.75,
+    },
+  },
+
+  {
+    id: "reinforced-armour",
+    label: "Reinforced armour",
+
+    description:
+      "Heavy reinforced armour offering the strongest ordinary personal protection in the arena.",
+
+    origin: "manufactured",
+
+    tags: ["tool", "defense"],
+
+    defense: {
+      checkedAttackBonus: 1.1,
+      hostileTargetWeightMultiplier: 0.62,
+    },
   },
 ] satisfies readonly ItemDefinition[];
 

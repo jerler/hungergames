@@ -1,18 +1,19 @@
 import type { EventDefinition } from "~/game/events/event-schema";
-
 import { COMBAT_EVENTS } from "./combat-events";
 import { ENVIRONMENTAL_EVENTS } from "./environmental-events";
+import { FORAGING_EVENTS } from "./foraging-events";
 import { GAMEMAKER_EVENTS } from "./gamemaker-events";
+import { HUNTING_EVENTS } from "./hunting-events";
 import { ITEM_USE_EVENTS } from "./item-use-events";
 import { SURVIVAL_EVENTS } from "./survival-events";
+import { TACTICAL_EVENTS } from "./tactical-events";
 import { THEFT_EVENTS } from "./theft-events";
-import { HUNTING_EVENTS } from "./hunting-events";
-import { FORAGING_EVENTS } from "./foraging-events";
 
-export { THEFT_EVENTS };
+export { TACTICAL_EVENTS, THEFT_EVENTS };
 
 export const ENCOUNTER_EVENTS = [
   ...COMBAT_EVENTS,
+  ...TACTICAL_EVENTS,
   ...THEFT_EVENTS,
   ...ENVIRONMENTAL_EVENTS,
   ...SURVIVAL_EVENTS,

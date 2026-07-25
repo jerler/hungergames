@@ -12,6 +12,7 @@
 
 import type { RandomSource } from "~/game/engine/random";
 import type {
+  EventResolutionMode,
   GameChange,
   GameState,
   GameTribute,
@@ -21,6 +22,8 @@ import type {
 import type { ItemDefinitionId, ItemTag } from "~/game/items/item-schema";
 
 export type EventCategory = "fatal" | "survival" | "hazard";
+
+export type EventSafetyResolution = "force-success";
 
 export type EventTag =
   | "fatal"
@@ -128,6 +131,15 @@ export interface EventResolutionContext extends EventSelectionContext {
   participantsByRole: ParticipantsByRole;
 
   /**
+   * Identifies whether the event is resolving normally
+   * or as the engine's forced-progress fallback.
+   *
+   * Optional so direct event unit tests remain backward
+   * compatible. Omitted is treated as standard.
+   */
+  resolutionMode?: EventResolutionMode;
+
+  /**
    * Required items reserved during participant
    * selection, aligned with each role's participants.
    *
@@ -155,6 +167,14 @@ export interface EventDefinition {
   periods: readonly RoundReference["period"][];
   baseWeight: number;
   tags: readonly EventTag[];
+
+  /**
+   * Declares how this definition behaves when selected
+   * as the forced-progress safety event.
+   *
+   * Only direct checked attacks use this in Phase 10.
+   */
+  safetyResolution?: EventSafetyResolution;
 
   roles: readonly ParticipantRoleDefinition[];
 

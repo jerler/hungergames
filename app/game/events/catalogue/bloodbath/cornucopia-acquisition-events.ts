@@ -1,4 +1,5 @@
-import { selectRandomItem } from "~/game/engine/random";
+import { getEffectiveStats } from "~/game/engine/effective-stats";
+import type { GameTribute } from "~/game/types/game-state";
 import {
   createItemAcquisitionAndSurvivalChanges,
   createStatusChange,
@@ -9,20 +10,35 @@ import {
   type EventDefinition,
   type EventResolution,
 } from "~/game/events/event-schema";
-import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getTributePronouns } from "~/game/tributes/pronouns";
 import {
+  selectCornucopiaBrainsOffenseItem,
+  selectCornucopiaEdgeDirectWeapon,
+  selectCornucopiaHeavyDirectWeapon,
   selectCornucopiaPackItem,
+  selectDistinctCornucopiaBrainsOffenseItems,
   selectDistinctCornucopiaPackItems,
 } from "./cornucopia-item-pool";
 
-const EDGE_WEAPON_ITEM_IDS = [
-  "knife",
-  "slingshot",
-  "spear",
-  "axe",
-  "bow",
-] satisfies readonly ItemDefinitionId[];
+function getEdgeWeaponAcquisitionWeight(tribute: GameTribute): number {
+  const { brawn, luck } = getEffectiveStats(tribute);
+
+  return Math.max(0.25, brawn * 1.5 + luck * 0.25);
+}
+
+function getHeavyWeaponAcquisitionWeight(tribute: GameTribute): number {
+  const { brawn, luck } = getEffectiveStats(tribute);
+
+  return Math.max(0.25, brawn * brawn + luck * 0.25);
+}
+
+function getBrainsOffenseAcquisitionWeight(tribute: GameTribute): number {
+  const { brains, brawn, luck } = getEffectiveStats(tribute);
+
+  const lowBrawnPreference = Math.max(0, 3 - brawn) * 1.5;
+
+  return Math.max(0.25, brains * brains + luck * 0.5 + lowBrawnPreference);
+}
 
 export const CORNUCOPIA_ACQUISITION_EVENTS = [
   {
@@ -118,6 +134,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
       {
         id: "tribute",
         count: 1,
+        getWeight: getEdgeWeaponAcquisitionWeight,
       },
     ],
 
@@ -148,7 +165,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
           };
 
         case "success": {
-          const itemId = selectRandomItem(EDGE_WEAPON_ITEM_IDS, random);
+          const itemId = selectCornucopiaEdgeDirectWeapon(random);
 
           return {
             text:
@@ -167,7 +184,7 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
         }
 
         case "exceptional-success": {
-          const itemId = selectRandomItem(EDGE_WEAPON_ITEM_IDS, random);
+          const itemId = selectCornucopiaEdgeDirectWeapon(random);
 
           return {
             text:
@@ -180,6 +197,182 @@ export const CORNUCOPIA_ACQUISITION_EVENTS = [
                 eventId,
                 tribute,
                 [itemId],
+                round,
+                "cornucopia",
+              ),
+
+              createStatusChange(eventId, tribute, "inspired", 1, round),
+            ],
+          };
+        }
+      }
+    },
+  },
+  {
+    id: "cornucopia-heavy-weapon",
+    category: "hazard",
+    tags: ["hazard", "combat", "weapon", "item"],
+    periods: ["day"],
+    baseWeight: 3.5,
+
+    roles: [
+      {
+        id: "tribute",
+        count: 1,
+        getWeight: getHeavyWeaponAcquisitionWeight,
+      },
+    ],
+
+    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+      const tribute = requireSingleParticipant(participantsByRole, "tribute");
+
+      const pronouns = getTributePronouns(tribute);
+
+      const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 4, random);
+
+      switch (outcome) {
+        case "critical-failure":
+          return {
+            text:
+              `${tribute.snapshot.name} reaches the central ` +
+              "weapon pile, but is struck down in the chaos " +
+              `and barely escapes with ${pronouns.possessiveAdjective} life.`,
+
+            changes: [createStatusChange(eventId, tribute, "injured", 2, round)],
+          };
+
+        case "failure":
+          return {
+            text:
+              `${tribute.snapshot.name} reaches for one of ` +
+              "the heaviest weapons, but cannot pull it free " +
+              "before the fighting forces a retreat.",
+
+            changes: [createStatusChange(eventId, tribute, "exhausted", 1, round)],
+          };
+
+        case "success": {
+          const itemId = selectCornucopiaHeavyDirectWeapon(random);
+
+          return {
+            text:
+              `${tribute.snapshot.name} tears ` +
+              `${getItemLabel(itemId)} from the central ` +
+              "weapon pile and escapes.",
+
+            changes: createItemAcquisitionAndSurvivalChanges(
+              eventId,
+              tribute,
+              [itemId],
+              round,
+              "cornucopia",
+            ),
+          };
+        }
+
+        case "exceptional-success": {
+          const itemId = selectCornucopiaHeavyDirectWeapon(random);
+
+          return {
+            text:
+              `${tribute.snapshot.name} dominates the central ` +
+              `weapon pile, claims ${getItemLabel(itemId)}, ` +
+              "and leaves the surrounding tributes scrambling.",
+
+            changes: [
+              ...createItemAcquisitionAndSurvivalChanges(
+                eventId,
+                tribute,
+                [itemId],
+                round,
+                "cornucopia",
+              ),
+
+              createStatusChange(eventId, tribute, "inspired", 1, round),
+            ],
+          };
+        }
+      }
+    },
+  },
+  {
+    id: "cornucopia-tactical-cache",
+    category: "hazard",
+    tags: ["hazard", "combat", "weapon", "item", "resource"],
+    periods: ["day"],
+    baseWeight: 5,
+
+    roles: [
+      {
+        id: "tribute",
+        count: 1,
+        getWeight: getBrainsOffenseAcquisitionWeight,
+      },
+    ],
+
+    resolve({ eventId, round, random, participantsByRole }): EventResolution {
+      const tribute = requireSingleParticipant(participantsByRole, "tribute");
+
+      const pronouns = getTributePronouns(tribute);
+
+      const outcome = resolveLuckAdjustedStatCheck(tribute, "brains", 3, random);
+
+      switch (outcome) {
+        case "critical-failure":
+          return {
+            text:
+              `${tribute.snapshot.name} stops to inspect a ` +
+              "technical equipment cache, but loses track of " +
+              `the surrounding fight and escapes disoriented.`,
+
+            changes: [createStatusChange(eventId, tribute, "disoriented", 2, round)],
+          };
+
+        case "failure":
+          return {
+            text:
+              `${tribute.snapshot.name} finds a cache of ` +
+              "technical weapons, but cannot determine what " +
+              `is safe to take before the crowd closes around ${pronouns.object}.`,
+
+            changes: [createStatusChange(eventId, tribute, "exhausted", 1, round)],
+          };
+
+        case "success": {
+          const itemId = selectCornucopiaBrainsOffenseItem(random);
+
+          return {
+            text:
+              `${tribute.snapshot.name} quickly identifies ` +
+              `${getItemLabel(itemId)} in a tactical cache ` +
+              "and escapes with it.",
+
+            changes: createItemAcquisitionAndSurvivalChanges(
+              eventId,
+              tribute,
+              [itemId],
+              round,
+              "cornucopia",
+            ),
+          };
+        }
+
+        case "exceptional-success": {
+          const itemIds = selectDistinctCornucopiaBrainsOffenseItems(2, random);
+
+          const itemLabels = itemIds.map(getItemLabel);
+
+          return {
+            text:
+              `${tribute.snapshot.name} understands the ` +
+              "tactical cache at a glance and escapes with " +
+              `${itemLabels.join(" and ")}.`,
+
+            changes: [
+              ...createItemAcquisitionAndSurvivalChanges(
+                eventId,
+                tribute,
+                itemIds,
                 round,
                 "cornucopia",
               ),

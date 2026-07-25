@@ -16,6 +16,7 @@ import type { GameTribute } from "~/game/types/game-state";
 import { getHostileTargetingWeightMultiplier } from "~/game/statuses/hostile-targeting";
 import { getNightAmbushItemTargetWeightMultiplier } from "~/game/items/item-contextual-capabilities";
 import { getNightRestTargetingWeightMultiplier } from "~/game/survival/night-rest-targeting";
+import { getDefenseTargetWeightMultiplier } from "~/game/items/defensive-equipment";
 
 function isProtectedFromRoleByTruce(
   candidate: GameTribute,
@@ -227,6 +228,10 @@ export function selectEventParticipants(
             )
           : 1;
 
+        const defenseTargetingMultiplier = isHostileTarget
+          ? getDefenseTargetWeightMultiplier(tribute)
+          : 1;
+
         const restTargetingMultiplier = getNightRestTargetingWeightMultiplier(tribute, {
           round: context.round,
 
@@ -236,7 +241,10 @@ export function selectEventParticipants(
         });
 
         const targetingWeightMultiplier =
-          hostileTargetingMultiplier * nightAmbushMultiplier * restTargetingMultiplier;
+          hostileTargetingMultiplier *
+          defenseTargetingMultiplier *
+          nightAmbushMultiplier *
+          restTargetingMultiplier;
 
         if (targetingWeightMultiplier <= 0) {
           return [];

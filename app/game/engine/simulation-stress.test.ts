@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-
+import { TACTICAL_EVENTS } from "~/game/events/catalogue/encounters/tactical-events";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 import { createSeededRandom } from "~/game/engine/random";
@@ -19,6 +19,8 @@ import type {
   TransferredInventoryTransaction,
 } from "~/game/types/game-state";
 import { BLOODBATH_EVENT_CATALOGUE, CORNUCOPIA_EVENTS } from "~/game/events/catalogue/bloodbath";
+import { FORAGING_EVENTS } from "~/game/events/catalogue/encounters/foraging-events";
+import { HUNTING_EVENTS } from "~/game/events/catalogue/encounters/hunting-events";
 import { ENVIRONMENTAL_EVENTS } from "~/game/events/catalogue/encounters/environmental-events";
 import { ITEM_USE_EVENTS } from "~/game/events/catalogue/encounters/item-use-events";
 import { SURVIVAL_EVENTS } from "~/game/events/catalogue/encounters/survival-events";
@@ -45,6 +47,7 @@ type TransferItemChange = Extract<
 
 const CORNUCOPIA_EVENT_IDS = new Set(CORNUCOPIA_EVENTS.map((event) => event.id));
 const ORDINARY_COMBAT_EVENT_IDS = new Set(COMBAT_EVENTS.map((event) => event.id));
+const TACTICAL_EVENT_IDS = new Set(TACTICAL_EVENTS.map((event) => event.id));
 const CORNUCOPIA_PACK_ENTRY_BY_ITEM_ID = new Map<
   ItemDefinitionId,
   (typeof CORNUCOPIA_PACK_ITEM_POOL)[number]
@@ -77,12 +80,15 @@ const SIMULATION_BALANCE_GUARDRAILS = {
 const SIMULATION_EVENT_FAMILIES = [
   ["bloodbath", new Set(BLOODBATH_EVENT_CATALOGUE.map((event) => event.id))],
   ["combat", new Set(COMBAT_EVENTS.map((event) => event.id))],
+  ["tactical", new Set(TACTICAL_EVENTS.map((event) => event.id))],
   ["theft", new Set(THEFT_EVENTS.map((event) => event.id))],
   ["environmental", new Set(ENVIRONMENTAL_EVENTS.map((event) => event.id))],
   ["survival", new Set(SURVIVAL_EVENTS.map((event) => event.id))],
   ["item-use", new Set(ITEM_USE_EVENTS.map((event) => event.id))],
   ["stat-gated", new Set(STAT_GATED_EVENTS.map((event) => event.id))],
   ["relationship", new Set(RELATIONSHIP_EVENTS.map((event) => event.id))],
+  ["hunting", new Set(HUNTING_EVENTS.map((event) => event.id))],
+  ["foraging", new Set(FORAGING_EVENTS.map((event) => event.id))],
 ] as const;
 
 type SimulationEventFamily = (typeof SIMULATION_EVENT_FAMILIES)[number][0];
@@ -497,35 +503,80 @@ describe("simulation stress tests", () => {
     }
   });
 
-  it("exercises ordinary combat with one credited kill per event", () => {
+  it("exercises checked ordinary combat with valid success and failure outcomes", () => {
     const combatEvents = getStressResults().flatMap((result) =>
       getPrimaryEvents(result).filter((event) => ORDINARY_COMBAT_EVENT_IDS.has(event.definitionId)),
     );
 
     expect(combatEvents.length).toBeGreaterThan(0);
 
+    let successfulAttackCount = 0;
+    let failedAttackCount = 0;
+
     for (const event of combatEvents) {
-      expect(event.changes.filter((change) => change.type === "eliminate-tribute")).toHaveLength(1);
+      const eliminations = event.changes.filter((change) => change.type === "eliminate-tribute");
 
-      expect(
-        event.changes.filter(
-          (change) =>
-            change.type === "increment-statistic" && change.statistic === "attemptedKills",
-        ),
-      ).toHaveLength(1);
+      const attemptedKills = event.changes.filter(
+        (change) => change.type === "increment-statistic" && change.statistic === "attemptedKills",
+      );
 
-      expect(
-        event.changes.filter(
-          (change) => change.type === "increment-statistic" && change.statistic === "kills",
-        ),
-      ).toHaveLength(1);
+      const kills = event.changes.filter(
+        (change) => change.type === "increment-statistic" && change.statistic === "kills",
+      );
 
-      expect(
-        event.changes.filter(
-          (change) => change.type === "use-item" || change.type === "consume-item",
-        ),
-      ).toHaveLength(1);
+      const weaponUses = event.changes.filter(
+        (change) => change.type === "use-item" || change.type === "consume-item",
+      );
+
+      /*
+       * Every checked attack records exactly one attempt and
+       * commits exactly one selected weapon, whether it succeeds
+       * or fails.
+       */
+      expect(attemptedKills).toHaveLength(1);
+      expect(weaponUses).toHaveLength(1);
+
+      /*
+       * A checked attack may eliminate one target or fail
+       * without eliminating anyone.
+       */
+      expect(eliminations.length).toBeLessThanOrEqual(1);
+
+      if (eliminations.length === 1) {
+        successfulAttackCount += 1;
+
+        expect(kills).toHaveLength(1);
+
+        expect(eliminations[0].killerTributeIds).toHaveLength(1);
+
+        expect(kills[0]).toMatchObject({
+          tributeId: eliminations[0].killerTributeIds[0],
+          amount: 1,
+        });
+      } else {
+        failedAttackCount += 1;
+
+        expect(kills).toHaveLength(0);
+
+        /*
+         * Safety-mode direct attacks must force success, so any
+         * failed checked attack must have resolved normally.
+         */
+        expect(event.resolutionMode).toBe("standard");
+      }
+
+      if (event.resolutionMode === "safety") {
+        expect(eliminations).toHaveLength(1);
+        expect(kills).toHaveLength(1);
+      }
     }
+
+    /*
+     * Across the stress sample, prove that checked combat
+     * actually exercises both sides of the attack check.
+     */
+    expect(successfulAttackCount).toBeGreaterThan(0);
+    expect(failedAttackCount).toBeGreaterThan(0);
   });
 
   it("keeps actual Cornucopia participation within its target range", () => {
@@ -766,6 +817,65 @@ describe("simulation stress tests", () => {
         count,
         `Expected simulations to exercise the "${family}" event family.`,
       ).toBeGreaterThanOrEqual(SIMULATION_BALANCE_GUARDRAILS.minimumFamilyEventCount);
+    }
+  });
+
+  it("exercises tactical offense by low-Brawn tributes in complete games", () => {
+    const attempts = getStressResults().flatMap((result) =>
+      getPrimaryEvents(result)
+        .filter((event) => TACTICAL_EVENT_IDS.has(event.definitionId))
+        .map((event) => {
+          const attemptChange = event.changes.find(
+            (change) =>
+              change.type === "increment-statistic" && change.statistic === "attemptedKills",
+          );
+
+          if (!attemptChange || attemptChange.type !== "increment-statistic") {
+            throw new Error(`Tactical event "${event.id}" recorded no attacker.`);
+          }
+
+          const attacker = result.tributes.find(
+            (tribute) => tribute.id === attemptChange.tributeId,
+          );
+
+          if (!attacker) {
+            throw new Error(`Tactical event "${event.id}" references a missing attacker.`);
+          }
+
+          return {
+            event,
+            attacker,
+          };
+        }),
+    );
+
+    expect(attempts.length).toBeGreaterThan(0);
+
+    /*
+     * Complete simulations prove that the acquisition
+     * and selection systems make tactical equipment
+     * reachable by the intended low-Brawn users.
+     *
+     * Controlled Brains success-rate comparisons belong
+     * in combat-strategy-balance.test.ts.
+     */
+    expect(attempts.some(({ attacker }) => attacker.snapshot.stats.brawn <= 2)).toBe(true);
+
+    for (const { event } of attempts) {
+      expect(event.resolutionMode).toBe("standard");
+
+      expect(
+        event.changes.filter(
+          (change) =>
+            change.type === "increment-statistic" && change.statistic === "attemptedKills",
+        ),
+      ).toHaveLength(1);
+
+      expect(
+        event.changes.filter(
+          (change) => change.type === "use-item" || change.type === "consume-item",
+        ),
+      ).toHaveLength(1);
     }
   });
 });

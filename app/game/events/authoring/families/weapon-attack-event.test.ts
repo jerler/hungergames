@@ -12,7 +12,7 @@ import { selectEventParticipants } from "~/game/events/participant-selection";
 import { createInventoryItemInstance } from "~/game/items/inventory-engine";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { createTruceInstance } from "~/game/truces/truce-engine";
-import type { GameState, GameTribute } from "~/game/types/game-state";
+import type { GameState, GameTribute, EventResolutionMode } from "~/game/types/game-state";
 
 function withItem(tribute: GameTribute, itemId: ItemDefinitionId): GameTribute {
   return {
@@ -36,6 +36,7 @@ function selectAndResolve(
   state: GameState,
   livingTributes: readonly GameTribute[],
   randomValues: readonly number[] = [0],
+  resolutionMode: EventResolutionMode = "standard",
 ): {
   resolution: EventResolution;
   selectedItemInstanceIds: string[];
@@ -61,11 +62,16 @@ function selectAndResolve(
 
     resolution: definition.resolve({
       state,
+
       round: AUTHORING_TEST_ROUND,
+
       livingTributes,
 
       eventId: `test:${definition.id}`,
+
       random: createSequenceRandom(randomValues),
+
+      resolutionMode,
 
       participantsByRole: selection.participantsByRole,
 
@@ -114,7 +120,7 @@ describe("createWeaponAttackEvent", () => {
 
   it("supports a weapon tag and owned access", () => {
     const definition = createWeaponAttackEvent("owned-weapon-tag", {
-      weaponTag: "weapon",
+      weaponTag: "direct-weapon",
       access: "owned",
       causeLabel: "Killed",
       text: "Fatal attack.",
@@ -122,7 +128,7 @@ describe("createWeaponAttackEvent", () => {
 
     expect(definition.roles[1]).toMatchObject({
       id: "killer",
-      requiredItemTags: ["weapon"],
+      requiredItemTags: ["direct-weapon"],
       itemAccess: "owned",
     });
   });
@@ -330,6 +336,86 @@ describe("createWeaponAttackEvent", () => {
       itemInstanceId: killer.inventory[0].id,
       reason: "failed-weapon-attack",
     });
+
+    expect(resolution.changes).toContainEqual({
+      type: "increment-statistic",
+
+      tributeId: killer.id,
+
+      statistic: "attemptedKills",
+
+      amount: 1,
+    });
+
+    expect(resolution.changes).not.toContainEqual(
+      expect.objectContaining({
+        type: "increment-statistic",
+
+        tributeId: killer.id,
+
+        statistic: "kills",
+      }),
+    );
+  });
+
+  it("forces a checked direct attack to succeed during safety resolution", () => {
+    const victim = createAuthoringTestTribute({
+      id: "safety-victim",
+    });
+
+    const killer = withItem(
+      createAuthoringTestTribute({
+        id: "safety-killer",
+      }),
+
+      "knife",
+    );
+
+    const state = createAuthoringTestGame([victim, killer]);
+
+    const definition = createWeaponAttackEvent("safety-weapon-attack", {
+      weaponId: "knife",
+
+      causeLabel: "Knifed",
+
+      text: "Forced fatal success.",
+
+      /*
+       * This check always fails in ordinary mode.
+       */
+      check: () => "failure",
+
+      failure: result({
+        text: "Ordinary failure.",
+      }),
+
+      safetyResolution: "force-success",
+    });
+
+    expect(definition.safetyResolution).toBe("force-success");
+
+    const { resolution } = selectAndResolve(definition, state, [victim, killer], [0.999], "safety");
+
+    expect(resolution.text).toBe("Forced fatal success.");
+
+    expect(resolution.changes).toContainEqual(
+      expect.objectContaining({
+        type: "eliminate-tribute",
+
+        tributeId: victim.id,
+
+        killerTributeIds: [killer.id],
+      }),
+    );
+
+    expect(
+      resolution.changes.filter(
+        (change) =>
+          change.type === "increment-statistic" &&
+          change.tributeId === killer.id &&
+          change.statistic === "attemptedKills",
+      ),
+    ).toHaveLength(1);
   });
 
   it("rejects invalid weapon declarations", () => {
@@ -343,11 +429,31 @@ describe("createWeaponAttackEvent", () => {
     expect(() =>
       createWeaponAttackEvent("duplicate-weapon", {
         weaponId: "knife",
-        weaponTag: "weapon",
+        weaponTag: "direct-weapon",
         causeLabel: "Killed",
         text: "Fatal attack.",
       }),
     ).toThrow("must declare exactly one weapon ID or weapon tag");
+
+    expect(() =>
+      createWeaponAttackEvent("slingshot-lethal-attack", {
+        weaponId: "slingshot",
+
+        causeLabel: "Killed",
+
+        text: "Invalid attack.",
+      }),
+    ).toThrow("is not a direct-combat weapon");
+
+    expect(() =>
+      createWeaponAttackEvent("generic-weapon-attack", {
+        weaponTag: "weapon",
+
+        causeLabel: "Killed",
+
+        text: "Invalid attack.",
+      }),
+    ).toThrow('must use the "direct-weapon" tag');
   });
 
   it("rejects incomplete checked attacks", () => {

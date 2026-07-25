@@ -186,4 +186,16 @@ describe("loadGameState", () => {
 
     expect(() => loadGameState(schemaFiveGame)).toThrow(/schema version 5/i);
   });
+
+  it("rejects schema-6 saves from before attributed fatal statuses", () => {
+    const schemaSixGame = {
+      ...createGame(),
+
+      schemaVersion: 6,
+    };
+
+    expect(() => loadGameState(schemaSixGame)).toThrow(UnsupportedGameStateSchemaError);
+
+    expect(() => loadGameState(schemaSixGame)).toThrow(/schema version 6/i);
+  });
 });

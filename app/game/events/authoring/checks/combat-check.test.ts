@@ -55,6 +55,49 @@ describe("ordinaryAttackCheck", () => {
     expect(check(createContext(() => 0.999))).toBe("failure");
   });
 
+  it("lets centralized defensive equipment change a checked outcome", () => {
+    const check = ordinaryAttackCheck();
+
+    const unprotectedContext = createContext(() => 0.54);
+
+    const shield = createInventoryItemInstance(
+      "combat-check-shield",
+
+      unprotectedContext.victim.id,
+
+      "shield",
+
+      AUTHORING_TEST_ROUND,
+    );
+
+    const protectedVictim = {
+      ...unprotectedContext.victim,
+
+      inventory: [shield],
+    };
+
+    const protectedContext = {
+      ...unprotectedContext,
+
+      state: createAuthoringTestGame([unprotectedContext.killer, protectedVictim]),
+
+      victim: protectedVictim,
+
+      random: () => 0.54,
+    };
+
+    /*
+     * With equal tribute stats and a knife:
+     *
+     * - the unprotected target is defeated at 0.54;
+     * - shield defense lowers the attack chance enough
+     *   for the same roll to fail.
+     */
+    expect(check(unprotectedContext)).toBe("success");
+
+    expect(check(protectedContext)).toBe("failure");
+  });
+
   it("supports an attacker advantage hook", () => {
     const check = ordinaryAttackCheck({
       attackerAdvantage: () => 100,

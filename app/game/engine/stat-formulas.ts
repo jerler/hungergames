@@ -1,19 +1,133 @@
-import type { EventCategory, EventSelectionContext } from "~/game/events/event-schema";
-import { getInventoryBonus } from "~/game/items/inventory-engine";
-import { getStatusModifier } from "~/game/statuses/status-engine";
-import type { GameTribute } from "~/game/types/game-state";
 import { getEffectiveStats } from "~/game/engine/effective-stats";
-import { getNightAwarenessItemBonus } from "~/game/items/item-contextual-capabilities";
-import type { RoundReference } from "~/game/types/game-state";
 
-export function getCombatScore(tribute: GameTribute): number {
+import type {
+  EventCategory,
+  EventItemSelection,
+  EventSelectionContext,
+} from "~/game/events/event-schema";
+
+import { getItemDefinition } from "~/game/items/item-catalogue";
+
+import { getNightAwarenessItemBonus } from "~/game/items/item-contextual-capabilities";
+
+import { getInventoryBonus } from "~/game/items/inventory-engine";
+
+import { isItemUsableBy } from "~/game/items/item-usability";
+
+import { getStatusModifier } from "~/game/statuses/status-engine";
+
+import type { GameTribute, InventoryItem, RoundReference } from "~/game/types/game-state";
+
+/**
+ * Computes combat ability from the tribute's own effective
+ * stats and active statuses.
+ *
+ * Equipment is intentionally excluded.
+ */
+export function getBaseCombatScore(tribute: GameTribute): number {
   const { brains, brawn, luck } = getEffectiveStats(tribute);
 
   const baseScore = brawn * 0.55 + brains * 0.25 + luck * 0.2;
 
   return Math.max(
     0.25,
-    baseScore + getInventoryBonus(tribute, "combatBonus") + getStatusModifier(tribute, "combat"),
+
+    baseScore + getStatusModifier(tribute, "combat"),
+  );
+}
+
+/**
+ * Returns the direct-combat bonus supplied by one exact
+ * physical weapon when used by this tribute.
+ *
+ * Item usability is evaluated using the acting tribute's
+ * effective stats, regardless of who owns the item.
+ */
+export function getDirectWeaponAttackBonus(tribute: GameTribute, item: InventoryItem): number {
+  if (!isItemUsableBy(tribute, item)) {
+    return 0;
+  }
+
+  const offense = getItemDefinition(item.definitionId).offense;
+
+  if (offense?.strategy !== "direct") {
+    return 0;
+  }
+
+  return offense.attackBonus;
+}
+
+/**
+ * Used for general combat weighting outside a specific
+ * attack event.
+ *
+ * Only the strongest usable owned direct weapon applies.
+ * Carrying several weapons therefore does not stack them.
+ */
+export function getStrongestUsableDirectWeaponBonus(tribute: GameTribute): number {
+  return tribute.inventory.reduce(
+    (strongestBonus, item) =>
+      Math.max(
+        strongestBonus,
+
+        getDirectWeaponAttackBonus(tribute, item),
+      ),
+
+    0,
+  );
+}
+
+/**
+ * General current combat strength.
+ *
+ * Used by:
+ *
+ * - attacker selection;
+ * - Bloodbath combat weighting;
+ * - theft strength comparisons;
+ * - other non-event-specific combat calculations.
+ *
+ * This includes only the tribute's strongest usable owned
+ * direct weapon.
+ */
+export function getCombatScore(tribute: GameTribute): number {
+  return Math.max(
+    0.25,
+
+    getBaseCombatScore(tribute) + getStrongestUsableDirectWeaponBonus(tribute),
+  );
+}
+
+/**
+ * Computes attack strength for one actual selected weapon.
+ *
+ * Unlike getCombatScore(), this does not inspect every item
+ * owned by the attacker. It uses only the item chosen during
+ * participant selection.
+ *
+ * A borrowed weapon therefore contributes its own attack
+ * bonus while the acting tribute supplies the stats.
+ */
+export function getSelectedDirectAttackScore(
+  attacker: GameTribute,
+  weapon: EventItemSelection,
+): number {
+  if (!isItemUsableBy(attacker, weapon.item)) {
+    throw new Error(
+      `Tribute "${attacker.id}" cannot use selected weapon ` + `"${weapon.item.definitionId}".`,
+    );
+  }
+
+  const offense = getItemDefinition(weapon.item.definitionId).offense;
+
+  if (offense?.strategy !== "direct") {
+    throw new Error(`Item "${weapon.item.definitionId}" is not an ordinary direct-combat weapon.`);
+  }
+
+  return Math.max(
+    0.25,
+
+    getBaseCombatScore(attacker) + offense.attackBonus,
   );
 }
 
@@ -24,6 +138,7 @@ export function getSurvivalScore(tribute: GameTribute): number {
 
   return Math.max(
     0.25,
+
     baseScore +
       getInventoryBonus(tribute, "survivalBonus") +
       getStatusModifier(tribute, "survival"),
@@ -37,6 +152,7 @@ export function getAwarenessScore(tribute: GameTribute, round?: RoundReference):
 
   return Math.max(
     0.25,
+
     baseScore +
       getInventoryBonus(tribute, "awarenessBonus") +
       getNightAwarenessItemBonus(tribute, round) +
@@ -51,6 +167,7 @@ export function getForagingScore(tribute: GameTribute): number {
 
   return Math.max(
     0.25,
+
     baseScore +
       getInventoryBonus(tribute, "foragingBonus") +
       getStatusModifier(tribute, "foraging"),
@@ -58,7 +175,11 @@ export function getForagingScore(tribute: GameTribute): number {
 }
 
 export function getVulnerabilityWeight(tribute: GameTribute): number {
-  return Math.max(0.25, 6 - getSurvivalScore(tribute));
+  return Math.max(
+    0.25,
+
+    6 - getSurvivalScore(tribute),
+  );
 }
 
 export function getCombatSelectionWeight(tribute: GameTribute): number {
@@ -97,7 +218,11 @@ export function getEventCategoryMultiplier(
 }
 
 export function getRoundEventTargetCount(livingTributeCount: number): number {
-  return Math.min(6, Math.max(1, Math.ceil(livingTributeCount / 3)));
+  return Math.min(
+    6,
+
+    Math.max(1, Math.ceil(livingTributeCount / 3)),
+  );
 }
 
 export function getDefinitionPopulationMultiplier(context: EventSelectionContext): number {

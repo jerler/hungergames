@@ -1,5 +1,4 @@
-import { selectWeightedItem, type RandomSource } from "~/game/engine/random";
-
+import { selectRandomItem, selectWeightedItem, type RandomSource } from "~/game/engine/random";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 
 import type { ItemDefinitionId } from "~/game/items/item-schema";
@@ -17,6 +16,51 @@ export interface CornucopiaPackItemPoolEntry {
   itemId: ItemDefinitionId;
   rarity: CornucopiaPackRarity;
 }
+
+export const CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS = [
+  "knife",
+  "short-sword",
+  "rapier",
+  "spear",
+  "trident",
+  "bow",
+  "hand-axe",
+  "club",
+] as const satisfies readonly ItemDefinitionId[];
+
+export const CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS = [
+  "longsword",
+  "greatsword",
+  "pike",
+  "longbow",
+  "axe",
+  "warhammer",
+] as const satisfies readonly ItemDefinitionId[];
+
+/**
+ * Brains-oriented acquisition route",
+  "longbow",
+  "axe",
+  "warhammer",
+] as const satisfies readonly ItemDefinitionId[].
+ *
+ * Crossbows are direct weapons, while the remaining
+ * entries use the poison, trap, or risky-area families.
+ */
+export const CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS = [
+  "crossbow",
+  "blowgun",
+  "poison-vial",
+  "bear-trap",
+  "tripwire",
+  "firebomb",
+] as const satisfies readonly ItemDefinitionId[];
+
+export const CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS = [
+  ...CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS,
+  ...CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS,
+  "crossbow",
+] as const satisfies readonly ItemDefinitionId[];
 
 export const CORNUCOPIA_PACK_ITEM_POOL = [
   // Common manufactured food, drink, and survival supplies
@@ -100,27 +144,30 @@ export const CORNUCOPIA_PACK_ITEM_POOL = [
   },
   {
     itemId: "sleeping-bag",
-
     rarity: "standard",
   },
   {
     itemId: "thermal-blanket",
-
     rarity: "standard",
   },
   {
     itemId: "flint-stone",
-
     rarity: "standard",
   },
   {
     itemId: "bird-whistle",
-
     rarity: "standard",
   },
   {
     itemId: "binoculars",
-
+    rarity: "standard",
+  },
+  {
+    itemId: "slingshot",
+    rarity: "standard",
+  },
+  {
+    itemId: "helmet",
     rarity: "standard",
   },
 
@@ -151,12 +198,14 @@ export const CORNUCOPIA_PACK_ITEM_POOL = [
   },
   {
     itemId: "tent",
-
     rarity: "uncommon",
   },
   {
     itemId: "night-vision-goggles",
-
+    rarity: "uncommon",
+  },
+  {
+    itemId: "padded-armour",
     rarity: "uncommon",
   },
 
@@ -167,6 +216,10 @@ export const CORNUCOPIA_PACK_ITEM_POOL = [
   },
   {
     itemId: "antidote",
+    rarity: "rare",
+  },
+  {
+    itemId: "reinforced-armour",
     rarity: "rare",
   },
 ] as const satisfies readonly CornucopiaPackItemPoolEntry[];
@@ -196,6 +249,69 @@ function validateCornucopiaPackItemPool(pool: readonly CornucopiaPackItemPoolEnt
     }
   }
 }
+
+function validateUniqueItemPool(label: string, itemIds: readonly ItemDefinitionId[]): void {
+  if (itemIds.length === 0) {
+    throw new Error(`${label} cannot be empty.`);
+  }
+
+  if (new Set(itemIds).size !== itemIds.length) {
+    throw new Error(`${label} contains duplicate item IDs.`);
+  }
+
+  for (const itemId of itemIds) {
+    const definition = getItemDefinition(itemId);
+
+    if (definition.origin !== "manufactured") {
+      throw new Error(`${label} item "${itemId}" must be manufactured.`);
+    }
+  }
+}
+
+function validateDirectWeaponPool(label: string, itemIds: readonly ItemDefinitionId[]): void {
+  validateUniqueItemPool(label, itemIds);
+
+  for (const itemId of itemIds) {
+    const definition = getItemDefinition(itemId);
+
+    if (definition.offense?.strategy !== "direct") {
+      throw new Error(`${label} item "${itemId}" must use direct offense.`);
+    }
+  }
+}
+
+function validateBrainsOffensePool(itemIds: readonly ItemDefinitionId[]): void {
+  validateUniqueItemPool("Cornucopia Brains-offense pool", itemIds);
+
+  for (const itemId of itemIds) {
+    const definition = getItemDefinition(itemId);
+
+    if (!definition.offense) {
+      throw new Error(`Brains-offense item "${itemId}" has no offense capability.`);
+    }
+
+    if (definition.minimumStats?.brains === undefined) {
+      throw new Error(`Brains-offense item "${itemId}" has no Brains minimum.`);
+    }
+  }
+}
+
+validateDirectWeaponPool(
+  "Cornucopia edge direct-weapon pool",
+  CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS,
+);
+
+validateDirectWeaponPool(
+  "Cornucopia heavy direct-weapon pool",
+  CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS,
+);
+
+validateDirectWeaponPool(
+  "Cornucopia contested direct-weapon pool",
+  CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS,
+);
+
+validateBrainsOffensePool(CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS);
 
 validateCornucopiaPackItemPool(CORNUCOPIA_PACK_ITEM_POOL);
 
@@ -228,4 +344,50 @@ export function selectDistinctCornucopiaPackItems(
   }
 
   return selectedItemIds;
+}
+
+function selectDistinctFromItemPool(
+  itemIds: readonly ItemDefinitionId[],
+  count: number,
+  random: RandomSource,
+): ItemDefinitionId[] {
+  if (!Number.isInteger(count) || count < 0) {
+    throw new Error("Distinct item count must be a non-negative integer.");
+  }
+
+  const remainingItemIds = [...itemIds];
+  const selectedItemIds: ItemDefinitionId[] = [];
+
+  while (selectedItemIds.length < count && remainingItemIds.length > 0) {
+    const selectedItemId = selectRandomItem(remainingItemIds, random);
+
+    selectedItemIds.push(selectedItemId);
+
+    remainingItemIds.splice(remainingItemIds.indexOf(selectedItemId), 1);
+  }
+
+  return selectedItemIds;
+}
+
+export function selectCornucopiaEdgeDirectWeapon(random: RandomSource): ItemDefinitionId {
+  return selectRandomItem(CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS, random);
+}
+
+export function selectCornucopiaHeavyDirectWeapon(random: RandomSource): ItemDefinitionId {
+  return selectRandomItem(CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS, random);
+}
+
+export function selectCornucopiaBrainsOffenseItem(random: RandomSource): ItemDefinitionId {
+  return selectRandomItem(CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS, random);
+}
+
+export function selectDistinctCornucopiaBrainsOffenseItems(
+  count: number,
+  random: RandomSource,
+): ItemDefinitionId[] {
+  return selectDistinctFromItemPool(CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS, count, random);
+}
+
+export function selectCornucopiaContestedDirectWeapon(random: RandomSource): ItemDefinitionId {
+  return selectRandomItem(CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS, random);
 }

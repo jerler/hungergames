@@ -51,7 +51,10 @@ function createStatus(
     definitionId,
     severity,
     remainingRounds,
+
     sourceEventId: `event-${definitionId}`,
+
+    sourceTributeId: null,
 
     appliedRound: {
       day: 2,
@@ -133,6 +136,7 @@ describe("TributeSidebar", () => {
                 definitionId: "bleeding",
                 severity: 2,
                 remainingRounds: 1,
+                sourceTributeId: null,
                 sourceEventId: "deep-cut",
                 appliedRound: {
                   day: 2,

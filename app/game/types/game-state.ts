@@ -10,7 +10,7 @@ import type {
   TributeSurvivalState,
 } from "~/game/survival/survival-schema";
 
-export const CURRENT_GAME_STATE_SCHEMA_VERSION = 6 as const;
+export const CURRENT_GAME_STATE_SCHEMA_VERSION = 7 as const;
 
 export type GamePhase = "opening" | "round-events" | "round-complete" | "victory" | "statistics";
 
@@ -60,6 +60,7 @@ export interface StatusEffect {
   definitionId: StatusEffectId;
 
   severity: 1 | 2 | 3;
+
   /**
    * Timed statuses store their remaining duration.
    * Persistent statuses use null and require explicit removal.
@@ -67,6 +68,15 @@ export interface StatusEffect {
   remainingRounds: number | null;
 
   sourceEventId: string;
+
+  /**
+   * The tribute who deliberately caused this status.
+   *
+   * Null represents environmental, accidental, survival,
+   * item-side-effect, or otherwise unattributed statuses.
+   */
+  sourceTributeId: string | null;
+
   appliedRound: RoundReference;
 }
 

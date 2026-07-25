@@ -71,13 +71,44 @@ const MANUFACTURED_ITEM_IDS = [
   "trap-kit",
   "fishing-gear",
 
-  // Equipment
-  "shield",
+  // Bladed weapons
   "knife",
-  "slingshot",
+  "short-sword",
+  "rapier",
+  "longsword",
+  "greatsword",
+
+  // Pole weapons
   "spear",
-  "axe",
+  "pike",
+  "trident",
+
+  // Ranged weapons
   "bow",
+  "longbow",
+  "crossbow",
+  "blowgun",
+
+  // Axes and blunt weapons
+  "hand-axe",
+  "axe",
+  "club",
+  "warhammer",
+
+  // Tactical offense
+  "poison-vial",
+  "bear-trap",
+  "tripwire",
+  "firebomb",
+
+  // Defensive equipment
+  "shield",
+  "helmet",
+  "padded-armour",
+  "reinforced-armour",
+
+  // Nonlethal hunting equipment
+  "slingshot",
 ] satisfies readonly ItemDefinitionId[];
 
 const EXPECTED_ITEM_IDS = [
@@ -146,14 +177,20 @@ describe("item catalogue treatments", () => {
     expect(ITEM_CATALOGUE.map(({ id }) => id)).not.toContain("food");
   });
 
-  it("gives each specialized item its intended bonuses", () => {
+  it("gives specialized items their intended capabilities and bonuses", () => {
     expect(getItemDefinition("shield")).toMatchObject({
-      combatBonus: 0.45,
-      survivalBonus: 0.55,
+      defense: {
+        checkedAttackBonus: 0.75,
+        hostileTargetWeightMultiplier: 0.75,
+      },
     });
 
     expect(getItemDefinition("axe")).toMatchObject({
-      combatBonus: 1.45,
+      offense: {
+        strategy: "direct",
+        attackBonus: 1.35,
+      },
+
       foragingBonus: 0.3,
     });
 
@@ -168,9 +205,10 @@ describe("item catalogue treatments", () => {
     });
 
     expect(getItemDefinition("slingshot")).toMatchObject({
-      combatBonus: 0.65,
       foragingBonus: 0.25,
     });
+
+    expect(getItemDefinition("slingshot").offense).toBeUndefined();
   });
 
   it("presents natural water as fresh water", () => {
@@ -311,8 +349,11 @@ describe("item catalogue treatments", () => {
       nightAmbushTargetWeightMultiplier: 0.55,
     });
 
-    expect(getItemDefinition("shield").contextual).toEqual({
-      hostileDefenseBonus: 0.75,
+    expect(getItemDefinition("shield").contextual).toBeUndefined();
+
+    expect(getItemDefinition("shield").defense).toEqual({
+      checkedAttackBonus: 0.75,
+      hostileTargetWeightMultiplier: 0.75,
     });
 
     expect(getItemDefinition("matches").contextual).toBeUndefined();

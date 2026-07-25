@@ -28,6 +28,7 @@ import { MIXED_STAT_GATED_EVENTS } from "~/game/events/catalogue/stat-gated/mixe
 import { validateEventCatalogues } from "~/game/events/validation/validate-event-catalogues";
 import { HUNTING_EVENTS } from "./encounters/hunting-events";
 import { FORAGING_EVENTS } from "~/game/events/catalogue/encounters/foraging-events";
+import { TACTICAL_EVENTS } from "~/game/events/catalogue/encounters/tactical-events";
 
 describe("production event catalogues", () => {
   it("contains every exported event exactly once with no cross-catalogue IDs", () => {
@@ -65,6 +66,10 @@ describe("production event catalogues", () => {
           {
             name: "item-use",
             events: ITEM_USE_EVENTS,
+          },
+          {
+            name: "tactical",
+            events: TACTICAL_EVENTS,
           },
           {
             name: "gamemaker",

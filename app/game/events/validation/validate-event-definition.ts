@@ -198,6 +198,13 @@ export function validateEventDefinition(definition: EventDefinition): void {
     );
   }
 
+  if (
+    definition.safetyResolution !== undefined &&
+    definition.safetyResolution !== "force-success"
+  ) {
+    throw new Error(`Event "${definition.id}" has invalid safety-resolution metadata.`);
+  }
+
   if (!Number.isFinite(definition.baseWeight) || definition.baseWeight <= 0) {
     throw new Error(`Event "${definition.id}" must have a positive finite weight.`);
   }

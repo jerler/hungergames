@@ -1,4 +1,4 @@
-import { selectRandomItem, selectWeightedItem, type RandomSource } from "~/game/engine/random";
+import { selectWeightedItem, type RandomSource } from "~/game/engine/random";
 import { getCombatScore } from "~/game/engine/stat-formulas";
 import {
   createFatalChanges,
@@ -15,15 +15,10 @@ import {
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { GameTribute } from "~/game/types/game-state";
 import { getTributePronouns } from "~/game/tributes/pronouns";
-import { selectCornucopiaPackItem } from "./cornucopia-item-pool";
-
-const CONTESTED_WEAPON_ITEM_IDS = [
-  "knife",
-  "slingshot",
-  "spear",
-  "axe",
-  "bow",
-] satisfies readonly ItemDefinitionId[];
+import {
+  selectCornucopiaContestedDirectWeapon,
+  selectCornucopiaPackItem,
+} from "./cornucopia-item-pool";
 
 type PairConflictOutcome = "attacker-dies" | "both-retreat" | "attacker-wins" | "defender-dies";
 
@@ -437,7 +432,7 @@ export const CORNUCOPIA_PAIR_CONFLICT_EVENTS = [
 
     baseWeight: 6,
 
-    selectItem: (random) => selectRandomItem(CONTESTED_WEAPON_ITEM_IDS, random),
+    selectItem: selectCornucopiaContestedDirectWeapon,
 
     resourceDescription: "the same weapon",
   }),
@@ -459,7 +454,7 @@ export const CORNUCOPIA_GROUP_CONFLICT_EVENTS = [
 
     baseWeight: 7,
 
-    selectItem: (random) => selectRandomItem(CONTESTED_WEAPON_ITEM_IDS, random),
+    selectItem: selectCornucopiaContestedDirectWeapon,
 
     resourceDescription: "a pile of weapons",
   }),

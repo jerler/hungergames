@@ -10,7 +10,13 @@ import {
 } from "~/game/events/participant-selection";
 import { AUTHORING_TEST_ROUND } from "~/game/events/authoring/testing/authoring-test-fixtures";
 import { createSequenceRandom } from "~/game/events/authoring/testing/resolve-authored-event";
-import type { GameState, GameTribute, RoundReference, StatusEffect } from "~/game/types/game-state";
+import type {
+  GameState,
+  GameTribute,
+  RoundReference,
+  StatusEffect,
+  EventResolutionMode,
+} from "~/game/types/game-state";
 
 export function requireEventDefinition(
   events: readonly EventDefinition[],
@@ -45,6 +51,8 @@ interface ResolveEventWithParticipantsOptions {
   eventId?: string;
   itemsByRole?: EventItemsByRole;
 
+  resolutionMode?: EventResolutionMode;
+
   unavailableItemInstanceIds?: ReadonlySet<string>;
 }
 
@@ -58,6 +66,8 @@ export function resolveEventWithParticipants({
   eventId = `test:${definition.id}`,
   itemsByRole,
 
+  resolutionMode = "standard",
+
   unavailableItemInstanceIds = new Set<string>(),
 }: ResolveEventWithParticipantsOptions): EventResolution {
   return definition.resolve({
@@ -68,6 +78,8 @@ export function resolveEventWithParticipants({
 
     eventId,
     random: createSequenceRandom(randomValues),
+
+    resolutionMode,
 
     participantsByRole,
     itemsByRole,
@@ -84,6 +96,8 @@ interface SelectAndResolveEventOptions {
   selectionRandomValues?: readonly number[];
 
   round?: RoundReference;
+
+  resolutionMode?: EventResolutionMode;
 
   unavailableTributeIds?: ReadonlySet<string>;
   unavailableItemInstanceIds?: ReadonlySet<string>;
@@ -105,6 +119,8 @@ export function selectAndResolveEvent({
   round = AUTHORING_TEST_ROUND,
 
   unavailableTributeIds = new Set<string>(),
+
+  resolutionMode = "standard",
 
   unavailableItemInstanceIds = new Set<string>(),
 }: SelectAndResolveEventOptions): SelectedEventResolution {
@@ -132,6 +148,8 @@ export function selectAndResolveEvent({
     eventId: `test:${definition.id}`,
 
     random: createSequenceRandom(randomValues),
+
+    resolutionMode,
 
     participantsByRole: selection.participantsByRole,
 

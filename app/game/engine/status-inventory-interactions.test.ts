@@ -16,6 +16,10 @@ import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameChange, GameState, ResolvedEvent } from "~/game/types/game-state";
 import { createTruceInstance } from "~/game/truces/truce-engine";
+import {
+  getCheckedAttackDefenseBonus,
+  getDefenseTargetWeightMultiplier,
+} from "~/game/items/defensive-equipment";
 
 const DAY_ONE = {
   day: 1,
@@ -65,10 +69,6 @@ function createEvent(
 describe("status and inventory interactions", () => {
   it.each([
     {
-      itemId: "shield",
-      score: getSurvivalScore,
-    },
-    {
       itemId: "axe",
       score: getCombatScore,
     },
@@ -82,7 +82,7 @@ describe("status and inventory interactions", () => {
     },
     {
       itemId: "slingshot",
-      score: getCombatScore,
+      score: getForagingScore,
     },
   ] as const)("$itemId improves its intended score", ({ itemId, score }) => {
     const state = createGame();
@@ -100,6 +100,34 @@ describe("status and inventory interactions", () => {
     };
 
     expect(score(equippedTribute)).toBeGreaterThan(score(tribute));
+  });
+
+  it("applies shield protection through centralized defense", () => {
+    const state = createGame();
+    const tribute = state.tributes[0];
+
+    const equippedTribute = {
+      ...tribute,
+
+      inventory: [
+        createInventoryItemInstance("test-shield", tribute.id, "shield", {
+          day: 1,
+          period: "day",
+        }),
+      ],
+    };
+
+    /*
+     * Defensive equipment no longer modifies generic
+     * combat or survival scores.
+     */
+    expect(getCombatScore(equippedTribute)).toBe(getCombatScore(tribute));
+
+    expect(getSurvivalScore(equippedTribute)).toBe(getSurvivalScore(tribute));
+
+    expect(getCheckedAttackDefenseBonus(equippedTribute)).toBe(0.75);
+
+    expect(getDefenseTargetWeightMultiplier(equippedTribute)).toBe(0.75);
   });
 
   it("kills tributes whose untreated status reaches zero", () => {

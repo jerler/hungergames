@@ -70,7 +70,26 @@ export type ItemDefinitionId =
   | "bow"
   | "shield"
   | "axe"
-  | "slingshot";
+  | "slingshot"
+  | "short-sword"
+  | "rapier"
+  | "longsword"
+  | "greatsword"
+  | "pike"
+  | "trident"
+  | "longbow"
+  | "crossbow"
+  | "blowgun"
+  | "hand-axe"
+  | "club"
+  | "warhammer"
+  | "poison-vial"
+  | "bear-trap"
+  | "tripwire"
+  | "firebomb"
+  | "helmet"
+  | "padded-armour"
+  | "reinforced-armour";
 
 export type ItemOrigin = "natural-resource" | "manufactured";
 
@@ -86,6 +105,8 @@ export const ITEM_TAGS = [
   "fire",
   "tool",
   "weapon",
+  "direct-weapon",
+  "tactical",
   "defense",
   "navigation",
   "trap",
@@ -160,6 +181,29 @@ export interface ItemRestCapability {
   };
 }
 
+export type ItemOffenseCapability =
+  | {
+      strategy: "direct";
+      attackBonus: number;
+    }
+  | {
+      strategy: "poison" | "trap" | "risky-area";
+    };
+
+export interface ItemDefenseCapability {
+  /**
+   * Added to the defender's score during a checked attack.
+   */
+  checkedAttackBonus: number;
+
+  /**
+   * Multiplies the tribute's hostile-target selection weight.
+   *
+   * Lower values make the tribute less likely to be selected.
+   */
+  hostileTargetWeightMultiplier: number;
+}
+
 export interface ItemContextualCapabilities {
   nightAwarenessBonus?: number;
 
@@ -186,7 +230,9 @@ export interface ItemDefinition {
 
   minimumStats?: ItemMinimumStats;
 
-  combatBonus?: number;
+  offense?: ItemOffenseCapability;
+  defense?: ItemDefenseCapability;
+
   survivalBonus?: number;
   awarenessBonus?: number;
   foragingBonus?: number;

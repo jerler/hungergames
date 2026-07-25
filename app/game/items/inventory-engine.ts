@@ -178,7 +178,7 @@ export function tributeCanAccessUsableItem(
 
 export function getInventoryBonus(
   tribute: GameTribute,
-  bonus: "combatBonus" | "survivalBonus" | "awarenessBonus" | "foragingBonus",
+  bonus: "survivalBonus" | "awarenessBonus" | "foragingBonus",
 ): number {
   return tribute.inventory.reduce((total, item) => {
     if (!isItemUsableBy(tribute, item)) {

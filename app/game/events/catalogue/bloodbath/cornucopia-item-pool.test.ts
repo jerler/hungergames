@@ -5,15 +5,19 @@ import { createSeededRandom } from "~/game/engine/random";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 
 import type { ItemDefinitionId } from "~/game/items/item-schema";
-
 import {
+  CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS,
+  CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS,
+  CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS,
+  CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS,
   CORNUCOPIA_PACK_ITEM_POOL,
   selectCornucopiaPackItem,
+  selectDistinctCornucopiaBrainsOffenseItems,
   selectDistinctCornucopiaPackItems,
   type CornucopiaPackRarity,
 } from "./cornucopia-item-pool";
 
-const PHASE_SEVEN_CONSUMABLE_IDS = [
+const CONSUMABLE_IDS = [
   "soup",
   "burger-and-fries",
   "pizza-box",
@@ -30,6 +34,39 @@ const PHASE_SEVEN_CONSUMABLE_IDS = [
   "antidote",
 ] as const satisfies readonly ItemDefinitionId[];
 
+const DIRECT_WEAPON_IDS = [
+  "knife",
+  "short-sword",
+  "rapier",
+  "longsword",
+  "greatsword",
+  "spear",
+  "pike",
+  "trident",
+  "bow",
+  "longbow",
+  "crossbow",
+  "hand-axe",
+  "axe",
+  "club",
+  "warhammer",
+] as const satisfies readonly ItemDefinitionId[];
+
+const TACTICAL_ITEM_IDS = [
+  "blowgun",
+  "poison-vial",
+  "bear-trap",
+  "tripwire",
+  "firebomb",
+] as const satisfies readonly ItemDefinitionId[];
+
+const DEFENSE_ITEM_IDS = [
+  "shield",
+  "helmet",
+  "padded-armour",
+  "reinforced-armour",
+] as const satisfies readonly ItemDefinitionId[];
+
 function selectSequence(seed: string): ItemDefinitionId[] {
   const random = createSeededRandom(seed);
 
@@ -43,10 +80,10 @@ function selectSequence(seed: string): ItemDefinitionId[] {
 }
 
 describe("Cornucopia item pool", () => {
-  it("contains every Phase 7 manufactured consumable", () => {
+  it("contains every manufactured consumable", () => {
     const poolItemIds = CORNUCOPIA_PACK_ITEM_POOL.map((entry) => entry.itemId);
 
-    expect(poolItemIds).toEqual(expect.arrayContaining([...PHASE_SEVEN_CONSUMABLE_IDS]));
+    expect(poolItemIds).toEqual(expect.arrayContaining([...CONSUMABLE_IDS]));
   });
 
   it("contains unique manufactured items", () => {
@@ -122,5 +159,100 @@ describe("Cornucopia item pool", () => {
     });
 
     expect(getItemDefinition("foraging-guidebook").origin).toBe("manufactured");
+  });
+
+  it("makes every equipment item reachable", () => {
+    const reachableItemIds = new Set<ItemDefinitionId>([
+      ...CORNUCOPIA_PACK_ITEM_POOL.map((entry) => entry.itemId),
+
+      ...CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS,
+      ...CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS,
+      ...CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS,
+    ]);
+
+    for (const itemId of [
+      ...DIRECT_WEAPON_IDS,
+      ...TACTICAL_ITEM_IDS,
+      ...DEFENSE_ITEM_IDS,
+      "slingshot",
+    ] as const) {
+      expect(
+        reachableItemIds.has(itemId),
+        `Expected ${itemId} to have a Cornucopia acquisition route.`,
+      ).toBe(true);
+    }
+  });
+
+  it("uses every direct weapon in the contested weapon pool", () => {
+    expect(new Set(CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS)).toEqual(
+      new Set(DIRECT_WEAPON_IDS),
+    );
+  });
+
+  it("keeps slingshot out of direct-combat acquisition pools", () => {
+    expect(CORNUCOPIA_PACK_ITEM_POOL).toContainEqual({
+      itemId: "slingshot",
+      rarity: "standard",
+    });
+
+    expect(CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS).not.toContain("slingshot");
+
+    expect(CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS).not.toContain("slingshot");
+
+    expect(CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS).not.toContain("slingshot");
+  });
+
+  it("provides a Brains-oriented offense cache", () => {
+    expect(CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS).toEqual([
+      "crossbow",
+      "blowgun",
+      "poison-vial",
+      "bear-trap",
+      "tripwire",
+      "firebomb",
+    ]);
+
+    for (const itemId of CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS) {
+      expect(getItemDefinition(itemId).minimumStats?.brains).toBeDefined();
+    }
+  });
+
+  it("assigns intended defensive-equipment rarity", () => {
+    expect(CORNUCOPIA_PACK_ITEM_POOL).toEqual(
+      expect.arrayContaining([
+        {
+          itemId: "helmet",
+          rarity: "standard",
+        },
+        {
+          itemId: "padded-armour",
+          rarity: "uncommon",
+        },
+        {
+          itemId: "shield",
+          rarity: "uncommon",
+        },
+        {
+          itemId: "reinforced-armour",
+          rarity: "rare",
+        },
+      ]),
+    );
+  });
+
+  it("selects tactical items deterministically without replacement", () => {
+    const first = selectDistinctCornucopiaBrainsOffenseItems(
+      2,
+      createSeededRandom("tactical-cache"),
+    );
+
+    const second = selectDistinctCornucopiaBrainsOffenseItems(
+      2,
+      createSeededRandom("tactical-cache"),
+    );
+
+    expect(second).toEqual(first);
+    expect(first).toHaveLength(2);
+    expect(new Set(first).size).toBe(2);
   });
 });

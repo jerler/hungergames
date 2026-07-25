@@ -55,7 +55,17 @@ function getItemCapabilityStrategicValue(definition: ItemDefinition): number {
       ? 1 - contextual.nightAmbushTargetWeightMultiplier
       : 0);
 
-  return activeEffectValue + restValue + contextualValue;
+  const offenseValue = definition.offense
+    ? definition.offense.strategy === "direct"
+      ? definition.offense.attackBonus
+      : 1
+    : 0;
+
+  const defenseValue = definition.defense
+    ? definition.defense.checkedAttackBonus + (1 - definition.defense.hostileTargetWeightMultiplier)
+    : 0;
+
+  return activeEffectValue + restValue + contextualValue + offenseValue + defenseValue;
 }
 
 /**
@@ -69,7 +79,6 @@ function getItemStrategicValue(item: InventoryItem): number {
   const definition = getItemDefinition(item.definitionId);
 
   const passiveBonusValue =
-    (definition.combatBonus ?? 0) +
     (definition.survivalBonus ?? 0) +
     (definition.awarenessBonus ?? 0) +
     (definition.foragingBonus ?? 0);

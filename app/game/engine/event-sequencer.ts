@@ -219,8 +219,11 @@ export function sequenceRoundEvents(
 
     const resolution = definition.resolve({
       ...context,
+
       eventId,
       random,
+
+      resolutionMode: "standard",
 
       participantsByRole: selection.participantsByRole,
     });
@@ -259,10 +262,21 @@ export function sequenceRoundEvents(
   const events: ResolvedEvent[] = [];
 
   for (let eventIndex = 0; eventIndex < targetEventCount; eventIndex += 1) {
-    const safetyResolution = eventIndex === 0 && shouldForceElimination(state);
+    const isSafetyResolution = eventIndex === 0 && shouldForceElimination(state);
 
-    const candidateDefinitions = safetyResolution
-      ? eligibleDefinitions.filter((definition) => definition.category === "fatal")
+    /*
+     * Existing fatal definitions remain valid safety
+     * candidates.
+     *
+     * Checked direct attacks opt in through explicit
+     * force-success metadata.
+     */
+    const candidateDefinitions = isSafetyResolution
+      ? eligibleDefinitions.filter(
+          (definition) =>
+            definition.category === "fatal" ||
+            ("safetyResolution" in definition && definition.safetyResolution === "force-success"),
+        )
       : eligibleDefinitions;
 
     const selected = selectDefinitionAndParticipants(
@@ -279,13 +293,15 @@ export function sequenceRoundEvents(
 
     const eventId = createEventId(round, eventIndex, selected.definition.id);
 
-    const resolutionMode: EventResolutionMode = safetyResolution ? "safety" : "standard";
+    const resolutionMode: EventResolutionMode = isSafetyResolution ? "safety" : "standard";
 
     const resolution = selected.definition.resolve({
       ...context,
 
       eventId,
       random,
+
+      resolutionMode,
 
       participantsByRole: selected.selection.participantsByRole,
 

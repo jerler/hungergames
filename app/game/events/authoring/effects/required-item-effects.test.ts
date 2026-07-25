@@ -409,19 +409,19 @@ describe("required-item selection", () => {
 describe("required-item effects", () => {
   it("emits use-item for reusable equipment", () => {
     const tribute = createAuthoringTestTribute({
-      id: "map-user",
+      id: "binocular-user",
     });
 
-    const map = createItem(tribute, "map", "reusable-map");
+    const binoculars = createItem(tribute, "binoculars", "reusable-binoculars");
 
-    const equippedTribute = withItems(tribute, [map]);
+    const equippedTribute = withItems(tribute, [binoculars]);
 
     const state = createState([equippedTribute]);
 
     const definition = createRequiredItemEvent({
       id: "reusable-item-use",
 
-      definitionId: "map",
+      definitionId: "binoculars",
 
       effects: [recordRequiredItemUse("tribute")],
     });
@@ -432,7 +432,7 @@ describe("required-item effects", () => {
       throw new Error("Expected a required-item selection.");
     }
 
-    const resolution = resolveSelection(definition, state, selection, "resolved-map-use");
+    const resolution = resolveSelection(definition, state, selection, "resolved-binocular-use");
 
     expect(resolution.changes).toEqual([
       {
@@ -440,9 +440,9 @@ describe("required-item effects", () => {
 
         tributeId: equippedTribute.id,
 
-        itemInstanceId: map.id,
+        itemInstanceId: binoculars.id,
 
-        reason: "resolved-map-use",
+        reason: "resolved-binocular-use",
       },
     ]);
   });
@@ -498,16 +498,16 @@ describe("required-item effects", () => {
       id: "physical-owner",
     });
 
-    const map = createItem(owner, "map", "borrowed-map");
+    const binoculars = createItem(owner, "binoculars", "borrowed-binoculars");
 
-    const equippedOwner = withItems(owner, [map]);
+    const equippedOwner = withItems(owner, [binoculars]);
 
     const state = createTruceState([user, equippedOwner]);
 
     const definition = createRequiredItemEvent({
       id: "shared-owner-use",
 
-      definitionId: "map",
+      definitionId: "binoculars",
 
       effects: [recordRequiredItemUse("tribute")],
     });
@@ -527,7 +527,7 @@ describe("required-item effects", () => {
 
       tributeId: equippedOwner.id,
 
-      itemInstanceId: map.id,
+      itemInstanceId: binoculars.id,
     });
   });
 
@@ -536,20 +536,20 @@ describe("required-item effects", () => {
       id: "reason-user",
     });
 
-    const map = createItem(tribute, "map", "reason-map");
+    const binoculars = createItem(tribute, "binoculars", "reason-binoculars");
 
-    const equippedTribute = withItems(tribute, [map]);
+    const equippedTribute = withItems(tribute, [binoculars]);
 
     const state = createState([equippedTribute]);
 
     const definition = createRequiredItemEvent({
       id: "item-reason-override",
 
-      definitionId: "map",
+      definitionId: "binoculars",
 
       effects: [
         recordRequiredItemUse("tribute", {
-          reason: "navigation-check",
+          reason: "scouting-check",
         }),
       ],
     });
@@ -563,7 +563,7 @@ describe("required-item effects", () => {
     const resolution = resolveSelection(definition, state, selection);
 
     expect(resolution.changes[0]).toMatchObject({
-      reason: "navigation-check",
+      reason: "scouting-check",
     });
   });
 
@@ -621,16 +621,16 @@ describe("required-item effects", () => {
       id: "wrong-consume-user",
     });
 
-    const map = createItem(tribute, "map", "wrong-consume-map");
+    const binoculars = createItem(tribute, "binoculars", "wrong-consume-binoculars");
 
-    const equippedTribute = withItems(tribute, [map]);
+    const equippedTribute = withItems(tribute, [binoculars]);
 
     const state = createState([equippedTribute]);
 
     const definition = createRequiredItemEvent({
       id: "wrong-reusable-consume-effect",
 
-      definitionId: "map",
+      definitionId: "binoculars",
 
       effects: [consumeRequiredItem("tribute")],
     });
@@ -642,7 +642,7 @@ describe("required-item effects", () => {
     }
 
     expect(() => resolveSelection(definition, state, selection)).toThrow(
-      'effect "consume-required-item" expected a limited-use item for role "tribute", but selected "map" is reusable.',
+      'effect "consume-required-item" expected a limited-use item for role "tribute", but selected "binoculars" is reusable.',
     );
   });
 });
@@ -661,16 +661,16 @@ describe("required-item round reservations", () => {
       id: "item-owner",
     });
 
-    const map = createItem(owner, "map", "reservation-map");
+    const binoculars = createItem(owner, "binoculars", "reservation-binoculars");
 
-    const equippedOwner = withItems(owner, [map]);
+    const equippedOwner = withItems(owner, [binoculars]);
 
     const state = createTruceState([firstUser, secondUser, equippedOwner]);
 
     const definition = createRequiredItemEvent({
       id: "required-item-reservations",
 
-      definitionId: "map",
+      definitionId: "binoculars",
 
       effects: [recordRequiredItemUse("tribute")],
     });
@@ -700,7 +700,7 @@ describe("required-item round reservations", () => {
 
     expect(unavailableTributeIds).toContain(equippedOwner.id);
 
-    expect(unavailableItemInstanceIds).toContain(map.id);
+    expect(unavailableItemInstanceIds).toContain(binoculars.id);
 
     const secondSelection = selectParticipants(definition, state, {
       livingTributes: [secondUser],

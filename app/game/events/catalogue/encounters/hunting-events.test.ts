@@ -44,6 +44,14 @@ const HUNTING_CASES = [
   },
 
   {
+    eventId: "bird-whistle-nest-search",
+
+    foodId: "eggs",
+
+    equipmentId: "bird-whistle",
+  },
+
+  {
     eventId: "raids-nest-for-eggs",
 
     foodId: "eggs",

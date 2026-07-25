@@ -36,6 +36,7 @@ export type EventTag =
   | "truce"
   | "cooperative"
   | "romantic"
+  | "ambush"
   | "victory";
 
 export interface EventSelectionContext {

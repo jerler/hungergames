@@ -9,7 +9,6 @@ const EXPECTED_GIFT_IDS = [
   "bottled-water",
   "med-kit",
   "blanket",
-  "rope",
   "matches",
   "knife",
   "bow",

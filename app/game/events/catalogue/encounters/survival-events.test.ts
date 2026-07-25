@@ -173,9 +173,14 @@ describe("survival events", () => {
     ]);
 
     expect(resolution.changes).toContainEqual({
-      type: "use-item",
+      type: "consume-item",
+
       tributeId: tribute.id,
+
       itemInstanceId: map.id,
+
+      uses: 1,
+
       reason: "upside-down-map",
     });
   });

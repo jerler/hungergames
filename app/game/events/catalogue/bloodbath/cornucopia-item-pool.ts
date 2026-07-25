@@ -45,7 +45,23 @@ export const CORNUCOPIA_PACK_ITEM_POOL = [
     rarity: "common",
   },
   {
-    itemId: "rope",
+    itemId: "pillow",
+
+    rarity: "common",
+  },
+  {
+    itemId: "tarp",
+
+    rarity: "common",
+  },
+  {
+    itemId: "lighter",
+
+    rarity: "common",
+  },
+  {
+    itemId: "camouflage-paint",
+
     rarity: "common",
   },
 
@@ -82,6 +98,31 @@ export const CORNUCOPIA_PACK_ITEM_POOL = [
     itemId: "painkillers",
     rarity: "standard",
   },
+  {
+    itemId: "sleeping-bag",
+
+    rarity: "standard",
+  },
+  {
+    itemId: "thermal-blanket",
+
+    rarity: "standard",
+  },
+  {
+    itemId: "flint-stone",
+
+    rarity: "standard",
+  },
+  {
+    itemId: "bird-whistle",
+
+    rarity: "standard",
+  },
+  {
+    itemId: "binoculars",
+
+    rarity: "standard",
+  },
 
   // Specialized equipment and medicine
   {
@@ -106,6 +147,16 @@ export const CORNUCOPIA_PACK_ITEM_POOL = [
   },
   {
     itemId: "shield",
+    rarity: "uncommon",
+  },
+  {
+    itemId: "tent",
+
+    rarity: "uncommon",
+  },
+  {
+    itemId: "night-vision-goggles",
+
     rarity: "uncommon",
   },
 

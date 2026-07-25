@@ -38,13 +38,6 @@ export const GIFT_DEFINITIONS = [
   },
 
   {
-    id: "rope",
-    name: "Rope",
-
-    description: "A versatile survival and escape tool.",
-  },
-
-  {
     id: "matches",
     name: "Matches",
 
@@ -95,7 +88,6 @@ export const DEFAULT_GIFT_FREQUENCIES = {
   "bottled-water": "very-common",
   "med-kit": "uncommon",
   blanket: "common",
-  rope: "common",
   matches: "uncommon",
   knife: "uncommon",
   bow: "uncommon",

@@ -95,7 +95,7 @@ function createTestGame(seed: string): GameState {
 }
 
 function createReservationFixture(
-  targetItemDefinitionIds: readonly ItemDefinitionId[] = ["rope"],
+  targetItemDefinitionIds: readonly ItemDefinitionId[] = ["slingshot"],
 
   seed = "item-reservation-integration",
 ): ReservationFixture {
@@ -498,9 +498,9 @@ function requireTribute(state: GameState, tributeId: string): GameTribute {
 
 describe("cross-event item reservation safety", () => {
   it("prevents the old owner or a truce partner from using an item selected for theft", () => {
-    const fixture = createReservationFixture(["rope"]);
+    const fixture = createReservationFixture(["blanket"]);
 
-    const rope = requireItem(fixture.targetItems);
+    const blanket = requireItem(fixture.targetItems);
 
     const reservations = createRoundReservations();
 
@@ -510,14 +510,14 @@ describe("cross-event item reservation safety", () => {
 
     reserveResolution(theftSelection, theftResolution, reservations);
 
-    expect(reservations.itemInstanceIds.has(rope.id)).toBe(true);
+    expect(reservations.itemInstanceIds.has(blanket.id)).toBe(true);
 
     const ownerUseEvent = createItemEvent({
-      id: "owner-uses-stolen-rope",
+      id: "owner-uses-stolen-blanket",
 
       userTributeId: fixture.target.id,
 
-      itemDefinitionIds: ["rope"],
+      itemDefinitionIds: ["blanket"],
 
       itemAccess: "owned",
     });
@@ -535,11 +535,11 @@ describe("cross-event item reservation safety", () => {
     ).toBeNull();
 
     const borrowedUseEvent = createItemEvent({
-      id: "partner-borrows-stolen-rope",
+      id: "partner-borrows-stolen-blanket",
 
       userTributeId: fixture.borrower.id,
 
-      itemDefinitionIds: ["rope"],
+      itemDefinitionIds: ["blanket"],
 
       itemAccess: "accessible",
     });
@@ -558,7 +558,7 @@ describe("cross-event item reservation safety", () => {
   });
 
   it("prevents an item-use participant from becoming a later theft target", () => {
-    const fixture = createReservationFixture(["matches", "rope"]);
+    const fixture = createReservationFixture(["matches", "blanket"]);
 
     const matches = requireItem(fixture.targetItems, 0);
 
@@ -614,11 +614,11 @@ describe("cross-event item reservation safety", () => {
   });
 
   it("selects another target-owned item when one item is already reserved", () => {
-    const fixture = createReservationFixture(["matches", "rope"]);
+    const fixture = createReservationFixture(["matches", "blanket"]);
 
-    const [reservedMatches, availableRope] = fixture.targetItems;
+    const [reservedMatches, availableBlanket] = fixture.targetItems;
 
-    if (!reservedMatches || !availableRope) {
+    if (!reservedMatches || !availableBlanket) {
       throw new Error("Expected two target items.");
     }
 
@@ -632,15 +632,15 @@ describe("cross-event item reservation safety", () => {
 
     const theftSelection = requireSelection(selectTheft(fixture, reservations));
 
-    expect(theftSelection.itemsByRole.target[0]?.item.id).toBe(availableRope.id);
+    expect(theftSelection.itemsByRole.target[0]?.item.id).toBe(availableBlanket.id);
 
     expect(theftSelection.itemsByRole.target[0]?.item.id).not.toBe(reservedMatches.id);
   });
 
   it("prevents death loot from being stolen afterward from the original owner", () => {
-    const fixture = createReservationFixture(["rope"]);
+    const fixture = createReservationFixture(["blanket"]);
 
-    const rope = requireItem(fixture.targetItems);
+    const blanket = requireItem(fixture.targetItems);
 
     const reservations = createRoundReservations();
 
@@ -674,13 +674,13 @@ describe("cross-event item reservation safety", () => {
 
     expect(selectTheft(fixture, reservations)).toBeNull();
 
-    const ropeTransfers = getTransferChanges(fatalResolution.changes).filter(
-      (change) => change.itemInstanceId === rope.id,
+    const blanketTransfers = getTransferChanges(fatalResolution.changes).filter(
+      (change) => change.itemInstanceId === blanket.id,
     );
 
-    expect(ropeTransfers).toEqual([
+    expect(blanketTransfers).toEqual([
       expect.objectContaining({
-        itemInstanceId: rope.id,
+        itemInstanceId: blanket.id,
 
         fromTributeId: fixture.target.id,
 
@@ -692,9 +692,9 @@ describe("cross-event item reservation safety", () => {
   });
 
   it("prevents a stolen item from also entering the former owner's death loot", () => {
-    const fixture = createReservationFixture(["rope"]);
+    const fixture = createReservationFixture(["blanket"]);
 
-    const rope = requireItem(fixture.targetItems);
+    const blanket = requireItem(fixture.targetItems);
 
     const reservations = createRoundReservations();
 
@@ -718,13 +718,13 @@ describe("cross-event item reservation safety", () => {
 
     expect(fatalSelection).toBeNull();
 
-    const ropeTransfers = getTransferChanges(theftResolution.changes).filter(
-      (change) => change.itemInstanceId === rope.id,
+    const blanketTransfers = getTransferChanges(theftResolution.changes).filter(
+      (change) => change.itemInstanceId === blanket.id,
     );
 
-    expect(ropeTransfers).toEqual([
+    expect(blanketTransfers).toEqual([
       expect.objectContaining({
-        itemInstanceId: rope.id,
+        itemInstanceId: blanket.id,
 
         fromTributeId: fixture.target.id,
 
@@ -736,9 +736,9 @@ describe("cross-event item reservation safety", () => {
   });
 
   it("reserves the physical owner and item when a truce partner borrows equipment", () => {
-    const fixture = createReservationFixture(["rope"]);
+    const fixture = createReservationFixture(["blanket"]);
 
-    const rope = requireItem(fixture.targetItems);
+    const blanket = requireItem(fixture.targetItems);
 
     const reservations = createRoundReservations();
 
@@ -747,7 +747,7 @@ describe("cross-event item reservation safety", () => {
 
       userTributeId: fixture.borrower.id,
 
-      itemDefinitionIds: ["rope"],
+      itemDefinitionIds: ["blanket"],
 
       itemAccess: "accessible",
     });
@@ -784,15 +784,15 @@ describe("cross-event item reservation safety", () => {
 
     expect(reservations.tributeIds.has(fixture.target.id)).toBe(true);
 
-    expect(reservations.itemInstanceIds.has(rope.id)).toBe(true);
+    expect(reservations.itemInstanceIds.has(blanket.id)).toBe(true);
 
     expect(selectTheft(fixture, reservations)).toBeNull();
   });
 
   it("allows reusable stolen and borrowed items to be used again in a later round", () => {
-    const stolenFixture = createReservationFixture(["rope"]);
+    const stolenFixture = createReservationFixture(["blanket"]);
 
-    const stolenRope = requireItem(stolenFixture.targetItems);
+    const stolenBlanket = requireItem(stolenFixture.targetItems);
 
     const firstRoundReservations = createRoundReservations();
 
@@ -817,11 +817,11 @@ describe("cross-event item reservation safety", () => {
     const nextThief = requireTribute(stateAfterTheft, stolenFixture.thief.id);
 
     const nextRoundUseEvent = createItemEvent({
-      id: "use-stolen-rope-next-round",
+      id: "use-stolen-blanket-next-round",
 
       userTributeId: nextThief.id,
 
-      itemDefinitionIds: ["rope"],
+      itemDefinitionIds: ["blanket"],
 
       itemAccess: "owned",
     });
@@ -845,18 +845,18 @@ describe("cross-event item reservation safety", () => {
 
     expect(nextRoundSelection.itemsByRole.user[0]?.owner.id).toBe(nextThief.id);
 
-    expect(nextRoundSelection.itemsByRole.user[0]?.item.id).toBe(stolenRope.id);
+    expect(nextRoundSelection.itemsByRole.user[0]?.item.id).toBe(stolenBlanket.id);
 
-    const borrowedFixture = createReservationFixture(["rope"]);
+    const borrowedFixture = createReservationFixture(["blanket"]);
 
-    const borrowedRope = requireItem(borrowedFixture.targetItems);
+    const borrowedBlanket = requireItem(borrowedFixture.targetItems);
 
     const borrowEvent = createItemEvent({
-      id: "borrow-reusable-rope",
+      id: "borrow-reusable-blanket",
 
       userTributeId: borrowedFixture.borrower.id,
 
-      itemDefinitionIds: ["rope"],
+      itemDefinitionIds: ["blanket"],
 
       itemAccess: "accessible",
     });
@@ -889,7 +889,7 @@ describe("cross-event item reservation safety", () => {
 
     reserveResolution(firstBorrowSelection, firstBorrowResolution, borrowReservations);
 
-    expect(borrowReservations.itemInstanceIds.has(borrowedRope.id)).toBe(true);
+    expect(borrowReservations.itemInstanceIds.has(borrowedBlanket.id)).toBe(true);
 
     const laterBorrowSelection = requireSelection(
       selectDefinition(
@@ -908,7 +908,7 @@ describe("cross-event item reservation safety", () => {
       ),
     );
 
-    expect(laterBorrowSelection.itemsByRole.user[0]?.item.id).toBe(borrowedRope.id);
+    expect(laterBorrowSelection.itemsByRole.user[0]?.item.id).toBe(borrowedBlanket.id);
   });
 
   it("never commits one physical item in two different events across seeded ordinary rounds", () => {
@@ -916,7 +916,7 @@ describe("cross-event item reservation safety", () => {
       const seed = `cross-event-reservation-${index}`;
 
       const fixture = createReservationFixture(
-        ["rope", "matches", "map"],
+        ["blanket", "matches", "map"],
 
         seed,
       );

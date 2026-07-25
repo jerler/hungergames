@@ -565,7 +565,7 @@ describe("Bloodbath conflict inventory", () => {
     const item = createInventoryItemInstance(
       "conflict-fixture",
       originalDefender.id,
-      "rope",
+      "blanket",
       DAY_ONE,
     );
 

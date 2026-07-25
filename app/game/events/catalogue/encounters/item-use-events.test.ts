@@ -8,7 +8,6 @@ import {
 import {
   getAcquiredItemIds,
   getAppliedStatusIds,
-  getAppliedStatuses,
   hasSurvivalCredit,
   requireEventDefinition,
   selectAndResolveEvent,
@@ -87,17 +86,6 @@ describe("item-use event content", () => {
     expect(getAcquiredItemIds(resolution)).toEqual(["wild-fruit-and-berries", "water"]);
 
     expect(hasSurvivalCredit(resolution, tribute.id)).toBe(true);
-  });
-
-  it("exceptional camouflage applies strong hidden status", () => {
-    const { resolution } = resolveItemEvent("camouflage-catastrophe", "camouflage-net", 0.999);
-
-    expect(getAppliedStatuses(resolution)).toEqual([
-      expect.objectContaining({
-        definitionId: "hidden",
-        severity: 2,
-      }),
-    ]);
   });
 
   it("renders tribute pronouns in item-use text", () => {

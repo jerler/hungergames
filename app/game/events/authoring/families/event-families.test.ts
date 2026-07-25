@@ -334,12 +334,15 @@ describe("createItemStatEvent", () => {
   });
 
   it("automatically uses reusable items", () => {
-    const tribute = withItem(createAuthoringTestTribute(), "map");
+    const tribute = withItem(createAuthoringTestTribute(), "binoculars");
+
     const state = createAuthoringTestGame([tribute]);
 
     const definition = createItemStatEvent("automatic-reusable-use", {
-      itemId: "map",
+      itemId: "binoculars",
+
       check: brains(3),
+
       outcomes: createStatOutcomes(),
     });
 
@@ -347,8 +350,11 @@ describe("createItemStatEvent", () => {
 
     expect(resolution.changes).toContainEqual({
       type: "use-item",
+
       tributeId: tribute.id,
+
       itemInstanceId: tribute.inventory[0].id,
+
       reason: "automatic-reusable-use",
     });
   });
@@ -375,18 +381,22 @@ describe("createItemStatEvent", () => {
   });
 
   it("supports outcome-specific item use", () => {
-    const tribute = withItem(createAuthoringTestTribute(), "map");
+    const tribute = withItem(createAuthoringTestTribute(), "binoculars");
+
     const state = createAuthoringTestGame([tribute]);
 
     const definition = createItemStatEvent("outcome-specific-item-use", {
-      itemId: "map",
+      itemId: "binoculars",
+
       check: brains(3),
+
       outcomes: createStatOutcomes(),
 
       itemEffectOutcomes: ["success", "exceptionalSuccess"],
     });
 
     const failure = selectAndResolve(definition, state, tribute, 0.2);
+
     const success = selectAndResolve(definition, state, tribute, 0.6);
 
     expect(failure.changes.some((change) => change.type === "use-item")).toBe(false);

@@ -9,7 +9,7 @@ import {
   createNaturalResourceEvent,
   hasItem,
   randomResult,
-  recordRequiredItemUse,
+  consumeRequiredItem,
   result,
   statCheck,
   survived,
@@ -40,7 +40,7 @@ export const SURVIVAL_EVENTS = [
             `${tribute.name} follows ${tribute.pronouns.possessiveAdjective} map for hours before realizing ${tribute.pronouns.subject} ${tribute.pronouns.havePresent} been holding it upside down.`,
           effects: [
             applyStatus("tribute", "disoriented", 2),
-            recordRequiredItemUse("tribute", { reason: "upside-down-map" }),
+            consumeRequiredItem("tribute", { reason: "upside-down-map" }),
           ],
         }),
         failure: result({
@@ -48,7 +48,7 @@ export const SURVIVAL_EVENTS = [
             `${tribute.name} misreads ${tribute.pronouns.possessiveAdjective} map and becomes hopelessly turned around.`,
           effects: [
             applyStatus("tribute", "disoriented", 1),
-            recordRequiredItemUse("tribute", { reason: "upside-down-map" }),
+            consumeRequiredItem("tribute", { reason: "upside-down-map" }),
           ],
         }),
         success: randomResult(
@@ -58,7 +58,7 @@ export const SURVIVAL_EVENTS = [
             effects: [
               acquireNaturalResource("tribute", "wild-fruit-and-berries"),
               survived("tribute"),
-              recordRequiredItemUse("tribute", { reason: "upside-down-map" }),
+              consumeRequiredItem("tribute", { reason: "upside-down-map" }),
             ],
           }),
           result({
@@ -67,7 +67,7 @@ export const SURVIVAL_EVENTS = [
             effects: [
               acquireNaturalResource("tribute", "water"),
               survived("tribute"),
-              recordRequiredItemUse("tribute", { reason: "upside-down-map" }),
+              consumeRequiredItem("tribute", { reason: "upside-down-map" }),
             ],
           }),
         ),
@@ -77,7 +77,7 @@ export const SURVIVAL_EVENTS = [
           effects: [
             applyStatus("tribute", "hidden", 2),
             survived("tribute"),
-            recordRequiredItemUse("tribute", { reason: "upside-down-map" }),
+            consumeRequiredItem("tribute", { reason: "upside-down-map" }),
           ],
         }),
       }),

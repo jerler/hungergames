@@ -40,14 +40,28 @@ export type ItemDefinitionId =
   | "burn-kit"
   | "antidote"
 
-  // Shelter and utility
+  // Comfort
   | "blanket"
+  | "sleeping-bag"
+  | "thermal-blanket"
+  | "pillow"
+
+  // Shelter and fire
+  | "tarp"
+  | "tent"
   | "matches"
-  | "rope"
+  | "lighter"
+  | "flint-stone"
+
+  // Navigation and utility
   | "map"
   | "foraging-guidebook"
-  | "trap-kit"
+  | "bird-whistle"
+  | "binoculars"
   | "camouflage-net"
+  | "camouflage-paint"
+  | "night-vision-goggles"
+  | "trap-kit"
   | "fishing-gear"
 
   // Equipment
@@ -148,8 +162,14 @@ export interface ItemRestCapability {
 
 export interface ItemContextualCapabilities {
   nightAwarenessBonus?: number;
+
+  /**
+   * Multiplies hostile target-selection weight only
+   * during a night event tagged as an ambush.
+   */
+  nightAmbushTargetWeightMultiplier?: number;
+
   hostileDefenseBonus?: number;
-  hostileTargetWeightMultiplier?: number;
 }
 
 export type ItemMinimumStats = Partial<Record<keyof TributeStats, TributeStatValue>>;

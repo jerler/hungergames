@@ -513,7 +513,76 @@ describe("truce engine", () => {
 
     const members = game.tributes.slice(0, 3);
 
-    const itemIds = ["water", "wild-fruit-and-berries", "med-kit", "blanket", "rope"] as const;
+    const itemIds = [
+      "water",
+
+      // Safe natural food
+      "wild-fruit-and-berries",
+      "mushrooms",
+      "eggs",
+      "rabbit",
+      "chicken",
+      "fish",
+
+      // Harmful natural forage
+      "hallucinogenic-berries",
+      "poison-berries",
+      "hallucinogenic-mushrooms",
+      "poison-mushrooms",
+
+      // Natural utility
+      "kindling",
+
+      // Manufactured food and drinks
+      "soup",
+      "burger-and-fries",
+      "pizza-box",
+      "bottled-water",
+      "coffee",
+      "coca-cola",
+      "energy-drink",
+      "hot-chocolate",
+      "herbal-tea",
+
+      // Medical supplies
+      "med-kit",
+      "bandages",
+      "painkillers",
+      "burn-kit",
+      "antidote",
+
+      // Comfort
+      "blanket",
+      "sleeping-bag",
+      "thermal-blanket",
+      "pillow",
+
+      // Shelter and fire
+      "tarp",
+      "tent",
+      "matches",
+      "lighter",
+      "flint-stone",
+
+      // Navigation and utility
+      "map",
+      "foraging-guidebook",
+      "bird-whistle",
+      "binoculars",
+      "camouflage-net",
+      "camouflage-paint",
+      "night-vision-goggles",
+      "trap-kit",
+      "fishing-gear",
+
+      // Equipment
+      "knife",
+      "spear",
+      "bow",
+      "shield",
+      "axe",
+      "slingshot",
+    ] as const;
 
     const acquiredItems = itemIds.map((itemId, index) =>
       createInventoryItemInstance(`setup-item-${index}`, members[0].id, itemId, DAY_ONE),

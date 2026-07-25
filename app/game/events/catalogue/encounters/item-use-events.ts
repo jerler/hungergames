@@ -130,38 +130,4 @@ export const ITEM_USE_EVENTS = [
       }),
     },
   }),
-
-  createItemStatEvent("camouflage-catastrophe", {
-    itemId: "camouflage-net",
-    check: brains(3),
-    tags: ["item", "tool", "status"],
-    periods: ["day", "night"],
-    weight: 3.5,
-
-    outcomes: {
-      criticalFailure: result({
-        text: ({ tribute }) =>
-          `${tribute.name} becomes completely tangled in ${tribute.pronouns.possessiveAdjective} camouflage net and loses all sense of direction.`,
-        effects: [applyStatus("tribute", "disoriented", 1)],
-      }),
-
-      failure: result({
-        text: ({ tribute }) =>
-          `${tribute.name} hangs ${tribute.pronouns.possessiveAdjective} camouflage net backwards, creating an extremely visible tribute-shaped landmark.`,
-        effects: [applyStatus("tribute", "hunted", 1)],
-      }),
-
-      success: result({
-        text: ({ tribute }) =>
-          `${tribute.name} uses ${tribute.pronouns.possessiveAdjective} camouflage net to disappear into the surrounding terrain.`,
-        effects: [applyStatus("tribute", "hidden", 1)],
-      }),
-
-      exceptionalSuccess: result({
-        text: ({ tribute }) =>
-          `${tribute.name} constructs an almost perfect hideout with ${tribute.pronouns.possessiveAdjective} camouflage net.`,
-        effects: [applyStatus("tribute", "hidden", 2)],
-      }),
-    },
-  }),
 ] satisfies readonly EventDefinition[];

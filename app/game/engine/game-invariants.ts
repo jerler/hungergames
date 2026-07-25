@@ -36,12 +36,14 @@ const PREPARATION_MECHANICS = new Set([
   "food-consumption",
   "night-rest-preparation",
   "morning-rest-resolution",
+  "camouflage-preparation",
 ]);
 
 const ITEM_PREPARATION_MECHANICS = new Set([
   "medical-treatment",
   "hydration-consumption",
   "food-consumption",
+  "camouflage-preparation",
 ]);
 
 function assert(condition: unknown, message: string): asserts condition {

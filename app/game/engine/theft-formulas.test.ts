@@ -349,11 +349,11 @@ describe("theft weighting formulas", () => {
         luck: 4,
       },
 
-      itemDefinitionIds: ["rope"],
+      itemDefinitionIds: ["blanket"],
     });
 
-    const thiefWithoutRope = createTestTribute({
-      id: "thief-without-rope",
+    const thiefWithoutBlanket = createTestTribute({
+      id: "thief-without-blanket",
 
       stats: {
         brains: 2,
@@ -362,8 +362,8 @@ describe("theft weighting formulas", () => {
       },
     });
 
-    const thiefWithRope = createTestTribute({
-      id: "thief-with-rope",
+    const thiefWithBlanket = createTestTribute({
+      id: "thief-with-blanket",
 
       stats: {
         brains: 2,
@@ -372,14 +372,14 @@ describe("theft weighting formulas", () => {
       },
 
       /*
-       * Rope provides no combat bonus, so the only
+       * Blanket provides no combat bonus, so the only
        * changed factor is whether the item is novel.
        */
-      itemDefinitionIds: ["rope"],
+      itemDefinitionIds: ["blanket"],
     });
 
-    expect(getTheftTargetWeight(target, thiefWithoutRope)).toBeGreaterThan(
-      getTheftTargetWeight(target, thiefWithRope),
+    expect(getTheftTargetWeight(target, thiefWithoutBlanket)).toBeGreaterThan(
+      getTheftTargetWeight(target, thiefWithBlanket),
     );
   });
 

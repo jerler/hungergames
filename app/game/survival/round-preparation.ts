@@ -24,6 +24,11 @@ import type {
 } from "~/game/types/game-state";
 import { findMedicalTreatmentPlan, type MedicalTreatmentPlan } from "./medical-treatment-planner";
 import type { NightRestQuality, SurvivalNeed } from "./survival-schema";
+import {
+  findCamouflagePreparationPlan,
+  resolveCamouflagePreparationAttempt,
+  type CamouflagePreparationPlan,
+} from "./camouflage-preparation";
 
 interface NightRestAttempt {
   outcome: StatCheckOutcome | null;
@@ -399,6 +404,121 @@ function applyPreparationEvent(preparedRound: PreparedRound, event: ResolvedEven
   };
 }
 
+function createCamouflagePreparationText(
+  tribute: GameTribute,
+  plan: CamouflagePreparationPlan,
+  outcome: StatCheckOutcome,
+): string {
+  const itemPhrase = getItemPhrase(tribute, plan.selection);
+
+  switch (outcome) {
+    case "critical-failure":
+      return (
+        `${tribute.snapshot.name} tries to use ` +
+        `${itemPhrase} for camouflage, but becomes ` +
+        "hopelessly disoriented during the attempt."
+      );
+
+    case "failure":
+      return (
+        `${tribute.snapshot.name} applies ` +
+        `${itemPhrase}, but the camouflage fails to ` +
+        "match the surrounding terrain."
+      );
+
+    case "success":
+      return (
+        `${tribute.snapshot.name} uses ` + `${itemPhrase} to blend into the surrounding terrain.`
+      );
+
+    case "exceptional-success":
+      return (
+        `${tribute.snapshot.name} uses ` +
+        `${itemPhrase} to disappear almost completely into the arena.`
+      );
+  }
+}
+
+function createCamouflagePreparationEvent(
+  state: GameState,
+  round: RoundReference,
+  tribute: GameTribute,
+  plan: CamouflagePreparationPlan,
+): ResolvedEvent {
+  const eventId = createPreparationEventId(round, "camouflage-preparation", tribute.id);
+
+  const attempt = resolveCamouflagePreparationAttempt({
+    eventId,
+    round,
+
+    random: createPreparationRandom(state.seed, round, "camouflage-preparation", tribute.id),
+
+    tribute,
+    plan,
+  });
+
+  return {
+    id: eventId,
+
+    definitionId: "automatic-camouflage-preparation",
+
+    kind: "preparation",
+
+    resolutionMode: "standard",
+
+    round,
+
+    participantTributeIds: getEventParticipantIds(tribute, plan.selection),
+
+    text: createCamouflagePreparationText(tribute, plan, attempt.outcome),
+
+    changes: attempt.changes,
+
+    preparation: {
+      mechanic: "camouflage-preparation",
+
+      actingTributeId: tribute.id,
+
+      itemInstanceId: plan.selection.item.id,
+
+      itemDefinitionId: plan.selection.item.definitionId,
+
+      itemOwnerTributeId: plan.selection.owner.id,
+
+      usesRemainingAfter: getUsesRemainingAfter(plan.selection),
+
+      affectedStatusIds: attempt.affectedStatusIds,
+    },
+  };
+}
+
+function prepareCamouflage(preparedRound: PreparedRound, round: RoundReference): PreparedRound {
+  let nextPreparedRound = preparedRound;
+
+  const tributeIds = getStableLivingTributeIds(nextPreparedRound.state);
+
+  for (const tributeId of tributeIds) {
+    const tribute = requireLivingTribute(nextPreparedRound.state, tributeId);
+
+    const plan = findCamouflagePreparationPlan(
+      nextPreparedRound.state,
+      tribute,
+
+      nextPreparedRound.committedItemInstanceIds,
+    );
+
+    if (!plan) {
+      continue;
+    }
+
+    const event = createCamouflagePreparationEvent(nextPreparedRound.state, round, tribute, plan);
+
+    nextPreparedRound = applyPreparationEvent(nextPreparedRound, event);
+  }
+
+  return nextPreparedRound;
+}
+
 function prepareAutomaticItemAction(
   preparedRound: PreparedRound,
   round: RoundReference,
@@ -476,6 +596,7 @@ function compareRestSelections(
     Number(Boolean(firstRest.check)) - Number(Boolean(secondRest.check)) ||
     (firstRest.check?.difficulty ?? 0) - (secondRest.check?.difficulty ?? 0) ||
     Number(first.owner.id !== actingTribute.id) - Number(second.owner.id !== actingTribute.id) ||
+    Number(first.item.usesRemaining !== null) - Number(second.item.usesRemaining !== null) ||
     firstDefinition.id.localeCompare(secondDefinition.id) ||
     first.item.id.localeCompare(second.item.id)
   );
@@ -863,8 +984,10 @@ export function prepareRound(state: GameState, round: RoundReference): PreparedR
   }
 
   if (round.period === "day") {
-    return prepareMorningRestResolution(preparedRound, round);
+    preparedRound = prepareMorningRestResolution(preparedRound, round);
+  } else {
+    preparedRound = prepareNightRest(preparedRound, round);
   }
 
-  return prepareNightRest(preparedRound, round);
+  return prepareCamouflage(preparedRound, round);
 }

@@ -174,4 +174,16 @@ describe("loadGameState", () => {
 
     expect(() => loadGameState(schemaFourGame)).toThrow(/schema version 4/i);
   });
+
+  it("rejects schema-5 saves from before the Phase 9 utility migration", () => {
+    const schemaFiveGame = {
+      ...createGame(),
+
+      schemaVersion: 5,
+    };
+
+    expect(() => loadGameState(schemaFiveGame)).toThrow(UnsupportedGameStateSchemaError);
+
+    expect(() => loadGameState(schemaFiveGame)).toThrow(/schema version 5/i);
+  });
 });

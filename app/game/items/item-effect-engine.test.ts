@@ -99,24 +99,23 @@ describe("item effect compilation", () => {
     expect(removedStatusIds).not.toContain(actingTribute.statuses[2].id);
   });
 
-  it("records reusable effect items without consuming them", () => {
+  it("rejects utility items without generic active use effects", () => {
     const tribute = createAuthoringTestTribute();
 
     const map = createInventoryItemInstance("map-event", tribute.id, "map", ROUND);
 
-    const changes = compileItemUseEffects({
-      eventId: "use-map",
-      round: ROUND,
+    expect(() =>
+      compileItemUseEffects({
+        eventId: "use-map",
 
-      actingTribute: tribute,
-      owner: tribute,
-      item: map,
-    });
+        round: ROUND,
 
-    expect(changes.at(-1)).toMatchObject({
-      type: "use-item",
-      tributeId: tribute.id,
-      itemInstanceId: map.id,
-    });
+        actingTribute: tribute,
+
+        owner: tribute,
+
+        item: map,
+      }),
+    ).toThrow('Item "map" does not define active use effects.');
   });
 });

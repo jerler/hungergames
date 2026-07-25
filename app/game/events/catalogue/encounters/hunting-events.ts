@@ -81,6 +81,32 @@ export const HUNTING_EVENTS = [
     },
   }),
 
+  createHuntedFoodEvent("bird-whistle-nest-search", {
+    foodId: "eggs",
+
+    difficulty: 2,
+
+    requiredEquipmentId: "bird-whistle",
+
+    tags: ["tool", "environment"],
+
+    weight: 2.5,
+
+    text: {
+      criticalFailure: ({ tribute }) =>
+        `${tribute.name} imitates an arena bird so convincingly that an enraged parent attacks and badly injures ${tribute.pronouns.object}.`,
+
+      failure: ({ tribute }) =>
+        `${tribute.name} spends hours answering increasingly suspicious birds with a whistle and returns exhausted without finding a nest.`,
+
+      success: ({ tribute }) =>
+        `${tribute.name} uses a bird whistle to locate a hidden nest and gathers several eggs.`,
+
+      exceptionalSuccess: ({ tribute }) =>
+        `${tribute.name} perfectly imitates the local birds, discovers a large concealed nest, and eats exceptionally well.`,
+    },
+  }),
+
   createHuntedFoodEvent("raids-nest-for-eggs", {
     foodId: "eggs",
 

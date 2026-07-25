@@ -227,8 +227,12 @@ export const ITEM_CATALOGUE = [
 
       check: {
         stat: "brains-or-luck",
+        difficulty: 4,
 
-        difficulty: 3,
+        criticalFailureStatus: {
+          statusId: "burned",
+          severity: 1,
+        },
       },
     },
   },
@@ -451,23 +455,136 @@ export const ITEM_CATALOGUE = [
     useEffects: [itemRemovesStatuses("poisoned")],
   },
 
-  // Shelter and utility
+  // Comfort
   {
     id: "blanket",
     label: "Blanket",
-    description: "A warm blanket that makes resting in the arena more comfortable.",
-    origin: "manufactured",
-    tags: ["shelter", "comfort", "tool"],
 
-    survivalBonus: 0.35,
+    description: "A warm blanket that makes resting in the arena more comfortable.",
+
+    origin: "manufactured",
+
+    tags: ["shelter", "comfort", "tool"],
 
     rest: {
       quality: "comfortable",
     },
   },
+
+  {
+    id: "sleeping-bag",
+    label: "Sleeping bag",
+
+    description: "A reusable sleeping bag that provides a comfortable place to rest.",
+
+    origin: "manufactured",
+
+    tags: ["shelter", "comfort", "tool"],
+
+    rest: {
+      quality: "comfortable",
+    },
+  },
+
+  {
+    id: "thermal-blanket",
+    label: "Thermal blanket",
+
+    description:
+      "An insulated emergency blanket that preserves warmth and provides comfortable rest.",
+
+    origin: "manufactured",
+
+    tags: ["shelter", "comfort", "tool"],
+
+    rest: {
+      quality: "comfortable",
+    },
+  },
+
+  {
+    id: "pillow",
+    label: "Pillow",
+
+    description:
+      "A surprisingly luxurious pillow that makes an otherwise miserable night more comfortable.",
+
+    origin: "manufactured",
+
+    tags: ["comfort", "tool"],
+
+    rest: {
+      quality: "comfortable",
+    },
+  },
+
+  // Shelter and fire
+  {
+    id: "tent",
+    label: "Tent",
+
+    description: "A reusable arena tent that reliably protects its occupant from the elements.",
+
+    origin: "manufactured",
+
+    tags: ["shelter", "tool"],
+
+    rest: {
+      quality: "sheltered",
+    },
+  },
+
+  {
+    id: "tarp",
+    label: "Tarp",
+
+    description: "A reusable waterproof tarp that can be arranged into a strong temporary shelter.",
+
+    origin: "manufactured",
+
+    tags: ["shelter", "tool"],
+
+    rest: {
+      quality: "sheltered",
+
+      check: {
+        stat: "brains-or-luck",
+        difficulty: 2,
+      },
+    },
+  },
+
+  {
+    id: "lighter",
+    label: "Lighter",
+
+    description: "A compact lighter with enough fuel to start three arena fires.",
+
+    origin: "manufactured",
+
+    tags: ["fire", "shelter", "tool"],
+
+    maxUses: 3,
+
+    rest: {
+      quality: "sheltered",
+
+      check: {
+        stat: "brains-or-luck",
+        difficulty: 1,
+
+        criticalFailureStatus: {
+          statusId: "burned",
+          severity: 1,
+        },
+      },
+    },
+  },
+
   {
     id: "matches",
     label: "Matches",
+
     description: "A single book of matches for starting a fire and improving a night camp.",
 
     origin: "manufactured",
@@ -475,8 +592,6 @@ export const ITEM_CATALOGUE = [
     tags: ["fire", "shelter", "tool"],
 
     maxUses: 1,
-
-    survivalBonus: 0.2,
 
     rest: {
       quality: "sheltered",
@@ -491,35 +606,53 @@ export const ITEM_CATALOGUE = [
         },
       },
     },
+  },
 
-    contextual: {
-      nightAwarenessBonus: 0.35,
+  {
+    id: "flint-stone",
+    label: "Flint and stone",
+
+    description: "A reusable fire-starting set that requires patience and careful handling.",
+
+    origin: "manufactured",
+
+    tags: ["fire", "shelter", "tool"],
+
+    rest: {
+      quality: "sheltered",
+
+      check: {
+        stat: "brains-or-luck",
+        difficulty: 3,
+
+        criticalFailureStatus: {
+          statusId: "burned",
+          severity: 1,
+        },
+      },
     },
   },
-  {
-    id: "rope",
-    label: "Rope",
-    description: "A versatile tool for climbing and crossing hazards.",
-    origin: "manufactured",
-    tags: ["tool"],
-    survivalBonus: 0.25,
-    foragingBonus: 0.2,
-  },
+
+  // Navigation and utility
   {
     id: "map",
     label: "Arena map",
+
     description:
-      "A partial map of the arena that improves navigation and helps a disoriented tribute recover.",
+      "A partial one-use map that can guide its reader toward natural resources or a concealed route.",
+
     origin: "manufactured",
+
     tags: ["tool", "navigation"],
+
+    maxUses: 1,
+
     awarenessBonus: 0.45,
     foragingBonus: 0.35,
-
-    useEffects: [itemRemovesStatuses("disoriented")],
   },
+
   {
     id: "foraging-guidebook",
-
     label: "Foraging guidebook",
 
     description:
@@ -531,41 +664,100 @@ export const ITEM_CATALOGUE = [
 
     foragingBonus: 0.5,
   },
+
+  {
+    id: "bird-whistle",
+    label: "Bird whistle",
+
+    description: "A reusable whistle capable of imitating arena birds and revealing nearby nests.",
+
+    origin: "manufactured",
+
+    tags: ["tool", "hunting"],
+  },
+
+  {
+    id: "binoculars",
+    label: "Binoculars",
+
+    description:
+      "Reusable binoculars that help a tribute observe distant threats and opportunities.",
+
+    origin: "manufactured",
+
+    tags: ["tool", "navigation"],
+
+    awarenessBonus: 0.6,
+  },
+
   {
     id: "camouflage-net",
     label: "Camouflage net",
-    description:
-      "A portable camouflage net that improves concealment and helps a hunted tribute lose their pursuer.",
-    origin: "manufactured",
-    tags: ["tool", "shelter", "camouflage"],
-    survivalBonus: 0.5,
-    awarenessBonus: 0.1,
 
-    useEffects: [itemRemovesStatuses("hunted"), itemGrantsStatus("hidden", 2)],
+    description:
+      "A reusable net that can be actively arranged to conceal a tribute within the surrounding terrain.",
+
+    origin: "manufactured",
+
+    tags: ["tool", "camouflage"],
+  },
+
+  {
+    id: "camouflage-paint",
+    label: "Camouflage paint",
+
+    description: "A single-use supply of paint for disguising exposed skin and equipment.",
+
+    origin: "manufactured",
+
+    tags: ["tool", "camouflage"],
+
+    maxUses: 1,
+  },
+
+  {
+    id: "night-vision-goggles",
+    label: "Night-vision goggles",
+
+    description:
+      "Reusable goggles that improve awareness in darkness and make nighttime ambushes easier to detect.",
+
+    origin: "manufactured",
+
+    tags: ["tool", "navigation"],
 
     contextual: {
-      hostileTargetWeightMultiplier: 0.5,
+      nightAwarenessBonus: 0.75,
+      nightAmbushTargetWeightMultiplier: 0.55,
     },
   },
+
   {
     id: "trap-kit",
     label: "Trap kit",
-    description:
-      "Wire, hooks, triggers, and other components for hunting or constructing arena traps.",
+
+    description: "Wire, hooks, and triggers for constructing one arena hunting trap.",
+
     origin: "manufactured",
+
     tags: ["tool", "trap", "hunting"],
-    maxUses: 3,
+
+    maxUses: 1,
 
     awarenessBonus: 0.2,
     foragingBonus: 0.55,
   },
+
   {
     id: "fishing-gear",
     label: "Fishing gear",
-    description:
-      "A compact fishing kit that greatly improves the tribute's ability to gather food near water.",
+
+    description: "A compact three-use fishing kit for gathering food near water.",
+
     origin: "manufactured",
+
     tags: ["tool", "fishing", "hunting"],
+
     maxUses: 3,
 
     survivalBonus: 0.15,

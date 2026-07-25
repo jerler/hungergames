@@ -13,6 +13,7 @@ const EVENT_TAGS = new Set([
   "survival",
   "hazard",
   "combat",
+  "ambush",
   "environment",
   "weapon",
   "tool",

@@ -47,15 +47,29 @@ const MANUFACTURED_ITEM_IDS = [
   "burn-kit",
   "antidote",
 
-  // Shelter and utility
+  // Comfort
   "blanket",
+  "sleeping-bag",
+  "thermal-blanket",
+  "pillow",
+
+  // Shelter and fire
+  "tarp",
+  "tent",
   "matches",
-  "rope",
+  "lighter",
+  "flint-stone",
+
+  // Navigation and utility
   "map",
-  "camouflage-net",
-  "fishing-gear",
-  "trap-kit",
   "foraging-guidebook",
+  "bird-whistle",
+  "binoculars",
+  "camouflage-net",
+  "camouflage-paint",
+  "night-vision-goggles",
+  "trap-kit",
+  "fishing-gear",
 
   // Equipment
   "shield",
@@ -159,31 +173,6 @@ describe("item catalogue treatments", () => {
     });
   });
 
-  it("defines data-driven item effects", () => {
-    expect(getItemDefinition("water").useEffects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: "satisfy-need",
-          need: "hydration",
-        }),
-      ]),
-    );
-
-    expect(getItemDefinition("med-kit").useEffects).toContainEqual({
-      type: "remove-medical-statuses",
-    });
-
-    expect(getItemDefinition("camouflage-net").useEffects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: "grant-status",
-          statusId: "hidden",
-          severity: 2,
-        }),
-      ]),
-    );
-  });
-
   it("presents natural water as fresh water", () => {
     expect(getItemDefinition("water")).toMatchObject({
       label: "Fresh water",
@@ -267,7 +256,7 @@ describe("item catalogue treatments", () => {
         check: {
           stat: "brains-or-luck",
 
-          difficulty: 3,
+          difficulty: 4,
         },
       },
     });
@@ -316,17 +305,19 @@ describe("item catalogue treatments", () => {
   });
 
   it("defines only the planned contextual capabilities", () => {
-    expect(getItemDefinition("matches").contextual).toEqual({
-      nightAwarenessBonus: 0.35,
-    });
+    expect(getItemDefinition("night-vision-goggles").contextual).toEqual({
+      nightAwarenessBonus: 0.75,
 
-    expect(getItemDefinition("camouflage-net").contextual).toEqual({
-      hostileTargetWeightMultiplier: 0.5,
+      nightAmbushTargetWeightMultiplier: 0.55,
     });
 
     expect(getItemDefinition("shield").contextual).toEqual({
       hostileDefenseBonus: 0.75,
     });
+
+    expect(getItemDefinition("matches").contextual).toBeUndefined();
+
+    expect(getItemDefinition("camouflage-net").contextual).toBeUndefined();
   });
 
   it("distinguishes reusable and limited-use items", () => {
@@ -343,5 +334,13 @@ describe("item catalogue treatments", () => {
     expect(getItemDefinition("spear").minimumStats).toEqual({
       brawn: 2,
     });
+  });
+
+  it("removes rope and defers smoke bombs", () => {
+    const itemIds = ITEM_CATALOGUE.map(({ id }) => id);
+
+    expect(itemIds).not.toContain("rope");
+
+    expect(itemIds).not.toContain("smoke-bomb");
   });
 });

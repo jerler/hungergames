@@ -18,9 +18,15 @@ export const COMBAT_EVENTS = [
 
   createWeaponAttackEvent("knife-ambush", {
     weaponId: "knife",
+
     causeLabel: "Knifed",
+
+    tags: ["ambush"],
+
     periods: ["day", "night"],
+
     weight: 2.5,
+
     text: ({ killer, victim }) =>
       `${killer.name} catches ${victim.name} by surprise and kills ${victim.pronouns.object} with a knife.`,
   }),

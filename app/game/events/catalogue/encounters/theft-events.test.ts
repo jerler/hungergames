@@ -137,7 +137,7 @@ function createTheftFixture({
 
   thiefItemDefinitionIds = [],
 
-  targetItemDefinitionIds = ["rope"],
+  targetItemDefinitionIds = ["blanket"],
 
   targetItemUsesRemaining = [],
 
@@ -360,7 +360,7 @@ function createResolutionFixture(options: TheftFixtureOptions = {}): TheftFixtur
       luck: 2,
     },
 
-    targetItemDefinitionIds: ["rope"],
+    targetItemDefinitionIds: ["blanket"],
 
     ...options,
   });
@@ -480,7 +480,7 @@ describe("theft participant selection", () => {
 
   it("does not select a target whose only item belongs to a truce partner", () => {
     const fixture = createTheftFixture({
-      targetItemDefinitionIds: ["rope"],
+      targetItemDefinitionIds: ["blanket"],
 
       putTargetItemsOnPartner: true,
     });
@@ -508,7 +508,7 @@ describe("theft participant selection", () => {
 
       /*
        * This produces a 0.45 combat-score advantage.
-       * Rope does not add a combat bonus.
+       * blanket does not add a combat bonus.
        */
       targetStats: {
         brains: 4,
@@ -516,7 +516,7 @@ describe("theft participant selection", () => {
         luck: 4,
       },
 
-      targetItemDefinitionIds: ["rope"],
+      targetItemDefinitionIds: ["blanket"],
     });
 
     expect(selectTheftParticipants(fixture)).toBeNull();
@@ -540,7 +540,7 @@ describe("theft participant selection", () => {
         luck: 3,
       },
 
-      targetItemDefinitionIds: ["rope"],
+      targetItemDefinitionIds: ["blanket"],
     });
 
     const selection = selectTheftParticipants(fixture);
@@ -560,7 +560,7 @@ describe("theft participant selection", () => {
 
   it("does not select a target item already reserved for the round", () => {
     const fixture = createTheftFixture({
-      targetItemDefinitionIds: ["rope"],
+      targetItemDefinitionIds: ["blanket"],
     });
 
     expect(
@@ -576,7 +576,7 @@ describe("theft participant selection", () => {
 
   it("selects another owned item when the target's first item is reserved", () => {
     const fixture = createTheftFixture({
-      targetItemDefinitionIds: ["rope", "map"],
+      targetItemDefinitionIds: ["blanket", "map"],
     });
 
     const [reservedItem, availableItem] = fixture.targetItems;
@@ -610,7 +610,7 @@ describe("theft participant selection", () => {
 
   it("returns one thief, one target, and a target-owned item", () => {
     const fixture = createTheftFixture({
-      targetItemDefinitionIds: ["rope"],
+      targetItemDefinitionIds: ["blanket"],
     });
 
     const selection = selectTheftParticipants(fixture);
@@ -713,7 +713,7 @@ describe("theft resolution", () => {
         luck: 1,
       },
 
-      targetItemDefinitionIds: ["rope"],
+      targetItemDefinitionIds: ["blanket"],
     }).target;
 
     const strongTarget = createTheftFixture({
@@ -998,7 +998,7 @@ describe("theft resolution", () => {
 
   it("transfers at most two distinct items on exceptional success", () => {
     const fixture = createResolutionFixture({
-      targetItemDefinitionIds: ["rope", "map", "med-kit"],
+      targetItemDefinitionIds: ["blanket", "map", "med-kit"],
     });
 
     const [primaryItem, reservedItem, availableItem] = fixture.targetItems;
@@ -1065,7 +1065,7 @@ describe("theft resolution", () => {
         luck: 5,
       },
 
-      targetItemDefinitionIds: ["rope"],
+      targetItemDefinitionIds: ["blanket"],
     });
 
     const highLuckFixture = createTheftFixture({
@@ -1081,7 +1081,7 @@ describe("theft resolution", () => {
         luck: 5,
       },
 
-      targetItemDefinitionIds: ["rope"],
+      targetItemDefinitionIds: ["blanket"],
     });
 
     const lowLuckResolution = resolveTheft(lowLuckFixture, [0.7]);

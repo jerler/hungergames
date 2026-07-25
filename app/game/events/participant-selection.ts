@@ -14,7 +14,7 @@ import {
 import { areTributesInSameTruce } from "~/game/truces/truce-engine";
 import type { GameTribute } from "~/game/types/game-state";
 import { getHostileTargetingWeightMultiplier } from "~/game/statuses/hostile-targeting";
-import { getHostileItemTargetWeightMultiplier } from "~/game/items/item-contextual-capabilities";
+import { getNightAmbushItemTargetWeightMultiplier } from "~/game/items/item-contextual-capabilities";
 import { getNightRestTargetingWeightMultiplier } from "~/game/survival/night-rest-targeting";
 
 function isProtectedFromRoleByTruce(
@@ -216,8 +216,15 @@ export function selectEventParticipants(
         const isHostileTarget = role.targeting === "hostile";
 
         const hostileTargetingMultiplier = isHostileTarget
-          ? getHostileTargetingWeightMultiplier(tribute) *
-            getHostileItemTargetWeightMultiplier(tribute)
+          ? getHostileTargetingWeightMultiplier(tribute)
+          : 1;
+
+        const nightAmbushMultiplier = isHostileTarget
+          ? getNightAmbushItemTargetWeightMultiplier(
+              tribute,
+              context.round,
+              definition.tags.includes("ambush"),
+            )
           : 1;
 
         const restTargetingMultiplier = getNightRestTargetingWeightMultiplier(tribute, {
@@ -228,7 +235,8 @@ export function selectEventParticipants(
           isEnvironmentalHazard: isEnvironmentalHazard(definition),
         });
 
-        const targetingWeightMultiplier = hostileTargetingMultiplier * restTargetingMultiplier;
+        const targetingWeightMultiplier =
+          hostileTargetingMultiplier * nightAmbushMultiplier * restTargetingMultiplier;
 
         if (targetingWeightMultiplier <= 0) {
           return [];

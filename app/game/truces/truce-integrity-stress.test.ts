@@ -37,17 +37,73 @@ const NIGHT_ONE = {
 
 const INVENTORY_DEFINITIONS = [
   "water",
+
+  // Safe natural food
   "wild-fruit-and-berries",
+  "mushrooms",
+  "eggs",
+  "rabbit",
+  "chicken",
+  "fish",
+
+  // Harmful natural forage
+  "hallucinogenic-berries",
+  "poison-berries",
+  "hallucinogenic-mushrooms",
+  "poison-mushrooms",
+
+  // Natural utility
+  "kindling",
+
+  // Manufactured food and drinks
+  "soup",
+  "burger-and-fries",
+  "pizza-box",
+  "bottled-water",
+  "coffee",
+  "coca-cola",
+  "energy-drink",
+  "hot-chocolate",
+  "herbal-tea",
+
+  // Medical supplies
   "med-kit",
+  "bandages",
+  "painkillers",
+  "burn-kit",
+  "antidote",
+
+  // Comfort
   "blanket",
+  "sleeping-bag",
+  "thermal-blanket",
+  "pillow",
+
+  // Shelter and fire
+  "tarp",
+  "tent",
   "matches",
-  "rope",
+  "lighter",
+  "flint-stone",
+
+  // Navigation and utility
   "map",
+  "foraging-guidebook",
+  "bird-whistle",
+  "binoculars",
   "camouflage-net",
+  "camouflage-paint",
+  "night-vision-goggles",
   "trap-kit",
   "fishing-gear",
-  "slingshot",
+
+  // Equipment
   "knife",
+  "spear",
+  "bow",
+  "shield",
+  "axe",
+  "slingshot",
 ] satisfies readonly ItemDefinitionId[];
 
 function createGame(seed = "truce-integrity-tests"): GameState {

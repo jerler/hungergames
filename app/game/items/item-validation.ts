@@ -308,13 +308,15 @@ export function validateItemDefinition(definition: ItemDefinition): void {
       }
     }
 
-    const targetMultiplier = contextual.hostileTargetWeightMultiplier;
+    const nightAmbushMultiplier = contextual.nightAmbushTargetWeightMultiplier;
 
     if (
-      targetMultiplier !== undefined &&
-      (!Number.isFinite(targetMultiplier) || targetMultiplier < 0 || targetMultiplier > 1)
+      nightAmbushMultiplier !== undefined &&
+      (!Number.isFinite(nightAmbushMultiplier) ||
+        nightAmbushMultiplier < 0 ||
+        nightAmbushMultiplier > 1)
     ) {
-      fail(definition.id, "declares invalid hostileTargetWeightMultiplier.");
+      fail(definition.id, "declares invalid nightAmbushTargetWeightMultiplier.");
     }
   }
 

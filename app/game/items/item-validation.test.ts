@@ -5,7 +5,7 @@ import type { ItemDefinition } from "~/game/items/item-schema";
 import { validateItemCatalogue, validateItemDefinition } from "~/game/items/item-validation";
 
 const BASE_ITEM: ItemDefinition = {
-  id: "rope",
+  id: "blanket",
   label: "Test item",
   description: "Test item.",
   origin: "manufactured",

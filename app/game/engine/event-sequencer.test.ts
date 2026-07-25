@@ -612,7 +612,7 @@ describe("ordinary round item reservations", () => {
     const acquiredItem = createInventoryItemInstance(
       "ordinary-acquisition-event",
       firstBorrower.id,
-      "rope",
+      "slingshot",
       FIRST_ROUND,
     );
 

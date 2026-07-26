@@ -465,48 +465,33 @@ describe("environmental events", () => {
     ).toBe(true);
   });
 
-  it("keeps acute dehydration below the fatal daily threshold", () => {
-    const originalGame = createTestGame();
-
-    const originalTribute = originalGame.tributes[0];
-
-    const tribute: GameTribute = {
-      ...withStats(originalTribute, BALANCED_STATS, "Hazel"),
-
-      survival: {
-        ...originalTribute.survival,
-
-        roundsWithoutWater: 4,
-      },
-    };
-
-    const game = replaceTributes(originalGame, [tribute]);
+  it("makes contaminated water an explicit poison hazard", () => {
+    const game = createTestGame();
+    const tribute = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
 
     const resolution = resolveEvent(
       requireEvent("contaminated-water"),
       game,
-
       {
         tribute: [tribute],
       },
-
       [0.5],
     );
 
-    expect(resolution.changes).toContainEqual({
-      type: "increment-survival-need-counter",
-
-      tributeId: tribute.id,
-
-      need: "water",
-      amount: 1,
-    });
+    expect(resolution.text).toBe("Hazel drinks contaminated water and becomes violently ill.");
 
     expect(getAppliedStatuses(resolution)).toContainEqual(
       expect.objectContaining({
-        definitionId: "dehydrated",
+        definitionId: "poisoned",
+        severity: 1,
       }),
     );
+
+    expect(
+      resolution.changes.some(
+        (change) => change.type === "satisfy-survival-need" || change.type === "acquire-item",
+      ),
+    ).toBe(false);
   });
 
   it("applies exhaustion after losing a prolonged goose confrontation", () => {
@@ -773,44 +758,5 @@ describe("environmental events", () => {
         expect(role.targeting, `${definition.id}:${role.id}`).not.toBe("hostile");
       }
     }
-  });
-
-  it("contaminated-water advances water deprivation and applies the matching stage", () => {
-    const game = createTestGame();
-
-    const tribute = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
-
-    const definition = requireEvent("contaminated-water");
-
-    const resolution = resolveEvent(
-      definition,
-      game,
-      {
-        tribute: [tribute],
-      },
-      [0.5],
-    );
-
-    expect(resolution.text).toBe("Hazel drinks contaminated water and becomes dehydrated.");
-
-    expect(resolution.changes).toEqual([
-      {
-        type: "increment-survival-need-counter",
-
-        tributeId: tribute.id,
-        need: "water",
-        amount: 2,
-      },
-
-      expect.objectContaining({
-        type: "apply-status",
-        tributeId: tribute.id,
-
-        status: expect.objectContaining({
-          definitionId: "thirsty",
-          remainingRounds: null,
-        }),
-      }),
-    ]);
   });
 });

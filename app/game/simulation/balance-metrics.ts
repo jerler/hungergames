@@ -123,11 +123,6 @@ export interface BalanceMetrics {
     applicationsByStatus: Record<string, number>;
 
     fatalitiesByStatus: Record<string, number>;
-
-    needFatalities: {
-      dehydration: number;
-      starvation: number;
-    };
   };
 
   inventory: {
@@ -307,10 +302,6 @@ function classifyEliminationSource(event: ResolvedEvent): string {
     return "status";
   }
 
-  if (event.definitionId.startsWith("need-fatality:")) {
-    return "survival-need";
-  }
-
   return "other";
 }
 
@@ -379,7 +370,6 @@ export function collectBalanceMetrics(runs: readonly SimulationRun[]): BalanceMe
     "direct-combat",
     "tactical-immediate",
     "status",
-    "survival-need",
     "other",
   ]);
 
@@ -454,11 +444,6 @@ export function collectBalanceMetrics(runs: readonly SimulationRun[]): BalanceMe
 
   let statusApplicationCount = 0;
 
-  const needFatalities = {
-    dehydration: 0,
-    starvation: 0,
-  };
-
   let acquisitionCount = 0;
   let consumedUses = 0;
   let transferCount = 0;
@@ -523,14 +508,6 @@ export function collectBalanceMetrics(runs: readonly SimulationRun[]): BalanceMe
         if (eliminations.some((elimination) => elimination.killerTributeIds.length > 0)) {
           delayedAttributedFatalities += eliminations.length;
         }
-      }
-
-      if (event.definitionId === "need-fatality:dehydration") {
-        needFatalities.dehydration += eliminations.length;
-      }
-
-      if (event.definitionId === "need-fatality:starvation") {
-        needFatalities.starvation += eliminations.length;
       }
 
       for (const change of event.changes) {
@@ -756,8 +733,6 @@ export function collectBalanceMetrics(runs: readonly SimulationRun[]): BalanceMe
       applicationsByStatus: applicationCounts,
 
       fatalitiesByStatus: fatalityCounts,
-
-      needFatalities,
     },
 
     inventory: {

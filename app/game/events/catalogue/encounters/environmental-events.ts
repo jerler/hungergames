@@ -10,7 +10,6 @@ import {
   customResolution,
   eliminate,
   getSelectedRoleItem,
-  increaseSurvivalDeprivation,
   maximumStat,
   result,
   survived,
@@ -185,8 +184,8 @@ export const ENVIRONMENTAL_EVENTS = [
       always(
         result({
           text: ({ tribute }) =>
-            `${tribute.name} drinks contaminated water and becomes dehydrated.`,
-          effects: [increaseSurvivalDeprivation("tribute", "water", 2)],
+            `${tribute.name} drinks contaminated water and becomes violently ill.`,
+          effects: [applyStatus("tribute", "poisoned", 1)],
         }),
       ),
     ),

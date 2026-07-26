@@ -7,9 +7,7 @@ const EXPECTED_STATUS_IDS = [
   "injured",
   "bleeding",
   "thirsty",
-  "dehydrated",
   "hungry",
-  "starving",
   "exhausted",
   "disoriented",
   "poisoned",
@@ -62,12 +60,7 @@ describe("status catalogue", () => {
   it("contains the expected persistent statuses", () => {
     const statuses = STATUS_CATALOGUE.filter((status) => status.duration.kind === "persistent");
 
-    expect(statuses.map((status) => status.id)).toEqual([
-      "thirsty",
-      "dehydrated",
-      "hungry",
-      "starving",
-    ]);
+    expect(statuses.map((status) => status.id)).toEqual(["thirsty", "hungry"]);
   });
 
   it("contains the expected beneficial statuses", () => {

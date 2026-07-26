@@ -49,9 +49,9 @@ interface AutomaticItemPreparationAction {
   ) => StatusEffectId[];
 }
 
-const HYDRATION_STATUS_IDS = ["thirsty", "dehydrated"] as const satisfies readonly StatusEffectId[];
+const HYDRATION_STATUS_IDS = ["thirsty"] as const satisfies readonly StatusEffectId[];
 
-const FOOD_STATUS_IDS = ["hungry", "starving"] as const satisfies readonly StatusEffectId[];
+const FOOD_STATUS_IDS = ["hungry"] as const satisfies readonly StatusEffectId[];
 
 function compareTributes(first: GameTribute, second: GameTribute): number {
   return (
@@ -301,11 +301,7 @@ function createAutomaticItemPreparationText(
 
   switch (mechanic) {
     case "hydration-consumption":
-      return (
-        `${actingTribute.snapshot.name} drinks ` +
-        `${itemPhrase} to recover from thirst ` +
-        "and dehydration."
-      );
+      return `${actingTribute.snapshot.name} drinks ${itemPhrase} to recover from thirst.`;
 
     case "food-consumption":
       return `${actingTribute.snapshot.name} eats ` + `${itemPhrase} to recover from hunger.`;

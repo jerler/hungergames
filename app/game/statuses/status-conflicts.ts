@@ -7,19 +7,17 @@ import type { StatusEffectId } from "./status-schema";
  *
  * This implements "latest status wins":
  *
- * - Applying well-fed removes hungry and starving.
- * - Applying hungry or starving removes well-fed.
+ * - Applying well-fed removes hungry.
+ * - Applying hungry removes well-fed.
  * - Applying alert or well-rested removes exhausted.
  * - Applying exhausted removes alert and well-rested.
  *
  * Alert and well-rested intentionally do not conflict.
  */
 export const STATUS_CONFLICTS: Partial<Record<StatusEffectId, readonly StatusEffectId[]>> = {
-  "well-fed": ["hungry", "starving"],
+  "well-fed": ["hungry"],
 
   hungry: ["well-fed"],
-
-  starving: ["well-fed"],
 
   "well-rested": ["exhausted"],
 
@@ -42,7 +40,6 @@ export function getConflictingStatusIds(
  */
 export function removeConflictingStatuses(
   statuses: readonly StatusEffect[],
-
   incomingStatusId: StatusEffectId,
 ): StatusEffect[] {
   const conflictingStatusIds = new Set(getConflictingStatusIds(incomingStatusId));
@@ -57,9 +54,6 @@ export function removeConflictingStatuses(
 /**
  * Detects an invalid state even if some future code bypasses
  * the normal status insertion helper.
- *
- * This will be connected to the full game-state invariant
- * checker in a later step.
  */
 export function assertValidStatusCombination(tribute: GameTribute): void {
   const activeStatusIds = new Set(tribute.statuses.map((status) => status.definitionId));

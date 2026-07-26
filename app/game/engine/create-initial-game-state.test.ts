@@ -44,8 +44,8 @@ describe("createInitialGameState", () => {
       district: 1,
       districtPosition: 1,
       survival: {
-        roundsWithoutFood: 0,
-        roundsWithoutWater: 0,
+        lastFoundFoodRound: null,
+        lastFoundWaterRound: null,
         lastNightRest: null,
       },
       statistics: {

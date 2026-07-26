@@ -260,8 +260,6 @@ export function createBalanceReport(
     "",
 
     `- Total applications: ${metrics.statuses.totalApplications}`,
-    `- Dehydration deaths: ${metrics.statuses.needFatalities.dehydration}`,
-    `- Starvation deaths: ${metrics.statuses.needFatalities.starvation}`,
 
     "",
 

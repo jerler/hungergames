@@ -27,15 +27,7 @@ const DAY_THREE = {
 
 function withStatus(
   tribute: GameTribute,
-  statusId:
-    | "bleeding"
-    | "injured"
-    | "poisoned"
-    | "burned"
-    | "thirsty"
-    | "dehydrated"
-    | "hungry"
-    | "starving",
+  statusId: "bleeding" | "injured" | "poisoned" | "burned" | "thirsty" | "hungry",
   durationRounds?: number,
 ): GameTribute {
   return {
@@ -165,13 +157,13 @@ describe("prepareRound", () => {
       ...createAuthoringTestTribute(),
 
       survival: {
-        roundsWithoutFood: 3,
-        roundsWithoutWater: 4,
+        lastFoundFoodRound: null,
+        lastFoundWaterRound: null,
         lastNightRest: null,
       },
     };
 
-    tribute = withStatus(tribute, "dehydrated");
+    tribute = withStatus(tribute, "thirsty");
 
     tribute = withStatus(tribute, "hungry");
 
@@ -188,9 +180,9 @@ describe("prepareRound", () => {
 
     const preparedTribute = prepared.state.tributes[0];
 
-    expect(preparedTribute.survival.roundsWithoutWater).toBe(0);
+    expect(preparedTribute.survival.lastFoundWaterRound).toEqual(ROUND);
 
-    expect(preparedTribute.survival.roundsWithoutFood).toBe(0);
+    expect(preparedTribute.survival.lastFoundFoodRound).toEqual(ROUND);
 
     expect(preparedTribute.statuses).toEqual([]);
   });
@@ -202,13 +194,13 @@ describe("prepareRound", () => {
       }),
 
       survival: {
-        roundsWithoutFood: 4,
-        roundsWithoutWater: 4,
+        lastFoundFoodRound: null,
+        lastFoundWaterRound: null,
         lastNightRest: null,
       },
     };
 
-    tribute = withStatus(tribute, "dehydrated");
+    tribute = withStatus(tribute, "thirsty");
     tribute = withStatus(tribute, "hungry");
     tribute = withAuthoringTestItem(tribute, "water");
     tribute = withAuthoringTestItem(tribute, "wild-fruit");
@@ -228,12 +220,12 @@ describe("prepareRound", () => {
     const preparedTribute = prepared.state.tributes[0];
 
     expect(preparedTribute?.survival).toMatchObject({
-      roundsWithoutFood: 4,
-      roundsWithoutWater: 4,
+      lastFoundFoodRound: null,
+      lastFoundWaterRound: null,
     });
 
     expect(preparedTribute?.statuses.map((status) => status.definitionId)).toEqual(
-      expect.arrayContaining(["dehydrated", "hungry"]),
+      expect.arrayContaining(["thirsty", "hungry"]),
     );
 
     expect(preparedTribute?.inventory.map((item) => item.definitionId)).toEqual(

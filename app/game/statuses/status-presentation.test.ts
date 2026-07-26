@@ -47,12 +47,6 @@ describe("status presentation", () => {
     });
   });
 
-  it("treats severe need stages as critical", () => {
-    expect(createStatusPresentation(createStatus("starving", null, 2)).tone).toBe("critical");
-
-    expect(createStatusPresentation(createStatus("dehydrated", null, 2)).tone).toBe("critical");
-  });
-
   it("presents fatal urgency and attribution", () => {
     const status = {
       ...createStatus("poisoned", 1, 3),
@@ -102,21 +96,21 @@ describe("status presentation", () => {
     );
   });
 
-  it("sorts fatal and critical conditions before ordinary statuses", () => {
+  it("sorts fatal and harmful conditions before beneficial statuses", () => {
     const statuses = [
       createStatus("lucky", 1),
 
-      createStatus("injured", 1),
+      createStatus("hungry", null),
 
-      createStatus("starving", null),
+      createStatus("injured", 1),
 
       createStatus("poisoned", 1),
     ].sort(compareStatusesByUrgency);
 
     expect(statuses.map((status) => status.definitionId)).toEqual([
       "poisoned",
-      "starving",
       "injured",
+      "hungry",
       "lucky",
     ]);
   });

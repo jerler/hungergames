@@ -275,16 +275,11 @@ describe("createHuntedFoodEvent", () => {
     const tribute = {
       ...baseTribute,
 
-      survival: {
-        ...baseTribute.survival,
-        roundsWithoutFood: 6,
-      },
-
       statuses: [
         createStatusEffectInstance(
-          "existing-starvation",
+          "existing-hunger",
           baseTribute.id,
-          "starving",
+          "hungry",
           1,
           AUTHORING_TEST_ROUND,
         ),
@@ -346,12 +341,10 @@ describe("createHuntedFoodEvent", () => {
       throw new Error("Expected the exceptional hunter after applying the event.");
     }
 
-    expect(appliedTribute.survival.roundsWithoutFood).toBe(0);
+    expect(appliedTribute.survival.lastFoundFoodRound).toEqual(AUTHORING_TEST_ROUND);
 
     expect(appliedTribute.statuses.map((status) => status.definitionId)).toContain("well-fed");
 
     expect(appliedTribute.statuses.map((status) => status.definitionId)).not.toContain("hungry");
-
-    expect(appliedTribute.statuses.map((status) => status.definitionId)).not.toContain("starving");
   });
 });

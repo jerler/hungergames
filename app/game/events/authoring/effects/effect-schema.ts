@@ -7,14 +7,6 @@ export interface SurvivedEffect {
   roleId: string;
 }
 
-export interface IncreaseSurvivalDeprivationEffect {
-  type: "increase-survival-deprivation";
-
-  roleId: string;
-  need: SurvivalNeed;
-  rounds: number;
-}
-
 export interface SatisfySurvivalNeedEffect {
   type: "satisfy-survival-need";
 
@@ -96,7 +88,6 @@ export type RequiredItemEffect =
 
 export type EventEffect =
   | SurvivedEffect
-  | IncreaseSurvivalDeprivationEffect
   | SatisfySurvivalNeedEffect
   | RecordNightRestEffect
   | ApplyStatusEffect

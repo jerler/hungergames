@@ -10,7 +10,7 @@ import type {
   TributeSurvivalState,
 } from "~/game/survival/survival-schema";
 
-export const CURRENT_GAME_STATE_SCHEMA_VERSION = 7 as const;
+export const CURRENT_GAME_STATE_SCHEMA_VERSION = 8 as const;
 
 export type GamePhase = "opening" | "round-events" | "round-complete" | "victory" | "statistics";
 
@@ -143,20 +143,6 @@ export interface IncrementStatisticChange {
   type: "increment-statistic";
   tributeId: string;
   statistic: TributeStatisticKey;
-  amount: number;
-}
-
-export interface SetSurvivalNeedCounterChange {
-  type: "set-survival-need-counter";
-  tributeId: string;
-  need: SurvivalNeed;
-  value: number;
-}
-
-export interface IncrementSurvivalNeedCounterChange {
-  type: "increment-survival-need-counter";
-  tributeId: string;
-  need: SurvivalNeed;
   amount: number;
 }
 
@@ -305,8 +291,6 @@ export type InventoryTransaction =
 export type GameChange =
   | EliminateTributeChange
   | IncrementStatisticChange
-  | SetSurvivalNeedCounterChange
-  | IncrementSurvivalNeedCounterChange
   | SatisfySurvivalNeedChange
   | RecordNightRestChange
   | ApplyStatusChange
@@ -320,8 +304,7 @@ export type GameChange =
   | FormVendettaChange
   | DeclareVictoryChange;
 
-export type ResolvedEventKind =
-  "primary" | "preparation" | "aftermath" | "status-resolution" | "need-resolution";
+export type ResolvedEventKind = "primary" | "preparation" | "aftermath" | "status-resolution";
 
 export type EventFeedGroup = "bloodbath-cornucopia" | "bloodbath-flee";
 

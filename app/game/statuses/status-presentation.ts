@@ -32,8 +32,6 @@ export interface StatusPresentationDetails {
   fatalConsequence: string | null;
 }
 
-const CRITICAL_NEED_STATUS_IDS = new Set<StatusEffectId>(["starving", "dehydrated"]);
-
 const WARNING_NEED_STATUS_IDS = new Set<StatusEffectId>(["hungry", "thirsty"]);
 
 function isFatalStatusDefinition(
@@ -61,10 +59,6 @@ function getStatusTone(status: StatusEffect, definition: StatusDefinition): Stat
 
   if (definition.kind === "beneficial") {
     return "beneficial";
-  }
-
-  if (CRITICAL_NEED_STATUS_IDS.has(definition.id)) {
-    return "critical";
   }
 
   if (WARNING_NEED_STATUS_IDS.has(definition.id)) {
@@ -271,15 +265,11 @@ function getStatusSortGroup(status: StatusEffect, definition: StatusDefinition):
     return 0;
   }
 
-  if (CRITICAL_NEED_STATUS_IDS.has(status.definitionId)) {
+  if (definition.kind === "harmful") {
     return 1;
   }
 
-  if (definition.kind === "harmful") {
-    return 2;
-  }
-
-  return 3;
+  return 2;
 }
 
 export function compareStatusesByUrgency(

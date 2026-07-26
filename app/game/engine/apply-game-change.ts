@@ -34,30 +34,18 @@ function updateTribute(
   };
 }
 
-type SurvivalNeedCounterKey = "roundsWithoutFood" | "roundsWithoutWater";
+type SurvivalNeedHistoryKey = "lastFoundFoodRound" | "lastFoundWaterRound";
 
-function getSurvivalNeedCounterKey(need: SurvivalNeed): SurvivalNeedCounterKey {
+function getSurvivalNeedHistoryKey(need: SurvivalNeed): SurvivalNeedHistoryKey {
   if (need === "food") {
-    return "roundsWithoutFood";
+    return "lastFoundFoodRound";
   }
 
   if (need === "water") {
-    return "roundsWithoutWater";
+    return "lastFoundWaterRound";
   }
 
   throw new Error(`Unknown survival need "${String(need)}".`);
-}
-
-function requireNonNegativeInteger(value: number, description: string): void {
-  if (!Number.isInteger(value) || value < 0) {
-    throw new Error(`${description} must be a non-negative integer.`);
-  }
-}
-
-function requirePositiveInteger(value: number, description: string): void {
-  if (!Number.isInteger(value) || value <= 0) {
-    throw new Error(`${description} must be a positive integer.`);
-  }
 }
 
 function validateTruceFormation(state: GameState, truce: Truce): void {
@@ -348,42 +336,16 @@ export function applyGameChange(
         },
       }));
 
-    case "set-survival-need-counter": {
-      requireNonNegativeInteger(change.value, "Survival need counter");
-
-      const counterKey = getSurvivalNeedCounterKey(change.need);
-
-      return updateTribute(state, change.tributeId, (tribute) => ({
-        ...tribute,
-        survival: {
-          ...tribute.survival,
-          [counterKey]: change.value,
-        },
-      }));
-    }
-
-    case "increment-survival-need-counter": {
-      requirePositiveInteger(change.amount, "Survival need counter increment");
-
-      const counterKey = getSurvivalNeedCounterKey(change.need);
-
-      return updateTribute(state, change.tributeId, (tribute) => ({
-        ...tribute,
-        survival: {
-          ...tribute.survival,
-          [counterKey]: tribute.survival[counterKey] + change.amount,
-        },
-      }));
-    }
-
     case "satisfy-survival-need": {
-      const counterKey = getSurvivalNeedCounterKey(change.need);
+      const historyKey = getSurvivalNeedHistoryKey(change.need);
 
       return updateTribute(state, change.tributeId, (tribute) => ({
         ...tribute,
         survival: {
           ...tribute.survival,
-          [counterKey]: 0,
+          [historyKey]: {
+            ...event.round,
+          },
         },
       }));
     }

@@ -5,23 +5,17 @@ import { createInitialGameState } from "~/game/engine/create-initial-game-state"
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
-import type { GameChange, GameState, ResolvedEvent, RoundReference } from "~/game/types/game-state";
+import type {
+  GameState,
+  ResolvedEvent,
+  RoundReference,
+  SatisfySurvivalNeedChange,
+} from "~/game/types/game-state";
 
 const NIGHT_TWO = {
   day: 2,
   period: "night",
 } as const satisfies RoundReference;
-
-type SurvivalGameChange = Extract<
-  GameChange,
-  {
-    type:
-      | "set-survival-need-counter"
-      | "increment-survival-need-counter"
-      | "satisfy-survival-need"
-      | "record-night-rest";
-  }
->;
 
 function createGame(): GameState {
   const config = {
@@ -50,7 +44,7 @@ function createEvent(tributeId: string, round: RoundReference = NIGHT_TWO): Reso
   return {
     id: `survival-change:${round.period}:${round.day}:${tributeId}`,
     definitionId: "test-survival-change",
-    kind: "need-resolution",
+    kind: "primary",
     resolutionMode: "standard",
     round,
     participantTributeIds: [tributeId],
@@ -59,113 +53,86 @@ function createEvent(tributeId: string, round: RoundReference = NIGHT_TWO): Reso
   };
 }
 
-function applySurvivalChange(
+function satisfyNeed(
   state: GameState,
-  change: SurvivalGameChange,
+  change: SatisfySurvivalNeedChange,
   eventRound: RoundReference = NIGHT_TWO,
 ): GameState {
   return applyGameChange(state, change, createEvent(change.tributeId, eventRound));
 }
 
 describe("survival game changes", () => {
-  it("sets a survival need counter", () => {
+  it("records the round in which food is satisfied", () => {
     const game = createGame();
     const tribute = game.tributes[0];
 
-    const nextState = applySurvivalChange(game, {
-      type: "set-survival-need-counter",
-      tributeId: tribute.id,
-      need: "food",
-      value: 3,
-    });
-
-    expect(nextState.tributes[0].survival).toEqual({
-      roundsWithoutFood: 3,
-      roundsWithoutWater: 0,
-      lastNightRest: null,
-    });
-
-    expect(game.tributes[0].survival.roundsWithoutFood).toBe(0);
-  });
-
-  it("increments a survival need counter", () => {
-    const game = createGame();
-    const tribute = game.tributes[0];
-
-    const nextState = applySurvivalChange(game, {
-      type: "increment-survival-need-counter",
-      tributeId: tribute.id,
-      need: "water",
-      amount: 2,
-    });
-
-    expect(nextState.tributes[0].survival.roundsWithoutWater).toBe(2);
-    expect(nextState.tributes[0].survival.roundsWithoutFood).toBe(0);
-  });
-
-  it("satisfies a survival need by resetting its counter", () => {
-    const game = createGame();
-    const tribute = game.tributes[0];
-
-    const hungryState = applySurvivalChange(game, {
-      type: "set-survival-need-counter",
-      tributeId: tribute.id,
-      need: "food",
-      value: 4,
-    });
-
-    const satisfiedState = applySurvivalChange(hungryState, {
+    const nextState = satisfyNeed(game, {
       type: "satisfy-survival-need",
       tributeId: tribute.id,
       need: "food",
     });
 
-    expect(satisfiedState.tributes[0].survival.roundsWithoutFood).toBe(0);
+    expect(nextState.tributes[0].survival.lastFoundFoodRound).toEqual(NIGHT_TWO);
+    expect(nextState.tributes[0].survival.lastFoundWaterRound).toBeNull();
+    expect(game.tributes[0].survival.lastFoundFoodRound).toBeNull();
   });
 
-  it("records the result of a night rest", () => {
+  it("records food and water independently", () => {
     const game = createGame();
     const tribute = game.tributes[0];
 
-    const nextState = applySurvivalChange(game, {
-      type: "record-night-rest",
-      tributeId: tribute.id,
-      round: NIGHT_TWO,
-      quality: "sheltered",
-    });
-
-    expect(nextState.tributes[0].survival.lastNightRest).toEqual({
-      round: NIGHT_TWO,
-      quality: "sheltered",
-    });
-  });
-
-  it("rejects a negative survival counter", () => {
-    const game = createGame();
-    const tribute = game.tributes[0];
-
-    expect(() =>
-      applySurvivalChange(game, {
-        type: "set-survival-need-counter",
+    const afterFood = satisfyNeed(
+      game,
+      {
+        type: "satisfy-survival-need",
         tributeId: tribute.id,
         need: "food",
-        value: -1,
-      }),
-    ).toThrow(/non-negative integer/i);
+      },
+      {
+        day: 2,
+        period: "day",
+      },
+    );
+
+    const afterWater = satisfyNeed(afterFood, {
+      type: "satisfy-survival-need",
+      tributeId: tribute.id,
+      need: "water",
+    });
+
+    expect(afterWater.tributes[0].survival).toMatchObject({
+      lastFoundFoodRound: {
+        day: 2,
+        period: "day",
+      },
+      lastFoundWaterRound: NIGHT_TWO,
+      lastNightRest: null,
+    });
   });
 
-  it("rejects a non-positive counter increment", () => {
+  it("records the result of a night rest without changing need history", () => {
     const game = createGame();
     const tribute = game.tributes[0];
 
-    expect(() =>
-      applySurvivalChange(game, {
-        type: "increment-survival-need-counter",
+    const nextState = applyGameChange(
+      game,
+      {
+        type: "record-night-rest",
         tributeId: tribute.id,
-        need: "water",
-        amount: 0,
-      }),
-    ).toThrow(/positive integer/i);
+        round: NIGHT_TWO,
+        quality: "sheltered",
+      },
+      createEvent(tribute.id),
+    );
+
+    expect(nextState.tributes[0].survival).toEqual({
+      lastFoundFoodRound: null,
+      lastFoundWaterRound: null,
+      lastNightRest: {
+        round: NIGHT_TWO,
+        quality: "sheltered",
+      },
+    });
   });
 
   it("rejects rest recorded during a day round", () => {
@@ -178,7 +145,7 @@ describe("survival game changes", () => {
     } as const satisfies RoundReference;
 
     expect(() =>
-      applySurvivalChange(
+      applyGameChange(
         game,
         {
           type: "record-night-rest",
@@ -186,7 +153,7 @@ describe("survival game changes", () => {
           round: dayRound,
           quality: "unsheltered",
         },
-        dayRound,
+        createEvent(tribute.id, dayRound),
       ),
     ).toThrow(/valid night round/i);
   });
@@ -196,7 +163,7 @@ describe("survival game changes", () => {
     const tribute = game.tributes[0];
 
     expect(() =>
-      applySurvivalChange(
+      applyGameChange(
         game,
         {
           type: "record-night-rest",
@@ -204,10 +171,10 @@ describe("survival game changes", () => {
           round: NIGHT_TWO,
           quality: "comfortable",
         },
-        {
+        createEvent(tribute.id, {
           day: 3,
           period: "night",
-        },
+        }),
       ),
     ).toThrow(/does not match event/i);
   });

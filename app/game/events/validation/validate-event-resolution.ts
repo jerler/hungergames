@@ -32,24 +32,6 @@ export function validateEventResolution({
 
   for (const change of resolution.changes) {
     switch (change.type) {
-      case "set-survival-need-counter":
-        if (!Number.isInteger(change.value) || change.value < 0) {
-          throw new Error(
-            `Event "${definitionId}" sets an invalid ${change.need} survival counter.`,
-          );
-        }
-
-        break;
-
-      case "increment-survival-need-counter":
-        if (!Number.isInteger(change.amount) || change.amount <= 0) {
-          throw new Error(
-            `Event "${definitionId}" increments the ${change.need} survival counter by an invalid amount.`,
-          );
-        }
-
-        break;
-
       case "satisfy-survival-need":
         break;
 

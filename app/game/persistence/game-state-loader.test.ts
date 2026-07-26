@@ -210,7 +210,65 @@ describe("loadGameState", () => {
     expect(() => loadGameState(unversionedGame)).toThrow(UnsupportedGameStateSchemaError);
   });
 
-  it("rejects invalid state carrying the current schema version", () => {
+  it("strips deprecated Phase 1 survival counters", () => {
+    const game = createGame();
+
+    const bridgeGame = {
+      ...game,
+      tributes: game.tributes.map((tribute) => ({
+        ...tribute,
+        survival: {
+          ...tribute.survival,
+          roundsWithoutFood: 3,
+          roundsWithoutWater: 2,
+        },
+      })),
+    };
+
+    const loaded = loadGameState(bridgeGame);
+    const survival = loaded.tributes[0]?.survival as unknown as Record<string, unknown>;
+
+    expect(survival).not.toHaveProperty("roundsWithoutFood");
+    expect(survival).not.toHaveProperty("roundsWithoutWater");
+    expect(survival).toMatchObject({
+      lastFoundFoodRound: null,
+      lastFoundWaterRound: null,
+      lastNightRest: null,
+    });
+  });
+
+  it("rejects current-schema state missing food history", () => {
+    const game = createGame();
+    const tribute = game.tributes[0];
+
+    if (!tribute) {
+      throw new Error("Loader history test requires a tribute.");
+    }
+
+    const survival = {
+      ...tribute.survival,
+    } as Record<string, unknown>;
+
+    delete survival.lastFoundFoodRound;
+
+    const invalidGame = {
+      ...game,
+      tributes: game.tributes.map((candidate, index) =>
+        index === 0
+          ? {
+              ...candidate,
+              survival,
+            }
+          : candidate,
+      ),
+    };
+
+    expect(() => loadGameState(invalidGame)).toThrow(
+      /last-found food round must be null or a round reference/i,
+    );
+  });
+
+  it("rejects survival history recorded before the arena starts", () => {
     const game = createGame();
 
     const invalidGame = {
@@ -221,14 +279,19 @@ describe("loadGameState", () => {
               ...tribute,
               survival: {
                 ...tribute.survival,
-                roundsWithoutWater: -1,
+                lastFoundWaterRound: {
+                  day: 1,
+                  period: "day" as const,
+                },
               },
             }
           : tribute,
       ),
     };
 
-    expect(() => loadGameState(invalidGame)).toThrow(/rounds without water.*non-negative integer/i);
+    expect(() => loadGameState(invalidGame)).toThrow(
+      /records last-found water before the arena has started/i,
+    );
   });
 
   it("rejects schema-4 saves from before the named natural-food migration", () => {
@@ -265,5 +328,17 @@ describe("loadGameState", () => {
     expect(() => loadGameState(schemaSixGame)).toThrow(UnsupportedGameStateSchemaError);
 
     expect(() => loadGameState(schemaSixGame)).toThrow(/schema version 6/i);
+  });
+
+  it("rejects schema-7 saves from before round-based survival history", () => {
+    const schemaSevenGame = {
+      ...createGame(),
+
+      schemaVersion: 7,
+    };
+
+    expect(() => loadGameState(schemaSevenGame)).toThrow(UnsupportedGameStateSchemaError);
+
+    expect(() => loadGameState(schemaSevenGame)).toThrow(/schema version 7/i);
   });
 });

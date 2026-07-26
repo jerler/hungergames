@@ -175,6 +175,70 @@ describe("gameReducer", () => {
     expect(revealedState?.eventHistory.length).toBeGreaterThan(0);
   });
 
+  it("does not advance or automatically resolve food and water deprivation", () => {
+    const game = createTestGame("no-automatic-deprivation");
+    const tribute = game.tributes[0];
+
+    if (!tribute) {
+      throw new Error("The deprivation test requires a tribute.");
+    }
+
+    const hungry = createStatusEffectInstance(
+      "authored-hunger",
+      tribute.id,
+      "hungry",
+      1,
+      NIGHT_ONE,
+    );
+
+    const thirsty = createStatusEffectInstance(
+      "authored-thirst",
+      tribute.id,
+      "thirsty",
+      1,
+      NIGHT_ONE,
+    );
+
+    const roundState: GameState = {
+      ...game,
+      phase: "round-events",
+      currentRound: NIGHT_ONE,
+      roundEvents: [],
+      revealedEventCount: 0,
+      tributes: game.tributes.map((candidate) =>
+        candidate.id === tribute.id
+          ? {
+              ...candidate,
+              statuses: [hungry, thirsty],
+            }
+          : candidate,
+      ),
+    };
+
+    const completed = gameReducer(roundState, {
+      type: "event/revealed",
+      now: "2026-07-18T13:02:00.000Z",
+    });
+
+    if (!completed) {
+      throw new Error("The Game unexpectedly disappeared.");
+    }
+
+    const completedTribute = completed.tributes.find((candidate) => candidate.id === tribute.id);
+
+    expect(completedTribute?.survival).toEqual(tribute.survival);
+    expect(completedTribute?.statuses.map((status) => status.definitionId)).toEqual([
+      "hungry",
+      "thirsty",
+    ]);
+
+    expect(completed.eventHistory).toEqual(game.eventHistory);
+
+    expect(completed.tributes.filter((candidate) => candidate.isAlive)).toHaveLength(
+      game.tributes.length,
+    );
+  });
+
   it("runs deterministically until a victory outcome is reached", () => {
     const firstResult = completeGame(createTestGame());
 

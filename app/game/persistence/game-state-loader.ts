@@ -5,6 +5,32 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function normalizeDeprecatedSurvivalCounters(state: GameState): GameState {
+  const hasDeprecatedCounters = state.tributes.some((tribute) => {
+    const survival = tribute.survival as unknown as Record<string, unknown>;
+
+    return "roundsWithoutFood" in survival || "roundsWithoutWater" in survival;
+  });
+
+  if (!hasDeprecatedCounters) {
+    return state;
+  }
+
+  return {
+    ...state,
+    tributes: state.tributes.map((tribute) => {
+      return {
+        ...tribute,
+        survival: {
+          lastFoundFoodRound: tribute.survival.lastFoundFoodRound,
+          lastFoundWaterRound: tribute.survival.lastFoundWaterRound,
+          lastNightRest: tribute.survival.lastNightRest,
+        },
+      };
+    }),
+  };
+}
+
 function normalizeVisibleRoundQueue(state: GameState): GameState {
   const containsAutomaticRoundEvents = state.roundEvents.some(
     (event) => event.kind === "preparation",
@@ -53,7 +79,9 @@ export function loadGameState(value: unknown): GameState {
     throw new UnsupportedGameStateSchemaError(value.schemaVersion);
   }
 
-  const state = normalizeVisibleRoundQueue(value as unknown as GameState);
+  const state = normalizeVisibleRoundQueue(
+    normalizeDeprecatedSurvivalCounters(value as unknown as GameState),
+  );
 
   try {
     assertGameStateInvariants(state);

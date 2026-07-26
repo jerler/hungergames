@@ -61,11 +61,9 @@ function createTributeWithStatuses(statuses: readonly StatusEffect[]): GameTribu
 
 describe("status conflict definitions", () => {
   it("defines the hunger conflicts", () => {
-    expect(getConflictingStatusIds("well-fed")).toEqual(["hungry", "starving"]);
+    expect(getConflictingStatusIds("well-fed")).toEqual(["hungry"]);
 
     expect(getConflictingStatusIds("hungry")).toEqual(["well-fed"]);
-
-    expect(getConflictingStatusIds("starving")).toEqual(["well-fed"]);
   });
 
   it("defines the rest conflicts", () => {
@@ -110,18 +108,8 @@ describe("upsertStatusEffect conflict handling", () => {
     },
 
     {
-      existing: "starving",
-      incoming: "well-fed",
-    },
-
-    {
       existing: "well-fed",
       incoming: "hungry",
-    },
-
-    {
-      existing: "well-fed",
-      incoming: "starving",
     },
 
     {
@@ -225,8 +213,6 @@ describe("upsertStatusEffect conflict handling", () => {
 describe("assertValidStatusCombination", () => {
   it.each([
     ["well-fed", "hungry"],
-
-    ["well-fed", "starving"],
 
     ["well-rested", "exhausted"],
 

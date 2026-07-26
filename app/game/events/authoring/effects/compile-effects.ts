@@ -13,15 +13,11 @@ import { getItemDefinition } from "~/game/items/item-catalogue";
 import { createInventoryItemInstance } from "~/game/items/inventory-engine";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import type { GameChange } from "~/game/types/game-state";
-import type { StatusDefinition, StatusEffectId } from "~/game/statuses/status-schema";
+import type { StatusDefinition } from "~/game/statuses/status-schema";
 import type { EventEffect, RequiredItemEffect } from "./effect-schema";
 import { compileItemUseEffects } from "~/game/items/item-effect-engine";
 import { compileItemRestChanges } from "~/game/items/item-rest-engine";
 import type { GameTribute } from "~/game/types/game-state";
-import {
-  getSurvivalNeedProgression,
-  getSurvivalNeedStage,
-} from "~/game/survival/survival-thresholds";
 
 function isRequiredItemEffect(effect: EventEffect): effect is RequiredItemEffect {
   return (
@@ -167,79 +163,6 @@ function validateNaturalResourceEffect(
   }
 }
 
-function compileSurvivalDeprivationEffect(
-  effect: Extract<
-    EventEffect,
-    {
-      type: "increase-survival-deprivation";
-    }
-  >,
-  context: EventResolutionContext,
-): GameChange[] {
-  const tribute = requireSingleParticipant(context.participantsByRole, effect.roleId);
-
-  const progression = getSurvivalNeedProgression(effect.need);
-
-  const currentRounds = tribute.survival[progression.counterKey];
-
-  /*
-   * Authored deprivation effects such as contaminated water
-   * describe a worsening condition, not an implicit fatality.
-   *
-   * They may accelerate a tribute to the final nonfatal day,
-   * but only the daily survival tick creates starvation or
-   * dehydration death events.
-   */
-  const projectedRounds = Math.min(
-    currentRounds + effect.rounds,
-
-    progression.fatalAtRounds - 1,
-  );
-
-  const appliedRounds = projectedRounds - currentRounds;
-
-  const expectedStage = getSurvivalNeedStage(effect.need, projectedRounds);
-
-  const needStatusIds: ReadonlySet<StatusEffectId> = new Set(
-    progression.stages.map((stage) => stage.statusId),
-  );
-
-  const changes: GameChange[] = tribute.statuses.flatMap((status) =>
-    needStatusIds.has(status.definitionId)
-      ? [
-          {
-            type: "remove-status",
-            tributeId: tribute.id,
-            statusId: status.id,
-          } satisfies GameChange,
-        ]
-      : [],
-  );
-
-  if (appliedRounds > 0) {
-    changes.push({
-      type: "increment-survival-need-counter",
-      tributeId: tribute.id,
-      need: effect.need,
-      amount: appliedRounds,
-    });
-  }
-
-  if (expectedStage) {
-    changes.push(
-      createStatusChange(
-        context.eventId,
-        tribute,
-        expectedStage.statusId,
-        expectedStage.severity,
-        context.round,
-      ),
-    );
-  }
-
-  return changes;
-}
-
 export function validateEffects(
   eventId: string,
   effects: readonly EventEffect[],
@@ -256,16 +179,6 @@ export function validateEffects(
         `Event "${eventId}": effect "${effect.type}" ` +
           `references unknown role "${effect.roleId}".`,
       );
-    }
-
-    if (effect.type === "increase-survival-deprivation") {
-      if (!Number.isInteger(effect.rounds) || effect.rounds <= 0) {
-        throw new Error(
-          `Event "${eventId}": effect ` +
-            '"increase-survival-deprivation" ' +
-            "requires a positive integer round count.",
-        );
-      }
     }
 
     if (isRequiredItemEffect(effect) && !rolesWithRequiredItems.has(effect.roleId)) {
@@ -363,9 +276,6 @@ export function compileEffects(
           ),
         ];
       }
-
-      case "increase-survival-deprivation":
-        return compileSurvivalDeprivationEffect(effect, context);
 
       case "satisfy-survival-need": {
         const tribute = requireSingleParticipant(context.participantsByRole, effect.roleId);

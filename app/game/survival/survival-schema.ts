@@ -5,13 +5,21 @@ export type NightRestQuality = "comfortable" | "sheltered" | "unsheltered";
 
 export interface TributeSurvivalState {
   /**
-   * Legacy field names retained for save compatibility.
+   * The most recent round in which this tribute successfully
+   * obtained and consumed enough food to reset deprivation.
    *
-   * Each counter advances once after a night round completes,
-   * so one increment now represents one full arena day.
+   * Null means they have not eaten since entering the arena.
    */
-  roundsWithoutFood: number;
-  roundsWithoutWater: number;
+  lastFoundFoodRound: RoundReference | null;
+
+  /**
+   * The most recent round in which this tribute successfully
+   * obtained and consumed enough water to reset deprivation.
+   *
+   * Null means they have not drunk since entering the arena.
+   */
+  lastFoundWaterRound: RoundReference | null;
+
   lastNightRest: {
     round: RoundReference;
     quality: NightRestQuality;
@@ -20,8 +28,8 @@ export interface TributeSurvivalState {
 
 export function createDefaultTributeSurvivalState(): TributeSurvivalState {
   return {
-    roundsWithoutFood: 0,
-    roundsWithoutWater: 0,
+    lastFoundFoodRound: null,
+    lastFoundWaterRound: null,
     lastNightRest: null,
   };
 }

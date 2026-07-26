@@ -4,10 +4,7 @@ import { applyResolvedEvent } from "~/game/engine/apply-game-change";
 
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 
-import {
-  assertGameStateInvariants,
-  assertNeedResolutionEventInvariants,
-} from "~/game/engine/game-invariants";
+import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 
 import { createInventoryItemInstance } from "~/game/items/inventory-engine";
 
@@ -123,11 +120,6 @@ describe("game-state invariants", () => {
     const invalidState = updateTribute(state, tribute.id, (candidate) => ({
       ...candidate,
 
-      survival: {
-        ...candidate.survival,
-        roundsWithoutFood: 4,
-      },
-
       statuses: [
         createStatusEffectInstance("well-fed-conflict", candidate.id, "well-fed", 1, DAY_ONE),
 
@@ -161,82 +153,6 @@ describe("game-state invariants", () => {
     expect(() => assertGameStateInvariants(validState)).not.toThrow();
   });
 
-  it("rejects negative survival-need counters", () => {
-    const state = createGame();
-    const tribute = state.tributes[0];
-
-    if (!tribute) {
-      throw new Error("Invariant test tribute is missing.");
-    }
-
-    const invalidState = updateTribute(state, tribute.id, (candidate) => ({
-      ...candidate,
-
-      survival: {
-        ...candidate.survival,
-        roundsWithoutWater: -1,
-      },
-    }));
-
-    expect(() => assertGameStateInvariants(invalidState)).toThrow(
-      /rounds without water must be a non-negative integer/i,
-    );
-  });
-
-  it("rejects multiple active stages for one need", () => {
-    const state = createGame();
-    const tribute = state.tributes[0];
-
-    if (!tribute) {
-      throw new Error("Invariant test tribute is missing.");
-    }
-
-    const invalidState = updateTribute(state, tribute.id, (candidate) => ({
-      ...candidate,
-
-      survival: {
-        ...candidate.survival,
-        roundsWithoutWater: 2,
-      },
-
-      statuses: [
-        createStatusEffectInstance("thirst-stage", candidate.id, "thirsty", 1, DAY_ONE),
-
-        createStatusEffectInstance("dehydration-stage", candidate.id, "dehydrated", 1, DAY_ONE),
-      ],
-    }));
-
-    expect(() => assertGameStateInvariants(invalidState)).toThrow(
-      /exactly one active water stage/i,
-    );
-  });
-
-  it("rejects a need status that disagrees with its counter", () => {
-    const state = createGame();
-    const tribute = state.tributes[0];
-
-    if (!tribute) {
-      throw new Error("Invariant test tribute is missing.");
-    }
-
-    const invalidState = updateTribute(state, tribute.id, (candidate) => ({
-      ...candidate,
-
-      survival: {
-        ...candidate.survival,
-        roundsWithoutWater: 4,
-      },
-
-      statuses: [
-        createStatusEffectInstance("incorrect-thirst-stage", candidate.id, "thirsty", 1, DAY_ONE),
-      ],
-    }));
-
-    expect(() => assertGameStateInvariants(invalidState)).toThrow(
-      /counter 4 requires "dehydrated"/i,
-    );
-  });
-
   it("requires persistent statuses to have null duration", () => {
     const state = createGame();
     const tribute = state.tributes[0];
@@ -253,11 +169,6 @@ describe("game-state invariants", () => {
 
     const invalidState = updateTribute(state, tribute.id, (candidate) => ({
       ...candidate,
-
-      survival: {
-        ...candidate.survival,
-        roundsWithoutWater: 2,
-      },
 
       statuses: [thirstyStatus],
     }));
@@ -429,40 +340,6 @@ describe("game-state invariants", () => {
     };
 
     expect(() => assertGameStateInvariants(invalidState)).toThrow(/committed by both/i);
-  });
-
-  it("rejects killer attribution on need deaths", () => {
-    const event: ResolvedEvent = {
-      id: "invalid-need-death",
-      definitionId: "need-fatality:dehydration",
-
-      kind: "need-resolution",
-      resolutionMode: "standard",
-
-      round: DAY_ONE,
-
-      participantTributeIds: ["victim"],
-
-      text: "The victim dies of dehydration.",
-
-      changes: [
-        {
-          type: "eliminate-tribute",
-
-          tributeId: "victim",
-
-          causeId: "survival-need:water",
-
-          causeLabel: "Dehydration",
-
-          summary: "The victim dies of dehydration.",
-
-          killerTributeIds: ["killer"],
-        },
-      ],
-    };
-
-    expect(() => assertNeedResolutionEventInvariants(event)).toThrow(/cannot have a killer/i);
   });
 
   it("requires death records to match elimination history", () => {

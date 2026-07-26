@@ -77,29 +77,6 @@ export const STATUS_CATALOGUE = [
   },
 
   {
-    id: "dehydrated",
-    label: "Dehydrated",
-    description:
-      "Severe dehydration rapidly reduces concentration and endurance and can become fatal without water.",
-
-    kind: "harmful",
-
-    duration: {
-      kind: "persistent",
-    },
-
-    removalDescription: "Remains until the tribute drinks enough water to recover.",
-
-    maxSeverity: 3,
-
-    modifiers: {
-      combatPerSeverity: -0.25,
-      survivalPerSeverity: -0.45,
-      awarenessPerSeverity: -0.4,
-      foragingPerSeverity: -0.35,
-    },
-  },
-  {
     id: "hungry",
     label: "Hungry",
     description:
@@ -120,29 +97,6 @@ export const STATUS_CATALOGUE = [
       survivalPerSeverity: -0.2,
       awarenessPerSeverity: -0.1,
       foragingPerSeverity: -0.25,
-    },
-  },
-
-  {
-    id: "starving",
-    label: "Starving",
-    description: "Prolonged hunger severely weakens the tribute and can become fatal without food.",
-
-    kind: "harmful",
-
-    duration: {
-      kind: "persistent",
-    },
-
-    removalDescription: "Remains until the tribute eats enough food to recover.",
-
-    maxSeverity: 3,
-
-    modifiers: {
-      combatPerSeverity: -0.45,
-      survivalPerSeverity: -0.65,
-      awarenessPerSeverity: -0.3,
-      foragingPerSeverity: -0.55,
     },
   },
 

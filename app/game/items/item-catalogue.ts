@@ -10,14 +10,10 @@ import {
 
 const HYDRATION_RECOVERY_EFFECTS = [
   itemSatisfiesNeed("hydration"),
-
-  itemRemovesStatuses("thirsty"),
 ] as const satisfies readonly ItemUseEffect[];
 
 const FOOD_RECOVERY_EFFECTS = [
   itemSatisfiesNeed("food"),
-
-  itemRemovesStatuses("hungry"),
 ] as const satisfies readonly ItemUseEffect[];
 
 const HALLUCINOGENIC_FORAGE_EFFECTS = [

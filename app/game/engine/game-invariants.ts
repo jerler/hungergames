@@ -65,8 +65,7 @@ function assertSurvivalHistoryRound(
     typeof historyRound !== "object" ||
     !Number.isInteger(historyRound.day) ||
     historyRound.day < 1 ||
-    (historyRound.period !== "day" &&
-      historyRound.period !== "night")
+    (historyRound.period !== "day" && historyRound.period !== "night")
   ) {
     throw new Error(
       `Game invariant violated: tribute "${tribute.id}" ` +
@@ -81,10 +80,7 @@ function assertSurvivalHistoryRound(
     );
   }
 
-  if (
-    getRoundSequence(historyRound) >
-    getRoundSequence(currentRound)
-  ) {
+  if (getRoundSequence(historyRound) > getRoundSequence(currentRound)) {
     throw new Error(
       `Game invariant violated: tribute "${tribute.id}" records ` +
         `last-found ${need} after the current round.`,

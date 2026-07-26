@@ -35,14 +35,26 @@ function updateTribute(
 }
 
 type SurvivalNeedHistoryKey = "lastFoundFoodRound" | "lastFoundWaterRound";
+type SurvivalNeedStatusId = "hungry" | "thirsty";
 
-function getSurvivalNeedHistoryKey(need: SurvivalNeed): SurvivalNeedHistoryKey {
+interface SurvivalNeedResolution {
+  historyKey: SurvivalNeedHistoryKey;
+  statusId: SurvivalNeedStatusId;
+}
+
+function getSurvivalNeedResolution(need: SurvivalNeed): SurvivalNeedResolution {
   if (need === "food") {
-    return "lastFoundFoodRound";
+    return {
+      historyKey: "lastFoundFoodRound",
+      statusId: "hungry",
+    };
   }
 
   if (need === "water") {
-    return "lastFoundWaterRound";
+    return {
+      historyKey: "lastFoundWaterRound",
+      statusId: "thirsty",
+    };
   }
 
   throw new Error(`Unknown survival need "${String(need)}".`);
@@ -337,17 +349,26 @@ export function applyGameChange(
       }));
 
     case "satisfy-survival-need": {
-      const historyKey = getSurvivalNeedHistoryKey(change.need);
+      const { historyKey, statusId } = getSurvivalNeedResolution(change.need);
 
-      return updateTribute(state, change.tributeId, (tribute) => ({
-        ...tribute,
-        survival: {
-          ...tribute.survival,
-          [historyKey]: {
-            ...event.round,
+      return updateTribute(state, change.tributeId, (tribute) => {
+        if (!tribute.isAlive) {
+          throw new Error(
+            `Dead tribute "${tribute.id}" cannot satisfy ` + `the ${change.need} survival need.`,
+          );
+        }
+
+        return {
+          ...tribute,
+          survival: {
+            ...tribute.survival,
+            [historyKey]: {
+              ...event.round,
+            },
           },
-        },
-      }));
+          statuses: tribute.statuses.filter((status) => status.definitionId !== statusId),
+        };
+      });
     }
 
     case "record-night-rest": {

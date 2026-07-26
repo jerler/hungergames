@@ -11,7 +11,7 @@ const ROUND = {
 } as const;
 
 describe("item effect compilation", () => {
-  it("applies natural food effects to the user and consumption to the owner", () => {
+  it("delegates food status cleanup to satisfy-survival-need", () => {
     const owner = createAuthoringTestTribute({
       id: "owner",
     });
@@ -21,7 +21,11 @@ describe("item effect compilation", () => {
         id: "acting-tribute",
       }),
 
-      statuses: [createStatusEffectInstance("hunger-event", "acting-tribute", "hungry", 1, ROUND)],
+      statuses: [
+        createStatusEffectInstance("hunger-event", "acting-tribute", "hungry", 1, ROUND),
+
+        createStatusEffectInstance("thirst-event", "acting-tribute", "thirsty", 1, ROUND),
+      ],
     };
 
     const food = createInventoryItemInstance("food-event", owner.id, "wild-fruit", ROUND);
@@ -29,7 +33,6 @@ describe("item effect compilation", () => {
     const changes = compileItemUseEffects({
       eventId: "use-natural-food",
       round: ROUND,
-
       actingTribute,
       owner,
       item: food,
@@ -44,17 +47,14 @@ describe("item effect compilation", () => {
         }),
 
         expect.objectContaining({
-          type: "remove-status",
-          tributeId: actingTribute.id,
-        }),
-
-        expect.objectContaining({
           type: "consume-item",
           tributeId: owner.id,
           itemInstanceId: food.id,
         }),
       ]),
     );
+
+    expect(changes.some((change) => change.type === "remove-status")).toBe(false);
   });
 
   it("removes only medical statuses", () => {
@@ -69,6 +69,10 @@ describe("item effect compilation", () => {
         createStatusEffectInstance("poison", tribute.id, "poisoned", 1, ROUND),
 
         createStatusEffectInstance("hunt", tribute.id, "hunted", 1, ROUND),
+
+        createStatusEffectInstance("hunger", tribute.id, "hungry", 1, ROUND),
+
+        createStatusEffectInstance("thirst", tribute.id, "thirsty", 1, ROUND),
       ],
     };
 
@@ -77,7 +81,6 @@ describe("item effect compilation", () => {
     const changes = compileItemUseEffects({
       eventId: "use-med-kit",
       round: ROUND,
-
       actingTribute,
       owner: tribute,
       item: medKit,
@@ -92,6 +95,10 @@ describe("item effect compilation", () => {
     );
 
     expect(removedStatusIds).not.toContain(actingTribute.statuses[2].id);
+
+    expect(removedStatusIds).not.toContain(actingTribute.statuses[3].id);
+
+    expect(removedStatusIds).not.toContain(actingTribute.statuses[4].id);
   });
 
   it("rejects utility items without generic active use effects", () => {
@@ -102,13 +109,9 @@ describe("item effect compilation", () => {
     expect(() =>
       compileItemUseEffects({
         eventId: "use-map",
-
         round: ROUND,
-
         actingTribute: tribute,
-
         owner: tribute,
-
         item: map,
       }),
     ).toThrow('Item "map" does not define active use effects.');

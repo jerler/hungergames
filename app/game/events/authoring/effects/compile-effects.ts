@@ -280,6 +280,13 @@ export function compileEffects(
       case "satisfy-survival-need": {
         const tribute = requireSingleParticipant(context.participantsByRole, effect.roleId);
 
+        if (!tribute.isAlive) {
+          throw new Error(
+            `Event "${context.eventId}": dead tribute ` +
+              `"${tribute.id}" cannot satisfy the ${effect.need} need.`,
+          );
+        }
+
         return [
           {
             type: "satisfy-survival-need",

@@ -1,8 +1,13 @@
 import { formatRoundLabel } from "~/game/engine/rounds";
 import { getActiveStatuses } from "~/game/statuses/status-selectors";
-import { createStatusPresentation } from "~/game/statuses/status-presentation";
+import {
+  createStatusPresentation,
+  type StatusPresentationTone,
+} from "~/game/statuses/status-presentation";
 import { createRestPresentation } from "~/game/survival/rest-presentation";
-import type { GameTribute, TributeDeath } from "~/game/types/game-state";
+import type { GameTribute, StatusEffect, TributeDeath } from "~/game/types/game-state";
+
+import { StatusIcon } from "./status-icon";
 
 interface TributeSidebarProps {
   tributes: readonly GameTribute[];
@@ -34,6 +39,26 @@ function getKillerNames(death: TributeDeath, tributes: readonly GameTribute[]): 
   return death.killerTributeIds
     .map((killerId) => tributes.find((tribute) => tribute.id === killerId)?.snapshot.name)
     .filter((name): name is string => Boolean(name));
+}
+
+function getStatusBadgeTone(
+  status: StatusEffect,
+  presentationTone: StatusPresentationTone,
+  isFatal: boolean,
+): StatusPresentationTone {
+  if (isFatal || presentationTone === "beneficial") {
+    return presentationTone;
+  }
+
+  if (status.severity >= 3) {
+    return "critical";
+  }
+
+  if (status.severity === 2) {
+    return "warning";
+  }
+
+  return "temporary";
 }
 
 export function TributeSidebar({ tributes }: TributeSidebarProps) {
@@ -136,68 +161,78 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
                     </div>
                   </div>
                 ) : null}
-              </div>
 
-              <div className="sidebar-tribute__identity">
-                <strong>{tribute.snapshot.name}</strong>
-                <span>District {tribute.district}</span>
-
-                {restPresentation ? (
-                  <span
-                    className={[
-                      "sidebar-tribute__rest",
-                      `sidebar-tribute__rest--${restPresentation.tone}`,
-                    ].join(" ")}
-                    aria-label={restPresentation.summary}
+                {tribute.isAlive && statusPresentations.length > 0 ? (
+                  <ul
+                    className="sidebar-tribute__status-icons"
+                    aria-label={`${tribute.snapshot.name} active statuses`}
                   >
-                    {restPresentation.label}
-                    {" · "}
-                    {restPresentation.roundLabel}
-                  </span>
-                ) : null}
-              </div>
+                    {statusPresentations.map(({ status, details }, statusIndex) => {
+                      const statusTooltipId = `${tribute.id}-status-${statusIndex}-tooltip`;
 
-              {tribute.isAlive && statusPresentations.length > 0 ? (
-                <ul
-                  className="sidebar-tribute__statuses"
-                  aria-label={`${tribute.snapshot.name} active statuses`}
-                >
-                  {statusPresentations.map(({ status, details }, statusIndex) => {
-                    const statusDetailsId = `${tribute.id}-status-${statusIndex}-details`;
+                      const isFatal = Boolean(details.fatalCauseLabel && details.fatalConsequence);
 
-                    const effectDescription =
-                      details.effectSummaries.length > 0
-                        ? ` Gameplay effects: ${details.effectSummaries.join(" ")}`
-                        : "";
+                      const badgeTone = getStatusBadgeTone(status, details.tone, isFatal);
 
-                    return (
-                      <li key={status.id} data-status-id={status.definitionId}>
-                        <details
-                          className="sidebar-tribute__status-card"
-                          data-status-tone={details.tone}
+                      const isImminentFatal =
+                        isFatal && status.remainingRounds !== null && status.remainingRounds <= 1;
+
+                      return (
+                        <li
+                          className="sidebar-tribute__status-entry"
+                          key={status.id}
+                          data-status-id={status.definitionId}
                         >
-                          <summary
+                          <button
+                            className="sidebar-tribute__status-badge"
+                            type="button"
+                            data-status-tone={badgeTone}
+                            data-status-kind={
+                              details.tone === "beneficial" ? "beneficial" : "harmful"
+                            }
+                            data-status-severity={status.severity}
+                            data-imminent-fatal={isImminentFatal || undefined}
                             aria-label={
                               `${details.label}. ${details.kindLabel}. ` +
                               `${details.severityLabel}. ` +
-                              `${details.lifecycleSummary} ` +
-                              `${details.description}${effectDescription}`
+                              `${details.durationLabel}. ` +
+                              `${details.lifecycleSummary}`
                             }
-                            aria-describedby={statusDetailsId}
+                            aria-describedby={statusTooltipId}
                           >
-                            <span className="sidebar-tribute__status-summary-main">
+                            <StatusIcon statusId={status.definitionId} />
+
+                            <span className="sidebar-tribute__status-severity" aria-hidden="true">
+                              {[1, 2, 3].map((severityLevel) => (
+                                <span
+                                  className={
+                                    severityLevel <= status.severity
+                                      ? "sidebar-tribute__status-severity-mark sidebar-tribute__status-severity-mark--active"
+                                      : "sidebar-tribute__status-severity-mark"
+                                  }
+                                  key={severityLevel}
+                                />
+                              ))}
+                            </span>
+                          </button>
+
+                          <div
+                            className="sidebar-tribute__status-tooltip"
+                            id={statusTooltipId}
+                            role="tooltip"
+                            data-status-tone={badgeTone}
+                          >
+                            <div className="sidebar-tribute__status-tooltip-header">
                               <strong>{details.label}</strong>
                               <span>{details.durationLabel}</span>
-                            </span>
+                            </div>
 
-                            <span className="sidebar-tribute__status-classification">
+                            <span className="sidebar-tribute__status-tooltip-classification">
                               {details.kindLabel}
                               {" · "}
                               {details.severityLabel}
                             </span>
-                          </summary>
 
-                          <div className="sidebar-tribute__status-details" id={statusDetailsId}>
                             <p>{details.description}</p>
 
                             <div className="sidebar-tribute__status-meta">
@@ -225,12 +260,31 @@ export function TributeSidebar({ tributes }: TributeSidebarProps) {
                               </div>
                             ) : null}
                           </div>
-                        </details>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
+              </div>
+
+              <div className="sidebar-tribute__identity">
+                <strong>{tribute.snapshot.name}</strong>
+                <span>District {tribute.district}</span>
+
+                {restPresentation ? (
+                  <span
+                    className={[
+                      "sidebar-tribute__rest",
+                      `sidebar-tribute__rest--${restPresentation.tone}`,
+                    ].join(" ")}
+                    aria-label={restPresentation.summary}
+                  >
+                    {restPresentation.label}
+                    {" · "}
+                    {restPresentation.roundLabel}
+                  </span>
+                ) : null}
+              </div>
             </article>
           );
         })}

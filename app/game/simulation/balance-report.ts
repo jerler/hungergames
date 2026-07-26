@@ -255,6 +255,26 @@ export function createBalanceReport(
 
     "",
 
+    "## Food, water, and deprivation",
+
+    "",
+
+    `- Food satisfaction events: ${metrics.survival.foodSatisfactionEvents}`,
+    `- Water satisfaction events: ${metrics.survival.waterSatisfactionEvents}`,
+    `- Hunger eligibility opportunities: ${metrics.survival.hungerEligibilityOpportunities}`,
+    `- Thirst eligibility opportunities: ${metrics.survival.thirstEligibilityOpportunities}`,
+    `- Hungry applications: ${metrics.survival.hungryApplications}`,
+    `- Thirsty applications: ${metrics.survival.thirstyApplications}`,
+    `- Hunger resolutions: ${metrics.survival.hungerResolutions}`,
+    `- Thirst resolutions: ${metrics.survival.thirstResolutions}`,
+    `- Food theft: ${metrics.survival.foodTheftSuccesses}/${metrics.survival.foodTheftAttempts} successes`,
+    `- Water theft: ${metrics.survival.waterTheftSuccesses}/${metrics.survival.waterTheftAttempts} successes`,
+    `- Deprivation primary-event rate: ${formatRate(metrics.survival.deprivationPrimaryEventRate)}`,
+    `- Legacy food/water acquisitions: ${metrics.survival.legacyFoodWaterAcquisitions}`,
+    `- Automatic deprivation fatalities: ${metrics.survival.automaticDeprivationFatalities}`,
+
+    "",
+
     "## Statuses",
 
     "",

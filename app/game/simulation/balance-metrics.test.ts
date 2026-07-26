@@ -44,6 +44,11 @@ describe("balance metrics", () => {
 
     expect(metrics.eventFamilies.length).toBeGreaterThan(0);
 
+    expect(metrics.survival.foodSatisfactionEvents).toBeGreaterThan(0);
+    expect(metrics.survival.waterSatisfactionEvents).toBeGreaterThan(0);
+    expect(metrics.survival.legacyFoodWaterAcquisitions).toBe(0);
+    expect(metrics.survival.automaticDeprivationFatalities).toBe(0);
+
     expect(Number.isFinite(metrics.victorStats.average.brains)).toBe(true);
   });
 

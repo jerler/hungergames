@@ -4,7 +4,7 @@ import { assertGameStateInvariants } from "~/game/engine/game-invariants";
 
 import { createSeededRandom } from "~/game/engine/random";
 
-import { getRoundSequence } from "~/game/engine/rounds";
+import { getNextRound, getRoundSequence } from "~/game/engine/rounds";
 
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 
@@ -18,10 +18,16 @@ import type { GameState } from "~/game/types/game-state";
 
 import { gameReducer } from "~/state/game-reducer";
 
+export interface SimulationRoundSnapshot {
+  round: import("~/game/types/game-state").RoundReference;
+  state: GameState;
+}
+
 export interface SimulationRun {
   seed: string;
   districtCount: DistrictCount;
   roundsCompleted: number;
+  roundSnapshots: readonly SimulationRoundSnapshot[];
   state: GameState;
 }
 
@@ -105,7 +111,15 @@ export function simulateGame({
 
   assertGameStateInvariants(state);
 
+  const roundSnapshots: SimulationRoundSnapshot[] = [];
+
   for (let roundIndex = 0; roundIndex < maxRounds; roundIndex += 1) {
+    const nextRound = getNextRound(state.currentRound);
+
+    roundSnapshots.push({
+      round: nextRound,
+      state,
+    });
     state = requireGameState(
       gameReducer(state, {
         type: "round/began",
@@ -124,6 +138,7 @@ export function simulateGame({
         districtCount,
 
         roundsCompleted: getCompletedRoundCount(state),
+        roundSnapshots: [...roundSnapshots],
 
         state,
       };
@@ -147,6 +162,7 @@ export function simulateGame({
         districtCount,
 
         roundsCompleted: getCompletedRoundCount(state),
+        roundSnapshots: [...roundSnapshots],
 
         state,
       };

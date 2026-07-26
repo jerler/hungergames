@@ -45,6 +45,8 @@ describe("balance report", () => {
     expect(report).toContain("### Rest quality");
     expect(report).toContain("Total recorded outcomes");
 
+    expect(report).toContain("## Food, water, and deprivation");
+    expect(report).toContain("Hunger eligibility opportunities");
     expect(report).toContain("## Inventory");
 
     expect(report).toContain("## Victor stat balance");

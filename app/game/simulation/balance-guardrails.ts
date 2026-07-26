@@ -154,7 +154,7 @@ export function evaluateBalanceGuardrails(metrics: BalanceMetrics): BalanceGuard
     createResult(
       "item-consumption",
 
-      "Limited-use items are consumed",
+      "Remaining limited-use items are consumed",
 
       metrics.inventory.totalConsumedUses > 0,
 
@@ -298,6 +298,92 @@ export function evaluateBalanceGuardrails(metrics: BalanceMetrics): BalanceGuard
       })(),
 
       "protected rest between 10% and 95%",
+    ),
+    createResult(
+      "deprivation-events-occur",
+
+      "Hunger and thirst occur sometimes",
+      metrics.survival.hungryApplications > 0 && metrics.survival.thirstyApplications > 0,
+      `${metrics.survival.hungryApplications} hungry / ` +
+        `${metrics.survival.thirstyApplications} thirsty`,
+      "at least one application of each across the deterministic batch",
+    ),
+
+    createResult(
+      "deprivation-never-premature",
+
+      "Deprivation statuses never occur before eligibility",
+      metrics.survival.prematureHungerApplications === 0 &&
+        metrics.survival.prematureThirstApplications === 0,
+      `${metrics.survival.prematureHungerApplications} premature hungry / ` +
+        `${metrics.survival.prematureThirstApplications} premature thirsty`,
+      "0 premature applications",
+    ),
+
+    createResult(
+      "deprivation-remains-optional",
+
+      "Eligibility does not guarantee a deprivation event",
+      metrics.survival.hungryApplications < metrics.survival.hungerEligibilityOpportunities &&
+        metrics.survival.thirstyApplications < metrics.survival.thirstEligibilityOpportunities,
+      `${metrics.survival.hungryApplications}/` +
+        `${metrics.survival.hungerEligibilityOpportunities} hunger; ` +
+        `${metrics.survival.thirstyApplications}/` +
+        `${metrics.survival.thirstEligibilityOpportunities} thirst`,
+      "applications lower than tribute-round eligibility opportunities",
+    ),
+
+    createResult(
+      "deprivation-balance",
+
+      "Hunger and thirst do not dominate later play",
+      metrics.survival.deprivationPrimaryEventRate > 0 &&
+        metrics.survival.deprivationPrimaryEventRate <= 0.2,
+      formatRate(metrics.survival.deprivationPrimaryEventRate),
+      "greater than 0% and no more than 20% of primary events",
+    ),
+
+    createResult(
+      "deprivation-resolutions",
+
+      "Hunger and thirst can both be resolved",
+      metrics.survival.hungerResolutions > 0 && metrics.survival.thirstResolutions > 0,
+      `${metrics.survival.hungerResolutions} hunger / ` +
+        `${metrics.survival.thirstResolutions} thirst`,
+      "at least one resolution of each",
+    ),
+
+    createResult(
+      "resource-theft-outcomes",
+
+      "Authored resource theft exercises attempts and successes",
+      metrics.survival.foodTheftAttempts > 0 &&
+        metrics.survival.foodTheftSuccesses > 0 &&
+        metrics.survival.waterTheftAttempts > 0 &&
+        metrics.survival.waterTheftSuccesses > 0,
+      `${metrics.survival.foodTheftSuccesses}/` +
+        `${metrics.survival.foodTheftAttempts} food; ` +
+        `${metrics.survival.waterTheftSuccesses}/` +
+        `${metrics.survival.waterTheftAttempts} water`,
+      "at least one attempt and success for each need",
+    ),
+
+    createResult(
+      "legacy-resource-inventory",
+
+      "Legacy food and water inventory remains absent",
+      metrics.survival.legacyFoodWaterAcquisitions === 0,
+      String(metrics.survival.legacyFoodWaterAcquisitions),
+      "0 acquisitions",
+    ),
+
+    createResult(
+      "automatic-deprivation-fatalities",
+
+      "No automatic starvation or dehydration deaths occur",
+      metrics.survival.automaticDeprivationFatalities === 0,
+      String(metrics.survival.automaticDeprivationFatalities),
+      "0 fatalities",
     ),
   ];
 

@@ -330,11 +330,11 @@ describe("TributeSidebar", () => {
                 day: 2,
                 period: "day",
               },
-              causeId: "starvation",
-              causeLabel: "Starved",
-              summary: "Avery starved.",
+              causeId: "arena-collapse",
+              causeLabel: "Crushed",
+              summary: "Avery was crushed by falling arena debris.",
               killerTributeIds: [],
-              resolvedEventId: "event-starvation",
+              resolvedEventId: "event-arena-collapse",
             },
           }),
         ]}
@@ -343,9 +343,9 @@ describe("TributeSidebar", () => {
 
     expect(
       screen.getByRole("button", {
-        name: "Starved. Avery starved.",
+        name: "Crushed. Avery was crushed by falling arena debris.",
       }),
-    ).toHaveTextContent("Starved");
+    ).toHaveTextContent("Crushed");
 
     expect(
       screen.queryByRole("list", {

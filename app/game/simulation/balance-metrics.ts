@@ -19,6 +19,11 @@ import type { TributeStats } from "~/game/types/tribute";
 
 import type { SimulationRun } from "./simulation-runner";
 
+import {
+  collectSurvivalBalanceMetrics,
+  type SurvivalBalanceMetrics,
+} from "./survival-balance-metrics";
+
 type NumericTributeStats = Record<keyof TributeStats, number>;
 
 export type GameSizeMetricId = "half-game" | "full-game";
@@ -145,6 +150,8 @@ export interface BalanceMetrics {
     distinctItemsAcquired: number;
     neverAcquiredItemIds: readonly string[];
   };
+
+  survival: SurvivalBalanceMetrics;
 
   eventFamilies: readonly EventFamilyBalanceMetric[];
 
@@ -758,6 +765,8 @@ export function collectBalanceMetrics(runs: readonly SimulationRun[]): BalanceMe
 
       neverAcquiredItemIds,
     },
+
+    survival: collectSurvivalBalanceMetrics(runs),
 
     eventFamilies: ACTIVE_EVENT_FAMILIES.map((family) => ({
       id: family.id,

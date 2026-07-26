@@ -32,7 +32,6 @@ import {
 } from "~/game/events/catalogue/encounters/resource-theft-events";
 import { RELATIONSHIP_EVENTS } from "~/game/events/catalogue/relationships";
 import { STAT_GATED_EVENTS } from "~/game/events/catalogue/stat-gated";
-import { getRoundSequence } from "~/game/engine/rounds";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { COMBAT_EVENTS } from "~/game/events/catalogue/encounters/combat-events";
@@ -45,7 +44,7 @@ import { evaluateBalanceGuardrails } from "~/game/simulation/balance-guardrails"
 
 import { collectBalanceMetrics } from "~/game/simulation/balance-metrics";
 
-import type { SimulationRun } from "~/game/simulation/simulation-runner";
+import { simulateGameBatch } from "~/game/simulation/simulation-runner";
 
 const STATUS_CONSUMABLE_ITEM_IDS = new Set<ItemDefinitionId>([
   "burger-and-fries",
@@ -128,14 +127,6 @@ function getCornucopiaParticipationRate(state: GameState): number {
   );
 
   return participantIds.size / state.tributes.length;
-}
-
-function getGameLengthInRounds(state: GameState): number {
-  return Math.max(
-    0,
-
-    ...state.eventHistory.map((event) => getRoundSequence(event.round)),
-  );
 }
 
 function getAcquisitionTransactions(state: GameState): AcquiredInventoryTransaction[] {
@@ -752,17 +743,25 @@ describe("simulation stress tests", () => {
   });
 
   it("stays within established simulation balance guardrails", () => {
-    const states = getStressResults();
-
-    const runs: SimulationRun[] = states.map((state, index) => ({
-      seed: index < 200 ? `half-game-${index}` : `full-game-${index - 200}`,
-
-      districtCount: state.config.districtCount,
-
-      roundsCompleted: getGameLengthInRounds(state),
-
-      state,
-    }));
+    /*
+     * Timeline-aware deprivation metrics require the pre-round
+     * snapshots produced by the shared simulation runner.
+     *
+     * Final GameState objects alone cannot establish whether a
+     * hungry or thirsty application was eligible at selection time.
+     */
+    const runs = simulateGameBatch([
+      {
+        seedPrefix: "half-game",
+        count: 200,
+        districtCount: 6,
+      },
+      {
+        seedPrefix: "full-game",
+        count: 100,
+        districtCount: 12,
+      },
+    ]);
 
     const metrics = collectBalanceMetrics(runs);
 

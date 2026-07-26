@@ -216,13 +216,88 @@ export function evaluateBalanceGuardrails(metrics: BalanceMetrics): BalanceGuard
 
       "Event-driven night rest is exercised",
 
-      metrics.preparation.restQuality.sheltered + metrics.preparation.restQuality.unsheltered > 0,
+      metrics.preparation.restQuality.comfortable +
+        metrics.preparation.restQuality.sheltered +
+        metrics.preparation.restQuality.unsheltered >
+        0,
 
       String(
-        metrics.preparation.restQuality.sheltered + metrics.preparation.restQuality.unsheltered,
+        metrics.preparation.restQuality.comfortable +
+          metrics.preparation.restQuality.sheltered +
+          metrics.preparation.restQuality.unsheltered,
       ),
 
       "at least one recorded rest outcome",
+    ),
+
+    createResult(
+      "night-rest-quality-coverage",
+
+      "All night-rest qualities are exercised",
+
+      metrics.preparation.restQuality.comfortable > 0 &&
+        metrics.preparation.restQuality.sheltered > 0 &&
+        metrics.preparation.restQuality.unsheltered > 0,
+
+      `${metrics.preparation.restQuality.comfortable} comfortable / ` +
+        `${metrics.preparation.restQuality.sheltered} sheltered / ` +
+        `${metrics.preparation.restQuality.unsheltered} unsheltered`,
+
+      "at least one of each",
+    ),
+
+    createResult(
+      "morning-rest-resolution",
+
+      "Morning rest resolution is exercised",
+
+      metrics.preparation.byMechanic["morning-rest-resolution"] > 0,
+
+      String(metrics.preparation.byMechanic["morning-rest-resolution"]),
+
+      "at least one resolution",
+    ),
+
+    createResult(
+      "morning-rest-consequences",
+
+      "Both morning rest consequences are exercised",
+
+      (metrics.statuses.applicationsByStatus.exhausted ?? 0) > 0 &&
+        (metrics.statuses.applicationsByStatus["well-rested"] ?? 0) > 0,
+
+      `${metrics.statuses.applicationsByStatus.exhausted ?? 0} exhausted / ` +
+        `${metrics.statuses.applicationsByStatus["well-rested"] ?? 0} well-rested`,
+
+      "at least one of each",
+    ),
+
+    createResult(
+      "night-rest-balance",
+
+      "Protected and unsheltered rest both remain meaningful",
+
+      (() => {
+        const protectedRest =
+          metrics.preparation.restQuality.comfortable + metrics.preparation.restQuality.sheltered;
+
+        const totalRest = protectedRest + metrics.preparation.restQuality.unsheltered;
+
+        const protectedRate = totalRest === 0 ? 0 : protectedRest / totalRest;
+
+        return protectedRate >= 0.1 && protectedRate <= 0.95;
+      })(),
+
+      (() => {
+        const protectedRest =
+          metrics.preparation.restQuality.comfortable + metrics.preparation.restQuality.sheltered;
+
+        const totalRest = protectedRest + metrics.preparation.restQuality.unsheltered;
+
+        return formatRate(totalRest === 0 ? 0 : protectedRest / totalRest);
+      })(),
+
+      "protected rest between 10% and 95%",
     ),
   ];
 

@@ -26,6 +26,21 @@ export interface EventCatalogueValidationOptions {
   bloodbathFamilies: readonly EventCatalogueFamily[];
 }
 
+export function validateNightCataloguePolicy(events: readonly EventDefinition[]): void {
+  const nightResourceEventIds = events
+    .filter((event) => event.periods.includes("night") && event.tags.includes("resource"))
+    .map((event) => event.id);
+
+  if (nightResourceEventIds.length > 0) {
+    throw new Error(
+      "Natural-resource events must be day-only. " +
+        "Night-capable resource events: " +
+        `${nightResourceEventIds.join(", ")}. ` +
+        "Theft and death loot may still transfer existing inventory.",
+    );
+  }
+}
+
 function validateUniqueIds(label: string, events: readonly EventDefinition[]): void {
   const counts = new Map<string, number>();
 
@@ -124,6 +139,8 @@ export function validateEventCatalogues({
   for (const definition of [...ordinaryCatalogue, ...bloodbathCatalogue]) {
     validateEventDefinition(definition);
   }
+
+  validateNightCataloguePolicy(ordinaryCatalogue);
 
   validateUniqueIds("Ordinary event catalogue", ordinaryCatalogue);
 

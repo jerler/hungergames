@@ -28,6 +28,8 @@ export function validateEventResolution({
 }: EventResolutionValidationOptions): void {
   requireNonEmpty(resolution.text, `Event "${definitionId}" resolution text`);
 
+  const restTributeIds = new Set<string>();
+
   for (const change of resolution.changes) {
     switch (change.type) {
       case "set-survival-need-counter":
@@ -59,6 +61,15 @@ export function validateEventResolution({
         if (!roundsMatch(change.round, round)) {
           throw new Error(`Event "${definitionId}" records rest for the wrong round.`);
         }
+
+        if (restTributeIds.has(change.tributeId)) {
+          throw new Error(
+            `Event "${definitionId}" records more than one ` +
+              `night-rest outcome for tribute "${change.tributeId}".`,
+          );
+        }
+
+        restTributeIds.add(change.tributeId);
 
         break;
       case "apply-status": {

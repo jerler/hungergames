@@ -3,7 +3,13 @@ import { createInventoryItemInstance } from "~/game/items/inventory-engine";
 import type { ItemAcquisitionSource, ItemDefinitionId } from "~/game/items/item-schema";
 import { createStatusEffectInstance } from "~/game/statuses/status-engine";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
-import type { GameChange, GameTribute, InventoryItem } from "~/game/types/game-state";
+import type { NightRestQuality } from "~/game/survival/survival-schema";
+import type {
+  GameChange,
+  GameTribute,
+  InventoryItem,
+  RoundReference,
+} from "~/game/types/game-state";
 
 export function createSurvivalChanges(tributes: readonly GameTribute[]): GameChange[] {
   return tributes.map((tribute) => ({
@@ -11,6 +17,28 @@ export function createSurvivalChanges(tributes: readonly GameTribute[]): GameCha
     tributeId: tribute.id,
     statistic: "eventsSurvived",
     amount: 1,
+  }));
+}
+
+export function createNightRestChanges(
+  tributes: readonly GameTribute[],
+  round: RoundReference,
+  quality: NightRestQuality,
+): GameChange[] {
+  if (round.period !== "night") {
+    throw new Error("Night rest can only be recorded during a night round.");
+  }
+
+  return tributes.map((tribute) => ({
+    type: "record-night-rest",
+
+    tributeId: tribute.id,
+
+    round: {
+      ...round,
+    },
+
+    quality,
   }));
 }
 

@@ -8,6 +8,7 @@ import {
 } from "~/game/events/event-schema";
 import {
   createFatalChanges,
+  createNightRestChanges,
   createStatusChange,
   createSurvivalChanges,
 } from "~/game/events/event-change-builders";
@@ -52,87 +53,98 @@ export function isPoisonousBerriesFinaleEligible(state: GameState): boolean {
   );
 }
 
-const ROMANTIC_FORMATION_EVENT: EventDefinition = {
-  id: "romantic-truce-formation",
-  category: "survival",
+function createRomanticFormationEvent(period: "day" | "night"): EventDefinition {
+  const isNight = period === "night";
 
-  tags: ["survival", "truce", "cooperative", "romantic"],
+  return {
+    id: isNight ? "romantic-night-truce-formation" : "romantic-truce-formation",
 
-  periods: ["day", "night"],
+    category: "survival",
 
-  /*
-   * Standard formation contributes about
-   * seven points of weight per period.
-   * At 0.2, romantic formation represents
-   * only a small share of new truces.
-   */
-  baseWeight: ROMANTIC_FORMATION_WEIGHT,
+    tags: ["survival", "truce", "cooperative", "romantic"],
 
-  roles: [
-    {
-      id: "tributes",
-      count: 2,
+    periods: [period],
 
-      isEligible: (tribute, { state }) => !getActiveTruceForTribute(state, tribute.id),
-
-      getWeight: (tribute, { participantsByRole }) =>
-        getAverageDistrictAffinityWeight(tribute, participantsByRole.tributes ?? []),
-    },
-  ],
-
-  isEligible: ({ state, livingTributes }) => {
     /*
-     * Do not allow a last-minute romance
-     * to form when only the finalists remain.
+     * Standard formation contributes about
+     * seven points of weight per period.
+     * At 0.2, romantic formation represents
+     * only a small share of new truces.
+     *
+     * Splitting the periods preserves that
+     * same 0.2 weight in both day and night.
      */
-    if (livingTributes.length <= 3) {
-      return false;
-    }
+    baseWeight: ROMANTIC_FORMATION_WEIGHT,
 
-    const availableTributes = livingTributes.filter(
-      (tribute) => !getActiveTruceForTribute(state, tribute.id),
-    );
+    roles: [
+      {
+        id: "tributes",
+        count: 2,
 
-    return availableTributes.length >= 2;
-  },
+        isEligible: (tribute, { state }) => !getActiveTruceForTribute(state, tribute.id),
 
-  getWeightMultiplier: ({ state }) => getTruceFormationPopulationMultiplier(state),
+        getWeight: (tribute, { participantsByRole }) =>
+          getAverageDistrictAffinityWeight(tribute, participantsByRole.tributes ?? []),
+      },
+    ],
 
-  resolve({ eventId, round, participantsByRole }): EventResolution {
-    const [firstTribute, secondTribute] = requireParticipants(participantsByRole, "tributes");
+    isEligible: ({ state, livingTributes }) => {
+      if (livingTributes.length <= 3) {
+        return false;
+      }
 
-    if (!firstTribute || !secondTribute) {
-      throw new Error("Romantic formation requires exactly two tributes.");
-    }
+      const availableTributes = livingTributes.filter(
+        (tribute) => !getActiveTruceForTribute(state, tribute.id),
+      );
 
-    const truce = createTruceInstance(
-      eventId,
-      [firstTribute.id, secondTribute.id],
-      round,
-      null,
-      "romantic",
-    );
+      return availableTributes.length >= 2;
+    },
 
-    return {
-      text:
-        `${firstTribute.snapshot.name} and ` +
-        `${secondTribute.snapshot.name} find comfort in one another ` +
-        "and promise to remain together, no matter what the arena demands.",
+    getWeightMultiplier: ({ state }) => getTruceFormationPopulationMultiplier(state),
 
-      changes: [
-        {
-          type: "form-truce",
-          truce,
-        },
+    resolve({ eventId, round, participantsByRole }): EventResolution {
+      const [firstTribute, secondTribute] = requireParticipants(participantsByRole, "tributes");
 
-        createStatusChange(eventId, firstTribute, "inspired", 1, round),
-        createStatusChange(eventId, secondTribute, "inspired", 1, round),
+      if (!firstTribute || !secondTribute) {
+        throw new Error("Romantic formation requires exactly two tributes.");
+      }
 
-        ...createSurvivalChanges([firstTribute, secondTribute]),
-      ],
-    };
-  },
-};
+      const truce = createTruceInstance(
+        eventId,
+        [firstTribute.id, secondTribute.id],
+        round,
+        null,
+        "romantic",
+      );
+
+      return {
+        text: isNight
+          ? `${firstTribute.snapshot.name} and ${secondTribute.snapshot.name} huddle together for warmth, find comfort in one another, and promise to remain together.`
+          : `${firstTribute.snapshot.name} and ${secondTribute.snapshot.name} find comfort in one another and promise to remain together, no matter what the arena demands.`,
+
+        changes: [
+          {
+            type: "form-truce",
+            truce,
+          },
+
+          ...(isNight
+            ? createNightRestChanges([firstTribute, secondTribute], round, "sheltered")
+            : []),
+
+          createStatusChange(eventId, firstTribute, "inspired", 1, round),
+          createStatusChange(eventId, secondTribute, "inspired", 1, round),
+
+          ...createSurvivalChanges([firstTribute, secondTribute]),
+        ],
+      };
+    },
+  };
+}
+
+const ROMANTIC_DAY_FORMATION_EVENT = createRomanticFormationEvent("day");
+
+const ROMANTIC_NIGHT_FORMATION_EVENT = createRomanticFormationEvent("night");
 
 const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
   id: "romantic-partner-protection",
@@ -335,7 +347,8 @@ export const POISONOUS_BERRIES_JOINT_VICTORY_EVENT: EventDefinition = {
 export const ROMANTIC_EVENTS = [
   /* Day and Night */
 
-  ROMANTIC_FORMATION_EVENT,
+  ROMANTIC_DAY_FORMATION_EVENT,
+  ROMANTIC_NIGHT_FORMATION_EVENT,
   ROMANTIC_PROTECTION_EVENT,
   POISONOUS_BERRIES_JOINT_VICTORY_EVENT,
 ] satisfies readonly EventDefinition[];

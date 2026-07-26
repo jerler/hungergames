@@ -23,6 +23,7 @@ import {
 } from "~/game/events/catalogue/relationships/romantic-events";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
 import { validateEventResolution } from "~/game/events/validation/validate-event-resolution";
+import { completeNightRestCoverage } from "~/game/survival/night-rest-coverage";
 
 export const MAX_CONSECUTIVE_NON_ELIMINATION_ROUNDS = 2;
 
@@ -336,9 +337,11 @@ export function sequenceRoundEvents(
     );
   }
 
-  if (events.length === 0) {
+  const completedEvents = completeNightRestCoverage(state, round, events);
+
+  if (completedEvents.length === 0) {
     throw new Error(`No eligible events could be sequenced for ${round.period} ${round.day}.`);
   }
 
-  return events;
+  return completedEvents;
 }

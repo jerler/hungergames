@@ -25,7 +25,12 @@ import { createTruceInstance, expireTrucesAfterRound } from "~/game/truces/truce
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
-import type { GameState, GameTribute, ResolvedEvent } from "~/game/types/game-state";
+import type {
+  GameState,
+  GameTribute,
+  ResolvedEvent,
+  RoundReference,
+} from "~/game/types/game-state";
 import type { TributeStats } from "~/game/types/tribute";
 
 const DAY_ONE = {
@@ -235,10 +240,11 @@ function resolveEvent(
   participantsByRole: ParticipantsByRole,
   randomValues: readonly number[],
   eventId = `resolved:${definition.id}`,
+  round: RoundReference = DAY_ONE,
 ): EventResolution {
   return definition.resolve({
     state,
-    round: DAY_ONE,
+    round,
 
     livingTributes: state.tributes.filter((tribute) => tribute.isAlive),
 
@@ -356,18 +362,26 @@ function createRomanticTruceState(): RomanticTruceFixture {
 }
 
 describe("romantic events", () => {
-  it("keeps romantic formation substantially rarer than standard pair formation", () => {
-    const romanticFormation = requireRomanticEvent("romantic-truce-formation");
+  it("keeps romantic formation substantially rarer in both periods", () => {
+    const romanticDayFormation = requireRomanticEvent("romantic-truce-formation");
 
-    const standardFormation = STANDARD_FORMATION_EVENTS.find(
+    const romanticNightFormation = requireRomanticEvent("romantic-night-truce-formation");
+
+    const standardDayFormation = STANDARD_FORMATION_EVENTS.find(
       (event) => event.id === "travel-together-truce-2",
     );
 
-    if (!standardFormation) {
-      throw new Error("Missing standard two-person truce formation event.");
+    const standardNightFormation = STANDARD_FORMATION_EVENTS.find(
+      (event) => event.id === "keep-watch-truce-2",
+    );
+
+    if (!standardDayFormation || !standardNightFormation) {
+      throw new Error("Missing standard two-person truce formation events.");
     }
 
-    expect(romanticFormation.baseWeight).toBeLessThan(standardFormation.baseWeight);
+    expect(romanticDayFormation.baseWeight).toBeLessThan(standardDayFormation.baseWeight);
+
+    expect(romanticNightFormation.baseWeight).toBeLessThan(standardNightFormation.baseWeight);
   });
 
   it("forms a permanent two-person romantic truce", () => {
@@ -388,6 +402,10 @@ describe("romantic events", () => {
       [0.5],
       "romantic-formation-test",
     );
+
+    expect(definition.periods).toEqual(["day"]);
+
+    expect(resolution.changes.some((change) => change.type === "record-night-rest")).toBe(false);
 
     expect(resolution.changes).toContainEqual({
       type: "form-truce",
@@ -433,6 +451,52 @@ describe("romantic events", () => {
     }
 
     expect(() => assertGameStateInvariants(nextState)).not.toThrow();
+  });
+
+  it("forms a romantic truce and shelters both partners at night", () => {
+    const game = createGame();
+
+    const definition = requireRomanticEvent("romantic-night-truce-formation");
+
+    const participants = game.tributes.slice(0, 2);
+
+    expect(participants).toHaveLength(2);
+    expect(definition.periods).toEqual(["night"]);
+
+    const resolution = resolveEvent(
+      definition,
+      game,
+      {
+        tributes: participants,
+      },
+      [0.5],
+      "romantic-night-formation-test",
+      NIGHT_ONE,
+    );
+
+    expect(resolution.text).toMatch(/huddle|warmth|comfort/i);
+
+    expect(resolution.changes).toContainEqual({
+      type: "form-truce",
+
+      truce: expect.objectContaining({
+        kind: "romantic",
+
+        tributeIds: participants.map((tribute) => tribute.id),
+        createdRound: NIGHT_ONE,
+        expiresAfterRound: null,
+      }),
+    });
+
+    expect(resolution.changes.filter((change) => change.type === "record-night-rest")).toEqual(
+      participants.map((tribute) => ({
+        type: "record-night-rest",
+
+        tributeId: tribute.id,
+        round: NIGHT_ONE,
+        quality: "sheltered",
+      })),
+    );
   });
 
   it("cannot form when only three tributes remain", () => {

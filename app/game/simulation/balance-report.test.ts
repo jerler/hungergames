@@ -42,6 +42,9 @@ describe("balance report", () => {
 
     expect(report).toContain("## Combat");
 
+    expect(report).toContain("### Rest quality");
+    expect(report).toContain("Total recorded outcomes");
+
     expect(report).toContain("## Inventory");
 
     expect(report).toContain("## Victor stat balance");

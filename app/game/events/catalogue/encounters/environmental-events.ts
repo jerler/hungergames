@@ -5,6 +5,7 @@ import {
   always,
   applyStatus,
   createEvent,
+  createNightRestEvent,
   createSelectedRoleItemUseChanges,
   customResolution,
   eliminate,
@@ -268,46 +269,88 @@ export const ENVIRONMENTAL_EVENTS = [
       ),
     ),
   /* Night Only */
-  createEvent("freezing-night")
-    .solo("victim", {
+  createNightRestEvent("freezing-night", {
+    method: {
+      type: "failed",
+      outcome: "critical-failure",
+    },
+
+    roleId: "victim",
+
+    roleOptions: {
       getWeight: getVulnerabilityWeight,
-    })
-    .when(maximumStat("victim", "brawn", 4))
-    .category("fatal")
-    .tags("fatal", "hazard", "environment")
-    .during("night")
-    .weight(2.25)
-    .resolve(
-      always(
-        result({
-          text: ({ victim }) =>
-            `The arena temperature plummets overnight, and ${victim.name} freezes before morning.`,
+    },
 
-          effects: [
-            eliminate("victim", {
-              causeId: "freezing-night",
-              causeLabel: "Froze",
-            }),
-          ],
-        }),
-      ),
-    ),
+    requirements: [maximumStat("victim", "brawn", 4)],
 
-  createEvent("cold-rain")
-    .solo("tribute", { getWeight: getVulnerabilityWeight })
-    .category("hazard")
-    .tags("hazard", "status", "environment")
-    .during("night")
-    .weight(6)
-    .resolve(
-      always(
-        result({
-          text: ({ tribute }) =>
-            `${tribute.name} spends the night shivering through freezing rain and is exhausted by morning.`,
-          effects: [applyStatus("tribute", "exhausted", 2)],
-        }),
-      ),
-    ),
+    category: "fatal",
+    tags: ["hazard", "environment"],
+
+    weight: 2.25,
+
+    results: {
+      criticalFailure: {
+        text: ({ victim }) =>
+          `${victim.name} cannot find adequate shelter as the arena temperature plummets and freezes before morning.`,
+
+        effects: [
+          eliminate("victim", {
+            causeId: "freezing-night",
+            causeLabel: "Froze",
+          }),
+        ],
+      },
+
+      failure: {
+        text: ({ victim }) =>
+          `${victim.name} fails to find adequate shelter before the temperature plummets.`,
+      },
+
+      success: {
+        text: ({ victim }) => `${victim.name} finds cover before the temperature plummets.`,
+      },
+
+      exceptionalSuccess: {
+        text: ({ victim }) =>
+          `${victim.name} finds secure shelter before the temperature plummets.`,
+      },
+    },
+  }),
+
+  createNightRestEvent("cold-rain", {
+    method: {
+      type: "failed",
+    },
+
+    roleOptions: {
+      getWeight: getVulnerabilityWeight,
+    },
+
+    category: "hazard",
+    tags: ["hazard", "environment"],
+
+    weight: 6,
+
+    results: {
+      criticalFailure: {
+        text: ({ tribute }) =>
+          `Without adequate shelter, ${tribute.name} spends the night exposed to freezing rain.`,
+      },
+
+      failure: {
+        text: ({ tribute }) =>
+          `Without adequate shelter, ${tribute.name} spends the night shivering through freezing rain.`,
+      },
+
+      success: {
+        text: ({ tribute }) => `${tribute.name} finds cover from the freezing rain.`,
+      },
+
+      exceptionalSuccess: {
+        text: ({ tribute }) => `${tribute.name} finds secure cover from the freezing rain.`,
+      },
+    },
+  }),
 
   /* Day and Night */
   createEvent("fallen-cliff")

@@ -14,7 +14,7 @@ import { createTruceInstance } from "~/game/truces/truce-engine";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
-import type { GameState, GameTribute } from "~/game/types/game-state";
+import type { GameState, GameTribute, RoundReference } from "~/game/types/game-state";
 import type { TributeStats } from "~/game/types/tribute";
 import { getVulnerabilityWeight } from "~/game/engine/stat-formulas";
 
@@ -48,15 +48,6 @@ const SIMPLE_STATUS_EVENT_CASES = [
     severity: 1,
   },
   {
-    eventId: "cold-rain",
-    tags: ["hazard", "status", "environment"],
-    periods: ["night"],
-    weight: 6,
-    text: "spends the night shivering through freezing rain and is exhausted by morning.",
-    statusId: "exhausted",
-    severity: 2,
-  },
-  {
     eventId: "deep-cut",
     tags: ["hazard", "status"],
     periods: ["day", "night"],
@@ -79,19 +70,6 @@ const FATAL_EVENT_CASES = [
     causeLabel: "Drowned",
 
     expectedText: "Hazel is swept away while crossing a violent river.",
-  },
-
-  {
-    eventId: "freezing-night",
-
-    tags: ["fatal", "hazard", "environment"],
-
-    periods: ["night"],
-    weight: 2.25,
-
-    causeLabel: "Froze",
-
-    expectedText: "The arena temperature plummets overnight, and Hazel freezes before morning.",
   },
 
   {
@@ -217,6 +195,7 @@ function resolveEvent(
   participantsByRole: ParticipantsByRole,
   randomValues: readonly number[],
   unavailableItemInstanceIds: ReadonlySet<string> = new Set(),
+  round: RoundReference = ROUND,
 ): EventResolution {
   const livingTributes = Object.values(participantsByRole).flat();
 
@@ -224,7 +203,7 @@ function resolveEvent(
     definition,
     {
       state: game,
-      round: ROUND,
+      round,
       livingTributes,
     },
     () => 0,
@@ -238,7 +217,7 @@ function resolveEvent(
 
   return definition.resolve({
     state: game,
-    round: ROUND,
+    round,
     livingTributes,
     eventId: `test:${definition.id}`,
     random: createSequenceRandom(randomValues),
@@ -374,6 +353,108 @@ describe("environmental events", () => {
     expect(role.isEligible?.(eligible, context)).toBe(true);
 
     expect(role.isEligible?.(ineligible, context)).toBe(false);
+  });
+
+  it("records cold rain as an unsheltered night without applying morning exhaustion early", () => {
+    const game = createTestGame();
+    const tribute = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
+    const definition = requireEvent("cold-rain");
+
+    expect(definition).toMatchObject({
+      id: "cold-rain",
+      category: "hazard",
+
+      tags: ["survival", "status", "hazard", "environment"],
+
+      periods: ["night"],
+      baseWeight: 6,
+    });
+
+    const resolution = resolveEvent(
+      definition,
+      game,
+      {
+        tribute: [tribute],
+      },
+      [0.5],
+      new Set(),
+      NEXT_ROUND,
+    );
+
+    expect(resolution.text).toMatch(/without adequate shelter/i);
+
+    expect(resolution.changes).toContainEqual({
+      type: "record-night-rest",
+
+      tributeId: tribute.id,
+      round: NEXT_ROUND,
+      quality: "unsheltered",
+    });
+
+    expect(resolution.changes.some((change) => change.type === "apply-status")).toBe(false);
+  });
+
+  it("makes the freezing fatality an explicit failed-shelter outcome", () => {
+    const game = createTestGame();
+    const victim = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
+    const definition = requireEvent("freezing-night");
+
+    expect(definition).toMatchObject({
+      id: "freezing-night",
+      category: "fatal",
+
+      tags: ["survival", "status", "fatal", "hazard", "environment"],
+
+      periods: ["night"],
+      baseWeight: 2.25,
+
+      roles: [
+        {
+          id: "victim",
+          count: 1,
+        },
+      ],
+    });
+
+    const resolution = resolveEvent(
+      definition,
+      game,
+      {
+        victim: [victim],
+      },
+      [0.5],
+      new Set(),
+      NEXT_ROUND,
+    );
+
+    expect(resolution.text).toMatch(/adequate shelter/i);
+
+    expect(resolution.changes).toContainEqual({
+      type: "record-night-rest",
+
+      tributeId: victim.id,
+      round: NEXT_ROUND,
+      quality: "unsheltered",
+    });
+
+    expect(resolution.changes).toContainEqual({
+      type: "eliminate-tribute",
+
+      tributeId: victim.id,
+      causeId: "freezing-night",
+      causeLabel: "Froze",
+      summary: resolution.text,
+      killerTributeIds: [],
+    });
+
+    expect(
+      resolution.changes.some(
+        (change) =>
+          change.type === "increment-statistic" &&
+          change.tributeId === victim.id &&
+          change.statistic === "eventsSurvived",
+      ),
+    ).toBe(false);
   });
 
   it("includes every event in the main catalogue", () => {

@@ -160,6 +160,17 @@ export { createItemStatEvent } from "./families/item-stat-event";
 export type { ItemStatEventOptions } from "./families/item-stat-event";
 
 export type { EventFamilyMetadata } from "./families/family-types";
+
+export { createNightRestEvent, NIGHT_REST_ITEM_IDS } from "./families/night-rest-event";
+
+export type {
+  NightRestEventOptions,
+  NightRestEventOutcome,
+  NightRestEventResults,
+  NightRestItemId,
+  NightRestMethod,
+} from "./families/night-rest-event";
+
 export type { StatOutcomeKey } from "./families/family-outcomes";
 
 export { createWeaponAttackEvent } from "./families/weapon-attack-event";

@@ -4,7 +4,7 @@ import {
   type EventDefinition,
   type EventResolution,
 } from "~/game/events/event-schema";
-import { createSurvivalChanges } from "~/game/events/event-change-builders";
+import { createNightRestChanges, createSurvivalChanges } from "~/game/events/event-change-builders";
 import {
   createTruceInstance,
   getActiveTruceForTribute,
@@ -104,8 +104,8 @@ function createFormationEvent(
       );
 
       const text = travelsTogether
-        ? `${formatNameList(names)} decide that travelling alone is too dangerous and agree to watch one another's backs through the coming night.`
-        : `${formatNameList(names)} agree to share warmth and take turns keeping watch through the night.`;
+        ? `${formatNameList(names)} decide that travelling alone is too dangerous and agree to watch one another's backs as they cross the arena.`
+        : `${formatNameList(names)} agree to sleep in shifts, sharing warmth while one tribute keeps watch and the others rest.`;
 
       return {
         text,
@@ -115,6 +115,8 @@ function createFormationEvent(
             type: "form-truce",
             truce,
           },
+
+          ...(travelsTogether ? [] : createNightRestChanges(tributes, round, "sheltered")),
 
           ...createSurvivalChanges(tributes),
         ],

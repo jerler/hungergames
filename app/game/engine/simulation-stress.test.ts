@@ -256,6 +256,59 @@ function expectNoCrossEventItemCommitments(events: readonly ResolvedEvent[], see
   }
 }
 
+function expectCompleteNightRestCoverage(
+  state: GameState,
+  events: readonly ResolvedEvent[],
+  seed: string,
+): void {
+  const round = state.currentRound;
+
+  if (!round || round.period !== "night") {
+    return;
+  }
+
+  const eliminatedTributeIds = new Set(
+    events.flatMap((event) =>
+      event.changes.flatMap((change) =>
+        change.type === "eliminate-tribute" ? [change.tributeId] : [],
+      ),
+    ),
+  );
+
+  const restCounts = new Map<string, number>();
+
+  for (const event of events) {
+    for (const change of event.changes) {
+      if (change.type !== "record-night-rest") {
+        continue;
+      }
+
+      expect(change.round).toEqual(round);
+
+      restCounts.set(change.tributeId, (restCounts.get(change.tributeId) ?? 0) + 1);
+    }
+  }
+
+  for (const tribute of state.tributes.filter((candidate) => candidate.isAlive)) {
+    const count = restCounts.get(tribute.id) ?? 0;
+
+    if (eliminatedTributeIds.has(tribute.id)) {
+      expect(
+        count,
+        `Simulation "${seed}" recorded duplicate rest ` + `for eliminated tribute "${tribute.id}".`,
+      ).toBeLessThanOrEqual(1);
+
+      continue;
+    }
+
+    expect(
+      count,
+      `Simulation "${seed}" recorded ${count} rest outcomes ` +
+        `for surviving tribute "${tribute.id}".`,
+    ).toBe(1);
+  }
+}
+
 function simulateGame(
   seed: string,
   districtCount: DistrictCount,
@@ -285,6 +338,8 @@ function simulateGame(
     if (!state) {
       throw new Error(`Simulation "${seed}" lost its GameState while beginning a round.`);
     }
+
+    expectCompleteNightRestCoverage(state, state.roundEvents, seed);
 
     expectNoCrossEventItemCommitments(state.roundEvents, seed);
 

@@ -334,4 +334,117 @@ describe("survival events", () => {
       ),
     ).toBe(false);
   });
+
+  it("uses owned shelter supplies through the night-rest family", () => {
+    const originalGame = createTestGame();
+
+    const originalTribute = withStats(originalGame.tributes[0], BALANCED_STATS, "Hazel");
+
+    const blanket = createInventoryItemInstance(
+      "shelter-item-test",
+      originalTribute.id,
+      "blanket",
+      NIGHT_ROUND,
+    );
+
+    const tribute = {
+      ...originalTribute,
+      inventory: [blanket],
+    };
+
+    const game: GameState = {
+      ...originalGame,
+      tributes: originalGame.tributes.map((candidate) =>
+        candidate.id === tribute.id ? tribute : candidate,
+      ),
+    };
+
+    const resolution = resolveEvent(
+      requireEvent("uses-shelter-supplies"),
+      game,
+      {
+        tribute: [tribute],
+      },
+      [0.5],
+      NIGHT_ROUND,
+    );
+
+    expect(resolution.changes).toContainEqual({
+      type: "record-night-rest",
+      tributeId: tribute.id,
+      round: NIGHT_ROUND,
+      quality: "comfortable",
+    });
+
+    expect(resolution.changes).toContainEqual({
+      type: "use-item",
+      tributeId: tribute.id,
+      itemInstanceId: blanket.id,
+      reason: "uses-shelter-supplies",
+    });
+  });
+
+  it("supports guaranteed and failed night shelter events", () => {
+    const game = createTestGame();
+    const tribute = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
+
+    const guaranteed = resolveEvent(
+      requireEvent("finds-dry-rock-overhang"),
+      game,
+      {
+        tribute: [tribute],
+      },
+      [0.5],
+      NIGHT_ROUND,
+    );
+
+    expect(guaranteed.changes).toContainEqual({
+      type: "record-night-rest",
+      tributeId: tribute.id,
+      round: NIGHT_ROUND,
+      quality: "sheltered",
+    });
+
+    const failed = resolveEvent(
+      requireEvent("cannot-find-shelter"),
+      game,
+      {
+        tribute: [tribute],
+      },
+      [0.5],
+      NIGHT_ROUND,
+    );
+
+    expect(failed.changes).toContainEqual({
+      type: "record-night-rest",
+      tributeId: tribute.id,
+      round: NIGHT_ROUND,
+      quality: "unsheltered",
+    });
+  });
+
+  it("makes the fatal cave outcome explicitly about failed shelter", () => {
+    const game = createTestGame();
+    const tribute = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
+
+    const resolution = resolveEvent(
+      requireEvent("cave-shelter-collapse"),
+      game,
+      {
+        tribute: [tribute],
+      },
+      [0],
+      NIGHT_ROUND,
+    );
+
+    expect(resolution.text.toLowerCase()).toContain("shelter");
+
+    expect(resolution.changes).toContainEqual(
+      expect.objectContaining({
+        type: "eliminate-tribute",
+        tributeId: tribute.id,
+        causeId: "shelter-collapse",
+      }),
+    );
+  });
 });

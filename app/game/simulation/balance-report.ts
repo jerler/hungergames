@@ -192,9 +192,56 @@ export function createBalanceReport(
 
     "",
 
-    `- Comfortable: ${metrics.preparation.restQuality.comfortable}`,
-    `- Sheltered: ${metrics.preparation.restQuality.sheltered}`,
-    `- Unsheltered: ${metrics.preparation.restQuality.unsheltered}`,
+    (() => {
+      const totalRest =
+        metrics.preparation.restQuality.comfortable +
+        metrics.preparation.restQuality.sheltered +
+        metrics.preparation.restQuality.unsheltered;
+
+      return `- Total recorded outcomes: ${totalRest}`;
+    })(),
+
+    (() => {
+      const totalRest =
+        metrics.preparation.restQuality.comfortable +
+        metrics.preparation.restQuality.sheltered +
+        metrics.preparation.restQuality.unsheltered;
+
+      return (
+        `- Comfortable: ${metrics.preparation.restQuality.comfortable} ` +
+        `(${formatRate(
+          totalRest === 0 ? 0 : metrics.preparation.restQuality.comfortable / totalRest,
+        )})`
+      );
+    })(),
+
+    (() => {
+      const totalRest =
+        metrics.preparation.restQuality.comfortable +
+        metrics.preparation.restQuality.sheltered +
+        metrics.preparation.restQuality.unsheltered;
+
+      return (
+        `- Sheltered: ${metrics.preparation.restQuality.sheltered} ` +
+        `(${formatRate(
+          totalRest === 0 ? 0 : metrics.preparation.restQuality.sheltered / totalRest,
+        )})`
+      );
+    })(),
+
+    (() => {
+      const totalRest =
+        metrics.preparation.restQuality.comfortable +
+        metrics.preparation.restQuality.sheltered +
+        metrics.preparation.restQuality.unsheltered;
+
+      return (
+        `- Unsheltered: ${metrics.preparation.restQuality.unsheltered} ` +
+        `(${formatRate(
+          totalRest === 0 ? 0 : metrics.preparation.restQuality.unsheltered / totalRest,
+        )})`
+      );
+    })(),
 
     "",
 

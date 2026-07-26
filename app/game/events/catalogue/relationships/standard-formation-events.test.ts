@@ -121,7 +121,7 @@ describe("truce formation events", () => {
     expect(resolution.text).not.toMatch(/shelter|sleep|rest/i);
   });
 
-  it("forms a night watch truce without creating resources", () => {
+  it("forms a night watch truce and records sheltered rest for every member", () => {
     const game = createGame();
 
     const participants = game.tributes.slice(0, 4);
@@ -160,7 +160,18 @@ describe("truce formation events", () => {
     });
 
     expect(resolution.changes.some((change) => change.type === "acquire-item")).toBe(false);
-    expect(resolution.text).toMatch(/warmth|keeping watch/i);
+
+    expect(resolution.changes.filter((change) => change.type === "record-night-rest")).toEqual(
+      participants.map((tribute) => ({
+        type: "record-night-rest",
+
+        tributeId: tribute.id,
+        round: NIGHT_ONE,
+        quality: "sheltered",
+      })),
+    );
+
+    expect(resolution.text).toMatch(/sleep in shifts|keeps watch|rest/i);
     expect(event.periods).toEqual(["night"]);
   });
 

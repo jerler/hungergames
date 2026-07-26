@@ -51,6 +51,48 @@ function createParticipantsByRole(
   };
 }
 
+function createDeterministicParticipantsByRole(
+  definition: EventDefinition,
+  tributes: readonly GameTribute[],
+): ParticipantsByRole {
+  const participantsByRole: Record<string, GameTribute[]> = {};
+  let nextTributeIndex = 0;
+
+  for (const role of definition.roles) {
+    const selectedTributes = tributes
+      .slice(nextTributeIndex, nextTributeIndex + role.count)
+      .map((tribute): GameTribute => ({
+        ...tribute,
+        snapshot: {
+          ...tribute.snapshot,
+          /*
+           * This test resolves definitions directly instead of
+           * running participant selection. Maximize the fixture
+           * stats so item-gated resolvers receive participants
+           * satisfying the eligibility contract they normally
+           * rely on in production.
+           */
+          stats: {
+            brains: 5,
+            brawn: 5,
+            luck: 5,
+          },
+        },
+      }));
+
+    if (selectedTributes.length !== role.count) {
+      throw new Error(
+        `Event "${definition.id}" requires ${role.count} participant(s) for role "${role.id}".`,
+      );
+    }
+
+    participantsByRole[role.id] = selectedTributes;
+    nextTributeIndex += role.count;
+  }
+
+  return participantsByRole;
+}
+
 function createTestGame(seed = "bloodbath-event-tests"): GameState {
   const config = {
     ...createDefaultGameConfig(),
@@ -309,15 +351,9 @@ describe("Bloodbath event catalogue", () => {
 
   it("resolves every definition deterministically", () => {
     const game = createTestGame();
-    const [firstTribute, secondTribute, thirdTribute] = game.tributes;
 
     for (const definition of BLOODBATH_EVENT_CATALOGUE) {
-      const participantsByRole = createParticipantsByRole(
-        definition,
-        firstTribute,
-        secondTribute,
-        thirdTribute,
-      );
+      const participantsByRole = createDeterministicParticipantsByRole(definition, game.tributes);
 
       expect(resolveDefinition(definition, game, participantsByRole, 0.73)).toEqual(
         resolveDefinition(definition, game, participantsByRole, 0.73),

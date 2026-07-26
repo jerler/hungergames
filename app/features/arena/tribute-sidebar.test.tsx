@@ -6,10 +6,7 @@ import {
   type TributeSurvivalState,
 } from "~/game/survival/survival-schema";
 
-import type {
-  GameTribute,
-  StatusEffect,
-} from "~/game/types/game-state";
+import type { GameTribute, StatusEffect } from "~/game/types/game-state";
 import { TributeSidebar } from "./tribute-sidebar";
 
 function createTribute(overrides: Partial<GameTribute> = {}): GameTribute {

@@ -12,7 +12,13 @@ import {
 import { createRoundSeed } from "~/game/engine/rounds";
 import {
   CORNUCOPIA_ACQUISITION_EVENTS,
+  CORNUCOPIA_FATAL_DELAYED_EVENTS,
+  CORNUCOPIA_FATAL_TARGET_PROFILES,
+  CORNUCOPIA_FLAVOUR_ACQUISITION_EVENTS,
   CORNUCOPIA_GROUP_CONFLICT_EVENTS,
+  CORNUCOPIA_NONFATAL_PAIR_EVENTS,
+  CORNUCOPIA_NONFATAL_QUARTET_EVENTS,
+  CORNUCOPIA_NONFATAL_TRIO_EVENTS,
   CORNUCOPIA_PAIR_CONFLICT_EVENTS,
   FLEE_EVENTS,
 } from "~/game/events/catalogue/bloodbath";
@@ -264,9 +270,10 @@ function selectBloodbathAcquisitionEvent(
    * Participant-role eligibility is checked
    * below by selectEventParticipants.
    */
-  let candidateDefinitions = CORNUCOPIA_ACQUISITION_EVENTS.filter((definition) =>
-    isEventDefinitionEligible(definition, context),
-  );
+  let candidateDefinitions = [
+    ...CORNUCOPIA_ACQUISITION_EVENTS,
+    ...CORNUCOPIA_FLAVOUR_ACQUISITION_EVENTS,
+  ].filter((definition) => isEventDefinitionEligible(definition, context));
 
   while (candidateDefinitions.length > 0) {
     const definition = selectWeightedItem(
@@ -354,6 +361,299 @@ function selectBloodbathAcquisitionEvent(
   );
 }
 
+function getDefinitionParticipantCount(definition: EventDefinition): number {
+  return definition.roles.reduce((total, role) => total + role.count, 0);
+}
+
+function removeSelectedBloodbathParticipants(
+  remainingTributes: GameTribute[],
+  participantTributeIds: readonly string[],
+  definitionId: string,
+): void {
+  for (const tributeId of participantTributeIds) {
+    const tributeIndex = remainingTributes.findIndex((tribute) => tribute.id === tributeId);
+
+    if (tributeIndex < 0) {
+      throw new Error(
+        `Bloodbath event "${definitionId}" selected unavailable tribute "${tributeId}".`,
+      );
+    }
+
+    remainingTributes.splice(tributeIndex, 1);
+  }
+}
+
+function selectBloodbathEventForRemainingTributes(
+  definitions: readonly EventDefinition[],
+  state: GameState,
+  round: RoundReference,
+  remainingTributes: GameTribute[],
+  random: RandomSource,
+): BloodbathAcquisitionSelection | null {
+  const context: EventSelectionContext = {
+    state,
+    round,
+    livingTributes: remainingTributes,
+  };
+
+  let candidateDefinitions = definitions.filter(
+    (definition) =>
+      getDefinitionParticipantCount(definition) <= remainingTributes.length &&
+      isEventDefinitionEligible(definition, context),
+  );
+
+  while (candidateDefinitions.length > 0) {
+    const definition = selectWeightedItem(
+      candidateDefinitions,
+      (candidate) => getEventDefinitionWeight(candidate, context),
+      random,
+    );
+    const selection = selectEventParticipants(definition, context, random, new Set<string>());
+
+    if (!selection) {
+      candidateDefinitions = candidateDefinitions.filter(
+        (candidate) => candidate.id !== definition.id,
+      );
+      continue;
+    }
+
+    removeSelectedBloodbathParticipants(
+      remainingTributes,
+      selection.participantTributeIds,
+      definition.id,
+    );
+
+    return {
+      definition,
+      participantsByRole: selection.participantsByRole,
+    };
+  }
+
+  return null;
+}
+
+function selectAuthoredFatalBloodbathEvent(
+  state: GameState,
+  round: RoundReference,
+  remainingTributes: GameTribute[],
+  fatalityDeficit: number,
+  reservedPostTargetCount: number,
+  random: RandomSource,
+): BloodbathAcquisitionSelection | null {
+  const context: EventSelectionContext = {
+    state,
+    round,
+    livingTributes: remainingTributes,
+  };
+
+  /*
+   * The authored catalogue and the original conflict families share
+   * one planning pool. Delayed bleeding and poison events remain in
+   * the post-target pool because they do not contribute an immediate
+   * Day 1 elimination.
+   */
+  const fatalSelectionProfiles = [
+    ...CORNUCOPIA_FATAL_TARGET_PROFILES,
+    ...CORNUCOPIA_PAIR_CONFLICT_EVENTS.map((definition) => ({
+      definition,
+      minImmediateEliminations: 0,
+      maxImmediateEliminations: 1,
+    })),
+    ...CORNUCOPIA_GROUP_CONFLICT_EVENTS.map((definition) => ({
+      definition,
+      minImmediateEliminations: 0,
+      maxImmediateEliminations: 3,
+    })),
+  ];
+
+  const availableFatalParticipants = Math.max(
+    0,
+    remainingTributes.length - reservedPostTargetCount,
+  );
+
+  /*
+   * This is the number of survivors the fatal phase may spend while
+   * still leaving enough participants to reach the current soft goal.
+   *
+   * Example: with seven fatal-phase participants and a five-death
+   * deficit, events may collectively leave at most two survivors.
+   */
+  const fatalSurvivorBudget = Math.max(0, availableFatalParticipants - fatalityDeficit);
+
+  let candidateProfiles = fatalSelectionProfiles.filter((profile) => {
+    const participantCount = getDefinitionParticipantCount(profile.definition);
+    const worstCaseSurvivorCost = participantCount - profile.minImmediateEliminations;
+
+    return (
+      participantCount <= availableFatalParticipants &&
+      /*
+       * The target is deliberately soft. Permit at most one planned
+       * death beyond the current deficit so two-death events can close
+       * a one-death gap without creating a large overshoot.
+       */
+      profile.maxImmediateEliminations <= fatalityDeficit + 1 &&
+      worstCaseSurvivorCost <= fatalSurvivorBudget &&
+      isEventDefinitionEligible(profile.definition, context)
+    );
+  });
+
+  while (candidateProfiles.length > 0) {
+    const profile = selectWeightedItem(
+      candidateProfiles,
+      (candidate) => getEventDefinitionWeight(candidate.definition, context),
+      random,
+    );
+    const selection = selectEventParticipants(
+      profile.definition,
+      context,
+      random,
+      new Set<string>(),
+    );
+
+    if (!selection) {
+      candidateProfiles = candidateProfiles.filter(
+        (candidate) => candidate.definition.id !== profile.definition.id,
+      );
+      continue;
+    }
+
+    removeSelectedBloodbathParticipants(
+      remainingTributes,
+      selection.participantTributeIds,
+      profile.definition.id,
+    );
+
+    return {
+      definition: profile.definition,
+      participantsByRole: selection.participantsByRole,
+    };
+  }
+
+  return null;
+}
+
+type PostTargetEventShape = "solo" | "pair" | "trio" | "quartet" | "delayed-fatal";
+
+interface PostTargetEventShapeOption {
+  shape: PostTargetEventShape;
+  weight: number;
+}
+
+function takeRemainingTributes(
+  remainingTributes: GameTribute[],
+  count: number,
+  label: string,
+): GameTribute[] {
+  const selectedTributes = remainingTributes.splice(0, count);
+
+  if (selectedTributes.length !== count) {
+    throw new Error(
+      `Bloodbath post-target ${label} selection expected ${count} tributes but received ${selectedTributes.length}.`,
+    );
+  }
+
+  return selectedTributes;
+}
+
+function selectPostTargetCornucopiaEvent(
+  state: GameState,
+  round: RoundReference,
+  livingTributes: readonly GameTribute[],
+  remainingTributes: GameTribute[],
+  random: RandomSource,
+): BloodbathAcquisitionSelection {
+  const shapeOptions: PostTargetEventShapeOption[] = [
+    {
+      shape: "solo",
+      weight: 5,
+    },
+  ];
+
+  if (remainingTributes.length >= 2) {
+    shapeOptions.push({
+      shape: "pair",
+      weight: 4,
+    });
+
+    shapeOptions.push({
+      shape: "delayed-fatal",
+      weight: 0.45,
+    });
+  }
+
+  if (remainingTributes.length >= 3) {
+    shapeOptions.push({
+      shape: "trio",
+      weight: 1.5,
+    });
+  }
+
+  if (remainingTributes.length >= 4) {
+    shapeOptions.push({
+      shape: "quartet",
+      weight: 1,
+    });
+  }
+
+  const selectedShape = selectWeightedItem(shapeOptions, (option) => option.weight, random).shape;
+
+  if (selectedShape === "solo") {
+    return selectBloodbathAcquisitionEvent(state, round, remainingTributes, random);
+  }
+
+  const context: EventSelectionContext = {
+    state,
+    round,
+    livingTributes,
+  };
+
+  if (selectedShape === "delayed-fatal") {
+    const delayedSelection = selectBloodbathEventForRemainingTributes(
+      CORNUCOPIA_FATAL_DELAYED_EVENTS,
+      state,
+      round,
+      remainingTributes,
+      random,
+    );
+
+    return (
+      delayedSelection ?? selectBloodbathAcquisitionEvent(state, round, remainingTributes, random)
+    );
+  }
+
+  if (selectedShape === "pair") {
+    const [actor, target] = takeRemainingTributes(remainingTributes, 2, "pair");
+
+    if (!actor || !target) {
+      throw new Error("Bloodbath post-target pair selection lost a participant.");
+    }
+
+    return {
+      definition: selectDefinition(CORNUCOPIA_NONFATAL_PAIR_EVENTS, context, random),
+      participantsByRole: {
+        actor: [actor],
+        target: [target],
+      },
+    };
+  }
+
+  if (selectedShape === "trio") {
+    return {
+      definition: selectDefinition(CORNUCOPIA_NONFATAL_TRIO_EVENTS, context, random),
+      participantsByRole: {
+        tributes: takeRemainingTributes(remainingTributes, 3, "trio"),
+      },
+    };
+  }
+
+  return {
+    definition: selectDefinition(CORNUCOPIA_NONFATAL_QUARTET_EVENTS, context, random),
+    participantsByRole: {
+      tributes: takeRemainingTributes(remainingTributes, 4, "quartet"),
+    },
+  };
+}
+
 function sequenceCornucopiaEvents(
   state: GameState,
   round: RoundReference,
@@ -364,11 +664,6 @@ function sequenceCornucopiaEvents(
   random: RandomSource,
   unavailableItemInstanceIds: Set<string>,
 ): CornucopiaSequenceResult {
-  const context: EventSelectionContext = {
-    state,
-    round,
-    livingTributes,
-  };
 
   const remainingTributes = shuffleItems(cornucopiaTributes, random);
 
@@ -378,71 +673,93 @@ function sequenceCornucopiaEvents(
 
   let plannedEliminationCount = 0;
 
+  /*
+   * The target is intentionally soft. Most games aim at the seeded
+   * planning target, while a smaller share stop one or two deaths
+   * earlier. This preserves meaningful variation instead of forcing
+   * an identical Bloodbath total for every Half Game.
+   */
+  const targetReductionRoll = random();
+  const targetReduction = targetReductionRoll < 0.1 ? 2 : targetReductionRoll < 0.35 ? 1 : 0;
+  const softFatalityTarget = Math.max(1, fatalityTarget - targetReduction);
+
+  /*
+   * Reserve a seeded one-to-four-person group for the acquisition and
+   * non-fatal Cornucopia catalogues. These tributes are not special;
+   * the reservation only prevents the fatal phase from consuming the
+   * complete Cornucopia roster before post-target selection can run.
+   */
+  const maximumPostTargetReservation = Math.min(4, Math.max(1, remainingTributes.length - 1));
+  const reservedPostTargetCount = selectWeightedItem(
+    Array.from({ length: maximumPostTargetReservation }, (_, index) => index + 1),
+    (count) => {
+      switch (count) {
+        case 1:
+          return 3;
+        case 2:
+          return 5;
+        case 3:
+          return 1.5;
+        case 4:
+          return 0.75;
+        default:
+          return 0;
+      }
+    },
+    random,
+  );
+
   while (remainingTributes.length > 0) {
-    const fatalityDeficit = fatalityTarget - plannedEliminationCount;
+    const fatalityDeficit = softFatalityTarget - plannedEliminationCount;
 
     let definition: EventDefinition;
 
     let participantsByRole: ParticipantsByRole;
 
     /*
-     * Three-person clashes provide enough possible casualties
-     * to reach the target without sending every tribute into
-     * a separate forced-fatal event.
+     * Prefer the larger authored fatal catalogue while retaining
+     * the original pair and group conflicts as balance fallbacks.
+     *
+     * Role selection happens before participants are removed, so
+     * persistent rewards always go to a tribute who can use them.
      */
-    if (fatalityDeficit >= 2 && remainingTributes.length >= 3) {
-      const contenders = remainingTributes.splice(0, 3);
+    /*
+     * Keep selecting immediate-fatal events only while the current
+     * soft goal still has a deficit and the reserved post-target group
+     * remains untouched.
+     *
+     * A null selection means the remaining participant mix cannot
+     * pursue the goal safely. In that case the target is allowed to
+     * undershoot and the rest of the entrants receive acquisition or
+     * non-fatal interaction events.
+     */
+    const shouldTryFatalEvent =
+      fatalityDeficit > 0 && remainingTributes.length > reservedPostTargetCount;
+    const fatalSelection = shouldTryFatalEvent
+      ? selectAuthoredFatalBloodbathEvent(
+          state,
+          round,
+          remainingTributes,
+          fatalityDeficit,
+          reservedPostTargetCount,
+          random,
+        )
+      : null;
 
-      if (contenders.length !== 3) {
-        throw new Error("Bloodbath group selection lost a contender.");
-      }
-
-      definition = selectDefinition(CORNUCOPIA_GROUP_CONFLICT_EVENTS, context, random);
-
-      participantsByRole = {
-        contenders,
-      };
-    } else if (fatalityDeficit > 0 && remainingTributes.length >= 2) {
-      const attacker = remainingTributes.shift();
-
-      const defender = remainingTributes.shift();
-
-      if (!attacker || !defender) {
-        throw new Error("Bloodbath pair selection lost a participant.");
-      }
-
-      definition = selectDefinition(CORNUCOPIA_PAIR_CONFLICT_EVENTS, context, random);
-
-      participantsByRole = {
-        attacker: [attacker],
-        defender: [defender],
-      };
+    if (fatalSelection) {
+      definition = fatalSelection.definition;
+      participantsByRole = fatalSelection.participantsByRole;
     } else {
-      /*
-       * Once the soft target is reached—or only
-       * one entrant remains—the sequencer falls
-       * back to lower-risk acquisition events.
-       *
-       * The acquisition selector must consider
-       * both:
-       *
-       * - event-level eligibility;
-       * - participant-role eligibility.
-       *
-       * An event such as the tactical cache may
-       * be valid in this round while still being
-       * impossible for every remaining tribute.
-       */
-      const acquisitionSelection = selectBloodbathAcquisitionEvent(
+      const postTargetSelection = selectPostTargetCornucopiaEvent(
         state,
         round,
+        livingTributes,
         remainingTributes,
         random,
       );
 
-      definition = acquisitionSelection.definition;
-
-      participantsByRole = acquisitionSelection.participantsByRole;
+      definition = postTargetSelection.definition;
+      participantsByRole = postTargetSelection.participantsByRole;
     }
 
     const resolvedEvent = resolveBloodbathEvent({

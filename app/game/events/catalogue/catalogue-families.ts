@@ -1,6 +1,9 @@
 import {
   CORNUCOPIA_ACQUISITION_EVENTS,
+  CORNUCOPIA_FATAL_BLOODBATH_EVENTS,
+  CORNUCOPIA_FLAVOUR_ACQUISITION_EVENTS,
   CORNUCOPIA_GROUP_CONFLICT_EVENTS,
+  CORNUCOPIA_NONFATAL_INTERACTION_EVENTS,
   CORNUCOPIA_PAIR_CONFLICT_EVENTS,
   FLEE_EVENTS,
 } from "./bloodbath";
@@ -206,6 +209,18 @@ export const BLOODBATH_EVENT_CATALOGUE_FAMILIES = [
   },
 
   {
+    name: "cornucopia-flavour-acquisition",
+
+    events: CORNUCOPIA_FLAVOUR_ACQUISITION_EVENTS,
+  },
+
+  {
+    name: "cornucopia-fatal-authored",
+
+    events: CORNUCOPIA_FATAL_BLOODBATH_EVENTS,
+  },
+
+  {
     name: "cornucopia-pair-conflict",
 
     events: CORNUCOPIA_PAIR_CONFLICT_EVENTS,
@@ -215,6 +230,12 @@ export const BLOODBATH_EVENT_CATALOGUE_FAMILIES = [
     name: "cornucopia-group-conflict",
 
     events: CORNUCOPIA_GROUP_CONFLICT_EVENTS,
+  },
+
+  {
+    name: "cornucopia-nonfatal-interaction",
+
+    events: CORNUCOPIA_NONFATAL_INTERACTION_EVENTS,
   },
 
   {

@@ -1,6 +1,7 @@
 import type { StatusEffectId } from "~/game/statuses/status-schema";
 
 import type {
+  DeprivationStatusEligibleRequirement,
   HasAnyHarmfulStatusRequirement,
   HasStatusRequirement,
   LacksStatusRequirement,
@@ -29,5 +30,21 @@ export function hasAnyHarmfulStatus(roleId: string): HasAnyHarmfulStatusRequirem
     kind: "has-any-harmful-status",
 
     roleId,
+  };
+}
+
+export function isHungerStatusEligible(roleId: string): DeprivationStatusEligibleRequirement {
+  return {
+    kind: "deprivation-status-eligible",
+    roleId,
+    need: "food",
+  };
+}
+
+export function isThirstStatusEligible(roleId: string): DeprivationStatusEligibleRequirement {
+  return {
+    kind: "deprivation-status-eligible",
+    roleId,
+    need: "water",
   };
 }

@@ -1,5 +1,6 @@
 import { getRoundSequence } from "~/game/engine/rounds";
 import type { GameTribute, RoundReference } from "~/game/types/game-state";
+import { hasDeprivationProtection } from "~/game/items/deprivation-protection";
 
 import type { SurvivalNeed } from "./survival-schema";
 
@@ -72,6 +73,20 @@ export function qualifiesForDeprivationEvent(
   return (
     getRoundsSinceNeedSatisfied(round, getLastFoundNeedRound(tribute, need)) >=
     DEPRIVATION_THRESHOLD_ROUNDS
+  );
+}
+
+export function canReceiveDeprivationStatus(tribute: GameTribute, need: SurvivalNeed): boolean {
+  return tribute.isAlive && !hasDeprivationProtection(tribute, need);
+}
+
+export function isEligibleForDeprivationStatusEvent(
+  round: RoundReference,
+  tribute: GameTribute,
+  need: SurvivalNeed,
+): boolean {
+  return (
+    canReceiveDeprivationStatus(tribute, need) && qualifiesForDeprivationEvent(round, tribute, need)
   );
 }
 

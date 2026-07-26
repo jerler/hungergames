@@ -619,27 +619,42 @@ describe("environmental events", () => {
     expect(selection?.itemsByRole.tribute?.[0]?.item.definitionId).toBe("blanket");
   });
 
-  it("brushfire immediately satisfies the discovered survival need", () => {
-    const game = createTestGame();
-    const tribute = withStats(game.tributes[0], BALANCED_STATS);
+  it.each([
+    {
+      resourceRandom: 0,
+      expectedNeed: "food",
+      expectedText: /eats enough/i,
+    },
+    {
+      resourceRandom: 0.999,
+      expectedNeed: "water",
+      expectedText: /drinks deeply/i,
+    },
+  ] as const)(
+    "brushfire immediately satisfies $expectedNeed",
+    ({ resourceRandom, expectedNeed, expectedText }) => {
+      const game = createTestGame();
+      const tribute = withStats(game.tributes[0], BALANCED_STATS);
 
-    const resolution = resolveEvent(
-      requireEvent("brushfire-supply-run"),
-      game,
-      {
-        tribute: [tribute],
-      },
-      [0.999, 0.999],
-    );
+      const resolution = resolveEvent(
+        requireEvent("brushfire-supply-run"),
+        game,
+        {
+          tribute: [tribute],
+        },
+        [0.999, resourceRandom],
+      );
 
-    expect(resolution.changes).toContainEqual({
-      type: "satisfy-survival-need",
-      tributeId: tribute.id,
-      need: "water",
-    });
+      expect(resolution.text).toMatch(expectedText);
+      expect(resolution.changes).toContainEqual({
+        type: "satisfy-survival-need",
+        tributeId: tribute.id,
+        need: expectedNeed,
+      });
+      expect(resolution.changes.some((change) => change.type === "acquire-item")).toBe(false);
+    },
+  );
 
-    expect(resolution.changes.some((change) => change.type === "acquire-item")).toBe(false);
-  });
   it("keeps environmental roles neutral", () => {
     for (const definition of ENVIRONMENTAL_EVENTS) {
       for (const role of definition.roles) {

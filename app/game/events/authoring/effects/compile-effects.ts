@@ -10,6 +10,7 @@ import {
   type EventResolutionContext,
 } from "~/game/events/event-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
+import { isPersistentNaturalResourceItemId } from "~/game/items/item-schema";
 import { createInventoryItemInstance } from "~/game/items/inventory-engine";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import type { GameChange } from "~/game/types/game-state";
@@ -159,6 +160,14 @@ function validateNaturalResourceEffect(
     throw new Error(
       `Event "${eventId}": effect "acquire-natural-resource" ` +
         `requires a natural-resource item, but "${effect.itemId}" is manufactured.`,
+    );
+  }
+
+  if (!isPersistentNaturalResourceItemId(effect.itemId)) {
+    throw new Error(
+      `Event "${eventId}": effect "acquire-natural-resource" ` +
+        `may only acquire persistent natural inventory resources, ` +
+        `but "${effect.itemId}" is not allowed.`,
     );
   }
 }

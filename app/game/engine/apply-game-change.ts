@@ -4,6 +4,7 @@ import type {
   GameTribute,
   InventoryTransaction,
   ResolvedEvent,
+  RoundReference,
   VictoryOutcome,
   Truce,
   Vendetta,
@@ -13,6 +14,10 @@ import { getRoundSequence } from "~/game/engine/rounds";
 import { createAccidentalTruceDissolutionEvents } from "~/game/truces/truce-aftermath";
 import type { SurvivalNeed } from "~/game/survival/survival-schema";
 import { upsertStatusEffect } from "~/game/statuses/status-engine";
+import {
+  CORNUCOPIA_PROVISIONS_ITEM_ID,
+  hasDeprivationProtection,
+} from "~/game/items/deprivation-protection";
 
 function updateTribute(
   state: GameState,
@@ -58,6 +63,38 @@ function getSurvivalNeedResolution(need: SurvivalNeed): SurvivalNeedResolution {
   }
 
   throw new Error(`Unknown survival need "${String(need)}".`);
+}
+
+function applyCornucopiaProvisionBenefits(
+  tribute: GameTribute,
+  round: RoundReference | null,
+): GameTribute {
+  return {
+    ...tribute,
+    survival:
+      round === null
+        ? tribute.survival
+        : {
+            ...tribute.survival,
+            lastFoundFoodRound: { ...round },
+            lastFoundWaterRound: { ...round },
+          },
+    statuses: tribute.statuses.filter(
+      (status) => status.definitionId !== "hungry" && status.definitionId !== "thirsty",
+    ),
+  };
+}
+
+function getProtectedNeedForStatus(statusId: string): SurvivalNeed | null {
+  if (statusId === "hungry") {
+    return "food";
+  }
+
+  if (statusId === "thirsty") {
+    return "water";
+  }
+
+  return null;
 }
 
 function validateTruceFormation(state: GameState, truce: Truce): void {
@@ -397,11 +434,22 @@ export function applyGameChange(
     }
 
     case "apply-status":
-      return updateTribute(state, change.tributeId, (tribute) => ({
-        ...tribute,
+      return updateTribute(state, change.tributeId, (tribute) => {
+        const protectedNeed = getProtectedNeedForStatus(change.status.definitionId);
 
-        statuses: upsertStatusEffect(tribute.statuses, change.status),
-      }));
+        if (protectedNeed && hasDeprivationProtection(tribute, protectedNeed)) {
+          throw new Error(
+            `Tribute "${tribute.id}" cannot receive ` +
+              `"${change.status.definitionId}" while owning ` +
+              "deprivation-protecting provisions.",
+          );
+        }
+
+        return {
+          ...tribute,
+          statuses: upsertStatusEffect(tribute.statuses, change.status),
+        };
+      });
     case "remove-status":
       return updateTribute(state, change.tributeId, (tribute) => ({
         ...tribute,
@@ -412,11 +460,19 @@ export function applyGameChange(
     case "acquire-item": {
       validateItemAcquisition(change, event);
 
-      const stateWithItem = updateTribute(state, change.tributeId, (tribute) => ({
-        ...tribute,
+      const stateWithItem = updateTribute(state, change.tributeId, (tribute) => {
+        const tributeWithItem = {
+          ...tribute,
+          inventory: [...tribute.inventory, change.item],
+        };
 
-        inventory: [...tribute.inventory, change.item],
-      }));
+        return change.item.definitionId === CORNUCOPIA_PROVISIONS_ITEM_ID
+          ? applyCornucopiaProvisionBenefits(
+              tributeWithItem,
+              state.currentRound === null ? null : event.round,
+            )
+          : tributeWithItem;
+      });
 
       const transaction: InventoryTransaction = {
         id: `acquire:${event.id}:` + change.item.id,
@@ -590,7 +646,7 @@ export function applyGameChange(
           }
 
           if (tribute.id === targetTribute.id) {
-            return {
+            const tributeWithItem = {
               ...tribute,
 
               /*
@@ -601,6 +657,13 @@ export function applyGameChange(
                */
               inventory: [...tribute.inventory, item],
             };
+
+            return item.definitionId === CORNUCOPIA_PROVISIONS_ITEM_ID
+              ? applyCornucopiaProvisionBenefits(
+                  tributeWithItem,
+                  state.currentRound === null ? null : event.round,
+                )
+              : tributeWithItem;
           }
 
           return tribute;

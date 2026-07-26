@@ -12,19 +12,19 @@ import type { SurvivalNeed } from "~/game/survival/survival-schema";
 
 import { mergeEventTags, type EventFamilyMetadata } from "./family-types";
 
-export type NaturalResourceEventText = (context: EventTextContext, need: SurvivalNeed) => string;
+export type ImmediateResourceEventText = (context: EventTextContext, need: SurvivalNeed) => string;
 
-export interface NaturalResourceEventOptions extends Omit<EventFamilyMetadata, "category"> {
-  resources: readonly SurvivalNeed[];
-  text: NaturalResourceEventText;
+export interface ImmediateResourceEventOptions extends Omit<EventFamilyMetadata, "category"> {
+  needs: readonly SurvivalNeed[];
+  text: ImmediateResourceEventText;
   roleId?: string;
   roleOptions?: AuthoredRoleOptions;
 }
 
-export function createNaturalResourceEvent(
+export function createImmediateResourceEvent(
   id: string,
   {
-    resources,
+    needs,
     text,
     roleId = "tribute",
     roleOptions = {},
@@ -32,13 +32,13 @@ export function createNaturalResourceEvent(
     weight = 8,
     tags = [],
     requirements = [],
-  }: NaturalResourceEventOptions,
+  }: ImmediateResourceEventOptions,
 ): EventDefinition {
-  if (resources.length === 0) {
-    throw new Error(`Natural-resource event "${id}" requires at least one need.`);
+  if (needs.length === 0) {
+    throw new Error(`Immediate-resource event "${id}" requires at least one need.`);
   }
 
-  const results = resources.map((need) =>
+  const results = needs.map((need) =>
     result({
       text: (context) => text(context, need),
       effects: [satisfySurvivalNeed(roleId, need), survived(roleId)],

@@ -21,6 +21,17 @@ const CAFFEINATED_DRINK_EFFECTS = [
 ] as const satisfies readonly ItemUseEffect[];
 
 export const ITEM_CATALOGUE = [
+  {
+    id: "cornucopia-provisions",
+    label: "Cornucopia provisions",
+    description:
+      "A durable pack of preserved food and water claimed during the Bloodbath. " +
+      "Its owner is protected from hunger and thirst.",
+    origin: "manufactured",
+    tags: ["provisions"],
+    deprivationProtection: ["food", "water"],
+  },
+
   // Natural resources
   {
     id: "hallucinogenic-berries",

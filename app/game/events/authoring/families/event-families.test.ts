@@ -4,7 +4,7 @@ import {
   applyStatus,
   brains,
   createItemStatEvent,
-  createNaturalResourceEvent,
+  createImmediateResourceEvent,
   createSoloStatEvent,
   minimumStat,
   result,
@@ -96,10 +96,10 @@ function selectAndResolve(
   });
 }
 
-describe("createNaturalResourceEvent", () => {
+describe("createImmediateResourceEvent", () => {
   it("supplies immediate-resource defaults", () => {
-    const definition = createNaturalResourceEvent("natural-defaults", {
-      resources: ["food"],
+    const definition = createImmediateResourceEvent("natural-defaults", {
+      needs: ["food"],
       text: ({ tribute }) => `${tribute.name} eats.`,
     });
 
@@ -124,8 +124,8 @@ describe("createNaturalResourceEvent", () => {
       id: "forager",
       name: "Fern",
     });
-    const definition = createNaturalResourceEvent("natural-effects", {
-      resources: ["food"],
+    const definition = createImmediateResourceEvent("natural-effects", {
+      needs: ["food"],
       text: ({ tribute: character }) => `${character.name} eats.`,
     });
     const resolution = resolveAuthoredEvent(
@@ -152,8 +152,8 @@ describe("createNaturalResourceEvent", () => {
 
   it("supports metadata and role overrides", () => {
     const getWeight = () => 12;
-    const definition = createNaturalResourceEvent("natural-overrides", {
-      resources: ["water"],
+    const definition = createImmediateResourceEvent("natural-overrides", {
+      needs: ["water"],
       text: ({ tribute }) => `${tribute.name} drinks.`,
       periods: ["night"],
       weight: 3,
@@ -170,8 +170,8 @@ describe("createNaturalResourceEvent", () => {
   it("resolves need and text deterministically", () => {
     const tribute = createAuthoringTestTribute();
     const state = createAuthoringTestGame([tribute]);
-    const definition = createNaturalResourceEvent("deterministic-resource", {
-      resources: ["food", "water"],
+    const definition = createImmediateResourceEvent("deterministic-resource", {
+      needs: ["food", "water"],
       text: (_context, need) => `Selected ${need}.`,
     });
     const resolve = () =>

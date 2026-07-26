@@ -19,9 +19,9 @@ import type { ItemDefinitionId } from "~/game/items/item-schema";
 import type { TributeStatValue } from "~/game/types/tribute";
 import { mergeEventTags, type EventFamilyMetadata } from "./family-types";
 
-export const HUNTED_FOOD_ITEM_IDS = ["rabbit", "chicken", "fish", "eggs"] as const;
+export const HUNTED_FOOD_RESOURCE_IDS = ["rabbit", "chicken", "fish", "eggs"] as const;
 
-export type HuntedFoodItemId = (typeof HUNTED_FOOD_ITEM_IDS)[number];
+export type HuntedFoodResourceId = (typeof HUNTED_FOOD_RESOURCE_IDS)[number];
 
 export interface HuntedFoodEventText {
   criticalFailure: EventText;
@@ -31,7 +31,7 @@ export interface HuntedFoodEventText {
 }
 
 export interface HuntedFoodEventOptions extends Omit<EventFamilyMetadata, "category"> {
-  foodId: HuntedFoodItemId;
+  foodResourceId: HuntedFoodResourceId;
   difficulty: TributeStatValue;
   requiredEquipmentId?: ItemDefinitionId;
   roleId?: string;
@@ -62,7 +62,7 @@ function getHuntingResult(
 export function createHuntedFoodEvent(
   id: string,
   {
-    foodId,
+    foodResourceId,
     difficulty,
     requiredEquipmentId,
     roleId = "tribute",
@@ -74,9 +74,9 @@ export function createHuntedFoodEvent(
     requirements = [],
   }: HuntedFoodEventOptions,
 ): EventDefinition {
-  if (!HUNTED_FOOD_ITEM_IDS.includes(foodId)) {
+  if (!HUNTED_FOOD_RESOURCE_IDS.includes(foodResourceId)) {
     throw new Error(
-      `Hunted-food event "${id}" uses unknown food resource ` + `"${String(foodId)}".`,
+      `Hunted-food event "${id}" uses unknown food resource ` + `"${String(foodResourceId)}".`,
     );
   }
 

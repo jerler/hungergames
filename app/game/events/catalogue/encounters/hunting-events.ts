@@ -4,7 +4,7 @@ import type { EventDefinition } from "~/game/events/event-schema";
 
 export const HUNTING_EVENTS = [
   createHuntedFoodEvent("trap-kit-rabbit-hunt", {
-    foodId: "rabbit",
+    foodResourceId: "rabbit",
 
     difficulty: 3,
 
@@ -22,15 +22,15 @@ export const HUNTING_EVENTS = [
         `${tribute.name} spends hours checking an elaborate trap, but catches nothing and returns exhausted.`,
 
       success: ({ tribute }) =>
-        `${tribute.name} constructs a careful trap and catches a rabbit and eats a satisfying meal.`,
+        `${tribute.name} constructs a careful trap, catches a rabbit, and eats a satisfying meal.`,
 
       exceptionalSuccess: ({ tribute }) =>
-        `${tribute.name} catches a remarkably plump rabbit, eats exceptionally well.`,
+        `${tribute.name} catches a remarkably plump rabbit and eats exceptionally well.`,
     },
   }),
 
   createHuntedFoodEvent("slingshot-chicken-hunt", {
-    foodId: "chicken",
+    foodResourceId: "chicken",
 
     difficulty: 3,
 
@@ -51,12 +51,12 @@ export const HUNTING_EVENTS = [
         `${tribute.name} brings down an arena chicken with a careful slingshot shot and eats it.`,
 
       exceptionalSuccess: ({ tribute }) =>
-        `${tribute.name} makes a perfect slingshot shot, secures an arena chicken and eats an unusually satisfying meal.`,
+        `${tribute.name} makes a perfect slingshot shot, secures an arena chicken, then eats an unusually satisfying meal.`,
     },
   }),
 
   createHuntedFoodEvent("fishing-gear-catch", {
-    foodId: "fish",
+    foodResourceId: "fish",
 
     difficulty: 3,
 
@@ -76,12 +76,12 @@ export const HUNTING_EVENTS = [
       success: ({ tribute }) => `${tribute.name} uses fishing gear to catch and eat a fish.`,
 
       exceptionalSuccess: ({ tribute }) =>
-        `${tribute.name} lands an enormous fish, eats exceptionally well.`,
+        `${tribute.name} lands an enormous fish and eats exceptionally well.`,
     },
   }),
 
   createHuntedFoodEvent("bird-whistle-nest-search", {
-    foodId: "eggs",
+    foodResourceId: "eggs",
 
     difficulty: 2,
 
@@ -107,7 +107,7 @@ export const HUNTING_EVENTS = [
   }),
 
   createHuntedFoodEvent("raids-nest-for-eggs", {
-    foodId: "eggs",
+    foodResourceId: "eggs",
 
     difficulty: 3,
 
@@ -126,7 +126,7 @@ export const HUNTING_EVENTS = [
         `${tribute.name} carefully raids an unattended nest and eats several eggs.`,
 
       exceptionalSuccess: ({ tribute }) =>
-        `${tribute.name} discovers a large hidden nest, eats well.`,
+        `${tribute.name} discovers a large hidden nest and eats well.`,
     },
   }),
 ] satisfies readonly EventDefinition[];

@@ -35,6 +35,7 @@ export type EventTag =
   | "tool"
   | "item"
   | "status"
+  | "deprivation"
   | "resource"
   | "truce"
   | "cooperative"

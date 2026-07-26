@@ -5,7 +5,7 @@ import {
   brains,
   consumeRequiredItem,
   createEvent,
-  createNaturalResourceEvent,
+  createImmediateResourceEvent,
   createNightRestEvent,
   eliminate,
   hasItem,
@@ -20,12 +20,12 @@ import type { EventDefinition } from "~/game/events/event-schema";
 
 export const SURVIVAL_EVENTS = [
   /* Day Only */
-  createNaturalResourceEvent("forages-for-resources", {
-    resources: ["food", "water"],
+  createImmediateResourceEvent("forages-for-resources", {
+    needs: ["food", "water"],
     text: ({ tribute }, need) =>
       need === "water"
         ? `${tribute.name} follows animal tracks to a clean spring and drinks deeply.`
-        : `${tribute.name} identifies edible plants and eats a satisfying meal.`,
+        : `${tribute.name} identifies edible plants and eats enough to quiet ${tribute.pronouns.possessiveAdjective} hunger.`,
   }),
   createEvent("upside-down-map")
     .solo("tribute", { getWeight: getForagingScore })
@@ -55,7 +55,7 @@ export const SURVIVAL_EVENTS = [
         success: randomResult(
           result({
             text: ({ tribute }) =>
-              `${tribute.name} correctly reads ${tribute.pronouns.possessiveAdjective} map and follows it to edible plants and eats a meal.`,
+              `${tribute.name} correctly reads ${tribute.pronouns.possessiveAdjective} map, follows it to edible plants, and eats enough to quiet ${tribute.pronouns.possessiveAdjective} hunger.`,
             effects: [
               satisfySurvivalNeed("tribute", "food"),
               survived("tribute"),
@@ -64,7 +64,7 @@ export const SURVIVAL_EVENTS = [
           }),
           result({
             text: ({ tribute }) =>
-              `${tribute.name} correctly reads ${tribute.pronouns.possessiveAdjective} map and follows it to a clean spring and drinks.`,
+              `${tribute.name} correctly reads ${tribute.pronouns.possessiveAdjective} map, follows it to a clean spring, and drinks deeply.`,
             effects: [
               satisfySurvivalNeed("tribute", "water"),
               survived("tribute"),

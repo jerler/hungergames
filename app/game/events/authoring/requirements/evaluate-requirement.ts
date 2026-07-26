@@ -1,10 +1,12 @@
 import type { ParticipantSelectionContext } from "~/game/events/event-schema";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import { getActiveTruceForTribute } from "~/game/truces/truce-engine";
+import { isEligibleForDeprivationStatusEvent } from "~/game/survival/survival-history";
 import type { GameTribute } from "~/game/types/game-state";
 
 import type {
   AuthoredRequirement,
+  DeprivationStatusEligibleRequirement,
   HasAnyHarmfulStatusRequirement,
   HasStatusRequirement,
   InActiveTruceRequirement,
@@ -19,6 +21,7 @@ export type CandidateRequirement =
   | HasStatusRequirement
   | LacksStatusRequirement
   | HasAnyHarmfulStatusRequirement
+  | DeprivationStatusEligibleRequirement
   | MinimumStatRequirement
   | MaximumStatRequirement
   | InActiveTruceRequirement;
@@ -30,6 +33,9 @@ export function isCandidateRequirement(
     case "has-status":
     case "lacks-status":
     case "has-any-harmful-status":
+    case "deprivation-status-eligible":
+      return true;
+
     case "minimum-stat":
     case "maximum-stat":
     case "in-active-truce":
@@ -70,6 +76,9 @@ export function evaluateCandidateRequirement(
       return tribute.statuses.some(
         (status) => getStatusDefinition(status.definitionId).kind === "harmful",
       );
+
+    case "deprivation-status-eligible":
+      return isEligibleForDeprivationStatusEvent(context.round, tribute, requirement.need);
 
     case "minimum-stat":
       return getEffectiveStats(tribute)[requirement.stat] >= requirement.value;

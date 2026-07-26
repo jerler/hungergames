@@ -22,9 +22,14 @@ import { BLOODBATH_EVENT_CATALOGUE, CORNUCOPIA_EVENTS } from "~/game/events/cata
 import { FORAGING_EVENTS } from "~/game/events/catalogue/encounters/foraging-events";
 import { HUNTING_EVENTS } from "~/game/events/catalogue/encounters/hunting-events";
 import { ENVIRONMENTAL_EVENTS } from "~/game/events/catalogue/encounters/environmental-events";
+import { DEPRIVATION_EVENTS } from "~/game/events/catalogue/encounters/deprivation-events";
 import { ITEM_USE_EVENTS } from "~/game/events/catalogue/encounters/item-use-events";
 import { SURVIVAL_EVENTS } from "~/game/events/catalogue/encounters/survival-events";
 import { THEFT_EVENTS } from "~/game/events/catalogue/encounters/theft-events";
+import {
+  FOOD_THEFT_EVENTS,
+  WATER_THEFT_EVENTS,
+} from "~/game/events/catalogue/encounters/resource-theft-events";
 import { RELATIONSHIP_EVENTS } from "~/game/events/catalogue/relationships";
 import { STAT_GATED_EVENTS } from "~/game/events/catalogue/stat-gated";
 import { getRoundSequence } from "~/game/engine/rounds";
@@ -32,6 +37,7 @@ import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { COMBAT_EVENTS } from "~/game/events/catalogue/encounters/combat-events";
 import {
+  CORNUCOPIA_CENTRALLY_AWARDED_ITEM_IDS,
   CORNUCOPIA_PACK_ITEM_POOL,
   type CornucopiaPackRarity,
 } from "~/game/events/catalogue/bloodbath/cornucopia-item-pool";
@@ -66,14 +72,20 @@ const CORNUCOPIA_PACK_ENTRY_BY_ITEM_ID = new Map<
   ItemDefinitionId,
   (typeof CORNUCOPIA_PACK_ITEM_POOL)[number]
 >(CORNUCOPIA_PACK_ITEM_POOL.map((entry) => [entry.itemId, entry]));
+const CORNUCOPIA_CENTRALLY_AWARDED_ITEM_ID_SET = new Set<ItemDefinitionId>(
+  CORNUCOPIA_CENTRALLY_AWARDED_ITEM_IDS,
+);
 
 const SIMULATION_EVENT_FAMILIES = [
   ["bloodbath", new Set(BLOODBATH_EVENT_CATALOGUE.map((event) => event.id))],
   ["combat", new Set(COMBAT_EVENTS.map((event) => event.id))],
   ["tactical", new Set(TACTICAL_EVENTS.map((event) => event.id))],
   ["theft", new Set(THEFT_EVENTS.map((event) => event.id))],
+  ["food-theft", new Set(FOOD_THEFT_EVENTS.map((event) => event.id))],
+  ["water-theft", new Set(WATER_THEFT_EVENTS.map((event) => event.id))],
   ["environmental", new Set(ENVIRONMENTAL_EVENTS.map((event) => event.id))],
   ["survival", new Set(SURVIVAL_EVENTS.map((event) => event.id))],
+  ["deprivation", new Set(DEPRIVATION_EVENTS.map((event) => event.id))],
   ["item-use", new Set(ITEM_USE_EVENTS.map((event) => event.id))],
   ["stat-gated", new Set(STAT_GATED_EVENTS.map((event) => event.id))],
   ["relationship", new Set(RELATIONSHIP_EVENTS.map((event) => event.id))],
@@ -138,7 +150,9 @@ function getCornucopiaPackAcquisitions(state: GameState): AcquiredInventoryTrans
   );
 
   return getAcquisitionTransactions(state).filter(
-    (transaction) => definitionIdByEventId.get(transaction.sourceId) === "cornucopia-nearby-pack",
+    (transaction) =>
+      definitionIdByEventId.get(transaction.sourceId) === "cornucopia-nearby-pack" &&
+      !CORNUCOPIA_CENTRALLY_AWARDED_ITEM_ID_SET.has(transaction.definitionId),
   );
 }
 

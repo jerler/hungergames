@@ -77,6 +77,7 @@ describe("hunting event content", () => {
       tributeId: hunter.id,
       need: "food",
     });
+    expect(resolution.text).toMatch(/\b(eat|eats)\b/i);
     expect(hasSurvivalCredit(resolution, hunter.id)).toBe(true);
   });
 

@@ -87,6 +87,10 @@ function validateRole(
     throw new Error(`Event "${eventId}" role "${role.id}" must have a positive integer count.`);
   }
 
+  if (role.isEligible !== undefined && typeof role.isEligible !== "function") {
+    throw new Error(`Event "${eventId}" role "${role.id}" has an invalid eligibility callback.`);
+  }
+
   for (const opposedRoleId of role.opposesRoleIds) {
     if (opposedRoleId === role.id) {
       throw new Error(`Event "${eventId}" role "${role.id}" cannot oppose itself.`);

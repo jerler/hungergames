@@ -192,9 +192,68 @@ describe("survival events", () => {
   });
   it.each([
     {
+      resultRandom: 0,
+      expectedNeed: "food",
+      expectedTextFragment: "eats enough to quiet",
+    },
+    {
+      resultRandom: 0.999,
+      expectedNeed: "water",
+      expectedTextFragment: "drinks deeply",
+    },
+  ] as const)(
+    "map success immediately satisfies $expectedNeed",
+    ({ resultRandom, expectedNeed, expectedTextFragment }) => {
+      const originalGame = createTestGame();
+      const originalTribute = withStats(originalGame.tributes[0], BALANCED_STATS);
+      const map = createInventoryItemInstance(
+        "map-resource-test-setup",
+        originalTribute.id,
+        "map",
+        ROUND,
+      );
+      const tribute = {
+        ...originalTribute,
+        inventory: [map],
+      };
+      const game: GameState = {
+        ...originalGame,
+        tributes: originalGame.tributes.map((candidate) =>
+          candidate.id === tribute.id ? tribute : candidate,
+        ),
+      };
+
+      const resolution = resolveEvent(
+        requireEvent("upside-down-map"),
+        game,
+        {
+          tribute: [tribute],
+        },
+        [0.6, resultRandom],
+      );
+
+      expect(resolution.text).toContain(expectedTextFragment);
+      expect(resolution.changes).toContainEqual({
+        type: "satisfy-survival-need",
+        tributeId: tribute.id,
+        need: expectedNeed,
+      });
+      expect(resolution.changes.some((change) => change.type === "acquire-item")).toBe(false);
+      expect(resolution.changes).toContainEqual({
+        type: "consume-item",
+        tributeId: tribute.id,
+        itemInstanceId: map.id,
+        uses: 1,
+        reason: "upside-down-map",
+      });
+    },
+  );
+
+  it.each([
+    {
       randomValue: 0,
       expectedNeed: "food",
-      expectedTextFragment: "eats a satisfying meal",
+      expectedTextFragment: "eats enough to quiet",
     },
     {
       randomValue: 0.999,

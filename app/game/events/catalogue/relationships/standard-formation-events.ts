@@ -12,6 +12,7 @@ import {
 } from "~/game/truces/truce-engine";
 import {
   getAverageDistrictAffinityWeight,
+  getDeprivationTruceMultiplier,
   TRUCE_GROUP_SIZE_WEIGHTS,
   type TruceGroupSize,
 } from "~/game/truces/truce-selection";
@@ -67,7 +68,8 @@ function createFormationEvent(
         isEligible: (tribute, { state }) => !getActiveTruceForTribute(state, tribute.id),
 
         getWeight: (tribute, { participantsByRole }) =>
-          getAverageDistrictAffinityWeight(tribute, participantsByRole.tributes ?? []),
+          getAverageDistrictAffinityWeight(tribute, participantsByRole.tributes ?? []) *
+          getDeprivationTruceMultiplier(tribute),
       },
     ],
 

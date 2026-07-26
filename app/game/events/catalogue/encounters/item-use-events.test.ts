@@ -70,6 +70,7 @@ describe("item-use event content", () => {
     const success = resolveItemEvent("slingshot-trick-shot", "slingshot", 0.6);
     expect(getAcquiredItemIds(success.resolution)).toEqual([]);
     expect(getSatisfiedNeeds(success.resolution)).toEqual(["food"]);
+    expect(success.resolution.text).toMatch(/\b(eat|eats)\b/i);
     expect(hasSurvivalCredit(success.resolution, success.tribute.id)).toBe(true);
   });
 
@@ -82,6 +83,8 @@ describe("item-use event content", () => {
 
     expect(getAcquiredItemIds(resolution)).toEqual([]);
     expect(getSatisfiedNeeds(resolution)).toEqual(["food", "water"]);
+    expect(resolution.text).toMatch(/\b(eat|eats)\b/i);
+    expect(resolution.text).toMatch(/\b(drink|drinks)\b/i);
     expect(hasSurvivalCredit(resolution, tribute.id)).toBe(true);
   });
 

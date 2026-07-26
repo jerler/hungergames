@@ -495,6 +495,27 @@ function createContextualCapabilities(
   }
 }
 
+function createDeprivationProtectionCapabilities(
+  definition: ItemDefinition,
+  groups: Map<string, string[]>,
+): void {
+  const protectedNeeds = definition.deprivationProtection ?? [];
+
+  if (protectedNeeds.length === 0) {
+    return;
+  }
+
+  const protectedStatusLabels = protectedNeeds.map((need) =>
+    need === "food" ? "Hungry" : "Thirsty",
+  );
+
+  addCapabilityDetail(
+    groups,
+    "Deprivation protection",
+    `Prevents ${formatList(protectedStatusLabels)} while owned.`,
+  );
+}
+
 function createUtilityCapabilities(
   definition: ItemDefinition,
   groups: Map<string, string[]>,
@@ -520,6 +541,8 @@ function createCapabilityGroups(definition: ItemDefinition): ItemCapabilityGroup
   createPassiveBonusCapabilities(definition, groups);
 
   createContextualCapabilities(definition, groups);
+
+  createDeprivationProtectionCapabilities(definition, groups);
 
   createUtilityCapabilities(definition, groups);
 

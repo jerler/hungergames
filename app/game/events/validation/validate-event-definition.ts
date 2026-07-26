@@ -19,6 +19,7 @@ const EVENT_TAGS = new Set([
   "tool",
   "item",
   "status",
+  "deprivation",
   "resource",
   "truce",
   "cooperative",

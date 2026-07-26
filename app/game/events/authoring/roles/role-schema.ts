@@ -2,6 +2,7 @@ import type { ParticipantRoleDefinition } from "~/game/events/event-schema";
 import type { ItemDefinitionId, ItemTag } from "~/game/items/item-schema";
 
 export type RoleWeight = NonNullable<ParticipantRoleDefinition["getWeight"]>;
+export type RoleEligibility = NonNullable<ParticipantRoleDefinition["isEligible"]>;
 
 export type RoleItemAccess = NonNullable<ParticipantRoleDefinition["itemAccess"]>;
 
@@ -19,6 +20,12 @@ export interface AuthoredRoleOptions {
    * tribute will be selected for this role.
    */
   getWeight?: RoleWeight;
+
+  /**
+   * Applies candidate-specific eligibility that cannot be
+   * expressed by a declarative authored requirement alone.
+   */
+  isEligible?: RoleEligibility;
 
   /**
    * Marks this participant as the target of
@@ -47,6 +54,7 @@ export interface AuthoredRoleSpecification {
   targeting?: RoleTargeting;
 
   getWeight?: RoleWeight;
+  isEligible?: RoleEligibility;
   opposesRoleIds: readonly string[];
 
   optionalItemDefinitionIds?: readonly ItemDefinitionId[];
@@ -57,7 +65,7 @@ export interface AuthoredRoleSpecification {
 export function createAuthoredRole(
   id: string,
   count: number,
-  { getWeight, opposesRoleIds = [], optionalItem, targeting }: AuthoredRoleOptions = {},
+  { getWeight, isEligible, opposesRoleIds = [], optionalItem, targeting }: AuthoredRoleOptions = {},
 ): AuthoredRoleSpecification {
   return {
     id,
@@ -70,6 +78,7 @@ export function createAuthoredRole(
       : {}),
 
     getWeight,
+    isEligible,
     opposesRoleIds: [...opposesRoleIds],
 
     ...(optionalItem

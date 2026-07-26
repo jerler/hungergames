@@ -4,7 +4,7 @@ import { getEffectiveStats } from "~/game/engine/effective-stats";
 
 import { createEvent } from "~/game/events/authoring/builder/create-event";
 
-import { acquireNaturalResource } from "~/game/events/authoring/effects/natural-resource-effects";
+import { acquirePersistentNaturalResource } from "~/game/events/authoring/effects/natural-resource-effects";
 
 import { applyStatus } from "~/game/events/authoring/effects/status-effects";
 import { satisfySurvivalNeed } from "~/game/events/authoring/effects/survival-effects";
@@ -36,8 +36,9 @@ import {
   type EventItemSelection,
 } from "~/game/events/event-schema";
 
-import type { ItemDefinitionId } from "~/game/items/item-schema";
+import type { PersistentNaturalResourceItemId } from "~/game/items/item-schema";
 
+import { getTributePronouns } from "~/game/tributes/pronouns";
 import type { GameTribute } from "~/game/types/game-state";
 
 import type { TributeStatValue } from "~/game/types/tribute";
@@ -62,8 +63,8 @@ const HIDDEN_FORAGE_POOL = HIDDEN_FORAGE_TYPES.map((type) => ({
 }));
 
 export interface ForageItemDefinitions {
-  hallucinogenic: ItemDefinitionId;
-  poisonous: ItemDefinitionId;
+  hallucinogenic: PersistentNaturalResourceItemId;
+  poisonous: PersistentNaturalResourceItemId;
 }
 
 export interface ForageIdentificationEventOptions extends Omit<
@@ -108,7 +109,7 @@ function getHarmfulDescriptor(hiddenType: Exclude<HiddenForageType, "safe">): st
 
 function getGuidebookPhrase(tribute: GameTribute, selection: EventItemSelection): string {
   if (selection.owner.id === tribute.id) {
-    return "their foraging guidebook";
+    return `${getTributePronouns(tribute).possessiveAdjective} ` + "foraging guidebook";
   }
 
   return `${selection.owner.snapshot.name}'s ` + "foraging guidebook";
@@ -120,19 +121,22 @@ function createSafeForageText(
   guidebook: EventItemSelection | null,
   identified: boolean,
 ): string {
+  const pronouns = getTributePronouns(tribute);
+
   if (guidebook) {
     return (
       `${tribute.snapshot.name} uses ` +
       `${getGuidebookPhrase(tribute, guidebook)} to identify edible ` +
-      `${forageLabel} and eats enough to satisfy their hunger.`
+      `${forageLabel} and eats enough to quiet ` +
+      `${pronouns.possessiveAdjective} hunger.`
     );
   }
 
   if (identified) {
     return (
       `${tribute.snapshot.name} carefully identifies ` +
-      `the ${forageLabel} as edible and eats enough ` +
-      "to satisfy their hunger."
+      `the ${forageLabel} as edible and eats enough to quiet ` +
+      `${pronouns.possessiveAdjective} hunger.`
     );
   }
 
@@ -246,11 +250,11 @@ export function createForageIdentificationEvent(
     }),
 
     hallucinogenicRetained: result({
-      effects: [acquireNaturalResource(roleId, items.hallucinogenic), survived(roleId)],
+      effects: [acquirePersistentNaturalResource(roleId, items.hallucinogenic), survived(roleId)],
     }),
 
     poisonousRetained: result({
-      effects: [acquireNaturalResource(roleId, items.poisonous), survived(roleId)],
+      effects: [acquirePersistentNaturalResource(roleId, items.poisonous), survived(roleId)],
     }),
 
     harmfulLeftBehind: result({

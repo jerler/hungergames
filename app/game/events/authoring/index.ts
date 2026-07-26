@@ -30,6 +30,7 @@ export type {
   AuthoredOptionalItemSelection,
   AuthoredRoleOptions,
   AuthoredRoleSpecification,
+  RoleEligibility,
   RoleItemAccess,
   RoleWeight,
 } from "./roles/role-schema";
@@ -40,7 +41,13 @@ export type { CombatRolePairOptions } from "./roles/combat-role-pair";
 
 /* Eligibility requirements */
 
-export { hasAnyHarmfulStatus, hasStatus, lacksStatus } from "./requirements/status-requirements";
+export {
+  hasAnyHarmfulStatus,
+  hasStatus,
+  isHungerStatusEligible,
+  isThirstStatusEligible,
+  lacksStatus,
+} from "./requirements/status-requirements";
 
 export { maximumStat, minimumStat } from "./requirements/stat-requirements";
 
@@ -48,6 +55,7 @@ export { inActiveTruce, notInSameTruce } from "./requirements/relationship-requi
 
 export type {
   AuthoredRequirement,
+  DeprivationStatusEligibleRequirement,
   HasAnyHarmfulStatusRequirement,
   HasStatusRequirement,
   InActiveTruceRequirement,
@@ -131,22 +139,31 @@ export {
 
 export type { RequiredItemEffectOptions } from "./effects/required-item-effects";
 
-export { acquireNaturalResource } from "./effects/natural-resource-effects";
+export { acquirePersistentNaturalResource } from "./effects/natural-resource-effects";
 export { randomResult } from "./outcomes/random-result";
 
 /* Event families */
 
-export { createNaturalResourceEvent } from "./families/natural-resource-event";
+export { createSurvivalNeedTheftEvent } from "./families/survival-need-theft-event";
 export type {
-  NaturalResourceEventOptions,
-  NaturalResourceEventText,
-} from "./families/natural-resource-event";
-export { createHuntedFoodEvent, HUNTED_FOOD_ITEM_IDS } from "./families/hunted-food-event";
+  SurvivalNeedTheftEventOptions,
+  SurvivalNeedTheftOutcomeTexts,
+} from "./families/survival-need-theft-event";
+
+export { createDeprivationStatusEvent } from "./families/deprivation-status-event";
+export type { DeprivationStatusEventOptions } from "./families/deprivation-status-event";
+
+export { createImmediateResourceEvent } from "./families/immediate-resource-event";
+export type {
+  ImmediateResourceEventOptions,
+  ImmediateResourceEventText,
+} from "./families/immediate-resource-event";
+export { createHuntedFoodEvent, HUNTED_FOOD_RESOURCE_IDS } from "./families/hunted-food-event";
 
 export type {
   HuntedFoodEventOptions,
   HuntedFoodEventText,
-  HuntedFoodItemId,
+  HuntedFoodResourceId,
 } from "./families/hunted-food-event";
 
 export { createSoloStatEvent } from "./families/solo-stat-event";

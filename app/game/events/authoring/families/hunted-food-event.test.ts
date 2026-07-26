@@ -33,7 +33,7 @@ const TEXT = {
 describe("createHuntedFoodEvent", () => {
   it("supplies hunting defaults", () => {
     const definition = createHuntedFoodEvent("hunting-defaults", {
-      foodId: "eggs",
+      foodResourceId: "eggs",
 
       difficulty: 3,
 
@@ -67,7 +67,7 @@ describe("createHuntedFoodEvent", () => {
 
   it("compiles configured equipment as accessible and required", () => {
     const definition = createHuntedFoodEvent("equipped-hunt", {
-      foodId: "rabbit",
+      foodResourceId: "rabbit",
 
       difficulty: 3,
 
@@ -105,7 +105,7 @@ describe("createHuntedFoodEvent", () => {
     const state = createAuthoringTestGame([tribute]);
 
     const definition = createHuntedFoodEvent("limited-equipment-hunt", {
-      foodId: "rabbit",
+      foodResourceId: "rabbit",
 
       difficulty: 3,
 
@@ -165,7 +165,7 @@ describe("createHuntedFoodEvent", () => {
     const state = createAuthoringTestGame([tribute]);
 
     const definition = createHuntedFoodEvent("reusable-equipment-hunt", {
-      foodId: "chicken",
+      foodResourceId: "chicken",
 
       difficulty: 3,
 
@@ -208,7 +208,7 @@ describe("createHuntedFoodEvent", () => {
     const state = createAuthoringTestGame([tribute]);
 
     const definition = createHuntedFoodEvent("dangerous-nest", {
-      foodId: "eggs",
+      foodResourceId: "eggs",
 
       difficulty: 3,
 
@@ -250,6 +250,36 @@ describe("createHuntedFoodEvent", () => {
     ]);
   });
 
+  it("does not satisfy food after a failed hunt", () => {
+    const tribute = createAuthoringTestTribute({
+      id: "failed-hunter",
+      stats: {
+        brains: 3,
+        brawn: 3,
+        luck: 3,
+      },
+    });
+
+    const definition = createHuntedFoodEvent("failed-hunt", {
+      foodResourceId: "eggs",
+      difficulty: 3,
+      text: TEXT,
+    });
+
+    for (const randomValue of [0, 0.2]) {
+      const { resolution } = selectAndResolveEvent({
+        definition,
+        state: createAuthoringTestGame([tribute]),
+        livingTributes: [tribute],
+        randomValues: [randomValue],
+      });
+
+      expect(resolution.changes.some((change) => change.type === "satisfy-survival-need")).toBe(
+        false,
+      );
+    }
+  });
+
   it("satisfies hunger and applies well-fed on exceptional success", () => {
     const baseTribute = createAuthoringTestTribute({
       id: "exceptional-hunter",
@@ -278,7 +308,7 @@ describe("createHuntedFoodEvent", () => {
     const state = createAuthoringTestGame([tribute]);
 
     const definition = createHuntedFoodEvent("exceptional-hunt", {
-      foodId: "eggs",
+      foodResourceId: "eggs",
 
       difficulty: 3,
 

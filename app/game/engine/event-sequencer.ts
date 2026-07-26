@@ -236,18 +236,18 @@ export function sequenceRoundEvents(
       resolution,
     });
 
-    return [
-      {
-        id: eventId,
-        definitionId: definition.id,
-        kind: "primary",
-        resolutionMode: "standard",
-        round,
-        participantTributeIds: selection.participantTributeIds,
-        text: resolution.text,
-        changes: resolution.changes,
-      },
-    ];
+    const finaleEvent: ResolvedEvent = {
+      id: eventId,
+      definitionId: definition.id,
+      kind: "primary",
+      resolutionMode: "standard",
+      round,
+      participantTributeIds: selection.participantTributeIds,
+      text: resolution.text,
+      changes: resolution.changes,
+    };
+
+    return completeNightRestCoverage(state, round, [finaleEvent]);
   }
 
   const eligibleDefinitions = EVENT_CATALOGUE.filter((definition) =>

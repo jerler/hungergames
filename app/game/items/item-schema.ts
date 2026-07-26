@@ -1,7 +1,11 @@
 import type { StatusEffectId } from "~/game/statuses/status-schema";
+import type { SurvivalNeed } from "~/game/survival/survival-schema";
 import type { TributeStats, TributeStatValue } from "~/game/types/tribute";
 
 export type ItemDefinitionId =
+  // Persistent survival supplies
+  | "cornucopia-provisions"
+
   // Status-effect consumables
   | "burger-and-fries"
   | "coffee"
@@ -77,12 +81,33 @@ export type ItemDefinitionId =
   | "padded-armour"
   | "reinforced-armour";
 
+export const PERSISTENT_NATURAL_RESOURCE_ITEM_IDS = [
+  "hallucinogenic-berries",
+  "poison-berries",
+  "hallucinogenic-mushrooms",
+  "poison-mushrooms",
+  "kindling",
+] as const satisfies readonly ItemDefinitionId[];
+
+export type PersistentNaturalResourceItemId = (typeof PERSISTENT_NATURAL_RESOURCE_ITEM_IDS)[number];
+
+const PERSISTENT_NATURAL_RESOURCE_ITEM_ID_SET = new Set<string>(
+  PERSISTENT_NATURAL_RESOURCE_ITEM_IDS,
+);
+
+export function isPersistentNaturalResourceItemId(
+  value: unknown,
+): value is PersistentNaturalResourceItemId {
+  return typeof value === "string" && PERSISTENT_NATURAL_RESOURCE_ITEM_ID_SET.has(value);
+}
+
 export type ItemOrigin = "natural-resource" | "manufactured";
 
 export type ItemAcquisitionSource = "cornucopia" | "natural-foraging" | "sponsor";
 
 export const ITEM_TAGS = [
   "consumable",
+  "provisions",
   "medicine",
   "shelter",
   "comfort",
@@ -210,6 +235,8 @@ export interface ItemDefinition {
   survivalBonus?: number;
   awarenessBonus?: number;
   foragingBonus?: number;
+
+  deprivationProtection?: readonly SurvivalNeed[];
 
   useEffects?: readonly ItemUseEffect[];
 

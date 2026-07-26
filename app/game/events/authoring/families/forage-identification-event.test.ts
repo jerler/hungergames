@@ -122,7 +122,34 @@ describe("createForageIdentificationEvent", () => {
       tributeId: tribute.id,
       need: "food",
     });
+    expect(resolution.text).toMatch(/\b(eat|eats)\b/i);
     expect(hasSurvivalCredit(resolution, tribute.id)).toBe(true);
+  });
+
+  it("uses the forager's pronouns in safe-consumption text", () => {
+    const tribute = withAuthoringTestItem(
+      createAuthoringTestTribute({
+        id: "pronoun-forager",
+        name: "Fern",
+        pronouns: "she",
+        stats: {
+          brains: 3,
+          brawn: 3,
+          luck: 3,
+        },
+      }),
+      "foraging-guidebook",
+    );
+
+    const { resolution } = selectAndResolveEvent({
+      definition: BERRY_EVENT,
+      state: createAuthoringTestGame([tribute]),
+      livingTributes: [tribute],
+      randomValues: [0.1],
+    });
+
+    expect(resolution.text).toContain("uses her foraging guidebook");
+    expect(resolution.text).toContain("quiet her hunger");
   });
 
   it("applies disoriented after failed hallucinogenic identification", () => {

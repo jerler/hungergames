@@ -7,6 +7,7 @@ import { createAuthoringTestTribute } from "~/game/events/authoring/testing/auth
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import {
   CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS,
+  CORNUCOPIA_CENTRALLY_AWARDED_ITEM_IDS,
   CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS,
   CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS,
   CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS,
@@ -80,6 +81,22 @@ function selectSequence(seed: string): ItemDefinitionId[] {
 }
 
 describe("Cornucopia item pool", () => {
+  it("keeps provisions centrally awarded and out of random acquisition pools", () => {
+    expect(CORNUCOPIA_CENTRALLY_AWARDED_ITEM_IDS).toEqual(["cornucopia-provisions"]);
+
+    expect(CORNUCOPIA_PACK_ITEM_POOL.map((entry) => entry.itemId)).not.toContain(
+      "cornucopia-provisions",
+    );
+
+    expect(CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS).not.toContain("cornucopia-provisions");
+
+    expect(CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS).not.toContain("cornucopia-provisions");
+
+    expect(CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS).not.toContain("cornucopia-provisions");
+
+    expect(getItemDefinition("cornucopia-provisions").origin).toBe("manufactured");
+  });
+
   it("contains every manufactured medical consumable", () => {
     const poolItemIds = CORNUCOPIA_PACK_ITEM_POOL.map((entry) => entry.itemId);
 

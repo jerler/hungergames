@@ -1,11 +1,11 @@
-import type { ItemDefinitionId } from "~/game/items/item-schema";
+import type { PersistentNaturalResourceItemId } from "~/game/items/item-schema";
 
-import type { AcquireNaturalResourceEffect } from "./effect-schema";
+import type { AcquirePersistentNaturalResourceEffect } from "./effect-schema";
 
-export function acquireNaturalResource(
+export function acquirePersistentNaturalResource(
   roleId: string,
-  itemId: ItemDefinitionId,
-): AcquireNaturalResourceEffect {
+  itemId: PersistentNaturalResourceItemId,
+): AcquirePersistentNaturalResourceEffect {
   return {
     type: "acquire-natural-resource",
     roleId,

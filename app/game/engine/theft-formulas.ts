@@ -10,6 +10,45 @@ export const MINIMUM_THEFT_COMBAT_ADVANTAGE = 0.5;
 
 const MINIMUM_THEFT_WEIGHT = 0.1;
 
+export function getDeprivationTheftMultiplier(tribute: GameTribute): number {
+  let multiplier = 1;
+
+  if (tribute.statuses.some((status) => status.definitionId === "hungry")) {
+    multiplier *= 1.3;
+  }
+
+  if (tribute.statuses.some((status) => status.definitionId === "thirsty")) {
+    multiplier *= 1.4;
+  }
+
+  return Math.min(multiplier, 1.8);
+}
+
+function getDeprivationProtectionStrategicValue(
+  definition: ItemDefinition,
+  tribute: GameTribute,
+): number {
+  const protection = definition.deprivationProtection ?? [];
+
+  let value = 0;
+
+  if (
+    protection.includes("food") &&
+    tribute.statuses.some((status) => status.definitionId === "hungry")
+  ) {
+    value += 3;
+  }
+
+  if (
+    protection.includes("water") &&
+    tribute.statuses.some((status) => status.definitionId === "thirsty")
+  ) {
+    value += 3.5;
+  }
+
+  return value;
+}
+
 function getUsableOwnedItems(tribute: GameTribute): InventoryItem[] {
   return tribute.inventory.filter((item) => isItemUsableBy(tribute, item));
 }
@@ -71,7 +110,10 @@ function getItemCapabilityStrategicValue(definition: ItemDefinition): number {
  * Limited-use items become less valuable as their remaining
  * uses decline.
  */
-function getItemStrategicValue(item: InventoryItem): number {
+export function getTheftItemStrategicValue(
+  item: InventoryItem,
+  interestedTribute: GameTribute,
+): number {
   const definition = getItemDefinition(item.definitionId);
 
   const passiveBonusValue =
@@ -80,6 +122,11 @@ function getItemStrategicValue(item: InventoryItem): number {
     (definition.foragingBonus ?? 0);
 
   const capabilityValue = getItemCapabilityStrategicValue(definition);
+
+  const deprivationProtectionValue = getDeprivationProtectionStrategicValue(
+    definition,
+    interestedTribute,
+  );
 
   const remainingUseRatio =
     item.usesRemaining === null
@@ -94,12 +141,12 @@ function getItemStrategicValue(item: InventoryItem): number {
           ),
         );
 
-  return (1 + passiveBonusValue + capabilityValue) * remainingUseRatio;
+  return (1 + passiveBonusValue + capabilityValue + deprivationProtectionValue) * remainingUseRatio;
 }
 
 function getOwnedInventoryStrategicValue(tribute: GameTribute): number {
   return getUsableOwnedItems(tribute).reduce(
-    (total, item) => total + getItemStrategicValue(item),
+    (total, item) => total + getTheftItemStrategicValue(item, tribute),
 
     0,
   );
@@ -202,7 +249,11 @@ export function getTheftThiefWeight(thief: GameTribute, context: EventSelectionC
   return Math.max(
     MINIMUM_THEFT_WEIGHT,
 
-    aptitudeFactor * combatAlternativeFactor * inventoryNeedFactor * opportunityFactor,
+    aptitudeFactor *
+      combatAlternativeFactor *
+      inventoryNeedFactor *
+      opportunityFactor *
+      getDeprivationTheftMultiplier(thief),
   );
 }
 
@@ -229,7 +280,10 @@ export function getTheftTargetWeight(target: GameTribute, thief: GameTribute): n
     targetCombatScore - getCombatScore(thief),
   );
 
-  const inventoryValue = getOwnedInventoryStrategicValue(target);
+  const inventoryValue = targetItems.reduce(
+    (total, item) => total + getTheftItemStrategicValue(item, thief),
+    0,
+  );
 
   const combatFactor = 1 + targetCombatScore * 0.2;
 

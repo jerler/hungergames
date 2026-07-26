@@ -153,9 +153,10 @@ export function compileAuthoredRoles(
 
       ...compileItemRequirement(itemRequirement),
 
-      ...(roleRequirements.length > 0
+      ...(role.isEligible || roleRequirements.length > 0
         ? {
             isEligible: (tribute, context) =>
+              (role.isEligible?.(tribute, context) ?? true) &&
               roleRequirements.every((requirement) =>
                 evaluateCandidateRequirement(requirement, tribute, context),
               ),

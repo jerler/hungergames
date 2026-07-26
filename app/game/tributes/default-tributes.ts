@@ -201,4 +201,6 @@ export const DEFAULT_TRIBUTES = [
   createTributeDefinition("rick-sanchez", "Rick Sanchez", "he", 5, 1, 1),
   createTributeDefinition("morty-smith", "Morty Smith", "he", 2, 1, 2),
   createTributeDefinition("homer-simpson", "Homer Simpson", "he", 1, 1, 5),
+  createTributeDefinition("barney", "Barney", "he", 3, 3, 3),
+  createTributeDefinition("elmo", "Elmo", "he", 2, 2, 4),
 ] satisfies readonly TributeDefinition[];

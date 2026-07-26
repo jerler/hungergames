@@ -31,11 +31,110 @@ import type {
   RoundReference,
 } from "~/game/types/game-state";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
+import { createInventoryItemInstance } from "~/game/items/inventory-engine";
+import { CORNUCOPIA_PROVISIONS_ITEM_ID } from "~/game/items/deprivation-protection";
 import { validateEventResolution } from "~/game/events/validation/validate-event-resolution";
 import { selectEventParticipants } from "~/game/events/participant-selection";
 
 function createEventId(round: RoundReference, eventIndex: number, definitionId: string): string {
   return ["bloodbath", round.period, round.day, eventIndex, definitionId].join("-");
+}
+
+function hasNeedSatisfaction(
+  event: ResolvedEvent,
+  tributeId: string,
+  need: "food" | "water",
+): boolean {
+  return event.changes.some(
+    (change) =>
+      change.type === "satisfy-survival-need" &&
+      change.tributeId === tributeId &&
+      change.need === need,
+  );
+}
+
+function addCornucopiaProvisions(
+  event: ResolvedEvent,
+  tributes: readonly GameTribute[],
+): ResolvedEvent {
+  const eliminatedTributeIds = new Set(
+    event.changes.flatMap((change) =>
+      change.type === "eliminate-tribute" ? [change.tributeId] : [],
+    ),
+  );
+
+  const tributeById = new Map(tributes.map((tribute) => [tribute.id, tribute] as const));
+
+  const survivors = event.participantTributeIds
+    .filter((tributeId) => !eliminatedTributeIds.has(tributeId))
+    .map((tributeId) => {
+      const tribute = tributeById.get(tributeId);
+
+      if (!tribute) {
+        throw new Error(
+          `Cornucopia event "${event.id}" references ` + `missing survivor "${tributeId}".`,
+        );
+      }
+
+      return tribute;
+    });
+
+  if (survivors.length === 0) {
+    return event;
+  }
+
+  const additionalChanges: ResolvedEvent["changes"][number][] = [];
+
+  for (const tribute of survivors) {
+    const alreadyReceivesProvisions = event.changes.some(
+      (change) =>
+        change.type === "acquire-item" &&
+        change.tributeId === tribute.id &&
+        change.item.definitionId === CORNUCOPIA_PROVISIONS_ITEM_ID,
+    );
+
+    if (!alreadyReceivesProvisions) {
+      additionalChanges.push({
+        type: "acquire-item",
+        tributeId: tribute.id,
+        acquisitionSource: "cornucopia",
+        item: createInventoryItemInstance(
+          event.id,
+          tribute.id,
+          CORNUCOPIA_PROVISIONS_ITEM_ID,
+          event.round,
+        ),
+      });
+    }
+
+    if (!hasNeedSatisfaction(event, tribute.id, "food")) {
+      additionalChanges.push({
+        type: "satisfy-survival-need",
+        tributeId: tribute.id,
+        need: "food",
+      });
+    }
+
+    if (!hasNeedSatisfaction(event, tribute.id, "water")) {
+      additionalChanges.push({
+        type: "satisfy-survival-need",
+        tributeId: tribute.id,
+        need: "water",
+      });
+    }
+  }
+
+  const supplyText =
+    survivors.length === 1
+      ? `${survivors[0]?.snapshot.name} also escapes ` +
+        "with a pack of food and water from the Cornucopia."
+      : "The survivors each escape with a pack of food " + "and water from the Cornucopia.";
+
+  return {
+    ...event,
+    text: `${event.text} ${supplyText}`,
+    changes: [...event.changes, ...additionalChanges],
+  };
 }
 
 function selectDefinition(
@@ -346,7 +445,7 @@ function sequenceCornucopiaEvents(
       participantsByRole = acquisitionSelection.participantsByRole;
     }
 
-    const event = resolveBloodbathEvent({
+    const resolvedEvent = resolveBloodbathEvent({
       state,
       round,
       livingTributes,
@@ -357,6 +456,8 @@ function sequenceCornucopiaEvents(
       random,
       unavailableItemInstanceIds,
     });
+
+    const event = addCornucopiaProvisions(resolvedEvent, livingTributes);
 
     plannedEliminationCount += countPlannedEliminations(event.changes);
 

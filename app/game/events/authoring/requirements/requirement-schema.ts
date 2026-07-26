@@ -26,6 +26,12 @@ export interface HasAnyHarmfulStatusRequirement {
   roleId: string;
 }
 
+export interface DeprivationStatusEligibleRequirement {
+  kind: "deprivation-status-eligible";
+  roleId: string;
+  need: "food" | "water";
+}
+
 /* Stat requirements */
 
 export interface MinimumStatRequirement {
@@ -89,7 +95,10 @@ export interface HasTreatmentForRequirement extends ItemRequirementBase {
 }
 
 export type StatusRequirement =
-  HasStatusRequirement | LacksStatusRequirement | HasAnyHarmfulStatusRequirement;
+  | HasStatusRequirement
+  | LacksStatusRequirement
+  | HasAnyHarmfulStatusRequirement
+  | DeprivationStatusEligibleRequirement;
 
 export type StatRequirement = MinimumStatRequirement | MaximumStatRequirement;
 
@@ -112,6 +121,7 @@ export function getRequirementRoleIds(requirement: AuthoredRequirement): readonl
     case "has-status":
     case "lacks-status":
     case "has-any-harmful-status":
+    case "deprivation-status-eligible":
     case "minimum-stat":
     case "maximum-stat":
     case "in-active-truce":

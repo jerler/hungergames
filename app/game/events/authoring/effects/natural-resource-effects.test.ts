@@ -1,14 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { acquireNaturalResource, always, createEvent, result } from "~/game/events/authoring";
+import {
+  acquirePersistentNaturalResource,
+  always,
+  createEvent,
+  result,
+} from "~/game/events/authoring";
 import {
   createAuthoringTestGame,
   createAuthoringTestTribute,
 } from "~/game/events/authoring/testing/authoring-test-fixtures";
 import { resolveAuthoredEvent } from "~/game/events/authoring/testing/resolve-authored-event";
-import type { ItemDefinitionId } from "~/game/items/item-schema";
+import type { PersistentNaturalResourceItemId } from "~/game/items/item-schema";
 
-describe("acquireNaturalResource", () => {
+describe("acquirePersistentNaturalResource", () => {
   it("creates a natural-foraging acquisition with event provenance", () => {
     const tribute = createAuthoringTestTribute({
       id: "forager",
@@ -24,7 +29,7 @@ describe("acquireNaturalResource", () => {
           result({
             text: "The tribute gathers kindling.",
 
-            effects: [acquireNaturalResource("tribute", "kindling")],
+            effects: [acquirePersistentNaturalResource("tribute", "kindling")],
           }),
         ),
       );
@@ -72,7 +77,12 @@ describe("acquireNaturalResource", () => {
             result({
               text: "The event resolves.",
 
-              effects: [acquireNaturalResource("tribute", "map")],
+              effects: [
+                acquirePersistentNaturalResource(
+                  "tribute",
+                  "map" as PersistentNaturalResourceItemId,
+                ),
+              ],
             }),
           ),
         ),
@@ -91,7 +101,12 @@ describe("acquireNaturalResource", () => {
             result({
               text: "The event resolves.",
 
-              effects: [acquireNaturalResource("tribute", "unknown-resource" as ItemDefinitionId)],
+              effects: [
+                acquirePersistentNaturalResource(
+                  "tribute",
+                  "unknown-resource" as PersistentNaturalResourceItemId,
+                ),
+              ],
             }),
           ),
         ),

@@ -66,12 +66,14 @@ const BRUSHFIRE_RESULTS = {
   }),
 
   exceptionalFood: result({
-    append: ", reaches safety, and discovers a patch of edible plants beyond the burned ground.",
+    append:
+      ", reaches safety, discovers edible plants beyond the burned ground, and eats enough to recover.",
     effects: [satisfySurvivalNeed("tribute", "food"), survived("tribute")],
   }),
 
   exceptionalWater: result({
-    append: ", reaches safety, and discovers a clean stream beyond the burned ground.",
+    append:
+      ", reaches safety, discovers a clean stream beyond the burned ground, and drinks deeply.",
     effects: [satisfySurvivalNeed("tribute", "water"), survived("tribute")],
   }),
 } as const;

@@ -1,4 +1,4 @@
-import type { ItemDefinitionId } from "~/game/items/item-schema";
+import type { PersistentNaturalResourceItemId } from "~/game/items/item-schema";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
 import type { NightRestQuality, SurvivalNeed } from "~/game/survival/survival-schema";
 
@@ -53,11 +53,11 @@ export interface ApplyRequiredItemRestEffect {
   reason?: string;
 }
 
-export interface AcquireNaturalResourceEffect {
+export interface AcquirePersistentNaturalResourceEffect {
   type: "acquire-natural-resource";
   roleId: string;
 
-  itemId: ItemDefinitionId;
+  itemId: PersistentNaturalResourceItemId;
 }
 
 export interface RecordRequiredItemUseEffect {
@@ -91,7 +91,7 @@ export type EventEffect =
   | SatisfySurvivalNeedEffect
   | RecordNightRestEffect
   | ApplyStatusEffect
-  | AcquireNaturalResourceEffect
+  | AcquirePersistentNaturalResourceEffect
   | RequiredItemEffect
   | EliminateEffect;
 

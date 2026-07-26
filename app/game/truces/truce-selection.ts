@@ -3,6 +3,20 @@ import type { GameState, GameTribute } from "~/game/types/game-state";
 
 export type TruceGroupSize = 2 | 3 | 4 | 5 | 6;
 
+export function getDeprivationTruceMultiplier(tribute: GameTribute): number {
+  let multiplier = 1;
+
+  if (tribute.statuses.some((status) => status.definitionId === "hungry")) {
+    multiplier *= 1.2;
+  }
+
+  if (tribute.statuses.some((status) => status.definitionId === "thirsty")) {
+    multiplier *= 1.25;
+  }
+
+  return Math.min(multiplier, 1.5);
+}
+
 export const TRUCE_GROUP_SIZE_WEIGHTS = [
   {
     size: 2,
@@ -81,13 +95,15 @@ export function getCooperativeTruceWeight(
    * Slightly favour choosing a tribute
    * who already has partners available.
    */
+  const deprivationMultiplier = getDeprivationTruceMultiplier(candidate);
+
   if (selectedParticipants.length === 0) {
-    return getActiveTruceForTribute(state, candidate.id) ? 1.5 : 1;
+    return (getActiveTruceForTribute(state, candidate.id) ? 1.5 : 1) * deprivationMultiplier;
   }
 
   const isPartner = selectedParticipants.some((selectedTribute) =>
     areTributesInSameTruce(state, candidate.id, selectedTribute.id),
   );
 
-  return isPartner ? 5 : 1;
+  return (isPartner ? 5 : 1) * deprivationMultiplier;
 }

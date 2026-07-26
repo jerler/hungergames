@@ -9,6 +9,7 @@ import {
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { isLegacyFoodWaterItemId } from "~/game/survival/survival-resource-schema";
+import { hasDeprivationProtection } from "~/game/items/deprivation-protection";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import { getRoundSequence } from "~/game/engine/rounds";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
@@ -393,6 +394,20 @@ export function assertGameStateInvariants(state: GameState): void {
     assert(target.isAlive, `vendetta "${vendetta.id}" ` + "has a dead target.");
   }
   for (const tribute of state.tributes) {
+    for (const [need, statusId] of [
+      ["food", "hungry"],
+      ["water", "thirsty"],
+    ] as const) {
+      assert(
+        !(
+          hasDeprivationProtection(tribute, need) &&
+          tribute.statuses.some((status) => status.definitionId === statusId)
+        ),
+        `tribute "${tribute.id}" cannot have ` +
+          `"${statusId}" while protected from ${need} deprivation.`,
+      );
+    }
+
     assert(
       tribute.district >= 1 && tribute.district <= state.config.districtCount,
       `tribute "${tribute.id}" has an invalid district.`,

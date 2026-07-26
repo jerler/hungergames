@@ -7,6 +7,12 @@ import {
 
 import { COMBAT_EVENTS } from "./encounters/combat-events";
 
+import { CORNUCOPIA_PROVISION_EVENTS } from "./encounters/cornucopia-provision-events";
+
+import { DEPRIVATION_EVENTS } from "./encounters/deprivation-events";
+
+import { FOOD_THEFT_EVENTS, WATER_THEFT_EVENTS } from "./encounters/resource-theft-events";
+
 import { ENVIRONMENTAL_EVENTS } from "./encounters/environmental-events";
 
 import { FORAGING_EVENTS } from "./encounters/foraging-events";
@@ -48,6 +54,30 @@ import { MIXED_STAT_GATED_EVENTS } from "./stat-gated/mixed-events";
 import type { EventCatalogueFamily } from "../validation/validate-event-catalogues";
 
 export const ORDINARY_EVENT_CATALOGUE_FAMILIES = [
+  {
+    name: "cornucopia-provisions",
+
+    events: CORNUCOPIA_PROVISION_EVENTS,
+  },
+
+  {
+    name: "deprivation",
+
+    events: DEPRIVATION_EVENTS,
+  },
+
+  {
+    name: "food-theft",
+
+    events: FOOD_THEFT_EVENTS,
+  },
+
+  {
+    name: "water-theft",
+
+    events: WATER_THEFT_EVENTS,
+  },
+
   {
     name: "combat",
 

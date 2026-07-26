@@ -18,6 +18,10 @@ export interface CornucopiaPackItemPoolEntry {
   rarity: CornucopiaPackRarity;
 }
 
+export const CORNUCOPIA_CENTRALLY_AWARDED_ITEM_IDS = [
+  "cornucopia-provisions",
+] as const satisfies readonly ItemDefinitionId[];
+
 export const CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS = [
   "knife",
   "short-sword",
@@ -347,6 +351,8 @@ function validateManufacturedItemCoverage(): void {
     ...CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS,
 
     ...CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS,
+
+    ...CORNUCOPIA_CENTRALLY_AWARDED_ITEM_IDS,
   ]);
 
   const manufacturedItemIds = ITEM_CATALOGUE.filter(
@@ -398,6 +404,11 @@ export function validateCornucopiaItemPools(): void {
 
   validateCornucopiaPackItemPool(CORNUCOPIA_PACK_ITEM_POOL);
 
+  validateUniqueItemPool(
+    "Cornucopia centrally awarded item pool",
+    CORNUCOPIA_CENTRALLY_AWARDED_ITEM_IDS,
+  );
+
   validateDisjointItemPools([
     {
       label: "the pack pool",
@@ -414,6 +425,10 @@ export function validateCornucopiaItemPools(): void {
     {
       label: "the Brains-offense pool",
       itemIds: CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS,
+    },
+    {
+      label: "the centrally awarded item pool",
+      itemIds: CORNUCOPIA_CENTRALLY_AWARDED_ITEM_IDS,
     },
   ]);
 

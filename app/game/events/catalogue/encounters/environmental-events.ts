@@ -1,7 +1,7 @@
 import { selectRandomItem, type RandomSource } from "~/game/engine/random";
 import { getVulnerabilityWeight } from "~/game/engine/stat-formulas";
 import {
-  acquireNaturalResource,
+  satisfySurvivalNeed,
   always,
   applyStatus,
   createEvent,
@@ -24,13 +24,7 @@ import type { GameTribute } from "~/game/types/game-state";
 import { getEffectiveLuck } from "~/game/engine/effective-stats";
 
 const ARENA_GOOSE_RESULTS = {
-  criticalWithFood: result({
-    text: ({ tribute }) =>
-      `${tribute.name} loses some food to an arena goose, which then decides to pursue ${tribute.pronouns.object} across the arena.`,
-    effects: [applyStatus("tribute", "hunted", 2)],
-  }),
-
-  criticalWithoutFood: result({
+  criticalFailure: result({
     text: ({ tribute }) =>
       `An arena goose decides ${tribute.name} owes it food and begins relentlessly tracking ${tribute.pronouns.object}.`,
     effects: [applyStatus("tribute", "hunted", 2)],
@@ -50,8 +44,8 @@ const ARENA_GOOSE_RESULTS = {
 
   exceptionalSuccess: result({
     text: ({ tribute }) =>
-      `${tribute.name} befriends an arena goose, which leads ${tribute.pronouns.object} to a patch of edible plants.`,
-    effects: [acquireNaturalResource("tribute", "wild-fruit"), survived("tribute")],
+      `${tribute.name} befriends an arena goose, which leads ${tribute.pronouns.object} to edible plants that ${tribute.pronouns.subject} immediately eats.`,
+    effects: [satisfySurvivalNeed("tribute", "food"), survived("tribute")],
   }),
 } as const;
 
@@ -73,21 +67,19 @@ const BRUSHFIRE_RESULTS = {
 
   exceptionalFood: result({
     append: ", reaches safety, and discovers a patch of edible plants beyond the burned ground.",
-    effects: [acquireNaturalResource("tribute", "wild-fruit"), survived("tribute")],
+    effects: [satisfySurvivalNeed("tribute", "food"), survived("tribute")],
   }),
 
   exceptionalWater: result({
     append: ", reaches safety, and discovers a clean stream beyond the burned ground.",
-    effects: [acquireNaturalResource("tribute", "water"), survived("tribute")],
+    effects: [satisfySurvivalNeed("tribute", "water"), survived("tribute")],
   }),
 } as const;
 
-function getArenaGooseResult(outcome: StatCheckOutcome, hasFood: boolean): EventResult {
+function getArenaGooseResult(outcome: StatCheckOutcome): EventResult {
   switch (outcome) {
     case "critical-failure":
-      return hasFood
-        ? ARENA_GOOSE_RESULTS.criticalWithFood
-        : ARENA_GOOSE_RESULTS.criticalWithoutFood;
+      return ARENA_GOOSE_RESULTS.criticalFailure;
     case "failure":
       return ARENA_GOOSE_RESULTS.failure;
     case "success":
@@ -114,15 +106,13 @@ function getBrushfireResult(outcome: StatCheckOutcome, random: RandomSource): Ev
 }
 
 function getBrushfireDifficultyReduction(itemId?: ItemDefinitionId): number {
-  return itemId === "water" ? 2 : itemId ? 1 : 0;
+  return itemId ? 1 : 0;
 }
 
 function getBrushfireIntro(tribute: GameTribute, itemId?: ItemDefinitionId): string {
   const pronouns = getTributePronouns(tribute);
 
   switch (itemId) {
-    case "water":
-      return `${tribute.snapshot.name} uses ${pronouns.possessiveAdjective} water to clear a path through the flames`;
     case "blanket":
       return `${tribute.snapshot.name} wraps ${pronouns.reflexive} in a blanket and smothers the embers`;
     case "shield":
@@ -191,10 +181,7 @@ export const ENVIRONMENTAL_EVENTS = [
     ),
 
   createEvent("arena-goose")
-    .solo("tribute", {
-      getWeight: getVulnerabilityWeight,
-      optionalItem: { definitionIds: ["wild-fruit"], access: "owned" },
-    })
+    .solo("tribute", { getWeight: getVulnerabilityWeight })
     .category("hazard")
     .tags("hazard", "status", "resource")
     .during("day")
@@ -203,19 +190,9 @@ export const ENVIRONMENTAL_EVENTS = [
       customResolution(
         (context, { resolveResult }) => {
           const tribute = requireSingleParticipant(context.participantsByRole, "tribute");
-          const food = getSelectedRoleItem(context, "tribute");
           const outcome = resolveLuckAdjustedStatCheck(tribute, "brawn", 3, context.random);
-          const resolution = resolveResult(getArenaGooseResult(outcome, Boolean(food)));
 
-          return outcome === "critical-failure"
-            ? {
-                ...resolution,
-                changes: [
-                  ...resolution.changes,
-                  ...createSelectedRoleItemUseChanges(context, "tribute", "arena-goose-theft"),
-                ],
-              }
-            : resolution;
+          return resolveResult(getArenaGooseResult(outcome));
         },
         {
           possibleResults: Object.values(ARENA_GOOSE_RESULTS),
@@ -227,7 +204,7 @@ export const ENVIRONMENTAL_EVENTS = [
     .solo("tribute", {
       getWeight: getVulnerabilityWeight,
       optionalItem: {
-        definitionIds: ["water", "blanket", "shield"],
+        definitionIds: ["blanket", "shield"],
       },
     })
     .category("hazard")

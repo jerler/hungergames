@@ -515,116 +515,6 @@ describe("environmental events", () => {
     ]);
   });
 
-  it("lets the goose steal the tribute's own food", () => {
-    const originalGame = createTestGame();
-
-    const tribute = withItem(withStats(originalGame.tributes[0], BALANCED_STATS), "wild-fruit");
-
-    const game = replaceTributes(originalGame, [tribute]);
-
-    const food = tribute.inventory.find((item) => item.definitionId === "wild-fruit");
-
-    const resolution = resolveEvent(
-      requireEvent("arena-goose"),
-      game,
-      {
-        tribute: [tribute],
-      },
-      [0],
-    );
-
-    expect(getAppliedStatuses(resolution)).toEqual([
-      expect.objectContaining({
-        definitionId: "hunted",
-        severity: 2,
-      }),
-    ]);
-
-    expect(resolution.changes).toContainEqual({
-      type: "consume-item",
-      tributeId: tribute.id,
-      itemInstanceId: food?.id,
-      uses: 1,
-      reason: "arena-goose-theft",
-    });
-  });
-
-  it("does not let the goose steal a truce partner's food", () => {
-    const originalGame = createTestGame();
-
-    const tribute = withStats(originalGame.tributes[0], BALANCED_STATS);
-
-    const itemOwner = withItem(withStats(originalGame.tributes[1], BALANCED_STATS), "wild-fruit");
-
-    const game = addTruce(replaceTributes(originalGame, [tribute, itemOwner]), [
-      tribute,
-      itemOwner,
-    ]);
-
-    const partnerFood = itemOwner.inventory.find((item) => item.definitionId === "wild-fruit");
-
-    if (!partnerFood) {
-      throw new Error("Expected the truce partner to own food.");
-    }
-
-    const resolution = resolveEvent(
-      requireEvent("arena-goose"),
-      game,
-      {
-        tribute: [tribute],
-      },
-      [0],
-    );
-
-    expect(resolution.changes).not.toContainEqual(
-      expect.objectContaining({
-        type: "consume-item",
-        tributeId: itemOwner.id,
-        itemInstanceId: partnerFood.id,
-      }),
-    );
-
-    expect(resolution.changes.some((change) => change.type === "consume-item")).toBe(false);
-
-    expect(getAppliedStatuses(resolution)).toEqual([
-      expect.objectContaining({
-        definitionId: "hunted",
-        severity: 2,
-      }),
-    ]);
-  });
-
-  it("does not reuse food already reserved by another event", () => {
-    const originalGame = createTestGame();
-
-    const tribute = withStats(originalGame.tributes[0], BALANCED_STATS);
-
-    const itemOwner = withItem(withStats(originalGame.tributes[1], BALANCED_STATS), "wild-fruit");
-
-    const game = addTruce(replaceTributes(originalGame, [tribute, itemOwner]), [
-      tribute,
-      itemOwner,
-    ]);
-
-    const food = itemOwner.inventory.find((item) => item.definitionId === "wild-fruit");
-
-    if (!food) {
-      throw new Error("Test truce partner has no food.");
-    }
-
-    const resolution = resolveEvent(
-      requireEvent("arena-goose"),
-      game,
-      {
-        tribute: [tribute],
-      },
-      [0],
-      new Set([food.id]),
-    );
-
-    expect(resolution.changes.some((change) => change.type === "consume-item")).toBe(false);
-  });
-
   it("lets personal protective equipment reduce brushfire severity", () => {
     const originalGame = createTestGame();
 
@@ -704,12 +594,12 @@ describe("environmental events", () => {
     });
   });
 
-  it("brushfire prefers water over lower-priority protection", () => {
+  it("brushfire respects protection-item priority", () => {
     const originalGame = createTestGame();
 
     const tribute = withItem(
       withItem(withStats(originalGame.tributes[0], BALANCED_STATS), "shield"),
-      "water",
+      "blanket",
     );
 
     const game = replaceTributes(originalGame, [tribute]);
@@ -726,32 +616,30 @@ describe("environmental events", () => {
       new Set(),
     );
 
-    expect(selection?.itemsByRole.tribute?.[0]?.item.definitionId).toBe("water");
+    expect(selection?.itemsByRole.tribute?.[0]?.item.definitionId).toBe("blanket");
   });
 
-  it("brushfire records natural acquisition provenance", () => {
+  it("brushfire immediately satisfies the discovered survival need", () => {
     const game = createTestGame();
     const tribute = withStats(game.tributes[0], BALANCED_STATS);
 
     const resolution = resolveEvent(
       requireEvent("brushfire-supply-run"),
       game,
-      { tribute: [tribute] },
+      {
+        tribute: [tribute],
+      },
       [0.999, 0.999],
     );
 
-    expect(resolution.changes).toContainEqual(
-      expect.objectContaining({
-        type: "acquire-item",
-        tributeId: tribute.id,
-        acquisitionSource: "natural-foraging",
-        item: expect.objectContaining({
-          definitionId: "water",
-        }),
-      }),
-    );
-  });
+    expect(resolution.changes).toContainEqual({
+      type: "satisfy-survival-need",
+      tributeId: tribute.id,
+      need: "water",
+    });
 
+    expect(resolution.changes.some((change) => change.type === "acquire-item")).toBe(false);
+  });
   it("keeps environmental roles neutral", () => {
     for (const definition of ENVIRONMENTAL_EVENTS) {
       for (const role of definition.roles) {

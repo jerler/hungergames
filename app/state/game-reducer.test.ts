@@ -483,7 +483,7 @@ describe("gameReducer", () => {
     expect(() => assertGameStateInvariants(completedState)).not.toThrow();
   });
 
-  it("applies automatic preparation without queuing it for reveal", () => {
+  it("applies automatic medical preparation without queuing it for reveal", () => {
     const game = createTestGame("preparation-round-test");
 
     const tribute = game.tributes[0];
@@ -492,65 +492,52 @@ describe("gameReducer", () => {
       throw new Error("Expected a tribute fixture.");
     }
 
-    const water = createInventoryItemInstance("preparation-water", tribute.id, "water", DAY_ONE);
+    const medKit = createInventoryItemInstance(
+      "preparation-med-kit",
+      tribute.id,
+      "med-kit",
+      DAY_ONE,
+    );
 
     /*
      * Acquire the item through the ordinary event path so
      * inventory history and transactions remain valid.
      */
-    const stateWithWater = applyResolvedEvent(game, {
-      id: "preparation-water",
-      definitionId: "test-water-acquisition",
-
+    const stateWithMedKit = applyResolvedEvent(game, {
+      id: "preparation-med-kit",
+      definitionId: "test-med-kit-acquisition",
       kind: "primary",
       resolutionMode: "standard",
-
       round: DAY_ONE,
-
       participantTributeIds: [tribute.id],
-
-      text: `${tribute.snapshot.name} finds clean water during test setup.`,
-
+      text: `${tribute.snapshot.name} obtains a med kit during test setup.`,
       changes: [
         {
           type: "acquire-item",
-
           tributeId: tribute.id,
-          acquisitionSource: "natural-foraging",
-
-          item: water,
+          acquisitionSource: "cornucopia",
+          item: medKit,
         },
       ],
     });
 
-    const stateWithPreparationNeed: GameState = {
-      ...stateWithWater,
-
+    const stateNeedingTreatment: GameState = {
+      ...stateWithMedKit,
       phase: "round-complete",
       currentRound: NIGHT_ONE,
-
       roundEvents: [],
       revealedEventCount: 0,
-
-      tributes: stateWithWater.tributes.map((candidate) =>
+      tributes: stateWithMedKit.tributes.map((candidate) =>
         candidate.id === tribute.id
           ? {
               ...candidate,
-
-              survival: {
-                ...candidate.survival,
-
-                roundsWithoutWater: 2,
-              },
-
               statuses: [
                 ...candidate.statuses,
-
                 createStatusEffectInstance(
-                  "preparation-thirst",
+                  "preparation-injury",
                   candidate.id,
-                  "thirsty",
-                  1,
+                  "injured",
+                  2,
                   NIGHT_ONE,
                 ),
               ],
@@ -559,7 +546,7 @@ describe("gameReducer", () => {
       ),
     };
 
-    const nextState = gameReducer(stateWithPreparationNeed, {
+    const nextState = gameReducer(stateNeedingTreatment, {
       type: "round/began",
       now: "2026-07-24T12:00:00.000Z",
     });
@@ -574,23 +561,30 @@ describe("gameReducer", () => {
     );
 
     expect(
-      automaticEvents.some((event) => event.preparation?.mechanic === "hydration-consumption"),
+      automaticEvents.some((event) => event.preparation?.mechanic === "medical-treatment"),
     ).toBe(true);
 
     expect(nextState.roundEvents.some((event) => event.kind === "primary")).toBe(true);
+
     expect(nextState.roundEvents.every((event) => event.kind !== "preparation")).toBe(true);
+
     expect(nextState.revealedEventCount).toBe(0);
+
+    const treatedTribute = nextState.tributes.find((candidate) => candidate.id === tribute.id);
+
+    expect(treatedTribute?.statuses.some((status) => status.definitionId === "injured")).toBe(
+      false,
+    );
 
     expect(nextState.itemTransactions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           type: "acquired",
-          itemInstanceId: water.id,
+          itemInstanceId: medKit.id,
         }),
-
         expect.objectContaining({
           type: "consumed",
-          itemInstanceId: water.id,
+          itemInstanceId: medKit.id,
         }),
       ]),
     );

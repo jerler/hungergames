@@ -2,16 +2,13 @@ import type { StatusEffectId } from "~/game/statuses/status-schema";
 import type { TributeStats, TributeStatValue } from "~/game/types/tribute";
 
 export type ItemDefinitionId =
-  // Natural resources
-  | "water"
-
-  // Safe natural food
-  | "wild-fruit"
-  | "mushrooms"
-  | "eggs"
-  | "rabbit"
-  | "chicken"
-  | "fish"
+  // Status-effect consumables
+  | "burger-and-fries"
+  | "coffee"
+  | "coca-cola"
+  | "energy-drink"
+  | "hot-chocolate"
+  | "herbal-tea"
 
   // Harmful natural forage
   | "hallucinogenic-berries"
@@ -21,17 +18,6 @@ export type ItemDefinitionId =
 
   // Natural utility
   | "kindling"
-
-  // Manufactured food and drinks
-  | "soup"
-  | "burger-and-fries"
-  | "pizza-box"
-  | "bottled-water"
-  | "coffee"
-  | "coca-cola"
-  | "energy-drink"
-  | "hot-chocolate"
-  | "herbal-tea"
 
   // Medical supplies
   | "med-kit"
@@ -97,8 +83,6 @@ export type ItemAcquisitionSource = "cornucopia" | "natural-foraging" | "sponsor
 
 export const ITEM_TAGS = [
   "consumable",
-  "water",
-  "food",
   "medicine",
   "shelter",
   "comfort",
@@ -115,13 +99,6 @@ export const ITEM_TAGS = [
   "fishing",
 ] as const;
 export type ItemTag = (typeof ITEM_TAGS)[number];
-
-export type ItemUseNeed = "food" | "hydration";
-
-export interface SatisfyNeedItemEffect {
-  type: "satisfy-need";
-  need: ItemUseNeed;
-}
 
 export interface RemoveStatusItemEffect {
   type: "remove-status";
@@ -156,7 +133,6 @@ export interface GrantStatusItemEffect {
 }
 
 export type ItemUseEffect =
-  | SatisfyNeedItemEffect
   | RemoveStatusItemEffect
   | RemoveMedicalStatusesItemEffect
   | GrantStatusItemEffect

@@ -41,6 +41,15 @@ import { collectBalanceMetrics } from "~/game/simulation/balance-metrics";
 
 import type { SimulationRun } from "~/game/simulation/simulation-runner";
 
+const STATUS_CONSUMABLE_ITEM_IDS = new Set<ItemDefinitionId>([
+  "burger-and-fries",
+  "coffee",
+  "coca-cola",
+  "energy-drink",
+  "hot-chocolate",
+  "herbal-tea",
+]);
+
 const simulationCache = new Map<string, GameState>();
 
 type TransferItemChange = Extract<
@@ -643,7 +652,7 @@ describe("simulation stress tests", () => {
       rare: 0,
     };
 
-    let foodOrDrinkCount = 0;
+    let statusConsumableCount = 0;
     let medicalCount = 0;
 
     for (const acquisition of acquisitions) {
@@ -663,16 +672,15 @@ describe("simulation stress tests", () => {
 
       expect(acquisition.acquisitionSource).toBe("cornucopia");
 
-      if (definition.tags.includes("food") || definition.tags.includes("water")) {
-        foodOrDrinkCount += 1;
+      if (STATUS_CONSUMABLE_ITEM_IDS.has(acquisition.definitionId)) {
+        statusConsumableCount += 1;
       }
 
       if (definition.tags.includes("medicine")) {
         medicalCount += 1;
       }
     }
-
-    expect(foodOrDrinkCount).toBeGreaterThan(0);
+    expect(statusConsumableCount).toBeGreaterThan(0);
 
     expect(medicalCount).toBeGreaterThan(0);
 

@@ -16,9 +16,6 @@ function getUsableOwnedItems(tribute: GameTribute): InventoryItem[] {
 
 function getItemUseEffectStrategicValue(effect: ItemUseEffect): number {
   switch (effect.type) {
-    case "satisfy-need":
-      return 0.6;
-
     case "remove-status":
       return effect.statusIds.length * 0.45;
 

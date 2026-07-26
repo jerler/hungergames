@@ -11,71 +11,48 @@ const ROUND = {
 } as const;
 
 describe("item effect compilation", () => {
-  it("delegates food status cleanup to satisfy-survival-need", () => {
-    const owner = createAuthoringTestTribute({
-      id: "owner",
-    });
-
-    const actingTribute = {
-      ...createAuthoringTestTribute({
-        id: "acting-tribute",
-      }),
-
-      statuses: [
-        createStatusEffectInstance("hunger-event", "acting-tribute", "hungry", 1, ROUND),
-
-        createStatusEffectInstance("thirst-event", "acting-tribute", "thirsty", 1, ROUND),
-      ],
-    };
-
-    const food = createInventoryItemInstance("food-event", owner.id, "wild-fruit", ROUND);
+  it("compiles harmful forage as an item-side status effect", () => {
+    const tribute = createAuthoringTestTribute();
+    const berries = createInventoryItemInstance("berry-event", tribute.id, "poison-berries", ROUND);
 
     const changes = compileItemUseEffects({
-      eventId: "use-natural-food",
+      eventId: "use-poison-berries",
       round: ROUND,
-      actingTribute,
-      owner,
-      item: food,
+      actingTribute: tribute,
+      owner: tribute,
+      item: berries,
     });
 
-    expect(changes).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: "satisfy-survival-need",
-          tributeId: actingTribute.id,
-          need: "food",
+    expect(changes).toContainEqual(
+      expect.objectContaining({
+        type: "apply-status",
+        tributeId: tribute.id,
+        status: expect.objectContaining({
+          definitionId: "poisoned",
         }),
-
-        expect.objectContaining({
-          type: "consume-item",
-          tributeId: owner.id,
-          itemInstanceId: food.id,
-        }),
-      ]),
+      }),
     );
-
-    expect(changes.some((change) => change.type === "remove-status")).toBe(false);
+    expect(changes).toContainEqual(
+      expect.objectContaining({
+        type: "consume-item",
+        itemInstanceId: berries.id,
+      }),
+    );
+    expect(changes.some((change) => change.type === "satisfy-survival-need")).toBe(false);
   });
 
   it("removes only medical statuses", () => {
     const tribute = createAuthoringTestTribute();
-
     const actingTribute = {
       ...tribute,
-
       statuses: [
         createStatusEffectInstance("injury", tribute.id, "injured", 1, ROUND),
-
         createStatusEffectInstance("poison", tribute.id, "poisoned", 1, ROUND),
-
         createStatusEffectInstance("hunt", tribute.id, "hunted", 1, ROUND),
-
         createStatusEffectInstance("hunger", tribute.id, "hungry", 1, ROUND),
-
         createStatusEffectInstance("thirst", tribute.id, "thirsty", 1, ROUND),
       ],
     };
-
     const medKit = createInventoryItemInstance("med-kit-event", tribute.id, "med-kit", ROUND);
 
     const changes = compileItemUseEffects({
@@ -93,17 +70,13 @@ describe("item effect compilation", () => {
     expect(removedStatusIds).toEqual(
       expect.arrayContaining([actingTribute.statuses[0].id, actingTribute.statuses[1].id]),
     );
-
     expect(removedStatusIds).not.toContain(actingTribute.statuses[2].id);
-
     expect(removedStatusIds).not.toContain(actingTribute.statuses[3].id);
-
     expect(removedStatusIds).not.toContain(actingTribute.statuses[4].id);
   });
 
   it("rejects utility items without generic active use effects", () => {
     const tribute = createAuthoringTestTribute();
-
     const map = createInventoryItemInstance("map-event", tribute.id, "map", ROUND);
 
     expect(() =>

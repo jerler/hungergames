@@ -5,7 +5,7 @@ import type { GameTribute } from "~/game/types/game-state";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 
 export const CORNUCOPIA_RARITY_WEIGHTS = {
-  common: 6,
+  common: 8,
   standard: 4,
   uncommon: 2,
   rare: 1,
@@ -64,15 +64,7 @@ export const CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS = [
 ] as const satisfies readonly ItemDefinitionId[];
 
 export const CORNUCOPIA_PACK_ITEM_POOL = [
-  // Common manufactured food, drink, and survival supplies
-  {
-    itemId: "bottled-water",
-    rarity: "common",
-  },
-  {
-    itemId: "soup",
-    rarity: "common",
-  },
+  // Common status-effect consumables and survival supplies
   {
     itemId: "burger-and-fries",
     rarity: "common",
@@ -111,10 +103,6 @@ export const CORNUCOPIA_PACK_ITEM_POOL = [
   },
 
   // Standard supplies
-  {
-    itemId: "pizza-box",
-    rarity: "standard",
-  },
   {
     itemId: "energy-drink",
     rarity: "standard",

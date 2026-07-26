@@ -10,52 +10,29 @@ export interface GiftDefinition {
 
 export const GIFT_DEFINITIONS = [
   {
-    id: "soup",
-    name: "Bowl of soup",
-
-    description: "Relieves hunger and thirst with one warm meal.",
-  },
-
-  {
-    id: "bottled-water",
-    name: "Bottled water",
-
-    description: "Provides two servings of clean drinking water.",
-  },
-
-  {
     id: "med-kit",
     name: "Med kit",
-
-    description: "A rare three-use medical kit capable of treating multiple harmful conditions.",
+    description: "A multi-use medical kit.",
   },
-
   {
     id: "blanket",
-    name: "Warm blanket",
-
-    description: "Provides comfortable rest during the night.",
+    name: "Blanket",
+    description: "Warmth and comfort for the arena night.",
   },
-
   {
     id: "matches",
     name: "Matches",
-
-    description: "Allows a tribute to attempt to establish a sheltered night camp.",
+    description: "A limited means of starting a fire.",
   },
-
   {
     id: "knife",
     name: "Knife",
-
-    description: "A compact weapon and useful survival tool.",
+    description: "A compact direct-combat weapon.",
   },
-
   {
     id: "bow",
-    name: "Bow and arrows",
-
-    description: "A powerful but comparatively rare ranged weapon.",
+    name: "Bow",
+    description: "A ranged direct-combat weapon.",
   },
 ] as const satisfies readonly GiftDefinition[];
 
@@ -84,11 +61,9 @@ export const GIFT_FREQUENCY_OPTIONS = [
 }[];
 
 export const DEFAULT_GIFT_FREQUENCIES = {
-  soup: "very-common",
-  "bottled-water": "very-common",
   "med-kit": "uncommon",
   blanket: "common",
-  matches: "uncommon",
+  matches: "common",
   knife: "uncommon",
   bow: "uncommon",
-} satisfies Record<GiftDefinitionId, GiftFrequency>;
+} as const satisfies Record<GiftDefinitionId, GiftFrequency>;

@@ -1,21 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { getItemDefinition } from "~/game/items/item-catalogue";
-
 import { DEFAULT_GIFT_FREQUENCIES, GIFT_DEFINITIONS } from "./gift-definitions";
 
-const EXPECTED_GIFT_IDS = [
-  "soup",
-  "bottled-water",
-  "med-kit",
-  "blanket",
-  "matches",
-  "knife",
-  "bow",
-] as const;
+const EXPECTED_GIFT_IDS = ["med-kit", "blanket", "matches", "knife", "bow"] as const;
 
 describe("gift definitions", () => {
-  it("uses real manufactured item IDs", () => {
+  it("uses real persistent manufactured item IDs", () => {
     expect(GIFT_DEFINITIONS.map((gift) => gift.id)).toEqual([...EXPECTED_GIFT_IDS]);
 
     for (const gift of GIFT_DEFINITIONS) {

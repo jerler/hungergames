@@ -26,11 +26,11 @@ function validate(resolution: EventResolution, round: RoundReference = DAY_TWO):
 
 describe("validateEventResolution", () => {
   it("accepts a valid natural acquisition", () => {
-    const item = createInventoryItemInstance("resolved-event", "tribute", "water", DAY_TWO);
+    const item = createInventoryItemInstance("resolved-event", "tribute", "kindling", DAY_TWO);
 
     expect(() =>
       validate({
-        text: "A tribute finds water.",
+        text: "A tribute finds kindling.",
         changes: [
           {
             type: "acquire-item",

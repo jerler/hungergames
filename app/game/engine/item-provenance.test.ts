@@ -180,22 +180,6 @@ describe("item acquisition provenance", () => {
     expect(() => assertGameStateInvariants(nextState)).not.toThrow();
   });
 
-  it("allows natural resources to come from the Cornucopia", () => {
-    const game = createGame();
-
-    const { event } = createAcquisitionEvent(
-      game,
-      "cornucopia-water",
-      "water",
-      "cornucopia",
-      DAY_ONE,
-    );
-
-    const nextState = applyResolvedEvent(game, event);
-
-    expect(() => assertGameStateInvariants(nextState)).not.toThrow();
-  });
-
   it.each([NIGHT_ONE, DAY_TWO])(
     "rejects Cornucopia acquisitions outside Day 1 daytime",
     (round) => {
@@ -300,7 +284,7 @@ describe("item acquisition provenance", () => {
     const { event } = createAcquisitionEvent(
       game,
       "valid-foraging",
-      "wild-fruit",
+      "kindling",
       "natural-foraging",
       DAY_TWO,
     );

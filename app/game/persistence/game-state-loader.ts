@@ -1,5 +1,11 @@
 import { assertGameStateInvariants } from "~/game/engine/game-invariants";
-import { CURRENT_GAME_STATE_SCHEMA_VERSION, type GameState } from "~/game/types/game-state";
+import { isLegacyFoodWaterItemId } from "~/game/survival/survival-resource-schema";
+import {
+  CURRENT_GAME_STATE_SCHEMA_VERSION,
+  type GameChange,
+  type GameState,
+  type ResolvedEvent,
+} from "~/game/types/game-state";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -18,16 +24,14 @@ function normalizeDeprecatedSurvivalCounters(state: GameState): GameState {
 
   return {
     ...state,
-    tributes: state.tributes.map((tribute) => {
-      return {
-        ...tribute,
-        survival: {
-          lastFoundFoodRound: tribute.survival.lastFoundFoodRound,
-          lastFoundWaterRound: tribute.survival.lastFoundWaterRound,
-          lastNightRest: tribute.survival.lastNightRest,
-        },
-      };
-    }),
+    tributes: state.tributes.map((tribute) => ({
+      ...tribute,
+      survival: {
+        lastFoundFoodRound: tribute.survival.lastFoundFoodRound,
+        lastFoundWaterRound: tribute.survival.lastFoundWaterRound,
+        lastNightRest: tribute.survival.lastNightRest,
+      },
+    })),
   };
 }
 
@@ -51,6 +55,99 @@ function normalizeVisibleRoundQueue(state: GameState): GameState {
   };
 }
 
+function isDeprecatedResourcePreparation(event: ResolvedEvent): boolean {
+  const mechanic = (
+    event.preparation as
+      | {
+          mechanic?: unknown;
+        }
+      | undefined
+  )?.mechanic;
+
+  return mechanic === "hydration-consumption" || mechanic === "food-consumption";
+}
+
+function isDeprecatedResourceItemChange(
+  change: GameChange,
+  deprecatedItemInstanceIds: ReadonlySet<string>,
+): boolean {
+  switch (change.type) {
+    case "acquire-item":
+      return isLegacyFoodWaterItemId(change.item.definitionId);
+
+    case "consume-item":
+    case "use-item":
+    case "transfer-item":
+      return deprecatedItemInstanceIds.has(change.itemInstanceId);
+
+    default:
+      return false;
+  }
+}
+
+function normalizeHistoricalEvent(
+  event: ResolvedEvent,
+  deprecatedItemInstanceIds: ReadonlySet<string>,
+): ResolvedEvent {
+  return {
+    ...event,
+    changes: event.changes.filter(
+      (change) => !isDeprecatedResourceItemChange(change, deprecatedItemInstanceIds),
+    ),
+  };
+}
+
+function normalizeDeprecatedFoodWaterInventory(state: GameState): GameState {
+  const deprecatedItemInstanceIds = new Set<string>();
+
+  for (const tribute of state.tributes) {
+    for (const item of tribute.inventory) {
+      if (isLegacyFoodWaterItemId(item.definitionId)) {
+        deprecatedItemInstanceIds.add(item.id);
+      }
+    }
+  }
+
+  for (const transaction of state.itemTransactions) {
+    if (isLegacyFoodWaterItemId(transaction.definitionId)) {
+      deprecatedItemInstanceIds.add(transaction.itemInstanceId);
+    }
+  }
+
+  const containsDeprecatedResourceData = (event: ResolvedEvent): boolean =>
+    isDeprecatedResourcePreparation(event) ||
+    event.changes.some((change) =>
+      isDeprecatedResourceItemChange(change, deprecatedItemInstanceIds),
+    );
+
+  const requiresNormalization =
+    deprecatedItemInstanceIds.size > 0 ||
+    state.roundEvents.some(containsDeprecatedResourceData) ||
+    state.eventHistory.some(containsDeprecatedResourceData);
+
+  if (!requiresNormalization) {
+    return state;
+  }
+
+  const normalizeEvents = (events: readonly ResolvedEvent[]): ResolvedEvent[] =>
+    events
+      .filter((event) => !isDeprecatedResourcePreparation(event))
+      .map((event) => normalizeHistoricalEvent(event, deprecatedItemInstanceIds));
+
+  return {
+    ...state,
+    tributes: state.tributes.map((tribute) => ({
+      ...tribute,
+      inventory: tribute.inventory.filter((item) => !isLegacyFoodWaterItemId(item.definitionId)),
+    })),
+    roundEvents: normalizeEvents(state.roundEvents),
+    eventHistory: normalizeEvents(state.eventHistory),
+    itemTransactions: state.itemTransactions.filter(
+      (transaction) => !isLegacyFoodWaterItemId(transaction.definitionId),
+    ),
+  };
+}
+
 export class UnsupportedGameStateSchemaError extends Error {
   readonly receivedSchemaVersion: unknown;
 
@@ -62,7 +159,8 @@ export class UnsupportedGameStateSchemaError extends Error {
 
     super(
       `Cannot load GameState schema version ${receivedLabel}. ` +
-        `This build supports schema version ${CURRENT_GAME_STATE_SCHEMA_VERSION}.`,
+        `This build supports schema version ` +
+        `${CURRENT_GAME_STATE_SCHEMA_VERSION}.`,
     );
 
     this.name = "UnsupportedGameStateSchemaError";
@@ -79,8 +177,8 @@ export function loadGameState(value: unknown): GameState {
     throw new UnsupportedGameStateSchemaError(value.schemaVersion);
   }
 
-  const state = normalizeVisibleRoundQueue(
-    normalizeDeprecatedSurvivalCounters(value as unknown as GameState),
+  const state = normalizeDeprecatedFoodWaterInventory(
+    normalizeVisibleRoundQueue(normalizeDeprecatedSurvivalCounters(value as unknown as GameState)),
   );
 
   try {

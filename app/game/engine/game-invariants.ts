@@ -8,6 +8,7 @@ import {
 } from "~/game/types/game-state";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
+import { isLegacyFoodWaterItemId } from "~/game/survival/survival-resource-schema";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
 import { getRoundSequence } from "~/game/engine/rounds";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
@@ -22,19 +23,12 @@ const RESOLVED_EVENT_KINDS = new Set<ResolvedEventKind>([
 
 const PREPARATION_MECHANICS = new Set([
   "medical-treatment",
-  "hydration-consumption",
-  "food-consumption",
   "night-rest-preparation",
   "morning-rest-resolution",
   "camouflage-preparation",
 ]);
 
-const ITEM_PREPARATION_MECHANICS = new Set([
-  "medical-treatment",
-  "hydration-consumption",
-  "food-consumption",
-  "camouflage-preparation",
-]);
+const ITEM_PREPARATION_MECHANICS = new Set(["medical-treatment", "camouflage-preparation"]);
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
@@ -211,13 +205,6 @@ function assertPreparationEvent(event: ResolvedEvent, tributeIds: ReadonlySet<st
         `limited preparation item "${itemInstanceId}" has invalid remaining uses.`,
       );
     }
-  }
-
-  if (details.affectedNeed !== undefined) {
-    assert(
-      details.affectedNeed === "food" || details.affectedNeed === "water",
-      `preparation event "${event.id}" has an invalid affected need.`,
-    );
   }
 
   for (const statusId of details.affectedStatusIds ?? []) {
@@ -478,6 +465,12 @@ export function assertGameStateInvariants(state: GameState): void {
     }
 
     for (const item of tribute.inventory) {
+      assert(
+        !isLegacyFoodWaterItemId(item.definitionId),
+        `inventory item "${item.id}" uses retired food/water definition ` +
+          `"${String(item.definitionId)}".`,
+      );
+
       const definition = getItemDefinition(item.definitionId);
 
       if (definition.maxUses === undefined) {
@@ -529,6 +522,12 @@ export function assertGameStateInvariants(state: GameState): void {
     assert(
       tributeIds.has(transaction.tributeId),
       `inventory transaction "${transaction.id}" ` + "references a missing tribute.",
+    );
+
+    assert(
+      !isLegacyFoodWaterItemId(transaction.definitionId),
+      `inventory transaction "${transaction.id}" uses retired food/water ` +
+        `definition "${String(transaction.definitionId)}".`,
     );
 
     const definition = getItemDefinition(transaction.definitionId);

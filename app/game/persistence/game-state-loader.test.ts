@@ -341,4 +341,54 @@ describe("loadGameState", () => {
 
     expect(() => loadGameState(schemaSevenGame)).toThrow(/schema version 7/i);
   });
+
+  it("strips legacy food and water inventory", () => {
+    const game = createGame();
+    const tribute = game.tributes[0];
+
+    if (!tribute) {
+      throw new Error("Expected a tribute fixture.");
+    }
+
+    const legacyItem = {
+      id: "legacy-water-item",
+      definitionId: "water",
+      usesRemaining: 1,
+      sourceEventId: "legacy-water-event",
+      acquiredRound: {
+        day: 1,
+        period: "day",
+      },
+    };
+
+    const legacyGame = {
+      ...game,
+      tributes: game.tributes.map((candidate, index) =>
+        index === 0
+          ? {
+              ...candidate,
+              inventory: [legacyItem],
+            }
+          : candidate,
+      ),
+      itemTransactions: [
+        {
+          id: "legacy-water-transaction",
+          type: "acquired",
+          tributeId: tribute.id,
+          itemInstanceId: legacyItem.id,
+          definitionId: "water",
+          uses: 1,
+          round: legacyItem.acquiredRound,
+          sourceId: legacyItem.sourceEventId,
+          acquisitionSource: "natural-foraging",
+        },
+      ],
+    };
+
+    const loaded = loadGameState(legacyGame);
+
+    expect(loaded.tributes[0]?.inventory).toEqual([]);
+    expect(loaded.itemTransactions).toEqual([]);
+  });
 });

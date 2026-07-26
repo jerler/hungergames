@@ -36,15 +36,7 @@ const NIGHT_ONE = {
 } as const;
 
 const INVENTORY_DEFINITIONS = [
-  "water",
-
   // Safe natural food
-  "wild-fruit",
-  "mushrooms",
-  "eggs",
-  "rabbit",
-  "chicken",
-  "fish",
 
   // Harmful natural forage
   "hallucinogenic-berries",
@@ -56,15 +48,6 @@ const INVENTORY_DEFINITIONS = [
   "kindling",
 
   // Manufactured food and drinks
-  "soup",
-  "burger-and-fries",
-  "pizza-box",
-  "bottled-water",
-  "coffee",
-  "coca-cola",
-  "energy-drink",
-  "hot-chocolate",
-  "herbal-tea",
 
   // Medical supplies
   "med-kit",

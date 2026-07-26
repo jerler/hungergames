@@ -1,10 +1,10 @@
 import {
-  acquireNaturalResource,
   applyStatus,
   brains,
   brawn,
   createSoloStatEvent,
   result,
+  satisfySurvivalNeed,
   survived,
 } from "~/game/events/authoring";
 import type { EventDefinition } from "~/game/events/event-schema";
@@ -43,7 +43,7 @@ export const FLEE_EVENTS = [
   createSoloStatEvent("bloodbath-flee-stream", {
     check: brains(3),
     category: "survival",
-    tags: ["environment", "item", "resource", "status"],
+    tags: ["environment", "resource", "status"],
     periods: ["day"],
     weight: 4,
     outcomes: {
@@ -59,14 +59,14 @@ export const FLEE_EVENTS = [
       }),
       success: result({
         text: ({ tribute }) =>
-          `${tribute.name} follows the terrain away from the Cornucopia and finds a clean stream.`,
-        effects: [acquireNaturalResource("tribute", "water"), survived("tribute")],
+          `${tribute.name} follows the terrain away from the Cornucopia, finds a clean stream, and drinks deeply.`,
+        effects: [satisfySurvivalNeed("tribute", "water"), survived("tribute")],
       }),
       exceptionalSuccess: result({
         text: ({ tribute }) =>
-          `${tribute.name} finds a clean stream beside a sheltered hiding place far from the Cornucopia.`,
+          `${tribute.name} drinks from a clean stream beside a sheltered hiding place far from the Cornucopia.`,
         effects: [
-          acquireNaturalResource("tribute", "water"),
+          satisfySurvivalNeed("tribute", "water"),
           applyStatus("tribute", "hidden", 1),
           survived("tribute"),
         ],
@@ -77,7 +77,7 @@ export const FLEE_EVENTS = [
   createSoloStatEvent("bloodbath-flee-forage", {
     check: brains(3),
     category: "survival",
-    tags: ["environment", "item", "resource", "status"],
+    tags: ["environment", "resource", "status"],
     periods: ["day"],
     weight: 4,
     outcomes: {
@@ -93,14 +93,14 @@ export const FLEE_EVENTS = [
       }),
       success: result({
         text: ({ tribute }) =>
-          `${tribute.name} escapes the central Bloodbath and gathers edible plants.`,
-        effects: [acquireNaturalResource("tribute", "wild-fruit"), survived("tribute")],
+          `${tribute.name} escapes the central Bloodbath, identifies edible plants, and eats a quick meal.`,
+        effects: [satisfySurvivalNeed("tribute", "food"), survived("tribute")],
       }),
       exceptionalSuccess: result({
         text: ({ tribute }) =>
-          `${tribute.name} quickly identifies a patch of edible plants and feels confident about ${tribute.pronouns.possessiveAdjective} decision to flee.`,
+          `${tribute.name} quickly identifies edible plants, eats well, and feels confident about ${tribute.pronouns.possessiveAdjective} decision to flee.`,
         effects: [
-          acquireNaturalResource("tribute", "wild-fruit"),
+          satisfySurvivalNeed("tribute", "food"),
           applyStatus("tribute", "inspired", 1),
           survived("tribute"),
         ],

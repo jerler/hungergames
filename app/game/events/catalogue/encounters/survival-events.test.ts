@@ -190,24 +190,22 @@ describe("survival events", () => {
       reason: "upside-down-map",
     });
   });
-
   it.each([
     {
       randomValue: 0,
-      expectedItemId: "wild-fruit",
-      expectedTextFragment: "gathers enough for a meal",
+      expectedNeed: "food",
+      expectedTextFragment: "eats a satisfying meal",
     },
     {
       randomValue: 0.999,
-      expectedItemId: "water",
-      expectedTextFragment: "collects water",
+      expectedNeed: "water",
+      expectedTextFragment: "drinks deeply",
     },
   ] as const)(
-    "forages-for-resources gathers $expectedItemId",
-    ({ randomValue, expectedItemId, expectedTextFragment }) => {
+    "forages-for-resources immediately satisfies $expectedNeed",
+    ({ randomValue, expectedNeed, expectedTextFragment }) => {
       const game = createTestGame();
       const tribute = withStats(game.tributes[0], BALANCED_STATS);
-
       const resolution = resolveEvent(
         requireEvent("forages-for-resources"),
         game,
@@ -218,19 +216,12 @@ describe("survival events", () => {
       );
 
       expect(resolution.text).toContain(expectedTextFragment);
-
-      expect(resolution.changes).toContainEqual(
-        expect.objectContaining({
-          type: "acquire-item",
-          tributeId: tribute.id,
-          acquisitionSource: "natural-foraging",
-
-          item: expect.objectContaining({
-            definitionId: expectedItemId,
-          }),
-        }),
-      );
-
+      expect(resolution.changes).toContainEqual({
+        type: "satisfy-survival-need",
+        tributeId: tribute.id,
+        need: expectedNeed,
+      });
+      expect(resolution.changes.some((change) => change.type === "acquire-item")).toBe(false);
       expect(resolution.changes).toContainEqual({
         type: "increment-statistic",
         tributeId: tribute.id,

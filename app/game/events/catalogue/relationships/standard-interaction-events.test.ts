@@ -418,9 +418,9 @@ describe("truce conflict events", () => {
 
     const partner = originalGame.tributes[1];
 
-    let state = acquireItem(originalGame, partner, "wild-fruit", "natural-foraging", 1);
+    let state = acquireItem(originalGame, partner, "kindling", "natural-foraging", 1);
 
-    state = acquireItem(state, partner, "water", "natural-foraging", 2);
+    state = acquireItem(state, partner, "blanket", "cornucopia", 2);
 
     state = formTruce(state, [betrayer, partner]);
 

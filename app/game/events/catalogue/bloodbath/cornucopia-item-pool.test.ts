@@ -19,15 +19,6 @@ import {
 } from "./cornucopia-item-pool";
 
 const CONSUMABLE_IDS = [
-  "soup",
-  "burger-and-fries",
-  "pizza-box",
-  "bottled-water",
-  "coffee",
-  "coca-cola",
-  "energy-drink",
-  "hot-chocolate",
-  "herbal-tea",
   "med-kit",
   "bandages",
   "painkillers",
@@ -89,7 +80,7 @@ function selectSequence(seed: string): ItemDefinitionId[] {
 }
 
 describe("Cornucopia item pool", () => {
-  it("contains every manufactured consumable", () => {
+  it("contains every manufactured medical consumable", () => {
     const poolItemIds = CORNUCOPIA_PACK_ITEM_POOL.map((entry) => entry.itemId);
 
     expect(poolItemIds).toEqual(expect.arrayContaining([...CONSUMABLE_IDS]));
@@ -155,8 +146,6 @@ describe("Cornucopia item pool", () => {
     expect(counts.standard).toBeGreaterThan(counts.uncommon);
 
     expect(counts.uncommon).toBeGreaterThan(counts.rare);
-
-    expect(counts.common / sampleSize).toBeGreaterThan(0.4);
 
     expect(counts.rare / sampleSize).toBeLessThan(0.05);
   });

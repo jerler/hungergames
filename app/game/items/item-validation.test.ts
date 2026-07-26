@@ -45,23 +45,6 @@ describe("item validation", () => {
     ).toThrow(/unknown status/i);
   });
 
-  it("rejects need effects without matching tags", () => {
-    expect(() =>
-      validateItemDefinition({
-        ...BASE_ITEM,
-        maxUses: 1,
-        tags: ["consumable", "tool"],
-
-        useEffects: [
-          {
-            type: "satisfy-need",
-            need: "food",
-          },
-        ],
-      }),
-    ).toThrow(/without the "food" tag/i);
-  });
-
   it("rejects rest without shelter or comfort", () => {
     expect(() =>
       validateItemDefinition({

@@ -312,8 +312,6 @@ export type EventResolutionMode = "standard" | "safety";
 
 export type PreparationMechanic =
   | "medical-treatment"
-  | "hydration-consumption"
-  | "food-consumption"
   | "night-rest-preparation"
   | "morning-rest-resolution"
   | "camouflage-preparation";
@@ -339,8 +337,6 @@ export interface PreparationEventDetails {
    * Zero means a limited-use item was exhausted.
    */
   usesRemainingAfter?: number | null;
-
-  affectedNeed?: SurvivalNeed;
   affectedStatusIds?: StatusEffectId[];
 
   restQuality?: NightRestQuality;

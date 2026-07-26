@@ -97,19 +97,18 @@ function selectAndResolve(
 }
 
 describe("createNaturalResourceEvent", () => {
-  it("supplies the natural-resource defaults", () => {
+  it("supplies immediate-resource defaults", () => {
     const definition = createNaturalResourceEvent("natural-defaults", {
-      resources: ["wild-fruit"],
-      text: ({ tribute }) => `${tribute.name} gathers food.`,
+      resources: ["food"],
+      text: ({ tribute }) => `${tribute.name} eats.`,
     });
 
     expect(definition).toMatchObject({
       id: "natural-defaults",
       category: "survival",
-      tags: ["survival", "item", "resource"],
+      tags: ["survival", "resource"],
       periods: ["day"],
       baseWeight: 8,
-
       roles: [
         {
           id: "tribute",
@@ -117,45 +116,32 @@ describe("createNaturalResourceEvent", () => {
         },
       ],
     });
-
     expect(definition.roles[0]?.getWeight).toBe(getForagingScore);
   });
 
-  it("adds natural-foraging provenance and survival credit", () => {
+  it("satisfies the selected need and grants survival credit", () => {
     const tribute = createAuthoringTestTribute({
       id: "forager",
       name: "Fern",
     });
-
-    const state = createAuthoringTestGame([tribute]);
-
     const definition = createNaturalResourceEvent("natural-effects", {
-      resources: ["wild-fruit"],
-      text: ({ tribute: character }) => `${character.name} gathers food.`,
+      resources: ["food"],
+      text: ({ tribute: character }) => `${character.name} eats.`,
     });
-
     const resolution = resolveAuthoredEvent(
       definition,
-      state,
+      createAuthoringTestGame([tribute]),
       {
         tribute: [tribute],
       },
       [0],
     );
 
-    expect(resolution.changes).toContainEqual(
-      expect.objectContaining({
-        type: "acquire-item",
-        tributeId: tribute.id,
-        acquisitionSource: "natural-foraging",
-
-        item: expect.objectContaining({
-          definitionId: "wild-fruit",
-          sourceEventId: "test:natural-effects",
-        }),
-      }),
-    );
-
+    expect(resolution.changes).toContainEqual({
+      type: "satisfy-survival-need",
+      tributeId: tribute.id,
+      need: "food",
+    });
     expect(resolution.changes).toContainEqual({
       type: "increment-statistic",
       tributeId: tribute.id,
@@ -166,11 +152,9 @@ describe("createNaturalResourceEvent", () => {
 
   it("supports metadata and role overrides", () => {
     const getWeight = () => 12;
-
     const definition = createNaturalResourceEvent("natural-overrides", {
       resources: ["water"],
-      text: ({ tribute }) => `${tribute.name} gathers water.`,
-
+      text: ({ tribute }) => `${tribute.name} drinks.`,
       periods: ["night"],
       weight: 3,
       tags: ["environment"],
@@ -179,30 +163,17 @@ describe("createNaturalResourceEvent", () => {
 
     expect(definition.periods).toEqual(["night"]);
     expect(definition.baseWeight).toBe(3);
-    expect(definition.tags).toEqual(["survival", "item", "resource", "environment"]);
+    expect(definition.tags).toEqual(["survival", "resource", "environment"]);
     expect(definition.roles[0]?.getWeight).toBe(getWeight);
   });
 
-  it("rejects manufactured natural acquisition", () => {
-    expect(() =>
-      createNaturalResourceEvent("manufactured-natural-resource", {
-        resources: ["map"],
-        text: ({ tribute }) => `${tribute.name} finds a map.`,
-      }),
-    ).toThrow(
-      'Event "manufactured-natural-resource": effect "acquire-natural-resource" requires a natural-resource item, but "map" is manufactured.',
-    );
-  });
-
-  it("resolves resource and text deterministically", () => {
+  it("resolves need and text deterministically", () => {
     const tribute = createAuthoringTestTribute();
     const state = createAuthoringTestGame([tribute]);
-
     const definition = createNaturalResourceEvent("deterministic-resource", {
-      resources: ["wild-fruit", "water"],
-      text: (_context, itemId) => `Selected ${itemId}.`,
+      resources: ["food", "water"],
+      text: (_context, need) => `Selected ${need}.`,
     });
-
     const resolve = () =>
       resolveAuthoredEvent(
         definition,

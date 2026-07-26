@@ -1,6 +1,6 @@
 import { createItemUseChange, createStatusChange } from "~/game/events/event-change-builders";
 import { getItemDefinition } from "~/game/items/item-catalogue";
-import type { ItemUseEffect, ItemUseNeed } from "~/game/items/item-schema";
+import type { ItemUseEffect } from "~/game/items/item-schema";
 import { getItemUsability } from "~/game/items/item-usability";
 import { isMedicalStatusId } from "~/game/statuses/medical-statuses";
 import type {
@@ -9,7 +9,6 @@ import type {
   InventoryItem,
   RoundReference,
 } from "~/game/types/game-state";
-import type { SurvivalNeed } from "~/game/survival/survival-schema";
 import type { RandomSource } from "~/game/engine/random";
 
 export interface CompileItemUseEffectsOptions {
@@ -27,10 +26,6 @@ export interface CompileItemUseEffectsOptions {
   random?: RandomSource;
 
   reason?: string;
-}
-
-function toSurvivalNeed(need: ItemUseNeed): SurvivalNeed {
-  return need === "hydration" ? "water" : "food";
 }
 
 function requireUsableItem(actingTribute: GameTribute, item: InventoryItem): void {
@@ -107,17 +102,6 @@ export function compileItemUseEffectChanges({
 
   for (const effect of effects) {
     switch (effect.type) {
-      case "satisfy-need":
-        changes.push({
-          type: "satisfy-survival-need",
-
-          tributeId: actingTribute.id,
-
-          need: toSurvivalNeed(effect.need),
-        });
-
-        break;
-
       case "grant-status":
         changes.push(
           createStatusChange(

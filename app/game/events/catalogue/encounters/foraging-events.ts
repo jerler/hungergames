@@ -7,8 +7,6 @@ export const FORAGING_EVENTS = [
     forageLabel: "berries",
 
     items: {
-      safe: "wild-fruit",
-
       hallucinogenic: "hallucinogenic-berries",
 
       poisonous: "poison-berries",
@@ -21,8 +19,6 @@ export const FORAGING_EVENTS = [
     forageLabel: "mushrooms",
 
     items: {
-      safe: "mushrooms",
-
       hallucinogenic: "hallucinogenic-mushrooms",
 
       poisonous: "poison-mushrooms",

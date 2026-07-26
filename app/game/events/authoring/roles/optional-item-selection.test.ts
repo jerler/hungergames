@@ -33,7 +33,7 @@ function createOptionalItemEvent(access: "accessible" | "owned" = "accessible") 
   return createEvent("optional-item-selection")
     .solo("tribute", {
       optionalItem: {
-        definitionIds: ["wild-fruit"],
+        definitionIds: ["kindling"],
         access,
       },
     })
@@ -91,7 +91,7 @@ describe("optional authored role items", () => {
       createAuthoringTestTribute({
         id: "owner",
       }),
-      "wild-fruit",
+      "kindling",
     );
 
     const state = createAuthoringTestGame([tribute]);
@@ -106,7 +106,7 @@ describe("optional authored role items", () => {
       },
       item: {
         id: food.id,
-        definitionId: "wild-fruit",
+        definitionId: "kindling",
       },
     });
 
@@ -122,7 +122,7 @@ describe("optional authored role items", () => {
       createAuthoringTestTribute({
         id: "partner",
       }),
-      "wild-fruit",
+      "kindling",
     );
 
     const truce = createTruceInstance(
@@ -151,7 +151,7 @@ describe("optional authored role items", () => {
       },
       item: {
         id: food.id,
-        definitionId: "wild-fruit",
+        definitionId: "kindling",
       },
     });
 
@@ -163,7 +163,7 @@ describe("optional authored role items", () => {
       createAuthoringTestTribute({
         id: "reserved-owner",
       }),
-      "wild-fruit",
+      "kindling",
     );
 
     const state = createAuthoringTestGame([tribute]);
@@ -185,7 +185,7 @@ describe("optional authored role items", () => {
       createAuthoringTestTribute({
         id: "owned-partner",
       }),
-      "wild-fruit",
+      "kindling",
     );
 
     const truce = createTruceInstance(
@@ -218,7 +218,7 @@ describe("optional authored role items", () => {
       createAuthoringTestTribute({
         id: "unavailable-owner",
       }),
-      "wild-fruit",
+      "kindling",
     );
 
     const truce = createTruceInstance(
@@ -273,7 +273,7 @@ describe("optional authored role items", () => {
       createEvent("conflicting-item-selection")
         .solo("tribute", {
           optionalItem: {
-            definitionIds: ["wild-fruit"],
+            definitionIds: ["kindling"],
           },
         })
         .when(
@@ -297,8 +297,13 @@ describe("optional authored role items", () => {
 
   it("respects optional item definition priority", () => {
     const tribute = withItem(
-      withItem(createAuthoringTestTribute({ id: "priority-owner" }), "shield"),
-      "water",
+      withItem(
+        createAuthoringTestTribute({
+          id: "priority-owner",
+        }),
+        "shield",
+      ),
+      "blanket",
     );
 
     const state = createAuthoringTestGame([tribute]);
@@ -306,14 +311,20 @@ describe("optional authored role items", () => {
     const definition = createEvent("optional-item-priority")
       .solo("tribute", {
         optionalItem: {
-          definitionIds: ["water", "blanket", "shield"],
+          definitionIds: ["blanket", "shield"],
         },
       })
       .category("hazard")
       .tags("hazard", "item")
       .during("day")
       .weight(1)
-      .resolve(always(result({ text: "Priority test." })));
+      .resolve(
+        always(
+          result({
+            text: "Priority test.",
+          }),
+        ),
+      );
 
     const selection = selectEventParticipants(
       definition,
@@ -327,6 +338,6 @@ describe("optional authored role items", () => {
       new Set(),
     );
 
-    expect(selection?.itemsByRole.tribute?.[0]?.item.definitionId).toBe("water");
+    expect(selection?.itemsByRole.tribute?.[0]?.item.definitionId).toBe("blanket");
   });
 });

@@ -8,7 +8,7 @@ const ITEM_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 const ITEM_TAG_SET = new Set<ItemTag>(ITEM_TAGS);
 
-const ACTIVE_USE_TAGS = new Set<ItemTag>(["consumable", "water", "food", "medicine", "tool"]);
+const ACTIVE_USE_TAGS = new Set<ItemTag>(["consumable", "medicine", "tool"]);
 
 const PASSIVE_BONUS_KEYS = ["survivalBonus", "awarenessBonus", "foragingBonus"] as const;
 
@@ -46,36 +46,10 @@ function validateUseEffects(definition: ItemDefinition): void {
 
   const grantedStatuses = new Set<StatusEffectId>();
 
-  const satisfiedNeeds = new Set<string>();
-
   let removesMedicalStatuses = false;
 
   for (const effect of effects) {
     switch (effect.type) {
-      case "satisfy-need": {
-        if (satisfiedNeeds.has(effect.need)) {
-          fail(definition.id, `satisfies "${effect.need}" more than once.`);
-        }
-
-        satisfiedNeeds.add(effect.need);
-
-        const requiredTag = effect.need === "hydration" ? "water" : "food";
-
-        if (!definition.tags.includes(requiredTag)) {
-          fail(definition.id, `satisfies "${effect.need}" without the "${requiredTag}" tag.`);
-        }
-
-        if (!definition.tags.includes("consumable") || definition.maxUses === undefined) {
-          fail(definition.id, `need-satisfaction effects require a limited-use consumable item.`);
-        }
-
-        if (definition.tags.includes("medicine")) {
-          fail(definition.id, "medical items cannot satisfy food or hydration needs.");
-        }
-
-        break;
-      }
-
       case "remove-status": {
         if (effect.statusIds.length === 0) {
           fail(definition.id, "declares remove-status without any statuses.");

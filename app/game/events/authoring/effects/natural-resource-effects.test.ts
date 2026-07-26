@@ -22,9 +22,9 @@ describe("acquireNaturalResource", () => {
       .resolve(
         always(
           result({
-            text: "The tribute gathers food.",
+            text: "The tribute gathers kindling.",
 
-            effects: [acquireNaturalResource("tribute", "wild-fruit")],
+            effects: [acquireNaturalResource("tribute", "kindling")],
           }),
         ),
       );
@@ -46,9 +46,9 @@ describe("acquireNaturalResource", () => {
         acquisitionSource: "natural-foraging",
 
         item: {
-          id: "test:natural-resource-acquisition:forager:wild-fruit",
+          id: "test:natural-resource-acquisition:forager:kindling",
 
-          definitionId: "wild-fruit",
+          definitionId: "kindling",
           usesRemaining: 1,
 
           sourceEventId: "test:natural-resource-acquisition",

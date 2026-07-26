@@ -70,9 +70,9 @@ function createPreparationEvent(): ResolvedEvent {
     text: "Katniss drinks fresh water.",
     changes: [],
     preparation: {
-      mechanic: "hydration-consumption",
+      mechanic: "morning-rest-resolution",
       actingTributeId: "tribute-1",
-      affectedNeed: "water",
+      restQuality: "sheltered",
     },
   };
 }

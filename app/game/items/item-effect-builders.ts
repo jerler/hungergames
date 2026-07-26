@@ -2,19 +2,10 @@ import type {
   ChanceToGrantStatusItemEffect,
   GrantStatusItemEffect,
   ItemUseEffect,
-  ItemUseNeed,
   RemoveMedicalStatusesItemEffect,
   RemoveStatusItemEffect,
-  SatisfyNeedItemEffect,
 } from "~/game/items/item-schema";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
-
-export function itemSatisfiesNeed(need: ItemUseNeed): SatisfyNeedItemEffect {
-  return {
-    type: "satisfy-need",
-    need,
-  };
-}
 
 export function itemMayGrantStatus(
   statusId: StatusEffectId,

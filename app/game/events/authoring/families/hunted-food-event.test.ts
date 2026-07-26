@@ -87,7 +87,7 @@ describe("createHuntedFoodEvent", () => {
     });
   });
 
-  it("acquires natural food and consumes limited equipment", () => {
+  it("satisfies hunger and consumes limited equipment", () => {
     const tribute = withAuthoringTestItem(
       createAuthoringTestTribute({
         id: "rabbit-hunter",
@@ -125,12 +125,13 @@ describe("createHuntedFoodEvent", () => {
 
     expect(selection.selectedItemInstanceIds).toEqual([tribute.inventory[0]?.id]);
 
-    expect(getAcquiredItemIds(resolution)).toEqual(["rabbit"]);
-    expect(resolution.changes).not.toContainEqual(
-      expect.objectContaining({
-        type: "satisfy-survival-need",
-      }),
-    );
+    expect(getAcquiredItemIds(resolution)).toEqual([]);
+
+    expect(resolution.changes).toContainEqual({
+      type: "satisfy-survival-need",
+      tributeId: tribute.id,
+      need: "food",
+    });
     expect(resolution.changes).toContainEqual({
       type: "consume-item",
 
@@ -142,18 +143,6 @@ describe("createHuntedFoodEvent", () => {
 
       reason: "limited-equipment-hunt",
     });
-
-    expect(resolution.changes).toContainEqual(
-      expect.objectContaining({
-        type: "acquire-item",
-
-        acquisitionSource: "natural-foraging",
-
-        item: expect.objectContaining({
-          definitionId: "rabbit",
-        }),
-      }),
-    );
 
     expect(hasSurvivalCredit(resolution, tribute.id)).toBe(true);
   });
@@ -305,7 +294,7 @@ describe("createHuntedFoodEvent", () => {
       randomValues: [0.999],
     });
 
-    expect(getAcquiredItemIds(resolution)).toEqual(["eggs"]);
+    expect(getAcquiredItemIds(resolution)).toEqual([]);
 
     expect(resolution.changes).toContainEqual({
       type: "satisfy-survival-need",

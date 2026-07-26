@@ -1,7 +1,6 @@
 import { getForagingScore, getSurvivalSelectionWeight } from "~/game/engine/stat-formulas";
 
 import {
-  acquireNaturalResource,
   applyStatus,
   brains,
   consumeRequiredItem,
@@ -13,6 +12,7 @@ import {
   randomResult,
   result,
   statCheck,
+  satisfySurvivalNeed,
   survived,
 } from "~/game/events/authoring";
 
@@ -21,11 +21,11 @@ import type { EventDefinition } from "~/game/events/event-schema";
 export const SURVIVAL_EVENTS = [
   /* Day Only */
   createNaturalResourceEvent("forages-for-resources", {
-    resources: ["wild-fruit", "water"],
-    text: ({ tribute }, itemId) =>
-      itemId === "water"
-        ? `${tribute.name} follows animal tracks to a clean spring and collects water.`
-        : `${tribute.name} identifies edible plants and gathers enough for a meal.`,
+    resources: ["food", "water"],
+    text: ({ tribute }, need) =>
+      need === "water"
+        ? `${tribute.name} follows animal tracks to a clean spring and drinks deeply.`
+        : `${tribute.name} identifies edible plants and eats a satisfying meal.`,
   }),
   createEvent("upside-down-map")
     .solo("tribute", { getWeight: getForagingScore })
@@ -55,18 +55,18 @@ export const SURVIVAL_EVENTS = [
         success: randomResult(
           result({
             text: ({ tribute }) =>
-              `${tribute.name} correctly reads ${tribute.pronouns.possessiveAdjective} map and follows it to a patch of edible plants.`,
+              `${tribute.name} correctly reads ${tribute.pronouns.possessiveAdjective} map and follows it to edible plants and eats a meal.`,
             effects: [
-              acquireNaturalResource("tribute", "wild-fruit"),
+              satisfySurvivalNeed("tribute", "food"),
               survived("tribute"),
               consumeRequiredItem("tribute", { reason: "upside-down-map" }),
             ],
           }),
           result({
             text: ({ tribute }) =>
-              `${tribute.name} correctly reads ${tribute.pronouns.possessiveAdjective} map and follows it to a clean spring.`,
+              `${tribute.name} correctly reads ${tribute.pronouns.possessiveAdjective} map and follows it to a clean spring and drinks.`,
             effects: [
-              acquireNaturalResource("tribute", "water"),
+              satisfySurvivalNeed("tribute", "water"),
               survived("tribute"),
               consumeRequiredItem("tribute", { reason: "upside-down-map" }),
             ],

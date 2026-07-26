@@ -154,7 +154,7 @@ describe("InventorySummary", () => {
       <InventorySummary
         tributes={[
           createTribute({
-            itemIds: ["bottled-water"],
+            itemIds: ["antidote"],
           }),
         ]}
       />,
@@ -172,7 +172,7 @@ describe("InventorySummary", () => {
 
     expect(details).toHaveAttribute("open");
 
-    expect(within(details!).getByText("Restores hydration.")).toBeInTheDocument();
+    expect(within(details!).getByText("Treats Poisoned.")).toBeInTheDocument();
   });
 
   it("excludes inventories belonging to dead tributes", () => {

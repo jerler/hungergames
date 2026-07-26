@@ -7,6 +7,7 @@ import { createEvent } from "~/game/events/authoring/builder/create-event";
 import { acquireNaturalResource } from "~/game/events/authoring/effects/natural-resource-effects";
 
 import { applyStatus } from "~/game/events/authoring/effects/status-effects";
+import { satisfySurvivalNeed } from "~/game/events/authoring/effects/survival-effects";
 
 import { survived } from "~/game/events/authoring/effects/statistic-effects";
 
@@ -61,7 +62,6 @@ const HIDDEN_FORAGE_POOL = HIDDEN_FORAGE_TYPES.map((type) => ({
 }));
 
 export interface ForageItemDefinitions {
-  safe: ItemDefinitionId;
   hallucinogenic: ItemDefinitionId;
   poisonous: ItemDefinitionId;
 }
@@ -124,15 +124,15 @@ function createSafeForageText(
     return (
       `${tribute.snapshot.name} uses ` +
       `${getGuidebookPhrase(tribute, guidebook)} to identify edible ` +
-      `${forageLabel} and gathers enough for a meal.`
+      `${forageLabel} and eats enough to satisfy their hunger.`
     );
   }
 
   if (identified) {
     return (
       `${tribute.snapshot.name} carefully identifies ` +
-      `the ${forageLabel} as edible and gathers enough ` +
-      "for a meal."
+      `the ${forageLabel} as edible and eats enough ` +
+      "to satisfy their hunger."
     );
   }
 
@@ -234,7 +234,7 @@ export function createForageIdentificationEvent(
 
   const results = {
     safe: result({
-      effects: [acquireNaturalResource(roleId, items.safe), survived(roleId)],
+      effects: [satisfySurvivalNeed(roleId, "food"), survived(roleId)],
     }),
 
     hallucinogenicConsumed: result({

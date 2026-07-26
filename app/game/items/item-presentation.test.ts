@@ -131,24 +131,6 @@ describe("inventory item presentation", () => {
     }
   });
 
-  it("describes food and hydration effects", () => {
-    expect(createPresentation("pizza-box")).toMatchObject({
-      usesLabel: "3 of 3 uses remaining",
-    });
-
-    expect(createPresentation("pizza-box").capabilityGroups).toContainEqual({
-      label: "Consumption",
-
-      details: expect.arrayContaining(["Satisfies hunger."]),
-    });
-
-    expect(createPresentation("bottled-water").capabilityGroups).toContainEqual({
-      label: "Consumption",
-
-      details: expect.arrayContaining(["Restores hydration."]),
-    });
-  });
-
   it("describes complete medical treatment", () => {
     expect(createPresentation("med-kit").capabilityGroups).toContainEqual({
       label: "Medical treatment",

@@ -187,8 +187,6 @@ const ACTIVE_EVENT_FAMILIES: readonly ActiveEventFamily[] = [
 
 const PREPARATION_MECHANICS = [
   "medical-treatment",
-  "hydration-consumption",
-  "food-consumption",
   "night-rest-preparation",
   "morning-rest-resolution",
   "camouflage-preparation",

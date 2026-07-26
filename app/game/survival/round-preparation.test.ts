@@ -152,87 +152,6 @@ describe("prepareRound", () => {
     expect(prepared.state.tributes[0].statuses).toEqual([]);
   });
 
-  it("resolves hydration before food", () => {
-    let tribute: GameTribute = {
-      ...createAuthoringTestTribute(),
-
-      survival: {
-        lastFoundFoodRound: null,
-        lastFoundWaterRound: null,
-        lastNightRest: null,
-      },
-    };
-
-    tribute = withStatus(tribute, "thirsty");
-
-    tribute = withStatus(tribute, "hungry");
-
-    tribute = withAuthoringTestItem(tribute, "water");
-
-    tribute = withAuthoringTestItem(tribute, "wild-fruit");
-
-    const prepared = prepareRound(createAuthoringTestGame([tribute]), ROUND);
-
-    expect(prepared.automaticEvents.map((event) => event.preparation?.mechanic)).toEqual([
-      "hydration-consumption",
-      "food-consumption",
-    ]);
-
-    const preparedTribute = prepared.state.tributes[0];
-
-    expect(preparedTribute.survival.lastFoundWaterRound).toEqual(ROUND);
-
-    expect(preparedTribute.survival.lastFoundFoodRound).toEqual(ROUND);
-
-    expect(preparedTribute.statuses).toEqual([]);
-  });
-
-  it("waits until morning to consume food and water", () => {
-    let tribute: GameTribute = {
-      ...createAuthoringTestTribute({
-        id: "overnight-supplies",
-      }),
-
-      survival: {
-        lastFoundFoodRound: null,
-        lastFoundWaterRound: null,
-        lastNightRest: null,
-      },
-    };
-
-    tribute = withStatus(tribute, "thirsty");
-    tribute = withStatus(tribute, "hungry");
-    tribute = withAuthoringTestItem(tribute, "water");
-    tribute = withAuthoringTestItem(tribute, "wild-fruit");
-
-    const prepared = prepareRound(createAuthoringTestGame([tribute]), NIGHT_TWO);
-
-    const itemPreparationMechanics = prepared.automaticEvents.flatMap((event) => {
-      const mechanic = event.preparation?.mechanic;
-
-      return mechanic === "hydration-consumption" || mechanic === "food-consumption"
-        ? [mechanic]
-        : [];
-    });
-
-    expect(itemPreparationMechanics).toEqual([]);
-
-    const preparedTribute = prepared.state.tributes[0];
-
-    expect(preparedTribute?.survival).toMatchObject({
-      lastFoundFoodRound: null,
-      lastFoundWaterRound: null,
-    });
-
-    expect(preparedTribute?.statuses.map((status) => status.definitionId)).toEqual(
-      expect.arrayContaining(["thirsty", "hungry"]),
-    );
-
-    expect(preparedTribute?.inventory.map((item) => item.definitionId)).toEqual(
-      expect.arrayContaining(["water", "wild-fruit"]),
-    );
-  });
-
   it("shows borrowed medical treatment in preparation text", () => {
     let patient = createAuthoringTestTribute({
       id: "patient",
@@ -308,70 +227,20 @@ describe("prepareRound", () => {
     );
   });
 
-  it("does not let one shared item prepare two tributes", () => {
-    let first = createAuthoringTestTribute({
-      id: "first",
-    });
-
-    first = {
-      ...first,
-      district: 1,
-      districtPosition: 1,
-    };
-
-    first = withStatus(first, "thirsty");
-
-    first = withAuthoringTestItem(first, "water");
-
-    let second = createAuthoringTestTribute({
-      id: "second",
-    });
-
-    second = {
-      ...second,
-      district: 1,
-      districtPosition: 2,
-    };
-
-    second = withStatus(second, "thirsty");
-
-    const game: GameState = {
-      ...createAuthoringTestGame([first, second]),
-
-      truces: [
-        createTruceInstance("shared-water-truce", [first.id, second.id], ROUND, {
-          day: 3,
-          period: "day",
-        }),
-      ],
-    };
-
-    const prepared = prepareRound(game, ROUND);
-
-    expect(prepared.automaticEvents).toHaveLength(1);
-
-    expect(prepared.automaticEvents[0].preparation?.actingTributeId).toBe(first.id);
-  });
-
   it("uses isolated deterministic preparation seeds", () => {
-    const firstSeed = createPreparationSeed(
-      "game-seed",
-      ROUND,
-      "hydration-consumption",
-      "tribute-1",
-    );
+    const firstSeed = createPreparationSeed("game-seed", ROUND, "medical-treatment", "tribute-1");
 
-    expect(createPreparationSeed("game-seed", ROUND, "hydration-consumption", "tribute-1")).toBe(
-      firstSeed,
-    );
-
-    expect(createPreparationSeed("game-seed", ROUND, "food-consumption", "tribute-1")).not.toBe(
+    expect(createPreparationSeed("game-seed", ROUND, "medical-treatment", "tribute-1")).toBe(
       firstSeed,
     );
 
     expect(
-      createPreparationSeed("game-seed", ROUND, "hydration-consumption", "tribute-2"),
+      createPreparationSeed("game-seed", ROUND, "camouflage-preparation", "tribute-1"),
     ).not.toBe(firstSeed);
+
+    expect(createPreparationSeed("game-seed", ROUND, "medical-treatment", "tribute-2")).not.toBe(
+      firstSeed,
+    );
   });
   it("does not assign rest or reserve comfort items when night begins", () => {
     let tribute = createAuthoringTestTribute({

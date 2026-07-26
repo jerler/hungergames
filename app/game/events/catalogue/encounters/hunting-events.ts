@@ -22,10 +22,10 @@ export const HUNTING_EVENTS = [
         `${tribute.name} spends hours checking an elaborate trap, but catches nothing and returns exhausted.`,
 
       success: ({ tribute }) =>
-        `${tribute.name} constructs a careful trap and catches a rabbit for a future meal.`,
+        `${tribute.name} constructs a careful trap and catches a rabbit and eats a satisfying meal.`,
 
       exceptionalSuccess: ({ tribute }) =>
-        `${tribute.name} catches a remarkably plump rabbit, eats well, and preserves enough for another meal.`,
+        `${tribute.name} catches a remarkably plump rabbit, eats exceptionally well.`,
     },
   }),
 
@@ -48,10 +48,10 @@ export const HUNTING_EVENTS = [
         `${tribute.name} chases an arena chicken through the undergrowth until both parties are exhausted and deeply annoyed.`,
 
       success: ({ tribute }) =>
-        `${tribute.name} brings down an arena chicken with a careful slingshot shot and prepares it as food.`,
+        `${tribute.name} brings down an arena chicken with a careful slingshot shot and eats it.`,
 
       exceptionalSuccess: ({ tribute }) =>
-        `${tribute.name} makes a perfect slingshot shot, secures an arena chicken, and eats an unusually satisfying meal.`,
+        `${tribute.name} makes a perfect slingshot shot, secures an arena chicken and eats an unusually satisfying meal.`,
     },
   }),
 
@@ -73,11 +73,10 @@ export const HUNTING_EVENTS = [
       failure: ({ tribute }) =>
         `${tribute.name} spends hours battling a fish that escapes at the last possible moment, leaving ${tribute.pronouns.object} exhausted.`,
 
-      success: ({ tribute }) =>
-        `${tribute.name} uses fishing gear to catch and prepare a fish for a future meal.`,
+      success: ({ tribute }) => `${tribute.name} uses fishing gear to catch and eat a fish.`,
 
       exceptionalSuccess: ({ tribute }) =>
-        `${tribute.name} lands an enormous fish, eats exceptionally well, and saves enough for another meal.`,
+        `${tribute.name} lands an enormous fish, eats exceptionally well.`,
     },
   }),
 
@@ -100,10 +99,10 @@ export const HUNTING_EVENTS = [
         `${tribute.name} spends hours answering increasingly suspicious birds with a whistle and returns exhausted without finding a nest.`,
 
       success: ({ tribute }) =>
-        `${tribute.name} uses a bird whistle to locate a hidden nest and gathers several eggs.`,
+        `${tribute.name} uses a bird whistle to locate a hidden nest and eats several eggs.`,
 
       exceptionalSuccess: ({ tribute }) =>
-        `${tribute.name} perfectly imitates the local birds, discovers a large concealed nest, and eats exceptionally well.`,
+        `${tribute.name} perfectly imitates the local birds, discovers a large concealed nest and eats exceptionally well.`,
     },
   }),
 
@@ -124,10 +123,10 @@ export const HUNTING_EVENTS = [
         `${tribute.name} spends hours climbing toward a nest only to discover it empty, returning exhausted.`,
 
       success: ({ tribute }) =>
-        `${tribute.name} carefully raids an unattended nest and gathers several eggs for a meal.`,
+        `${tribute.name} carefully raids an unattended nest and eats several eggs.`,
 
       exceptionalSuccess: ({ tribute }) =>
-        `${tribute.name} discovers a large hidden nest, eats well, and preserves several eggs for later.`,
+        `${tribute.name} discovers a large hidden nest, eats well.`,
     },
   }),
 ] satisfies readonly EventDefinition[];

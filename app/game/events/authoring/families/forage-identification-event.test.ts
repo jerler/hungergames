@@ -30,8 +30,6 @@ const BERRY_EVENT = createForageIdentificationEvent("test-berry-foraging", {
   forageLabel: "berries",
 
   items: {
-    safe: "wild-fruit",
-
     hallucinogenic: "hallucinogenic-berries",
 
     poisonous: "poison-berries",
@@ -99,7 +97,7 @@ describe("selectHiddenForageType", () => {
 });
 
 describe("createForageIdentificationEvent", () => {
-  it("acquires safe forage with natural provenance", () => {
+  it("immediately satisfies food when forage is safe", () => {
     const tribute = createForager(3);
 
     const state = createAuthoringTestGame([tribute]);
@@ -118,21 +116,12 @@ describe("createForageIdentificationEvent", () => {
        */
       randomValues: [0.1, 0],
     });
-
-    expect(getAcquiredItemIds(resolution)).toEqual(["wild-fruit"]);
-
-    expect(resolution.changes).toContainEqual(
-      expect.objectContaining({
-        type: "acquire-item",
-
-        acquisitionSource: "natural-foraging",
-
-        item: expect.objectContaining({
-          definitionId: "wild-fruit",
-        }),
-      }),
-    );
-
+    expect(getAcquiredItemIds(resolution)).toEqual([]);
+    expect(resolution.changes).toContainEqual({
+      type: "satisfy-survival-need",
+      tributeId: tribute.id,
+      need: "food",
+    });
     expect(hasSurvivalCredit(resolution, tribute.id)).toBe(true);
   });
 

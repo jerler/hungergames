@@ -240,17 +240,6 @@ function createUseEffectCapabilities(
 ): void {
   for (const effect of definition.useEffects ?? []) {
     switch (effect.type) {
-      case "satisfy-need":
-        addCapabilityDetail(
-          groups,
-
-          "Consumption",
-
-          effect.need === "food" ? "Satisfies hunger." : "Restores hydration.",
-        );
-
-        break;
-
       case "remove-medical-statuses":
         addCapabilityDetail(
           groups,

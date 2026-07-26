@@ -4,12 +4,8 @@ import { createStatusChange } from "~/game/events/event-change-builders";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { compileItemUseEffects } from "~/game/items/item-effect-engine";
 import type { StatCheckOutcome } from "~/game/events/event-outcomes";
-import {
-  findAccessibleInventoryItem,
-  type AccessibleInventoryItem,
-} from "~/game/items/inventory-engine";
+import type { AccessibleInventoryItem } from "~/game/items/inventory-engine";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
-import type { ItemTag } from "~/game/items/item-schema";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
 import type {
   GameChange,
@@ -20,7 +16,7 @@ import type {
   RoundReference,
 } from "~/game/types/game-state";
 import { findMedicalTreatmentPlan, type MedicalTreatmentPlan } from "./medical-treatment-planner";
-import type { NightRestQuality, SurvivalNeed } from "./survival-schema";
+import type { NightRestQuality } from "./survival-schema";
 import {
   findCamouflagePreparationPlan,
   resolveCamouflagePreparationAttempt,
@@ -32,26 +28,6 @@ export interface PreparedRound {
   automaticEvents: ResolvedEvent[];
   committedItemInstanceIds: Set<string>;
 }
-
-type AutomaticItemPreparationMechanic = "hydration-consumption" | "food-consumption";
-
-interface AutomaticItemPreparationAction {
-  mechanic: AutomaticItemPreparationMechanic;
-
-  requiredTag: ItemTag;
-  affectedNeed?: SurvivalNeed;
-
-  shouldPrepare: (tribute: GameTribute) => boolean;
-
-  getAffectedStatusIds: (
-    tribute: GameTribute,
-    selection: AccessibleInventoryItem,
-  ) => StatusEffectId[];
-}
-
-const HYDRATION_STATUS_IDS = ["thirsty"] as const satisfies readonly StatusEffectId[];
-
-const FOOD_STATUS_IDS = ["hungry"] as const satisfies readonly StatusEffectId[];
 
 function compareTributes(first: GameTribute, second: GameTribute): number {
   return (
@@ -83,47 +59,6 @@ function requireLivingTribute(state: GameState, tributeId: string): GameTribute 
 function uniqueStatusIds(statusIds: readonly StatusEffectId[]): StatusEffectId[] {
   return [...new Set(statusIds)];
 }
-
-function hasAnyStatus(tribute: GameTribute, statusIds: readonly StatusEffectId[]): boolean {
-  return tribute.statuses.some((status) => statusIds.includes(status.definitionId));
-}
-
-function getMatchingStatusIds(
-  tribute: GameTribute,
-  statusIds: readonly StatusEffectId[],
-): StatusEffectId[] {
-  return uniqueStatusIds(
-    tribute.statuses.flatMap((status) =>
-      statusIds.includes(status.definitionId) ? [status.definitionId] : [],
-    ),
-  );
-}
-
-const AUTOMATIC_ITEM_ACTIONS = [
-  {
-    mechanic: "hydration-consumption",
-
-    requiredTag: "water",
-
-    affectedNeed: "water",
-
-    shouldPrepare: (tribute) => hasAnyStatus(tribute, HYDRATION_STATUS_IDS),
-
-    getAffectedStatusIds: (tribute) => getMatchingStatusIds(tribute, HYDRATION_STATUS_IDS),
-  },
-
-  {
-    mechanic: "food-consumption",
-
-    requiredTag: "food",
-
-    affectedNeed: "food",
-
-    shouldPrepare: (tribute) => hasAnyStatus(tribute, FOOD_STATUS_IDS),
-
-    getAffectedStatusIds: (tribute) => getMatchingStatusIds(tribute, FOOD_STATUS_IDS),
-  },
-] satisfies readonly AutomaticItemPreparationAction[];
 
 export function createPreparationSeed(
   gameSeed: string,
@@ -292,90 +227,6 @@ function prepareMedicalTreatments(
   return nextPreparedRound;
 }
 
-function createAutomaticItemPreparationText(
-  mechanic: AutomaticItemPreparationMechanic,
-  actingTribute: GameTribute,
-  selection: AccessibleInventoryItem,
-): string {
-  const itemPhrase = getItemPhrase(actingTribute, selection);
-
-  switch (mechanic) {
-    case "hydration-consumption":
-      return `${actingTribute.snapshot.name} drinks ${itemPhrase} to recover from thirst.`;
-
-    case "food-consumption":
-      return `${actingTribute.snapshot.name} eats ` + `${itemPhrase} to recover from hunger.`;
-  }
-}
-
-function createAutomaticItemPreparationEvent(
-  state: GameState,
-  round: RoundReference,
-  action: AutomaticItemPreparationAction,
-  actingTribute: GameTribute,
-  selection: AccessibleInventoryItem,
-): ResolvedEvent {
-  const eventId = createPreparationEventId(round, action.mechanic, actingTribute.id);
-
-  const affectedStatusIds = action.getAffectedStatusIds(actingTribute, selection);
-
-  const changes = compileItemUseEffects({
-    eventId,
-    round,
-
-    random: createPreparationRandom(state.seed, round, action.mechanic, actingTribute.id),
-
-    actingTribute,
-    owner: selection.owner,
-
-    item: selection.item,
-
-    reason: eventId,
-  });
-
-  return {
-    id: eventId,
-    definitionId: `automatic-${action.mechanic}`,
-
-    kind: "preparation",
-    resolutionMode: "standard",
-
-    round,
-
-    participantTributeIds: getEventParticipantIds(actingTribute, selection),
-
-    text: createAutomaticItemPreparationText(action.mechanic, actingTribute, selection),
-
-    changes,
-
-    preparation: {
-      mechanic: action.mechanic,
-
-      actingTributeId: actingTribute.id,
-
-      itemInstanceId: selection.item.id,
-
-      itemDefinitionId: selection.item.definitionId,
-
-      itemOwnerTributeId: selection.owner.id,
-
-      usesRemainingAfter: getUsesRemainingAfter(selection),
-
-      ...(action.affectedNeed
-        ? {
-            affectedNeed: action.affectedNeed,
-          }
-        : {}),
-
-      ...(affectedStatusIds.length > 0
-        ? {
-            affectedStatusIds,
-          }
-        : {}),
-    },
-  };
-}
-
 function applyPreparationEvent(preparedRound: PreparedRound, event: ResolvedEvent): PreparedRound {
   const committedItemInstanceIds = new Set(preparedRound.committedItemInstanceIds);
 
@@ -500,48 +351,6 @@ function prepareCamouflage(preparedRound: PreparedRound, round: RoundReference):
     }
 
     const event = createCamouflagePreparationEvent(nextPreparedRound.state, round, tribute, plan);
-
-    nextPreparedRound = applyPreparationEvent(nextPreparedRound, event);
-  }
-
-  return nextPreparedRound;
-}
-
-function prepareAutomaticItemAction(
-  preparedRound: PreparedRound,
-  round: RoundReference,
-  action: AutomaticItemPreparationAction,
-): PreparedRound {
-  let nextPreparedRound = preparedRound;
-
-  const tributeIds = getStableLivingTributeIds(nextPreparedRound.state);
-
-  for (const tributeId of tributeIds) {
-    const actingTribute = requireLivingTribute(nextPreparedRound.state, tributeId);
-
-    if (!action.shouldPrepare(actingTribute)) {
-      continue;
-    }
-
-    const selection = findAccessibleInventoryItem(nextPreparedRound.state, actingTribute, {
-      requiredTags: [action.requiredTag],
-
-      unavailableItemInstanceIds: nextPreparedRound.committedItemInstanceIds,
-
-      requireUsable: true,
-    });
-
-    if (!selection) {
-      continue;
-    }
-
-    const event = createAutomaticItemPreparationEvent(
-      nextPreparedRound.state,
-      round,
-      action,
-      actingTribute,
-      selection,
-    );
 
     nextPreparedRound = applyPreparationEvent(nextPreparedRound, event);
   }
@@ -723,22 +532,12 @@ export function prepareRound(state: GameState, round: RoundReference): PreparedR
   };
 
   /*
-   * Medical treatment occurs first so an
-   * imminent fatality is handled before
-   * ordinary food, hydration, or rest.
+   * Resolve urgent treatment before rest aftermath
+   * or camouflage preparation.
    */
   preparedRound = prepareMedicalTreatments(preparedRound, round);
 
   if (round.period === "day") {
-    /*
-     * Food and water are consumed once per daily survival
-     * cycle, after the previous night has advanced need
-     * counters and before daytime arena events begin.
-     */
-    for (const action of AUTOMATIC_ITEM_ACTIONS) {
-      preparedRound = prepareAutomaticItemAction(preparedRound, round, action);
-    }
-
     preparedRound = prepareMorningRestResolution(preparedRound, round);
   }
 

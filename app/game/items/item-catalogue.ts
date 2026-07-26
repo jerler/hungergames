@@ -5,16 +5,7 @@ import {
   itemMayGrantStatus,
   itemRemovesMedicalStatuses,
   itemRemovesStatuses,
-  itemSatisfiesNeed,
 } from "./item-effect-builders";
-
-const HYDRATION_RECOVERY_EFFECTS = [
-  itemSatisfiesNeed("hydration"),
-] as const satisfies readonly ItemUseEffect[];
-
-const FOOD_RECOVERY_EFFECTS = [
-  itemSatisfiesNeed("food"),
-] as const satisfies readonly ItemUseEffect[];
 
 const HALLUCINOGENIC_FORAGE_EFFECTS = [
   itemGrantsStatus("disoriented", 1),
@@ -25,123 +16,12 @@ const POISONOUS_FORAGE_EFFECTS = [
 ] as const satisfies readonly ItemUseEffect[];
 
 const CAFFEINATED_DRINK_EFFECTS = [
-  ...HYDRATION_RECOVERY_EFFECTS,
-
   itemRemovesStatuses("exhausted"),
-
   itemGrantsStatus("alert", 1),
 ] as const satisfies readonly ItemUseEffect[];
 
 export const ITEM_CATALOGUE = [
   // Natural resources
-  {
-    id: "water",
-    label: "Fresh water",
-
-    description: "Clean fresh water collected from a natural source in the arena.",
-
-    origin: "natural-resource",
-
-    tags: ["consumable", "water"],
-
-    maxUses: 1,
-
-    useEffects: HYDRATION_RECOVERY_EFFECTS,
-  },
-
-  // Safe natural food
-  {
-    id: "wild-fruit",
-
-    label: "Wild fruit",
-
-    description: "Safely identified wild fruit gathered from the arena.",
-
-    origin: "natural-resource",
-
-    tags: ["consumable", "food"],
-
-    maxUses: 1,
-
-    useEffects: FOOD_RECOVERY_EFFECTS,
-  },
-
-  {
-    id: "mushrooms",
-    label: "Mushrooms",
-
-    description: "Safely identified edible mushrooms gathered from the arena.",
-
-    origin: "natural-resource",
-
-    tags: ["consumable", "food"],
-
-    maxUses: 1,
-
-    useEffects: FOOD_RECOVERY_EFFECTS,
-  },
-
-  {
-    id: "eggs",
-    label: "Eggs",
-
-    description: "A clutch of eggs gathered from an arena nest and prepared as a meal.",
-
-    origin: "natural-resource",
-
-    tags: ["consumable", "food"],
-
-    maxUses: 1,
-
-    useEffects: FOOD_RECOVERY_EFFECTS,
-  },
-
-  {
-    id: "rabbit",
-    label: "Rabbit",
-
-    description: "A rabbit caught in the arena and prepared as a meal.",
-
-    origin: "natural-resource",
-
-    tags: ["consumable", "food"],
-
-    maxUses: 1,
-
-    useEffects: FOOD_RECOVERY_EFFECTS,
-  },
-
-  {
-    id: "chicken",
-    label: "Chicken",
-
-    description: "An arena chicken caught and prepared as a meal.",
-
-    origin: "natural-resource",
-
-    tags: ["consumable", "food"],
-
-    maxUses: 1,
-
-    useEffects: FOOD_RECOVERY_EFFECTS,
-  },
-
-  {
-    id: "fish",
-    label: "Fish",
-
-    description: "A fish caught in the arena and prepared as a meal.",
-
-    origin: "natural-resource",
-
-    tags: ["consumable", "food"],
-
-    maxUses: 1,
-
-    useEffects: FOOD_RECOVERY_EFFECTS,
-  },
-
-  // Harmful natural forage
   {
     id: "hallucinogenic-berries",
 
@@ -232,147 +112,67 @@ export const ITEM_CATALOGUE = [
     },
   },
 
-  // Manufactured food
-  {
-    id: "soup",
-    label: "Soup",
-
-    description: "A warm serving of soup that satisfies both hunger and hydration.",
-
-    origin: "manufactured",
-
-    tags: ["consumable", "food", "water"],
-
-    maxUses: 1,
-
-    useEffects: [...FOOD_RECOVERY_EFFECTS, ...HYDRATION_RECOVERY_EFFECTS],
-  },
-
+  // Manufactured food and drink
+  // Status-effect consumables
   {
     id: "burger-and-fries",
     label: "Burger and fries",
-
-    description: "A rich Capitol meal that satisfies hunger and may leave the tribute well fed.",
-
+    description: "A rich Capitol meal that may leave the tribute feeling especially well fed.",
     origin: "manufactured",
-
-    tags: ["consumable", "food"],
-
+    tags: ["consumable"],
     maxUses: 1,
-
-    useEffects: [...FOOD_RECOVERY_EFFECTS, itemMayGrantStatus("well-fed", 1, 0.5)],
-  },
-
-  {
-    id: "pizza-box",
-    label: "Pizza box",
-
-    description: "A box containing enough pizza for three separate meals.",
-
-    origin: "manufactured",
-
-    tags: ["consumable", "food"],
-
-    maxUses: 3,
-
-    useEffects: FOOD_RECOVERY_EFFECTS,
-  },
-
-  // Manufactured drinks
-  {
-    id: "bottled-water",
-    label: "Bottled water",
-
-    description: "A sealed bottle containing two servings of clean water.",
-
-    origin: "manufactured",
-
-    tags: ["consumable", "water"],
-
-    maxUses: 2,
-
-    useEffects: HYDRATION_RECOVERY_EFFECTS,
+    useEffects: [itemMayGrantStatus("well-fed", 1, 0.5)],
   },
 
   {
     id: "coffee",
     label: "Coffee",
-
-    description:
-      "A caffeinated drink that restores hydration, removes exhaustion, and improves alertness.",
-
+    description: "A caffeinated drink that removes exhaustion and improves alertness.",
     origin: "manufactured",
-
-    tags: ["consumable", "water"],
-
+    tags: ["consumable"],
     maxUses: 1,
-
     useEffects: CAFFEINATED_DRINK_EFFECTS,
   },
 
   {
     id: "coca-cola",
     label: "Coca-Cola",
-
-    description:
-      "A caffeinated soft drink that restores hydration, removes exhaustion, and improves alertness.",
-
+    description: "A caffeinated soft drink that removes exhaustion and improves alertness.",
     origin: "manufactured",
-
-    tags: ["consumable", "water"],
-
+    tags: ["consumable"],
     maxUses: 1,
-
     useEffects: CAFFEINATED_DRINK_EFFECTS,
   },
 
   {
     id: "energy-drink",
     label: "Energy drink",
-
-    description:
-      "A strongly caffeinated drink that restores hydration, removes exhaustion, and improves alertness.",
-
+    description: "A strongly caffeinated drink that removes exhaustion and improves alertness.",
     origin: "manufactured",
-
-    tags: ["consumable", "water"],
-
+    tags: ["consumable"],
     maxUses: 1,
-
     useEffects: CAFFEINATED_DRINK_EFFECTS,
   },
 
   {
     id: "hot-chocolate",
     label: "Hot chocolate",
-
-    description:
-      "A comforting hot drink that restores hydration and brings a temporary stroke of luck.",
-
+    description: "A comforting hot drink that brings a temporary stroke of luck.",
     origin: "manufactured",
-
-    tags: ["consumable", "water"],
-
+    tags: ["consumable"],
     maxUses: 1,
-
-    useEffects: [...HYDRATION_RECOVERY_EFFECTS, itemGrantsStatus("lucky", 1)],
+    useEffects: [itemGrantsStatus("lucky", 1)],
   },
 
   {
     id: "herbal-tea",
     label: "Herbal tea",
-
-    description: "A restorative herbal drink that restores hydration and relieves exhaustion.",
-
+    description: "A restorative herbal drink that relieves exhaustion.",
     origin: "manufactured",
-
-    tags: ["consumable", "water"],
-
+    tags: ["consumable"],
     maxUses: 1,
-
-    useEffects: [...HYDRATION_RECOVERY_EFFECTS, itemRemovesStatuses("exhausted")],
+    useEffects: [itemRemovesStatuses("exhausted")],
   },
-
   // Medical supplies
   {
     id: "med-kit",

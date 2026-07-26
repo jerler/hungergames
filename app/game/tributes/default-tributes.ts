@@ -182,7 +182,7 @@ export const DEFAULT_TRIBUTES = [
   createTributeDefinition("david-rose", "David Rose", "he", 3, 1, 3),
   createTributeDefinition("alexis-rose", "Alexis Rose", "she", 3, 2, 4),
   createTributeDefinition("lucille-bluth", "Lucille Bluth", "she", 2, 1, 2),
-  createTributeDefinition("jake-peralta", "Jake Peralta", "he", 4, 2, 3),
+  createTributeDefinition("jake-peralta", "Jake Peralta", "he", 2, 2, 3),
   createTributeDefinition("captain-holt", "Captain Holt", "he", 4, 2, 3),
   createTributeDefinition("eleanor-shellstrop", "Eleanor Shellstrop", "she", 3, 2, 3),
   createTributeDefinition("april-ludgate", "April Ludgate", "she", 3, 1, 3),
@@ -199,6 +199,6 @@ export const DEFAULT_TRIBUTES = [
   createTributeDefinition("bob-belcher", "Bob Belcher", "he", 4, 2, 2),
   createTributeDefinition("louise-belcher", "Louise Belcher", "she", 5, 1, 5),
   createTributeDefinition("rick-sanchez", "Rick Sanchez", "he", 5, 1, 1),
-  createTributeDefinition("morty-smith", "Morty Smith", "he", 3, 1, 5),
+  createTributeDefinition("morty-smith", "Morty Smith", "he", 2, 1, 2),
   createTributeDefinition("homer-simpson", "Homer Simpson", "he", 1, 1, 5),
 ] satisfies readonly TributeDefinition[];

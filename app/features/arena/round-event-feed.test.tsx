@@ -125,6 +125,49 @@ describe("RoundEventFeed", () => {
     expect(container.querySelector('[data-avatar-size="primary"]')).toBeInTheDocument();
   });
 
+  it("uses the credited killer as the primary tribute even when a victim was selected first", () => {
+    const knife = createInventoryItemInstance("three-way-conflict", "katniss", "knife", TEST_ROUND);
+
+    const { container } = renderFeed([
+      createEvent({
+        id: "three-way-conflict",
+        definitionId: "cornucopia-contested-weapon-group",
+        text:
+          "Katniss survives a brutal three-way fight, " +
+          "killing Peeta and Mothman before escaping.",
+        participantTributeIds: ["peeta", "mothman", "katniss"],
+        changes: [
+          {
+            type: "eliminate-tribute",
+            tributeId: "peeta",
+            causeId: "cornucopia-contested-weapon-group",
+            causeLabel: "Killed at the Cornucopia",
+            summary: "Peeta is killed by Katniss.",
+            killerTributeIds: ["katniss"],
+          },
+          {
+            type: "eliminate-tribute",
+            tributeId: "mothman",
+            causeId: "cornucopia-contested-weapon-group",
+            causeLabel: "Killed at the Cornucopia",
+            summary: "Mothman is killed by Katniss.",
+            killerTributeIds: ["katniss"],
+          },
+          {
+            type: "acquire-item",
+            tributeId: "katniss",
+            acquisitionSource: "cornucopia",
+            item: knife,
+          },
+        ],
+      }),
+    ]);
+
+    expect(container.querySelector(".event-card__primary-identity strong")).toHaveTextContent(
+      "Katniss Everdeen",
+    );
+  });
+
   it("renders every eliminated tribute in a muted death tile", () => {
     const changes: GameChange[] = [
       {
@@ -163,6 +206,57 @@ describe("RoundEventFeed", () => {
     expect(
       container.querySelectorAll('.event-card__death [data-event-avatar-muted="true"]'),
     ).toHaveLength(2);
+  });
+
+  it("hides status changes for tributes eliminated by the same event", () => {
+    const survivorStatus = createStatusEffectInstance(
+      "poison-resolution",
+      "katniss",
+      "injured",
+      1,
+      TEST_ROUND,
+    );
+
+    renderFeed([
+      createEvent({
+        id: "poison-resolution",
+        definitionId: "poisoned-fatal-resolution",
+        kind: "status-resolution",
+        text: "Peeta succumbs to the poison.",
+        participantTributeIds: ["peeta", "katniss"],
+        changes: [
+          {
+            type: "remove-status",
+            tributeId: "peeta",
+            statusId: "earlier-event:peeta:poisoned",
+          },
+          {
+            type: "remove-status",
+            tributeId: "peeta",
+            statusId: "earlier-event:peeta:exhausted",
+          },
+          {
+            type: "apply-status",
+            tributeId: "katniss",
+            status: survivorStatus,
+          },
+          {
+            type: "eliminate-tribute",
+            tributeId: "peeta",
+            causeId: "poisoned",
+            causeLabel: "Succumbed to poison",
+            summary: "Peeta succumbs to the poison.",
+            killerTributeIds: [],
+          },
+        ],
+      }),
+    ]);
+
+    expect(screen.queryByText("Poisoned cleared")).not.toBeInTheDocument();
+    expect(screen.queryByText("Exhausted cleared")).not.toBeInTheDocument();
+
+    expect(screen.getByText("Injured")).toBeInTheDocument();
+    expect(screen.getByText("Succumbed to poison")).toBeInTheDocument();
   });
 
   it("renders status changes with their existing presentation tone", () => {

@@ -168,6 +168,113 @@ function getFirstChangedTributeId(changes: readonly GameChange[]): string | null
   return null;
 }
 
+function getParticipantOrder(event: ResolvedEvent): ReadonlyMap<string, number> {
+  return new Map(
+    event.participantTributeIds.map((tributeId, index) => [tributeId, index] as const),
+  );
+}
+
+function getMostCreditedKillerId(
+  event: ResolvedEvent,
+  tributeById: ReadonlyMap<string, GameTribute>,
+): string | null {
+  const killCounts = new Map<string, number>();
+
+  for (const change of event.changes) {
+    if (change.type !== "eliminate-tribute") {
+      continue;
+    }
+
+    for (const killerTributeId of change.killerTributeIds) {
+      if (!tributeById.has(killerTributeId)) {
+        continue;
+      }
+
+      killCounts.set(killerTributeId, (killCounts.get(killerTributeId) ?? 0) + 1);
+    }
+  }
+
+  if (killCounts.size === 0) {
+    return null;
+  }
+
+  const participantOrder = getParticipantOrder(event);
+
+  return (
+    [...killCounts.entries()].sort(
+      ([firstId, firstCount], [secondId, secondCount]) =>
+        secondCount - firstCount ||
+        (participantOrder.get(firstId) ?? Number.MAX_SAFE_INTEGER) -
+          (participantOrder.get(secondId) ?? Number.MAX_SAFE_INTEGER) ||
+        firstId.localeCompare(secondId),
+    )[0]?.[0] ?? null
+  );
+}
+
+function getPrimaryTributeId(
+  event: ResolvedEvent,
+  tributeById: ReadonlyMap<string, GameTribute>,
+): string | null {
+  /*
+   * The first selected participant is not always the narrative focus.
+   *
+   * Bloodbath contests, for example, select contenders first and choose
+   * the eventual winner during resolution. Prefer concrete outcome data
+   * before falling back to role/participant order.
+   */
+  for (const change of event.changes) {
+    if (change.type !== "declare-victory") {
+      continue;
+    }
+
+    const victorTributeId = change.outcome.victorTributeIds.find((tributeId) =>
+      tributeById.has(tributeId),
+    );
+
+    if (victorTributeId) {
+      return victorTributeId;
+    }
+  }
+
+  const creditedKillerId = getMostCreditedKillerId(event, tributeById);
+
+  if (creditedKillerId) {
+    return creditedKillerId;
+  }
+
+  const theftRecipientId = event.changes.find(
+    (change) =>
+      change.type === "transfer-item" &&
+      change.reason === "theft" &&
+      tributeById.has(change.toTributeId),
+  );
+
+  if (theftRecipientId && theftRecipientId.type === "transfer-item") {
+    return theftRecipientId.toTributeId;
+  }
+
+  const acquisitionRecipientId = event.changes.find(
+    (change) => change.type === "acquire-item" && tributeById.has(change.tributeId),
+  );
+
+  if (acquisitionRecipientId && acquisitionRecipientId.type === "acquire-item") {
+    return acquisitionRecipientId.tributeId;
+  }
+
+  const transferRecipientId = event.changes.find(
+    (change) => change.type === "transfer-item" && tributeById.has(change.toTributeId),
+  );
+
+  if (transferRecipientId && transferRecipientId.type === "transfer-item") {
+    return transferRecipientId.toTributeId;
+  }
+
+  return (
+    event.participantTributeIds.find((tributeId) => tributeById.has(tributeId)) ??
+    getFirstChangedTributeId(event.changes)
+  );
+}
+
 function getEventVisualKind(event: ResolvedEvent): EventVisualKind {
   const definition = EVENT_DEFINITION_BY_ID.get(event.definitionId);
   const tags = new Set<string>(definition?.tags ?? []);
@@ -239,15 +346,22 @@ export function createEventCardPresentation(
 ): EventCardPresentation {
   const tributeById = new Map(tributes.map((tribute) => [tribute.id, tribute] as const));
 
-  const primaryTributeId =
-    event.participantTributeIds.find((tributeId) => tributeById.has(tributeId)) ??
-    getFirstChangedTributeId(event.changes);
+  const primaryTributeId = getPrimaryTributeId(event, tributeById);
 
   const primaryTribute = primaryTributeId ? (tributeById.get(primaryTributeId) ?? null) : null;
 
   const deaths: EventDeathPresentation[] = [];
   const statusChanges: EventStatusChangePresentation[] = [];
   const itemChanges: EventItemChangePresentation[] = [];
+
+  const eliminatedTributeIds = new Set(
+    event.changes
+      .filter(
+        (change): change is Extract<GameChange, { type: "eliminate-tribute" }> =>
+          change.type === "eliminate-tribute",
+      )
+      .map((change) => change.tributeId),
+  );
 
   for (const change of event.changes) {
     switch (change.type) {
@@ -269,6 +383,10 @@ export function createEventCardPresentation(
       }
 
       case "apply-status": {
+        if (eliminatedTributeIds.has(change.tributeId)) {
+          break;
+        }
+
         const tribute = tributeById.get(change.tributeId) ?? null;
         const sourceTributeName = change.status.sourceTributeId
           ? (tributeById.get(change.status.sourceTributeId)?.snapshot.name ?? null)
@@ -292,6 +410,10 @@ export function createEventCardPresentation(
       }
 
       case "remove-status": {
+        if (eliminatedTributeIds.has(change.tributeId)) {
+          break;
+        }
+
         const tribute = tributeById.get(change.tributeId) ?? null;
 
         statusChanges.push({

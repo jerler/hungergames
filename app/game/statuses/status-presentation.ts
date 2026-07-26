@@ -265,11 +265,15 @@ function getStatusSortGroup(status: StatusEffect, definition: StatusDefinition):
     return 0;
   }
 
-  if (definition.kind === "harmful") {
-    return 1;
+  if (definition.kind === "harmful" && definition.duration.kind === "timed") {
+    return 4 - status.severity;
   }
 
-  return 2;
+  if (definition.kind === "harmful") {
+    return 4;
+  }
+
+  return 5;
 }
 
 export function compareStatusesByUrgency(
@@ -277,18 +281,31 @@ export function compareStatusesByUrgency(
   secondStatus: StatusEffect,
 ): number {
   const firstDefinition = getStatusDefinition(firstStatus.definitionId);
-
   const secondDefinition = getStatusDefinition(secondStatus.definitionId);
 
-  const firstRounds = firstStatus.remainingRounds ?? Number.POSITIVE_INFINITY;
+  const groupDifference =
+    getStatusSortGroup(firstStatus, firstDefinition) -
+    getStatusSortGroup(secondStatus, secondDefinition);
 
-  const secondRounds = secondStatus.remainingRounds ?? Number.POSITIVE_INFINITY;
+  if (groupDifference !== 0) {
+    return groupDifference;
+  }
+
+  if (isFatalStatusDefinition(firstDefinition) && isFatalStatusDefinition(secondDefinition)) {
+    const firstRounds = firstStatus.remainingRounds ?? Number.POSITIVE_INFINITY;
+    const secondRounds = secondStatus.remainingRounds ?? Number.POSITIVE_INFINITY;
+
+    const fatalDifference =
+      firstRounds - secondRounds || secondStatus.severity - firstStatus.severity;
+
+    if (fatalDifference !== 0) {
+      return fatalDifference;
+    }
+  }
 
   return (
-    getStatusSortGroup(firstStatus, firstDefinition) -
-      getStatusSortGroup(secondStatus, secondDefinition) ||
-    firstRounds - secondRounds ||
-    secondStatus.severity - firstStatus.severity ||
-    firstStatus.definitionId.localeCompare(secondStatus.definitionId)
+    firstDefinition.label.localeCompare(secondDefinition.label) ||
+    firstStatus.definitionId.localeCompare(secondStatus.definitionId) ||
+    firstStatus.id.localeCompare(secondStatus.id)
   );
 }

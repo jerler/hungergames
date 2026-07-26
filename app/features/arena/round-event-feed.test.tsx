@@ -1,12 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { createInventoryItemInstance } from "~/game/items/inventory-engine";
+import { createStatusEffectInstance } from "~/game/statuses/status-engine";
 import type {
-  EliminateTributeChange,
   EventFeedGroup,
+  GameChange,
+  GameTribute,
   ResolvedEvent,
   ResolvedEventKind,
 } from "~/game/types/game-state";
+import { createAuthoringTestTribute } from "~/game/events/authoring/testing/authoring-test-fixtures";
 
 import { RoundEventFeed } from "./round-event-feed";
 
@@ -15,47 +19,62 @@ const TEST_ROUND = {
   period: "day",
 } as const;
 
+const KATNISS = {
+  ...createAuthoringTestTribute({
+    id: "katniss",
+    name: "Katniss Everdeen",
+  }),
+  district: 12,
+} satisfies GameTribute;
+
+const PEETA = {
+  ...createAuthoringTestTribute({
+    id: "peeta",
+    name: "Peeta Mellark",
+  }),
+  district: 12,
+  districtPosition: 2,
+} satisfies GameTribute;
+
+const MOTHMAN = {
+  ...createAuthoringTestTribute({
+    id: "mothman",
+    name: "Mothman",
+  }),
+  district: 1,
+} satisfies GameTribute;
+
+const TEST_TRIBUTES = [KATNISS, PEETA, MOTHMAN] as const;
+
 interface CreateEventOptions {
   id?: string;
+  definitionId?: string;
   text?: string;
+  kind?: ResolvedEventKind;
   feedGroup?: EventFeedGroup;
+  participantTributeIds?: readonly string[];
+  changes?: readonly GameChange[];
 }
 
-function createEvent(
-  eliminatedTributeIds: readonly string[],
-  kind: ResolvedEventKind = "primary",
-  options: CreateEventOptions = {},
-): ResolvedEvent {
-  const changes = eliminatedTributeIds.map((tributeId): EliminateTributeChange => ({
-    type: "eliminate-tribute",
-
-    tributeId,
-
-    causeId: "test-elimination",
-
-    causeLabel: "Test elimination",
-
-    summary: `${tributeId} was eliminated.`,
-
-    killerTributeIds: [],
-  }));
-
+function createEvent({
+  id = "test-event",
+  definitionId = "test-event",
+  text = "Something dramatic happens in the arena.",
+  kind = "primary",
+  feedGroup,
+  participantTributeIds = ["katniss"],
+  changes = [],
+}: CreateEventOptions = {}): ResolvedEvent {
   return {
-    id: options.id ?? `test-event-${kind}`,
-
-    definitionId: "test-event",
+    id,
+    definitionId,
     kind,
     resolutionMode: "standard",
-
-    ...(options.feedGroup ? { feedGroup: options.feedGroup } : {}),
-
+    ...(feedGroup ? { feedGroup } : {}),
     round: TEST_ROUND,
-
-    participantTributeIds: [...eliminatedTributeIds],
-
-    text: options.text ?? "Several cannons echo across the arena.",
-
-    changes,
+    participantTributeIds: [...participantTributeIds],
+    text,
+    changes: [...changes],
   };
 }
 
@@ -66,21 +85,26 @@ function createPreparationEvent(): ResolvedEvent {
     kind: "preparation",
     resolutionMode: "standard",
     round: TEST_ROUND,
-    participantTributeIds: ["tribute-1"],
-    text: "Katniss drinks fresh water.",
+    participantTributeIds: ["katniss"],
+    text: "Katniss wakes after sheltered rest.",
     changes: [],
     preparation: {
       mechanic: "morning-rest-resolution",
-      actingTributeId: "tribute-1",
+      actingTributeId: "katniss",
       restQuality: "sheltered",
     },
   };
 }
 
-function renderFeed(events: readonly ResolvedEvent[], totalPrimaryEventCount = 1) {
+function renderFeed(
+  events: readonly ResolvedEvent[],
+  totalPrimaryEventCount = 1,
+  tributes: readonly GameTribute[] = TEST_TRIBUTES,
+) {
   return render(
     <RoundEventFeed
       events={events}
+      tributes={tributes}
       round={TEST_ROUND}
       totalPrimaryEventCount={totalPrimaryEventCount}
     />,
@@ -88,60 +112,141 @@ function renderFeed(events: readonly ResolvedEvent[], totalPrimaryEventCount = 1
 }
 
 describe("RoundEventFeed", () => {
-  it.each([1, 2, 3])("renders one cannon pill for each of %s eliminations", (eliminationCount) => {
-    const event = createEvent(
-      Array.from(
-        {
-          length: eliminationCount,
-        },
+  it("replaces event numbering with the primary tribute profile", () => {
+    const { container } = renderFeed([
+      createEvent({
+        text: "Katniss disappears into the trees.",
+      }),
+    ]);
 
-        (_, index) => `tribute-${index + 1}`,
-      ),
-    );
+    expect(screen.getByText("Katniss Everdeen")).toBeInTheDocument();
+    expect(screen.getByText("District 12")).toBeInTheDocument();
+    expect(screen.queryByText("01")).not.toBeInTheDocument();
+    expect(container.querySelector('[data-avatar-size="primary"]')).toBeInTheDocument();
+  });
 
-    renderFeed([event]);
+  it("renders every eliminated tribute in a muted death tile", () => {
+    const changes: GameChange[] = [
+      {
+        type: "eliminate-tribute",
+        tributeId: "peeta",
+        causeId: "test-elimination",
+        causeLabel: "Fell from a cliff",
+        summary: "Peeta falls into the ravine.",
+        killerTributeIds: ["katniss"],
+      },
+      {
+        type: "eliminate-tribute",
+        tributeId: "mothman",
+        causeId: "test-elimination",
+        causeLabel: "Crushed",
+        summary: "Mothman is crushed by falling rocks.",
+        killerTributeIds: [],
+      },
+    ];
 
-    expect(screen.getAllByText("Cannon fired")).toHaveLength(eliminationCount);
+    const { container } = renderFeed([
+      createEvent({
+        participantTributeIds: ["katniss", "peeta", "mothman"],
+        changes,
+      }),
+    ]);
 
     expect(
-      screen.getByRole("group", {
-        name: eliminationCount === 1 ? "1 cannon fired" : `${eliminationCount} cannons fired`,
+      screen.getByRole("heading", {
+        name: "2 eliminated",
       }),
     ).toBeInTheDocument();
+    expect(screen.getByText("Fell from a cliff")).toBeInTheDocument();
+    expect(screen.getByText("Crushed")).toBeInTheDocument();
+    expect(screen.getByText("Killed by Katniss Everdeen")).toBeInTheDocument();
+    expect(
+      container.querySelectorAll('.event-card__death [data-event-avatar-muted="true"]'),
+    ).toHaveLength(2);
   });
 
-  it("does not render cannon pills for a nonfatal event", () => {
-    renderFeed([createEvent([])]);
+  it("renders status changes with their existing presentation tone", () => {
+    const status = createStatusEffectInstance("status-event", "katniss", "injured", 2, TEST_ROUND);
 
-    expect(screen.queryByText("Cannon fired")).not.toBeInTheDocument();
+    const { container } = renderFeed([
+      createEvent({
+        id: "status-event",
+        changes: [
+          {
+            type: "apply-status",
+            tributeId: "katniss",
+            status,
+          },
+        ],
+      }),
+    ]);
+
+    expect(screen.getByText("Status changes")).toBeInTheDocument();
+    expect(screen.getByText("Injured")).toBeInTheDocument();
+    expect(screen.getByText(/Severity 2 of 3/)).toBeInTheDocument();
+    expect(container.querySelector('[data-status-tone="temporary"]')).toBeInTheDocument();
   });
 
-  it.each(["primary", "aftermath", "status-resolution"] as const)(
-    "renders %s events without filtering them",
-    (kind) => {
-      const event = createEvent([], kind);
+  it("renders item acquisitions with the recipient and source", () => {
+    const kindling = createInventoryItemInstance(
+      "forage-kindling",
+      "mothman",
+      "kindling",
+      TEST_ROUND,
+    );
 
-      const { container } = renderFeed([event]);
+    renderFeed([
+      createEvent({
+        id: "forage-kindling",
+        participantTributeIds: ["mothman"],
+        changes: [
+          {
+            type: "acquire-item",
+            tributeId: "mothman",
+            acquisitionSource: "natural-foraging",
+            item: kindling,
+          },
+        ],
+      }),
+    ]);
 
-      expect(screen.getByText("Several cannons echo across the arena.")).toBeInTheDocument();
+    expect(screen.getByText("Dry kindling")).toBeInTheDocument();
+    expect(screen.getByText("Foraged")).toBeInTheDocument();
+    expect(screen.getAllByText("Mothman").length).toBeGreaterThan(0);
+  });
 
-      expect(container.querySelector(`[data-event-kind="${kind}"]`)).toBeInTheDocument();
-    },
-  );
+  it("shows both tributes and theft direction for stolen items", () => {
+    const knife = createInventoryItemInstance("earlier-acquisition", "peeta", "knife", TEST_ROUND);
+
+    const { container } = renderFeed([
+      createEvent({
+        id: "theft-event",
+        definitionId: "steal-from-stronger-tribute",
+        participantTributeIds: ["katniss", "peeta"],
+        changes: [
+          {
+            type: "transfer-item",
+            itemInstanceId: knife.id,
+            fromTributeId: "peeta",
+            toTributeId: "katniss",
+            reason: "theft",
+          },
+        ],
+      }),
+    ]);
+
+    expect(screen.getByText("Stolen")).toBeInTheDocument();
+    expect(screen.getByText("Knife")).toBeInTheDocument();
+    expect(screen.getAllByText("Katniss Everdeen").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Peeta Mellark").length).toBeGreaterThan(0);
+    expect(container.querySelector('[data-event-type="theft"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-transfer-kind="stolen"]')).toBeInTheDocument();
+  });
 
   it("does not render automatic preparation events", () => {
-    renderFeed([createPreparationEvent(), createEvent([])], 2);
+    renderFeed([createPreparationEvent(), createEvent()], 2);
 
-    expect(screen.queryByText("Katniss drinks fresh water.")).not.toBeInTheDocument();
-
-    expect(
-      screen.queryByRole("heading", {
-        name: "Before the round",
-      }),
-    ).not.toBeInTheDocument();
-
-    expect(screen.getByText("Several cannons echo across the arena.")).toBeInTheDocument();
-
+    expect(screen.queryByText("Katniss wakes after sheltered rest.")).not.toBeInTheDocument();
     expect(screen.getByText("1 of 2 arena events revealed")).toBeInTheDocument();
   });
 
@@ -149,98 +254,56 @@ describe("RoundEventFeed", () => {
     renderFeed([createPreparationEvent()], 3);
 
     expect(screen.getByText("0 of 3 arena events revealed")).toBeInTheDocument();
-
     expect(screen.getByText(/reveal the first event/i)).toBeInTheDocument();
   });
 
-  it("preserves arena-event numbering when an automatic event is supplied", () => {
-    renderFeed([createPreparationEvent(), createEvent([])], 2);
-
-    expect(screen.getByText("01")).toBeInTheDocument();
-
-    expect(screen.queryByText("02")).not.toBeInTheDocument();
-  });
-
-  it("groups Bloodbath events while preserving global event numbering", () => {
-    const cornucopiaEventOne = createEvent([], "primary", {
+  it("keeps Bloodbath groups while removing global event numbers", () => {
+    const cornucopiaEvent = createEvent({
       id: "cornucopia-one",
       text: "Katniss runs for the Cornucopia.",
       feedGroup: "bloodbath-cornucopia",
     });
-
-    const cornucopiaEventTwo = createEvent([], "primary", {
-      id: "cornucopia-two",
-      text: "Peeta grabs a supply pack.",
-      feedGroup: "bloodbath-cornucopia",
-    });
-
-    const fleeEvent = createEvent([], "primary", {
+    const fleeEvent = createEvent({
       id: "flee-one",
       text: "Mothman disappears into the trees.",
       feedGroup: "bloodbath-flee",
+      participantTributeIds: ["mothman"],
     });
 
-    renderFeed([cornucopiaEventOne, cornucopiaEventTwo, fleeEvent], 3);
-
-    expect(
-      screen
-        .getAllByRole("heading", {
-          level: 3,
-        })
-        .map((heading) => heading.textContent),
-    ).toEqual(["Ran for the Cornucopia", "Ran for the trees"]);
-
-    expect(screen.getByText("01")).toBeInTheDocument();
-    expect(screen.getByText("02")).toBeInTheDocument();
-    expect(screen.getByText("03")).toBeInTheDocument();
-  });
-
-  it("does not render an empty Bloodbath group", () => {
-    const cornucopiaEvent = createEvent([], "primary", {
-      id: "cornucopia-only",
-      feedGroup: "bloodbath-cornucopia",
-    });
-
-    renderFeed([cornucopiaEvent]);
+    renderFeed([cornucopiaEvent, fleeEvent], 2);
 
     expect(
       screen.getByRole("heading", {
         name: "Ran for the Cornucopia",
       }),
     ).toBeInTheDocument();
-
     expect(
-      screen.queryByRole("heading", {
+      screen.getByRole("heading", {
         name: "Ran for the trees",
       }),
-    ).not.toBeInTheDocument();
+    ).toBeInTheDocument();
+    expect(screen.queryByText("01")).not.toBeInTheDocument();
+    expect(screen.queryByText("02")).not.toBeInTheDocument();
   });
 
   it("does not hide an ungrouped event during a grouped Bloodbath feed", () => {
-    const cornucopiaEvent = createEvent([], "primary", {
+    const cornucopiaEvent = createEvent({
       id: "cornucopia-event",
       feedGroup: "bloodbath-cornucopia",
     });
-
-    const aftermathEvent = createEvent([], "aftermath", {
+    const aftermathEvent = createEvent({
       id: "aftermath-event",
+      kind: "aftermath",
       text: "The cannons echo across the arena.",
     });
 
-    renderFeed([cornucopiaEvent, aftermathEvent], 1);
+    renderFeed([cornucopiaEvent, aftermathEvent]);
 
     expect(
       screen.getByRole("heading", {
         name: "Arena aftermath",
       }),
     ).toBeInTheDocument();
-
     expect(screen.getByText("The cannons echo across the arena.")).toBeInTheDocument();
-  });
-
-  it("keeps ordinary rounds in the flat event-feed layout", () => {
-    const { container } = renderFeed([createEvent([])]);
-
-    expect(container.querySelector("[data-event-feed-group]")).not.toBeInTheDocument();
   });
 });

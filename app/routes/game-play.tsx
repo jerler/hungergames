@@ -159,6 +159,7 @@ export default function GamePlayPage() {
             <>
               <RoundEventFeed
                 events={revealedEvents}
+                tributes={activeGame.tributes}
                 round={activeGame.currentRound}
                 totalPrimaryEventCount={totalPrimaryEventCount}
               />

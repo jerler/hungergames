@@ -1,16 +1,18 @@
+import { EventCard } from "~/features/arena/event-card";
 import { formatRoundLabel } from "~/game/engine/rounds";
 
-import type { EventFeedGroup, ResolvedEvent, RoundReference } from "~/game/types/game-state";
+import type {
+  EventFeedGroup,
+  GameTribute,
+  ResolvedEvent,
+  RoundReference,
+} from "~/game/types/game-state";
 
 interface RoundEventFeedProps {
   events: readonly ResolvedEvent[];
+  tributes: readonly GameTribute[];
   round: RoundReference;
   totalPrimaryEventCount: number;
-}
-
-interface IndexedArenaEvent {
-  event: ResolvedEvent;
-  index: number;
 }
 
 interface EventFeedGroupPresentation {
@@ -44,44 +46,15 @@ function isBloodbathEventFeedGroup(
   return feedGroup !== undefined && BLOODBATH_EVENT_FEED_GROUP_IDS.has(feedGroup);
 }
 
-interface ArenaEventCardProps {
-  event: ResolvedEvent;
-  index: number;
-}
-
-function ArenaEventCard({ event, index }: ArenaEventCardProps) {
-  const eliminations = event.changes.filter((change) => change.type === "eliminate-tribute");
-
-  const cannonAnnouncement =
-    eliminations.length === 1 ? "1 cannon fired" : `${eliminations.length} cannons fired`;
-
-  return (
-    <li className="event-card" data-event-kind={event.kind}>
-      <span className="event-card__number">{String(index + 1).padStart(2, "0")}</span>
-
-      <p>{event.text}</p>
-
-      {eliminations.length > 0 ? (
-        <div className="event-card__fatalities" role="group" aria-label={cannonAnnouncement}>
-          {eliminations.map((elimination) => (
-            <span className="event-card__fatal" key={elimination.tributeId} aria-hidden="true">
-              Cannon fired
-            </span>
-          ))}
-        </div>
-      ) : null}
-    </li>
-  );
-}
-
 interface ArenaEventGroupProps {
   id: ArenaEventGroupId;
   label: string;
   description: string;
-  events: readonly IndexedArenaEvent[];
+  events: readonly ResolvedEvent[];
+  tributes: readonly GameTribute[];
 }
 
-function ArenaEventGroup({ id, label, description, events }: ArenaEventGroupProps) {
+function ArenaEventGroup({ id, label, description, events, tributes }: ArenaEventGroupProps) {
   const titleId = `event-feed-group-${id}-title`;
 
   return (
@@ -93,31 +66,31 @@ function ArenaEventGroup({ id, label, description, events }: ArenaEventGroupProp
       </header>
 
       <ol className="event-feed__list">
-        {events.map(({ event, index }) => (
-          <ArenaEventCard event={event} index={index} key={event.id} />
+        {events.map((event) => (
+          <EventCard event={event} tributes={tributes} key={event.id} />
         ))}
       </ol>
     </section>
   );
 }
 
-export function RoundEventFeed({ events, round, totalPrimaryEventCount }: RoundEventFeedProps) {
+export function RoundEventFeed({
+  events,
+  tributes,
+  round,
+  totalPrimaryEventCount,
+}: RoundEventFeedProps) {
   /*
-   * Preparation events are not expected after Phase 2, but retaining
-   * this boundary guard keeps the component safe for focused tests
+   * Preparation events are not expected in the visible arena report,
+   * but retaining this guard keeps the component safe for focused tests
    * and stale in-memory state created before migration.
    */
   const arenaEvents = events.filter((event) => event.kind !== "preparation");
 
-  const indexedArenaEvents = arenaEvents.map((event, index) => ({
-    event,
-    index,
-  }));
-
   const bloodbathGroups = BLOODBATH_EVENT_FEED_GROUPS.map((group) => ({
     ...group,
 
-    events: indexedArenaEvents.filter(({ event }) => event.feedGroup === group.id),
+    events: arenaEvents.filter((event) => event.feedGroup === group.id),
   }));
 
   const hasBloodbathGroups = bloodbathGroups.some((group) => group.events.length > 0);
@@ -125,11 +98,11 @@ export function RoundEventFeed({ events, round, totalPrimaryEventCount }: RoundE
   /*
    * Never hide an event merely because it has no recognized feed group.
    *
-   * Ordinary rounds render these events in the existing flat list.
+   * Ordinary rounds render these events in the flat list.
    * During a grouped Bloodbath feed, they appear in an aftermath section.
    */
-  const ungroupedArenaEvents = indexedArenaEvents.filter(
-    ({ event }) => !isBloodbathEventFeedGroup(event.feedGroup),
+  const ungroupedArenaEvents = arenaEvents.filter(
+    (event) => !isBloodbathEventFeedGroup(event.feedGroup),
   );
 
   const revealedPrimaryEventCount = arenaEvents.filter((event) => event.kind === "primary").length;
@@ -163,6 +136,7 @@ export function RoundEventFeed({ events, round, totalPrimaryEventCount }: RoundE
                 label={group.label}
                 description={group.description}
                 events={group.events}
+                tributes={tributes}
                 key={group.id}
               />
             ) : null,
@@ -174,13 +148,14 @@ export function RoundEventFeed({ events, round, totalPrimaryEventCount }: RoundE
               label="Arena aftermath"
               description="Other consequences and developments from the opening round."
               events={ungroupedArenaEvents}
+              tributes={tributes}
             />
           ) : null}
         </div>
       ) : (
         <ol className="event-feed__list" aria-live="polite">
-          {indexedArenaEvents.map(({ event, index }) => (
-            <ArenaEventCard event={event} index={index} key={event.id} />
+          {arenaEvents.map((event) => (
+            <EventCard event={event} tributes={tributes} key={event.id} />
           ))}
         </ol>
       )}

@@ -499,60 +499,414 @@
   line-height: 1.4;
 }
 
-.event-feed-group .event-card {
-  border-left: 0.25rem solid var(--event-feed-group-accent);
-}
-
-.event-feed-group .event-card__number {
-  color: var(--event-feed-group-accent);
-}
-
 .event-card {
-  border-left: 0.25rem solid var(--event-feed-group-accent);
-}
+  --event-type-accent: var(--color-accent);
+  --event-type-soft: rgb(227 182 91 / 10%);
 
-.event-feed-group .event-card__number {
-  color: var(--event-feed-group-accent);
-}
-
-.event-card {
-  display: grid;
-  padding: var(--space-5);
+  overflow: hidden;
   border: 1px solid var(--color-border);
+  border-left: 0.25rem solid var(--event-type-accent);
   border-radius: var(--radius-md);
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: var(--space-4);
-  align-items: center;
   background: var(--color-surface-raised);
   animation: event-reveal 300ms ease-out;
 }
 
-.event-card__number {
-  color: var(--color-accent);
-  font-size: var(--font-size-sm);
-  font-weight: 800;
-  letter-spacing: 0.08em;
+.event-card[data-event-type="combat"] {
+  --event-type-accent: rgb(219 98 98);
+  --event-type-soft: rgb(219 98 98 / 9%);
 }
 
-.event-card p {
-  margin: 0;
+.event-card[data-event-type="survival"] {
+  --event-type-accent: rgb(102 156 89);
+  --event-type-soft: rgb(102 156 89 / 10%);
 }
 
-.event-card__fatalities {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.event-card[data-event-type="hazard"] {
+  --event-type-accent: rgb(221 166 68);
+  --event-type-soft: rgb(221 166 68 / 10%);
+}
+
+.event-card[data-event-type="relationship"] {
+  --event-type-accent: rgb(171 158 244);
+  --event-type-soft: rgb(171 158 244 / 10%);
+}
+
+.event-card[data-event-type="theft"] {
+  --event-type-accent: rgb(92 181 174);
+  --event-type-soft: rgb(92 181 174 / 10%);
+}
+
+.event-card[data-event-type="inventory"] {
+  --event-type-accent: rgb(110 157 207);
+  --event-type-soft: rgb(110 157 207 / 10%);
+}
+
+.event-card[data-event-type="status"] {
+  --event-type-accent: rgb(155 126 213);
+  --event-type-soft: rgb(155 126 213 / 10%);
+}
+
+.event-card[data-event-type="special"] {
+  --event-type-accent: rgb(202 151 40);
+  --event-type-soft: rgb(202 151 40 / 10%);
+}
+
+.event-card__main {
+  display: grid;
+  min-width: 0;
+  padding: var(--space-5);
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: var(--space-5);
+  background:
+    linear-gradient(115deg, var(--event-type-soft), transparent 42%), var(--color-surface-raised);
+}
+
+.event-card__main--without-primary {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.event-card__primary {
+  display: grid;
+  min-width: 0;
+  align-content: start;
   gap: var(--space-2);
 }
 
-.event-card__fatal {
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid rgb(219 98 98 / 55%);
-  border-radius: 999px;
-  color: var(--color-danger);
+.event-tribute-avatar {
+  position: relative;
+  display: grid;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--event-type-accent, var(--color-accent));
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 850;
+  place-items: center;
+}
+
+.event-tribute-avatar[data-avatar-size="primary"] {
+  width: 100%;
+  aspect-ratio: 1;
+  border-color: color-mix(in srgb, var(--event-type-accent) 42%, var(--color-border));
+  box-shadow: 0 0 0.85rem var(--event-type-soft);
+  font-size: 1rem;
+}
+
+.event-tribute-avatar[data-avatar-size="compact"] {
+  width: 2.7rem;
+  aspect-ratio: 1;
+}
+
+.event-tribute-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.event-tribute-avatar[data-event-avatar-muted="true"] img,
+.event-tribute-avatar[data-event-avatar-muted="true"] > span {
+  filter: grayscale(1);
+  opacity: 0.32;
+}
+
+.event-tribute-avatar[data-event-avatar-muted="true"]::after {
+  position: absolute;
+  inset: 0;
+  background: rgb(10 10 12 / 18%);
+  content: "";
+}
+
+.event-card__primary-identity {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.event-card__primary-identity strong {
+  overflow: hidden;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-card__primary-identity span {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+}
+
+.event-card__story {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+  gap: var(--space-3);
+}
+
+.event-card__story-header {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.event-card__type-badge {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--event-type-accent) 42%, transparent);
+  border-radius: 999px;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--event-type-soft);
+  color: var(--event-type-accent);
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
+}
+
+.event-card__type-icon,
+.event-card__outcome-icon,
+.event-card__transfer-icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.event-card__text {
+  max-width: 55rem;
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(1rem, 1.8vw, 1.16rem);
+  font-weight: 620;
+  line-height: 1.58;
+}
+
+.event-card__outcomes {
+  border-top: 1px solid var(--color-border);
+  background: rgb(0 0 0 / 7%);
+}
+
+.event-card__outcome-section {
+  padding: var(--space-4) var(--space-5);
+}
+
+.event-card__outcome-section + .event-card__outcome-section {
+  border-top: 1px solid var(--color-border);
+}
+
+.event-card__outcome-heading {
+  display: flex;
+  margin: 0 0 var(--space-3);
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.event-card__outcome-section--deaths .event-card__outcome-heading {
+  color: var(--color-danger);
+}
+
+.event-card__death-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--space-3);
+}
+
+.event-card__death {
+  display: grid;
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid rgb(219 98 98 / 28%);
+  border-radius: var(--radius-sm);
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  background: rgb(87 27 31 / 12%);
+}
+
+.event-card__death-copy {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 0.15rem;
+}
+
+.event-card__death-copy strong {
+  overflow: hidden;
+  font-size: 0.83rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-card__death-copy > span {
+  color: var(--color-danger);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.event-card__death-copy p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.event-card__death-copy small {
+  margin-top: var(--space-1);
+  color: rgb(226 165 165);
+  font-size: 0.65rem;
+}
+
+.event-card__status-list,
+.event-card__item-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.event-card__status-change,
+.event-card__item-acquisition {
+  display: grid;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-left: 0.22rem solid var(--status-accent, var(--event-type-accent));
+  border-radius: var(--radius-sm);
+  align-items: center;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  background: var(--color-surface-raised);
+}
+
+.event-card__status-change[data-status-tone="critical"] {
+  --status-accent: rgb(219 98 98);
+}
+
+.event-card__status-change[data-status-tone="warning"] {
+  --status-accent: rgb(221 166 68);
+}
+
+.event-card__status-change[data-status-tone="stable"] {
+  --status-accent: rgb(102 156 89);
+}
+
+.event-card__status-change[data-status-tone="temporary"] {
+  --status-accent: rgb(110 157 207);
+}
+
+.event-card__status-change[data-status-tone="beneficial"] {
+  --status-accent: rgb(171 158 244);
+}
+
+.event-card__status-copy,
+.event-card__item-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.event-card__status-copy strong,
+.event-card__item-copy strong {
+  overflow: hidden;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-card__status-copy span,
+.event-card__item-copy span {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.event-card__item-copy b {
+  color: var(--color-text);
+}
+
+.event-card__status-meta,
+.event-card__item-source {
+  padding: 0.18rem 0.45rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 5%);
+  color: var(--color-text-muted);
+  font-size: 0.62rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.event-card__item-acquisition {
+  --status-accent: rgb(110 157 207);
+}
+
+.event-card__item-transfer {
+  display: grid;
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--space-3);
+  background: var(--color-surface-raised);
+}
+
+.event-card__item-transfer[data-transfer-kind="stolen"] {
+  border-color: rgb(92 181 174 / 35%);
+  background: rgb(92 181 174 / 7%);
+}
+
+.event-card__transfer-person {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.event-card__transfer-person--recipient {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.event-card__transfer-person > span {
+  overflow: hidden;
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-card__transfer-action {
+  display: grid;
+  min-width: 7rem;
+  justify-items: center;
+  color: var(--color-text-muted);
+  gap: 0.1rem;
+  text-align: center;
+}
+
+.event-card__transfer-action > span:first-of-type {
+  font-size: 0.58rem;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.event-card__transfer-action strong {
+  color: var(--color-text);
+  font-size: 0.74rem;
+}
+
+.event-card__transfer-action > span:last-child {
+  color: rgb(92 181 174);
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.event-card__transfer-icon {
+  color: rgb(92 181 174);
 }
 
 .arena-controls {
@@ -983,5 +1337,49 @@
   .arena-primary-button,
   .arena-secondary-button {
     width: 100%;
+  }
+}
+
+@media (max-width: 40rem) {
+  .event-card__main {
+    padding: var(--space-4);
+    grid-template-columns: 4.6rem minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .event-card__outcome-section {
+    padding: var(--space-4);
+  }
+
+  .event-card__death-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .event-card__status-change,
+  .event-card__item-acquisition {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .event-card__status-meta,
+  .event-card__item-source {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .event-card__item-transfer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .event-card__transfer-person,
+  .event-card__transfer-person--recipient {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .event-card__transfer-action {
+    min-width: 0;
+    grid-template-columns: auto auto 1fr auto;
+    justify-items: start;
+    text-align: left;
   }
 }

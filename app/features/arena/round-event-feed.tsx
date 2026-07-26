@@ -26,13 +26,13 @@ type ArenaEventGroupId = EventFeedGroup | "arena-aftermath";
 const BLOODBATH_EVENT_FEED_GROUPS = [
   {
     id: "bloodbath-cornucopia",
-    label: "Ran for the Cornucopia",
-    description: "These tributes risked the opening Bloodbath for weapons and supplies.",
+    label: "At the Cornucopia",
+    description: "The opening scramble for weapons and supplies begins.",
   },
   {
     id: "bloodbath-flee",
     label: "Ran for the trees",
-    description: "These tributes abandoned the Cornucopia and fled into the arena.",
+    description: "The fleeing tributes disappear into the arena.",
   },
 ] satisfies readonly EventFeedGroupPresentation[];
 
@@ -106,7 +106,17 @@ export function RoundEventFeed({
   );
 
   const revealedPrimaryEventCount = arenaEvents.filter((event) => event.kind === "primary").length;
+  const isDayOneBloodbath = round.day === 1 && round.period === "day";
 
+  const emptyState = isDayOneBloodbath
+    ? {
+        title: "The tributes are in motion.",
+        description: "Reveal the first event to see how the Bloodbath unfolds.",
+      }
+    : {
+        title: "The arena falls silent.",
+        description: "Reveal the first event to discover what happens.",
+      };
   return (
     <section className="event-feed" aria-labelledby="event-feed-title">
       <header className="event-feed__header">
@@ -123,9 +133,9 @@ export function RoundEventFeed({
 
       {arenaEvents.length === 0 ? (
         <div className="event-feed__empty">
-          <p>The arena falls silent.</p>
+          <p>{emptyState.title}</p>
 
-          <span>Reveal the first event to discover what happens.</span>
+          <span>{emptyState.description}</span>
         </div>
       ) : hasBloodbathGroups ? (
         <div className="event-feed__groups" aria-live="polite">

@@ -134,6 +134,87 @@
   font-size: var(--font-size-lg);
 }
 
+.bloodbath-strategy-reveal {
+  --event-type-accent: rgb(202 151 40);
+  --event-type-soft: rgb(202 151 40 / 10%);
+
+  position: relative;
+  display: grid;
+  min-height: 65vh;
+  overflow: hidden;
+  padding: clamp(var(--space-6), 8vw, var(--space-8));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 50% 15%, rgb(202 151 40 / 13%), transparent 28rem),
+    var(--color-surface);
+  box-shadow: var(--shadow-raised);
+  place-items: center;
+}
+
+.bloodbath-strategy-reveal__content {
+  display: grid;
+  width: min(100%, 58rem);
+  justify-items: center;
+  text-align: center;
+}
+
+.bloodbath-strategy-reveal__content > h1 {
+  max-width: 16ch;
+  margin-bottom: var(--space-6);
+  font-size: clamp(2.75rem, 7vw, 5.5rem);
+  letter-spacing: -0.05em;
+}
+
+.bloodbath-strategy-reveal__result {
+  display: grid;
+  width: 100%;
+  justify-items: center;
+  gap: var(--space-6);
+  animation: bloodbath-strategy-result-reveal 420ms ease-out both;
+}
+
+.bloodbath-strategy-reveal__tributes {
+  display: grid;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: clamp(var(--space-3), 3vw, var(--space-5));
+  list-style: none;
+}
+
+.bloodbath-strategy-reveal__tribute {
+  display: grid;
+  min-width: 0;
+  justify-items: center;
+  gap: var(--space-2);
+}
+
+.bloodbath-strategy-reveal__tribute .event-tribute-avatar {
+  width: min(100%, 7.5rem);
+  border-radius: 50%;
+}
+
+.bloodbath-strategy-reveal__tribute strong {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: var(--font-size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bloodbath-strategy-reveal__tribute > span:last-child {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.bloodbath-strategy-reveal__fleeing-summary {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+}
+
 .arena-primary-button,
 .arena-secondary-button {
   display: inline-flex;
@@ -1247,6 +1328,18 @@
 .truce-summary__list span {
   color: var(--color-text-muted);
   font-size: 0.75rem;
+}
+
+@keyframes bloodbath-strategy-result-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes bloodbath-opening-seal {

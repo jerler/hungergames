@@ -368,9 +368,10 @@ describe("RoundEventFeed", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "Ran for the Cornucopia",
+        name: "At the Cornucopia",
       }),
     ).toBeInTheDocument();
+
     expect(
       screen.getByRole("heading", {
         name: "Ran for the trees",
@@ -399,5 +400,17 @@ describe("RoundEventFeed", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("The cannons echo across the arena.")).toBeInTheDocument();
+  });
+
+  it("uses Bloodbath-specific copy before the first Day 1 event is revealed", () => {
+    renderFeed([]);
+
+    expect(screen.getByText("The tributes are in motion.")).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Reveal the first event to see how the Bloodbath unfolds."),
+    ).toBeInTheDocument();
+
+    expect(screen.queryByText("The arena falls silent.")).not.toBeInTheDocument();
   });
 });

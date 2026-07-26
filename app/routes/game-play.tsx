@@ -13,9 +13,11 @@ import {
   selectNextRoundLabel,
   selectRevealedRoundEvents,
   selectVictors,
+  selectRoundTributesByFeedGroup,
 } from "~/game/selectors/game-selectors";
 import { useGameSession } from "~/state/game-session-context";
 import { DayOneOpening } from "~/features/arena/day-one-opening";
+import { BloodbathStrategyReveal } from "~/features/arena/bloodbath-strategy-reveal";
 
 export function meta() {
   return [
@@ -34,7 +36,9 @@ export default function GamePlayPage() {
   const [hasAcknowledgedFinalEvent, setHasAcknowledgedFinalEvent] = useState(false);
 
   const [hasCompletedVictoryFanfare, setHasCompletedVictoryFanfare] = useState(false);
-
+  const [acknowledgedBloodbathStrategyGameId, setAcknowledgedBloodbathStrategyGameId] = useState<
+    string | null
+  >(null);
   const acknowledgeFinalEvent = useCallback(() => {
     setHasAcknowledgedFinalEvent(true);
   }, []);
@@ -121,6 +125,19 @@ export default function GamePlayPage() {
   const revealedEvents = selectRevealedRoundEvents(activeGame);
 
   const hiddenEventCount = selectHiddenEventCount(activeGame);
+  const isDayOneBloodbath =
+    activeGame.currentRound?.day === 1 && activeGame.currentRound.period === "day";
+
+  const shouldShowBloodbathStrategyReveal =
+    activeGame.phase === "round-events" &&
+    isDayOneBloodbath &&
+    acknowledgedBloodbathStrategyGameId !== activeGame.id;
+
+  const cornucopiaTributes = selectRoundTributesByFeedGroup(activeGame, "bloodbath-cornucopia");
+
+  const acknowledgeBloodbathStrategy = () => {
+    setAcknowledgedBloodbathStrategyGameId(activeGame.id);
+  };
   const totalPrimaryEventCount = activeGame.roundEvents.filter(
     (event) => event.kind === "primary",
   ).length;
@@ -151,8 +168,16 @@ export default function GamePlayPage() {
           {activeGame.phase === "opening" ? (
             <DayOneOpening tributeCount={activeGame.tributes.length} onFireCannon={beginRound} />
           ) : null}
+          {shouldShowBloodbathStrategyReveal ? (
+            <BloodbathStrategyReveal
+              cornucopiaTributes={cornucopiaTributes}
+              totalTributeCount={activeGame.tributes.length}
+              onContinue={acknowledgeBloodbathStrategy}
+            />
+          ) : null}
 
           {activeGame.currentRound &&
+          !shouldShowBloodbathStrategyReveal &&
           (activeGame.phase === "round-events" ||
             activeGame.phase === "round-complete" ||
             activeGame.phase === "victory") ? (

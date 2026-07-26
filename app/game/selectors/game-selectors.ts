@@ -1,5 +1,10 @@
 import { formatRoundLabel, getNextRound, getRoundSequence } from "~/game/engine/rounds";
-import type { GameState, GameTribute, ResolvedEvent } from "~/game/types/game-state";
+import type {
+  EventFeedGroup,
+  GameState,
+  GameTribute,
+  ResolvedEvent,
+} from "~/game/types/game-state";
 
 export function selectLivingTributes(state: GameState): GameTribute[] {
   return state.tributes.filter((tribute) => tribute.isAlive);
@@ -35,6 +40,23 @@ export function selectRevealedRoundEvents(state: GameState): ResolvedEvent[] {
 
 export function selectHiddenEventCount(state: GameState): number {
   return Math.max(0, state.roundEvents.length - state.revealedEventCount);
+}
+
+export function selectRoundTributesByFeedGroup(
+  state: GameState,
+  feedGroup: EventFeedGroup,
+): GameTribute[] {
+  const participantTributeIds = new Set(
+    state.roundEvents
+      .filter((event) => event.feedGroup === feedGroup)
+      .flatMap((event) => event.participantTributeIds),
+  );
+
+  /*
+   * Filtering the main tribute list preserves the configured
+   * district order instead of exposing internal event order.
+   */
+  return state.tributes.filter((tribute) => participantTributeIds.has(tribute.id));
 }
 
 export function selectNextRoundLabel(state: GameState): string {

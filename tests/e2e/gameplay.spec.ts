@@ -60,6 +60,24 @@ test("runs a local Game through its victory sequence", async ({ page }) => {
     })
     .click();
 
+  await expect(
+    page.getByRole("heading", {
+      name: "Ran for the Cornucopia...",
+    }),
+  ).toBeVisible();
+
+  await page
+    .getByRole("button", {
+      name: "Continue to the Bloodbath",
+    })
+    .click();
+
+  await expect(
+    page.getByRole("button", {
+      name: "Reveal next event",
+    }),
+  ).toBeVisible();
+
   for (let roundIndex = 0; roundIndex < 50; roundIndex += 1) {
     const victoryHeading = page.getByRole("heading", {
       name: /The Games have (?:a victor|victors)/i,

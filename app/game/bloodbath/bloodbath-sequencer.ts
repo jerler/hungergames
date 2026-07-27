@@ -664,7 +664,6 @@ function sequenceCornucopiaEvents(
   random: RandomSource,
   unavailableItemInstanceIds: Set<string>,
 ): CornucopiaSequenceResult {
-
   const remainingTributes = shuffleItems(cornucopiaTributes, random);
 
   const events: ResolvedEvent[] = [];

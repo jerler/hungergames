@@ -8,11 +8,12 @@ import { FORAGING_EVENTS } from "./foraging-events";
 import { GAMEMAKER_EVENTS } from "./gamemaker-events";
 import { HUNTING_EVENTS } from "./hunting-events";
 import { ITEM_USE_EVENTS } from "./item-use-events";
+import { NIGHT_EVENTS } from "./night-events";
 import { SURVIVAL_EVENTS } from "./survival-events";
 import { TACTICAL_EVENTS } from "./tactical-events";
 import { THEFT_EVENTS } from "./theft-events";
 
-export { TACTICAL_EVENTS, THEFT_EVENTS };
+export { NIGHT_EVENTS, TACTICAL_EVENTS, THEFT_EVENTS };
 
 export const ENCOUNTER_EVENTS = [
   ...CORNUCOPIA_PROVISION_EVENTS,
@@ -23,6 +24,7 @@ export const ENCOUNTER_EVENTS = [
   ...THEFT_EVENTS,
   ...ENVIRONMENTAL_EVENTS,
   ...SURVIVAL_EVENTS,
+  ...NIGHT_EVENTS,
   ...ITEM_USE_EVENTS,
   ...GAMEMAKER_EVENTS,
   ...HUNTING_EVENTS,

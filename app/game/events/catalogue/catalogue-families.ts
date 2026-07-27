@@ -26,6 +26,8 @@ import { HUNTING_EVENTS } from "./encounters/hunting-events";
 
 import { ITEM_USE_EVENTS } from "./encounters/item-use-events";
 
+import { NIGHT_EVENTS } from "./encounters/night-events";
+
 import { SURVIVAL_EVENTS } from "./encounters/survival-events";
 
 import { TACTICAL_EVENTS } from "./encounters/tactical-events";
@@ -109,6 +111,12 @@ export const ORDINARY_EVENT_CATALOGUE_FAMILIES = [
     name: "survival",
 
     events: SURVIVAL_EVENTS,
+  },
+
+  {
+    name: "night",
+
+    events: NIGHT_EVENTS,
   },
 
   {

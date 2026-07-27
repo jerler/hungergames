@@ -54,6 +54,25 @@ export function determineBloodbathFatalityTarget(
   );
 }
 
+/**
+ * Reduces the shared Bloodbath fatality target by eliminations
+ * that have already been planned in another strategy group.
+ *
+ * Only immediate eliminate-tribute changes count here. Harmful
+ * statuses such as bleeding or poisoned remain possible future
+ * deaths, but they do not eliminate anyone during the Bloodbath.
+ */
+export function getRemainingBloodbathFatalityTarget(
+  fatalityTarget: number,
+  priorChanges: readonly GameChange[],
+): number {
+  if (!Number.isInteger(fatalityTarget) || fatalityTarget < 0) {
+    throw new Error("Bloodbath fatality target must be a non-negative integer.");
+  }
+
+  return Math.max(0, fatalityTarget - countPlannedEliminations(priorChanges));
+}
+
 export function countPlannedEliminations(changes: readonly GameChange[]): number {
   return changes.filter((change) => change.type === "eliminate-tribute").length;
 }

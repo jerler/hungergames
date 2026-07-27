@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { determineBloodbathFatalityTarget } from "./bloodbath-balance";
+import {
+  determineBloodbathFatalityTarget,
+  getRemainingBloodbathFatalityTarget,
+} from "./bloodbath-balance";
 import { createSeededRandom } from "~/game/engine/random";
+import type { GameChange } from "~/game/types/game-state";
 
 describe("Bloodbath fatality planning", () => {
   it("creates deterministic soft targets", () => {
@@ -35,5 +39,49 @@ describe("Bloodbath fatality planning", () => {
 
       expect(fullGameTarget).toBeLessThanOrEqual(13);
     }
+  });
+
+  it("counts immediate flee eliminations toward the shared target", () => {
+    const fleeChanges = [
+      {
+        type: "eliminate-tribute",
+        tributeId: "fleeing-tribute",
+        causeId: "fleeing-hazard",
+        causeLabel: "Fleeing hazard",
+        summary: "is eliminated while fleeing the Bloodbath.",
+        killerTributeIds: [],
+      },
+      {
+        type: "apply-status",
+        tributeId: "other-fleeing-tribute",
+        status: {
+          id: "fleeing-poison-status",
+          definitionId: "poisoned",
+          severity: 2,
+          remainingRounds: 2,
+          sourceEventId: "fleeing-poison-event",
+          sourceTributeId: null,
+          appliedRound: {
+            day: 1,
+            period: "day",
+          },
+        },
+      },
+    ] satisfies GameChange[];
+
+    expect(getRemainingBloodbathFatalityTarget(6, fleeChanges)).toBe(5);
+  });
+
+  it("clamps the remaining Bloodbath target at zero", () => {
+    const fleeEliminations = ["first", "second"].map((tributeId): GameChange => ({
+      type: "eliminate-tribute",
+      tributeId,
+      causeId: "fleeing-hazard",
+      causeLabel: "Fleeing hazard",
+      summary: "is eliminated while fleeing the Bloodbath.",
+      killerTributeIds: [],
+    }));
+
+    expect(getRemainingBloodbathFatalityTarget(1, fleeEliminations)).toBe(0);
   });
 });

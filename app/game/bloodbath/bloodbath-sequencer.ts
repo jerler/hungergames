@@ -1,6 +1,7 @@
 import {
   countPlannedEliminations,
   determineBloodbathFatalityTarget,
+  getRemainingBloodbathFatalityTarget,
 } from "~/game/bloodbath/bloodbath-balance";
 import { assignBloodbathStrategies } from "~/game/bloodbath/bloodbath-strategy";
 import {
@@ -44,6 +45,10 @@ import { selectEventParticipants } from "~/game/events/participant-selection";
 
 function createEventId(round: RoundReference, eventIndex: number, definitionId: string): string {
   return ["bloodbath", round.period, round.day, eventIndex, definitionId].join("-");
+}
+
+function countResolvedEventEliminations(events: readonly ResolvedEvent[]): number {
+  return events.reduce((total, event) => total + countPlannedEliminations(event.changes), 0);
 }
 
 function hasNeedSatisfaction(
@@ -680,7 +685,7 @@ function sequenceCornucopiaEvents(
    */
   const targetReductionRoll = random();
   const targetReduction = targetReductionRoll < 0.1 ? 2 : targetReductionRoll < 0.35 ? 1 : 0;
-  const softFatalityTarget = Math.max(1, fatalityTarget - targetReduction);
+  const softFatalityTarget = Math.max(0, fatalityTarget - targetReduction);
 
   /*
    * Reserve a seeded one-to-four-person group for the acquisition and
@@ -858,7 +863,8 @@ export function sequenceBloodbathEvents(state: GameState, round: RoundReference)
     return [];
   }
 
-  const random = createSeededRandom(createRoundSeed(state.seed, round));
+  const roundSeed = createRoundSeed(state.seed, round);
+  const random = createSeededRandom(roundSeed);
 
   const strategyPlan = assignBloodbathStrategies(livingTributes, random);
 
@@ -880,6 +886,28 @@ export function sequenceBloodbathEvents(state: GameState, round: RoundReference)
     throw new Error("Bloodbath strategy assignment produced an invalid Cornucopia count.");
   }
 
+  /*
+   * Flee events use their own deterministic stream so they can be
+   * resolved once for fatality planning and replayed later with their
+   * final event indices. The replay must produce the same immediate
+   * death count; an assertion below protects that contract.
+   */
+  const fleeSeed = `${roundSeed}:bloodbath-flee`;
+  const fleePlanningEvents = sequenceFleeEvents(
+    state,
+    round,
+    livingTributes,
+    fleeingTributes,
+    0,
+    createSeededRandom(fleeSeed),
+    new Set<string>(),
+  );
+  const fleePlanningChanges = fleePlanningEvents.flatMap((event) => event.changes);
+  const cornucopiaFatalityTarget = getRemainingBloodbathFatalityTarget(
+    fatalityTarget,
+    fleePlanningChanges,
+  );
+
   const unavailableItemInstanceIds = new Set<string>();
 
   const cornucopiaSequence = sequenceCornucopiaEvents(
@@ -887,7 +915,7 @@ export function sequenceBloodbathEvents(state: GameState, round: RoundReference)
     round,
     livingTributes,
     cornucopiaTributes,
-    fatalityTarget,
+    cornucopiaFatalityTarget,
     0,
     random,
     unavailableItemInstanceIds,
@@ -901,9 +929,18 @@ export function sequenceBloodbathEvents(state: GameState, round: RoundReference)
 
     cornucopiaSequence.nextEventIndex,
 
-    random,
+    createSeededRandom(fleeSeed),
     unavailableItemInstanceIds,
   );
+
+  const plannedFleeEliminationCount = countResolvedEventEliminations(fleePlanningEvents);
+  const resolvedFleeEliminationCount = countResolvedEventEliminations(fleeEvents);
+
+  if (plannedFleeEliminationCount !== resolvedFleeEliminationCount) {
+    throw new Error(
+      "Deterministic flee-event replay changed the planned Bloodbath elimination count.",
+    );
+  }
 
   /*
    * Both sequence functions already randomize their participants.

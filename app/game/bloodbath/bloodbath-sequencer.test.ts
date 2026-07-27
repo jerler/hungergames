@@ -193,6 +193,22 @@ describe("Bloodbath sequencer", () => {
     ).toBe(true);
   });
 
+  it("allows a paired flee event to consume two fleeing tributes", () => {
+    let pairedEvent: ResolvedEvent | undefined;
+
+    for (let index = 0; index < 500 && !pairedEvent; index += 1) {
+      const game = createTestGame(`paired-flee-${index}`);
+      pairedEvent = sequenceBloodbathEvents(game, DAY_ONE).find(
+        (event) => event.definitionId === "bloodbath-flee-break-away-crowd",
+      );
+    }
+
+    expect(pairedEvent).toBeDefined();
+    expect(pairedEvent?.feedGroup).toBe("bloodbath-flee");
+    expect(pairedEvent?.participantTributeIds).toHaveLength(2);
+    expect(new Set(pairedEvent?.participantTributeIds ?? []).size).toBe(2);
+  });
+
   it("does not commit an item instance twice", () => {
     const game = createTestGame("item-reservations");
 

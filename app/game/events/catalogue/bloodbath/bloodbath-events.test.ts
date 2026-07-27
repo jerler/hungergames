@@ -217,7 +217,7 @@ function resolveFleeOutcome(
       definition,
       game,
       {
-        tribute: [tribute],
+        actor: [tribute],
       },
       (index + 0.5) / 1_000,
     );
@@ -274,19 +274,20 @@ describe("Bloodbath event catalogue", () => {
       },
     };
 
-    const definition = FLEE_EVENTS.find((event) => event.id === "bloodbath-flee-woods");
+    const definition = FLEE_EVENTS.find(
+      (event) => event.id === "bloodbath-flee-run-from-cornucopia",
+    );
 
     if (!definition) {
-      throw new Error("Missing woods flee event.");
+      throw new Error("Missing run-from-Cornucopia flee event.");
     }
 
     const resolution = resolveFleeOutcome(definition, game, tribute, "success");
 
     expect(resolution.text).toBe(
-      "Harry Potter runs directly into " +
-        "the woods and puts a safe " +
-        `distance between ${reflexive} ` +
-        "and the Cornucopia.",
+      "Harry Potter runs directly into the woods and puts " +
+        `a safe distance between ${reflexive} and the Cornucopia ` +
+        "before finally slowing down to think of a plan.",
     );
   });
 
@@ -325,26 +326,43 @@ describe("Bloodbath event catalogue", () => {
     }
   });
 
-  it("never awards manufactured items through flee events", () => {
+  it("uses only approved acquisition provenance in flee events", () => {
     const game = createTestGame();
-    const tribute = game.tributes[0];
 
     for (const definition of FLEE_EVENTS) {
+      const participantsByRole = createDeterministicParticipantsByRole(definition, game.tributes);
+
       for (let index = 0; index < 100; index += 1) {
         const resolution = resolveDefinition(
           definition,
           game,
-          {
-            tribute: [tribute],
-          },
+          participantsByRole,
           (index + 0.5) / 100,
         );
 
         for (const change of getAcquisitions(resolution.changes)) {
-          expect(getItemDefinition(change.item.definitionId).origin).toBe("natural-resource");
+          const itemDefinition = getItemDefinition(change.item.definitionId);
 
-          expect(change.acquisitionSource).toBe("natural-foraging");
+          if (itemDefinition.origin === "natural-resource") {
+            expect(change.acquisitionSource).toBe("natural-foraging");
+            continue;
+          }
+
+          /*
+           * The stampede event may persist the knife that was
+           * thrown during the Cornucopia rush. Fleeing tributes
+           * still receive neither provisions nor arbitrary
+           * manufactured equipment.
+           */
+          expect(change.item.definitionId).toBe("knife");
+          expect(change.acquisitionSource).toBe("cornucopia");
         }
+
+        expect(
+          getAcquisitions(resolution.changes).some(
+            (change) => change.item.definitionId === "cornucopia-provisions",
+          ),
+        ).toBe(false);
       }
     }
   });
@@ -488,23 +506,23 @@ describe("Bloodbath outcome coverage", () => {
     }
   });
 
-  it("reaches every flee-event outcome", () => {
+  it("reaches all four authored outcomes for every flee event", () => {
     const game = createTestGame();
-    const tribute = game.tributes[0];
 
     for (const definition of FLEE_EVENTS) {
-      const signatures = sampleSignatures(
-        definition,
-        game,
-        {
-          tribute: [tribute],
-        },
-        getFleeOutcomeSignature,
+      const participantsByRole = createDeterministicParticipantsByRole(definition, game.tributes);
+      const outcomeTexts = sampleOutcomeSignatures(
+        (randomValue) => resolveDefinition(definition, game, participantsByRole, randomValue),
+        (resolution) => resolution.text,
       );
 
-      expect(signatures).toEqual(
-        new Set(["critical-failure", "failure", "success", "exceptional-success"]),
-      );
+      /*
+       * The expanded catalogue intentionally uses distinct prose
+       * for all four stat-check outcomes. Testing resolved text
+       * avoids forcing unrelated events into the three legacy
+       * woods/stream/forage effect signatures.
+       */
+      expect(outcomeTexts.size).toBe(4);
     }
   });
 

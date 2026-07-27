@@ -803,32 +803,47 @@ function sequenceFleeEvents(
   random: RandomSource,
   unavailableItemInstanceIds: Set<string>,
 ): ResolvedEvent[] {
-  const context: EventSelectionContext = {
-    state,
-    round,
-    livingTributes,
-  };
+  const remainingTributes = shuffleItems(fleeingTributes, random);
+  const events: ResolvedEvent[] = [];
+  let eventIndex = startingEventIndex;
 
-  return shuffleItems(fleeingTributes, random).map((tribute, offset) => {
-    const definition = selectDefinition(FLEE_EVENTS, context, random);
-
-    return resolveBloodbathEvent({
+  while (remainingTributes.length > 0) {
+    /*
+     * Most flee events consume one tribute, while the crowd-breakaway
+     * truce event consumes two. The shared remaining-participant
+     * selector filters out definitions whose role counts no longer fit
+     * and removes every selected participant exactly once.
+     */
+    const selection = selectBloodbathEventForRemainingTributes(
+      FLEE_EVENTS,
       state,
       round,
-      livingTributes,
-      definition,
-
-      participantsByRole: {
-        tribute: [tribute],
-      },
-
-      eventIndex: startingEventIndex + offset,
-      feedGroup: "bloodbath-flee",
-
+      remainingTributes,
       random,
-      unavailableItemInstanceIds,
-    });
-  });
+    );
+
+    if (!selection) {
+      throw new Error("No eligible Bloodbath flee event could cover the remaining tributes.");
+    }
+
+    events.push(
+      resolveBloodbathEvent({
+        state,
+        round,
+        livingTributes,
+        definition: selection.definition,
+        participantsByRole: selection.participantsByRole,
+        eventIndex,
+        feedGroup: "bloodbath-flee",
+        random,
+        unavailableItemInstanceIds,
+      }),
+    );
+
+    eventIndex += 1;
+  }
+
+  return events;
 }
 
 function assertParticipantCoverage(

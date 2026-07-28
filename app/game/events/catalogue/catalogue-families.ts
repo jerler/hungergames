@@ -12,6 +12,11 @@ import { COMBAT_EVENTS } from "./encounters/combat-events";
 
 import { CORNUCOPIA_PROVISION_EVENTS } from "./encounters/cornucopia-provision-events";
 
+import { DAY_CRAFTING_EVENTS } from "./encounters/day-crafting-events";
+
+import { DAY_EVENTS_16_33 } from "./encounters/day-events-continued";
+
+import { DAY_EVENTS } from "./encounters/day-events";
 import { DEPRIVATION_EVENTS } from "./encounters/deprivation-events";
 
 import { FOOD_THEFT_EVENTS, WATER_THEFT_EVENTS } from "./encounters/resource-theft-events";
@@ -69,6 +74,23 @@ export const ORDINARY_EVENT_CATALOGUE_FAMILIES = [
     name: "deprivation",
 
     events: DEPRIVATION_EVENTS,
+  },
+  {
+    name: "day-authored-01-15",
+
+    events: DAY_EVENTS,
+  },
+
+  {
+    name: "day-authored-16-33",
+
+    events: DAY_EVENTS_16_33,
+  },
+
+  {
+    name: "day-weapon-crafting",
+
+    events: DAY_CRAFTING_EVENTS,
   },
 
   {

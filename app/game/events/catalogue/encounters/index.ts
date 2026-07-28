@@ -1,7 +1,10 @@
 import type { EventDefinition } from "~/game/events/event-schema";
 import { COMBAT_EVENTS } from "./combat-events";
 import { CORNUCOPIA_PROVISION_EVENTS } from "./cornucopia-provision-events";
+import { DAY_CRAFTING_EVENTS } from "./day-crafting-events";
+import { DAY_EVENTS_16_33 } from "./day-events-continued";
 import { DEPRIVATION_EVENTS } from "./deprivation-events";
+import { DAY_EVENTS } from "./day-events";
 import { RESOURCE_THEFT_EVENTS } from "./resource-theft-events";
 import { ENVIRONMENTAL_EVENTS } from "./environmental-events";
 import { FORAGING_EVENTS } from "./foraging-events";
@@ -13,7 +16,14 @@ import { SURVIVAL_EVENTS } from "./survival-events";
 import { TACTICAL_EVENTS } from "./tactical-events";
 import { THEFT_EVENTS } from "./theft-events";
 
-export { NIGHT_EVENTS, TACTICAL_EVENTS, THEFT_EVENTS };
+export {
+  DAY_CRAFTING_EVENTS,
+  DAY_EVENTS,
+  DAY_EVENTS_16_33,
+  NIGHT_EVENTS,
+  TACTICAL_EVENTS,
+  THEFT_EVENTS,
+};
 
 export const ENCOUNTER_EVENTS = [
   ...CORNUCOPIA_PROVISION_EVENTS,
@@ -23,6 +33,9 @@ export const ENCOUNTER_EVENTS = [
   ...TACTICAL_EVENTS,
   ...THEFT_EVENTS,
   ...ENVIRONMENTAL_EVENTS,
+  ...DAY_EVENTS,
+  ...DAY_EVENTS_16_33,
+  ...DAY_CRAFTING_EVENTS,
   ...SURVIVAL_EVENTS,
   ...NIGHT_EVENTS,
   ...ITEM_USE_EVENTS,

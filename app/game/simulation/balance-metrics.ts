@@ -386,7 +386,12 @@ export function collectBalanceMetrics(runs: readonly SimulationRun[]): BalanceMe
 
   const consumedUseCounts = createCountRecord(ITEM_CATALOGUE.map((item) => item.id));
 
-  const acquisitionSourceCounts = createCountRecord(["cornucopia", "natural-foraging", "sponsor"]);
+  const acquisitionSourceCounts = createCountRecord([
+    "cornucopia",
+    "natural-foraging",
+    "crafted",
+    "sponsor",
+  ]);
 
   const transferSourceCounts = createCountRecord(["theft", "death-loot", "other"]);
 

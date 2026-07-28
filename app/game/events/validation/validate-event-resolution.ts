@@ -1,6 +1,7 @@
 import type { EventResolution } from "~/game/events/event-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
+import { isCraftableWeaponItemId } from "~/game/items/item-schema";
 import type { RoundReference } from "~/game/types/game-state";
 
 export interface EventResolutionValidationOptions {
@@ -133,6 +134,19 @@ export function validateEventResolution({
               throw new Error(
                 `Event "${definitionId}" cannot acquire manufactured item "${definition.id}" through natural foraging.`,
               );
+            }
+
+            break;
+
+          case "crafted":
+            if (!isCraftableWeaponItemId(definition.id)) {
+              throw new Error(
+                `Event "${definitionId}" cannot craft unsupported item "${definition.id}".`,
+              );
+            }
+
+            if (round.period !== "day") {
+              throw new Error(`Event "${definitionId}" cannot craft a weapon outside a day round.`);
             }
 
             break;

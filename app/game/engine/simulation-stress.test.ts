@@ -613,6 +613,7 @@ describe("simulation stress tests", () => {
 
   it("creates manufactured items only through valid acquisition sources", () => {
     let postDayOneNaturalAcquisitionCount = 0;
+    let craftedWeaponAcquisitionCount = 0;
 
     for (const result of getStressResults()) {
       for (const transaction of getAcquisitionTransactions(result)) {
@@ -622,12 +623,9 @@ describe("simulation stress tests", () => {
           if (isDayOneDaytime(transaction.round)) {
             expect(transaction.acquisitionSource).toBe("cornucopia");
           } else {
-            /*
-             * This remains future-compatible with sponsor
-             * delivery. At present, central validation
-             * rejects sponsor acquisitions entirely.
-             */
-            expect(transaction.acquisitionSource).toBe("sponsor");
+            expect(transaction.acquisitionSource).toBe("crafted");
+            expect(["knife", "club", "hand-axe", "bow"]).toContain(transaction.definitionId);
+            craftedWeaponAcquisitionCount += 1;
           }
 
           continue;
@@ -643,6 +641,7 @@ describe("simulation stress tests", () => {
     }
 
     expect(postDayOneNaturalAcquisitionCount).toBeGreaterThan(0);
+    expect(craftedWeaponAcquisitionCount).toBeGreaterThan(0);
   });
 
   it("keeps weighted Cornucopia pack acquisitions legal and balanced", () => {

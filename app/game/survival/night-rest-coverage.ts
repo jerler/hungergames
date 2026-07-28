@@ -1,5 +1,6 @@
 import { createNightRestChanges } from "~/game/events/event-change-builders";
 import { validateEventResolution } from "~/game/events/validation/validate-event-resolution";
+import type { NightRestQuality } from "./survival-schema";
 import type {
   GameState,
   GameTribute,
@@ -8,6 +9,7 @@ import type {
 } from "~/game/types/game-state";
 
 export const NIGHT_REST_FALLBACK_DEFINITION_ID = "night-rest-fallback";
+export const PREPARED_CAVE_SHELTER_DEFINITION_ID = "day-discovering-cave-shelter";
 
 function getEliminatedTributeIds(events: readonly ResolvedEvent[]): ReadonlySet<string> {
   return new Set(
@@ -17,6 +19,68 @@ function getEliminatedTributeIds(events: readonly ResolvedEvent[]): ReadonlySet<
       ),
     ),
   );
+}
+
+function hasPreparedCaveShelter(
+  state: GameState,
+  round: RoundReference,
+  tributeId: string,
+): boolean {
+  if (round.period !== "night") {
+    return false;
+  }
+
+  return [...state.eventHistory, ...state.roundEvents].some(
+    (event) =>
+      event.definitionId === PREPARED_CAVE_SHELTER_DEFINITION_ID &&
+      event.round.period === "day" &&
+      event.round.day === round.day &&
+      event.participantTributeIds.includes(tributeId),
+  );
+}
+
+function getPreparedCaveText(tribute: GameTribute): string {
+  return (
+    `${tribute.snapshot.name} returns to the prepared cave ` +
+    "and remains sheltered through the night."
+  );
+}
+
+function applyPreparedCaveShelter(
+  state: GameState,
+  round: RoundReference,
+  event: ResolvedEvent,
+): ResolvedEvent {
+  const upgradedTributeIds = new Set<string>();
+  const changes = event.changes.map((change) => {
+    if (
+      change.type !== "record-night-rest" ||
+      change.quality !== "unsheltered" ||
+      !hasPreparedCaveShelter(state, round, change.tributeId)
+    ) {
+      return change;
+    }
+
+    upgradedTributeIds.add(change.tributeId);
+
+    return {
+      ...change,
+      quality: "sheltered" as const,
+    };
+  });
+
+  const caveText = [...upgradedTributeIds].flatMap((tributeId) => {
+    const tribute = state.tributes.find((candidate) => candidate.id === tributeId);
+
+    return tribute ? [getPreparedCaveText(tribute)] : [];
+  });
+
+  return {
+    ...event,
+    participantTributeIds: [...event.participantTributeIds],
+    text: caveText.length > 0 ? `${event.text} ${caveText.join(" ")}` : event.text,
+    changes,
+  };
 }
 
 function countRestOutcomes(events: readonly ResolvedEvent[]): Map<string, number> {
@@ -41,7 +105,11 @@ function getParticipantEventIndexes(events: readonly ResolvedEvent[], tributeId:
   );
 }
 
-function getFallbackText(tribute: GameTribute): string {
+function getFallbackText(tribute: GameTribute, quality: NightRestQuality): string {
+  if (quality === "sheltered") {
+    return getPreparedCaveText(tribute);
+  }
+
   return (
     `${tribute.snapshot.name} finds no time to secure shelter ` +
     "and remains exposed through the night."
@@ -83,11 +151,7 @@ export function completeNightRestCoverage(
     return [...events];
   }
 
-  const completedEvents = events.map((event) => ({
-    ...event,
-    participantTributeIds: [...event.participantTributeIds],
-    changes: [...event.changes],
-  }));
+  const completedEvents = events.map((event) => applyPreparedCaveShelter(state, round, event));
 
   const eliminatedTributeIds = getEliminatedTributeIds(completedEvents);
 
@@ -123,13 +187,16 @@ export function completeNightRestCoverage(
       );
     }
 
-    const [restChange] = createNightRestChanges([tribute], round, "unsheltered");
+    const restQuality: NightRestQuality = hasPreparedCaveShelter(state, round, tribute.id)
+      ? "sheltered"
+      : "unsheltered";
+    const [restChange] = createNightRestChanges([tribute], round, restQuality);
 
     if (!restChange) {
       throw new Error(`Could not create a night-rest change for "${tribute.id}".`);
     }
 
-    const fallbackText = getFallbackText(tribute);
+    const fallbackText = getFallbackText(tribute, restQuality);
     const participantEventIndex = participantEventIndexes[0];
 
     if (participantEventIndex !== undefined) {

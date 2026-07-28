@@ -307,4 +307,44 @@ describe("item acquisition provenance", () => {
 
     expect(() => assertGameStateInvariants(forgedState)).toThrow(/acquired outside Day 1 daytime/i);
   });
+  it.each(["knife", "club", "hand-axe", "bow"] as const)(
+    "allows crafted weapon %s during an ordinary day",
+    (itemId) => {
+      const game = createGame();
+      const { event } = createAcquisitionEvent(
+        game,
+        `crafted-${itemId}`,
+        itemId,
+        "crafted",
+        DAY_TWO,
+      );
+
+      const nextState = applyResolvedEvent(game, event);
+
+      expect(nextState.itemTransactions).toContainEqual(
+        expect.objectContaining({
+          type: "acquired",
+          definitionId: itemId,
+          acquisitionSource: "crafted",
+          round: DAY_TWO,
+        }),
+      );
+      expect(() => assertGameStateInvariants(nextState)).not.toThrow();
+    },
+  );
+
+  it("rejects unsupported crafted equipment", () => {
+    const game = createGame();
+    const { event } = createAcquisitionEvent(
+      game,
+      "crafted-greatsword",
+      "greatsword",
+      "crafted",
+      DAY_TWO,
+    );
+
+    expect(() => applyResolvedEvent(game, event)).toThrow(
+      /cannot be acquired through weapon crafting/i,
+    );
+  });
 });

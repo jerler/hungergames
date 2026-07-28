@@ -81,6 +81,21 @@ export type ItemDefinitionId =
   | "padded-armour"
   | "reinforced-armour";
 
+export const CRAFTABLE_WEAPON_ITEM_IDS = [
+  "knife",
+  "club",
+  "hand-axe",
+  "bow",
+] as const satisfies readonly ItemDefinitionId[];
+
+export type CraftableWeaponItemId = (typeof CRAFTABLE_WEAPON_ITEM_IDS)[number];
+
+const CRAFTABLE_WEAPON_ITEM_ID_SET = new Set<string>(CRAFTABLE_WEAPON_ITEM_IDS);
+
+export function isCraftableWeaponItemId(value: unknown): value is CraftableWeaponItemId {
+  return typeof value === "string" && CRAFTABLE_WEAPON_ITEM_ID_SET.has(value);
+}
+
 export const PERSISTENT_NATURAL_RESOURCE_ITEM_IDS = [
   "hallucinogenic-berries",
   "poison-berries",
@@ -103,7 +118,7 @@ export function isPersistentNaturalResourceItemId(
 
 export type ItemOrigin = "natural-resource" | "manufactured";
 
-export type ItemAcquisitionSource = "cornucopia" | "natural-foraging" | "sponsor";
+export type ItemAcquisitionSource = "cornucopia" | "natural-foraging" | "crafted" | "sponsor";
 
 export const ITEM_TAGS = [
   "consumable",

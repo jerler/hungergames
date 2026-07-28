@@ -137,6 +137,8 @@ function formatAcquisitionSource(source: ItemAcquisitionSource): string {
       return "Cornucopia";
     case "natural-foraging":
       return "Foraged";
+    case "crafted":
+      return "Crafted";
     case "sponsor":
       return "Sponsor gift";
   }

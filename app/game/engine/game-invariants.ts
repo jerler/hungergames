@@ -6,7 +6,7 @@ import {
   type ResolvedEventKind,
   type ResolvedEvent,
 } from "~/game/types/game-state";
-import type { ItemDefinitionId } from "~/game/items/item-schema";
+import { isCraftableWeaponItemId, type ItemDefinitionId } from "~/game/items/item-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { isLegacyFoodWaterItemId } from "~/game/survival/survival-resource-schema";
 import { hasDeprivationProtection } from "~/game/items/deprivation-protection";
@@ -588,6 +588,20 @@ export function assertGameStateInvariants(state: GameState): void {
               `"${transaction.definitionId}" ` +
               "was acquired through natural " +
               "foraging.",
+          );
+
+          break;
+
+        case "crafted":
+          assert(
+            isCraftableWeaponItemId(transaction.definitionId),
+            `unsupported item "${transaction.definitionId}" ` +
+              "was acquired through weapon crafting.",
+          );
+
+          assert(
+            transaction.round.period === "day",
+            `crafted item "${transaction.itemInstanceId}" ` + "was acquired outside a day round.",
           );
 
           break;

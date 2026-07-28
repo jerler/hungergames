@@ -10,6 +10,7 @@ import type {
   Vendetta,
 } from "~/game/types/game-state";
 import { getItemDefinition } from "~/game/items/item-catalogue";
+import { isCraftableWeaponItemId } from "~/game/items/item-schema";
 import { getRoundSequence } from "~/game/engine/rounds";
 import { createAccidentalTruceDissolutionEvents } from "~/game/truces/truce-aftermath";
 import type { SurvivalNeed } from "~/game/survival/survival-schema";
@@ -309,6 +310,18 @@ function validateItemAcquisition(change: AcquireItemChange, event: ResolvedEvent
             "cannot be acquired through " +
             "natural foraging.",
         );
+      }
+
+      return;
+    }
+
+    case "crafted": {
+      if (!isCraftableWeaponItemId(definition.id)) {
+        throw new Error(`Item "${definition.id}" cannot be acquired through weapon crafting.`);
+      }
+
+      if (event.round.period !== "day") {
+        throw new Error(`Crafted item "${definition.id}" can only be acquired during a day round.`);
       }
 
       return;

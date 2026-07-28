@@ -1,0 +1,342 @@
+/* Shared page width, landing alignment, reaping actions, and dock wrapping. */
+
+:root {
+  /*
+   * One shared outer edge for the landing, configuration, reaping, and arena
+   * screens. This sits between the original 72rem layout and the temporary
+   * 104rem landing-only expansion.
+   */
+  --page-width: 84rem;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Shared top-level page width                                               */
+/* ------------------------------------------------------------------------ */
+
+.landing-header,
+.landing-footer,
+.landing-hero,
+.configuration-header,
+.configuration-main,
+.reaping-header,
+.reaping-main,
+.arena-header,
+.arena-layout,
+.tribute-dock {
+  width: min(calc(100% - 3rem), var(--page-width));
+}
+
+.landing-page {
+  --landing-content-width: var(--page-width);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Landing page                                                              */
+/* ------------------------------------------------------------------------ */
+
+.landing-header__creator {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: rgb(24 22 30 / 75%);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  text-decoration: none;
+  transition:
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.landing-header__creator:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.landing-header__creator:focus-visible {
+  outline: 0.2rem solid var(--color-accent);
+  outline-offset: 0.2rem;
+}
+
+/*
+ * Move only the Capitol seal. The pulse remains centred on the outer emblem,
+ * so the icon now sits slightly lower relative to its animation.
+ */
+.landing-emblem {
+  transform: none;
+}
+
+.landing-emblem__inner {
+  transform: translateY(clamp(1rem, 2.2vh, 1.75rem));
+}
+
+/* ------------------------------------------------------------------------ */
+/* Configuration                                                            */
+/* ------------------------------------------------------------------------ */
+
+.configuration-main {
+  padding-inline: 0;
+}
+
+.game-configuration__header {
+  max-width: none;
+}
+
+.game-configuration__title {
+  width: fit-content;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Reaping portrait actions                                                  */
+/* ------------------------------------------------------------------------ */
+
+.tribute-card {
+  grid-template-areas:
+    "header header"
+    "profile details"
+    "actions actions";
+}
+
+.tribute-card__portrait-actions {
+  display: grid;
+  width: 100%;
+  grid-area: actions;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.tribute-card__portrait-actions .tribute-card__portrait-controls {
+  width: auto;
+  margin: 0;
+  justify-content: flex-start;
+}
+
+.tribute-card__portrait-actions :is(.portrait-upload, .portrait-remove) {
+  width: auto;
+  white-space: nowrap;
+}
+
+.tribute-card__portrait-actions .portrait-help {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  text-align: left;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Tribute dock: wrap instead of scroll                                      */
+/* ------------------------------------------------------------------------ */
+
+.tribute-dock {
+  position: sticky;
+  padding: 0.35rem 0 1.45rem;
+}
+
+.tribute-dock__panel {
+  overflow: visible;
+}
+
+.tribute-dock__header {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.tribute-dock__tab {
+  position: absolute;
+  right: var(--space-3);
+  bottom: 0.1rem;
+  z-index: 2;
+  min-height: 1.45rem;
+  padding: 0.08rem 0.6rem;
+  border-radius: 0 0 0.6rem 0.6rem;
+  background: rgb(24 22 30 / 98%);
+  box-shadow: 0 0.45rem 0.8rem rgb(0 0 0 / 22%);
+}
+
+.tribute-dock__tab svg {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+.tribute-dock__content {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.tribute-dock__living-list {
+  display: flex;
+  overflow: visible;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  scrollbar-width: auto;
+}
+
+.tribute-dock__fallen {
+  width: min(calc(var(--fallen-columns, 1) * 3.2rem), min(36vw, 25.6rem));
+  min-width: 3.2rem;
+  max-width: none;
+}
+
+.tribute-dock__fallen-list {
+  display: flex;
+  overflow: visible;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  scrollbar-width: auto;
+}
+
+.tribute-dock__relationship-list {
+  display: flex;
+  overflow: visible;
+  flex-wrap: wrap;
+  scrollbar-width: auto;
+}
+
+/*
+ * Collapsed mode contains only the compact portraits and relationship pills.
+ * The separate tab remains visible below the right edge.
+ */
+.tribute-dock[data-expanded="false"] .tribute-dock__header {
+  display: none;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__content {
+  padding: 0.35rem var(--space-2);
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2);
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__tribute {
+  flex-basis: 2.2rem;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__tribute--fallen {
+  flex-basis: 2rem;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__fallen {
+  width: min(calc(var(--fallen-columns, 1) * 2.4rem), min(36vw, 19.2rem));
+  min-width: 2.4rem;
+  padding-left: var(--space-2);
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__name,
+.tribute-dock[data-expanded="false"] .tribute-dock__fallen-heading,
+.tribute-dock[data-expanded="false"] .tribute-dock__fallen-empty,
+.tribute-dock[data-expanded="false"] .tribute-dock__statuses {
+  display: none;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__relationships {
+  display: grid;
+  overflow: visible;
+  max-height: none;
+  padding: 0.3rem var(--space-2);
+  border-top: 1px solid var(--color-border);
+  grid-template-columns: minmax(0, 1fr);
+  opacity: 1;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__relationships-label {
+  display: none;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__relationship-list {
+  gap: 0.3rem;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__relationship {
+  min-height: 1.7rem;
+  padding: 0.12rem 0.28rem;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__relationship-portrait {
+  width: 1.3rem;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__relationship-icon {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+@media (max-width: 52rem) {
+  .tribute-dock__fallen {
+    width: min(calc(var(--fallen-columns, 1) * 3.2rem), 38vw);
+  }
+
+  .tribute-dock[data-expanded="false"] .tribute-dock__fallen {
+    width: min(calc(var(--fallen-columns, 1) * 2.4rem), 38vw);
+  }
+}
+
+@media (max-width: 40rem) {
+  .landing-header,
+  .landing-footer,
+  .landing-hero,
+  .configuration-header,
+  .configuration-main,
+  .reaping-header,
+  .reaping-main,
+  .arena-header,
+  .arena-layout {
+    width: min(calc(100% - 2rem), var(--page-width));
+  }
+
+  .tribute-dock {
+    width: 100%;
+  }
+
+  .game-configuration__title {
+    font-size: clamp(1.75rem, 8.8vw, 3rem);
+  }
+
+  .tribute-card {
+    grid-template-areas:
+      "header"
+      "profile"
+      "details"
+      "actions";
+  }
+
+  .tribute-card__portrait-actions {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .tribute-card__portrait-actions :is(.portrait-upload, .portrait-remove) {
+    width: auto;
+  }
+
+  .tribute-card__portrait-actions .portrait-help {
+    font-size: 0.62rem;
+    text-align: left;
+  }
+
+  .tribute-dock__tab {
+    right: var(--space-2);
+  }
+}
+
+@media (max-width: 26rem) {
+  .tribute-card__portrait-actions {
+    gap: var(--space-2);
+  }
+
+  .tribute-card__portrait-actions :is(.portrait-upload, .portrait-remove) {
+    padding-inline: var(--space-2);
+    font-size: var(--font-size-xs);
+  }
+
+  .tribute-card__portrait-actions .portrait-help {
+    font-size: 0.58rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tribute-dock__tab {
+    transition: none;
+  }
+}

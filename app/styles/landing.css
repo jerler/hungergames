@@ -272,3 +272,145 @@
     gap: var(--space-2);
   }
 }
+
+/* Landing-page alignment polish */
+.landing-hero__title {
+  width: fit-content;
+  max-width: 100%;
+  font-size: clamp(3rem, 7vw, 6rem);
+}
+
+.landing-hero__title strong {
+  display: grid;
+  width: max-content;
+  max-width: 100%;
+  line-height: 0.96;
+}
+
+/* The original title rule targets every nested span. Restore headline sizing here. */
+.landing-hero__title strong span {
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+}
+
+.landing-hero__headline-line {
+  white-space: nowrap;
+}
+
+.landing-footer__creator {
+  color: inherit;
+  font-weight: 700;
+  text-decoration-color: rgb(227 182 91 / 45%);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.24em;
+  transition:
+    color var(--transition-fast),
+    text-decoration-color var(--transition-fast);
+}
+
+.landing-footer__creator:hover {
+  color: var(--color-accent);
+  text-decoration-color: currentcolor;
+}
+
+.landing-footer__creator:focus-visible {
+  border-radius: 0.2rem;
+  outline: 0.16rem solid var(--color-accent);
+  outline-offset: 0.2rem;
+}
+
+/* Centre the pulse from an explicit origin instead of four percentage insets. */
+.landing-emblem__outer::before,
+.landing-emblem__outer::after {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: 72%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) scale(0.92);
+  transform-origin: center;
+}
+
+@keyframes emblem-gold-pulse {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.88);
+  }
+
+  20% {
+    opacity: 0.65;
+  }
+
+  60% {
+    opacity: 0.22;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.75);
+  }
+}
+
+@media (max-width: 36rem) {
+  .landing-hero__title {
+    font-size: clamp(2.6rem, 13vw, 4.25rem);
+  }
+}
+/* End landing-page alignment polish */
+
+/* Landing-page wide canvas and header creator */
+.landing-page {
+  --landing-content-width: 104rem;
+}
+
+.landing-header,
+.landing-footer,
+.landing-hero {
+  width: min(calc(100% - 2.5rem), var(--landing-content-width));
+}
+
+.landing-header__creator {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-decoration-color: rgb(227 182 91 / 45%);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.24em;
+  transition:
+    color var(--transition-fast),
+    text-decoration-color var(--transition-fast);
+}
+
+.landing-header__creator:hover {
+  color: var(--color-accent);
+  text-decoration-color: currentcolor;
+}
+
+.landing-header__creator:focus-visible {
+  border-radius: 0.2rem;
+  outline: 0.16rem solid var(--color-accent);
+  outline-offset: 0.2rem;
+}
+
+.landing-emblem {
+  transform: translateY(clamp(1.25rem, 3vh, 2.5rem));
+}
+
+.landing-footer {
+  justify-content: flex-start;
+}
+
+@media (max-width: 36rem) {
+  .landing-header,
+  .landing-footer,
+  .landing-hero {
+    width: min(calc(100% - 2rem), var(--landing-content-width));
+  }
+
+  .landing-header__creator {
+    font-size: var(--font-size-xs);
+  }
+}
+/* End landing-page wide canvas and header creator */

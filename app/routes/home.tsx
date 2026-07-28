@@ -24,9 +24,9 @@ export default function HomePage() {
           <span>Hunger Games Simulator</span>
         </Link>
 
-        <Link className="landing-header__join" to="/join">
-          Join a room
-        </Link>
+        <a className="landing-header__creator" href="https://madebyjulie.dev">
+          Made by Julie
+        </a>
       </header>
 
       <main className="landing-hero">
@@ -35,7 +35,10 @@ export default function HomePage() {
 
           <h1 className="landing-hero__title">
             <span>Choose your tributes.</span>
-            <strong>Let the Games begin.</strong>
+            <strong>
+              <span className="landing-hero__headline-line">Let the Games </span>
+              <span>begin.</span>
+            </strong>
           </h1>
 
           <p className="landing-hero__description">Who will survive your arena?</p>
@@ -63,7 +66,6 @@ export default function HomePage() {
 
       <footer className="landing-footer">
         <span>May the odds be ever in your favour.</span>
-        <span>Made by Julie</span>
       </footer>
     </div>
   );

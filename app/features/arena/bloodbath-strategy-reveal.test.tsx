@@ -1,5 +1,6 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { createDefaultTributeSurvivalState } from "~/game/survival/survival-schema";
 import type { GameTribute } from "~/game/types/game-state";
 
@@ -46,7 +47,7 @@ afterEach(() => {
 });
 
 describe("BloodbathStrategyReveal", () => {
-  it("reveals the Cornucopia runners after a short delay", () => {
+  it("reveals the Cornucopia runners one at a time after a short delay", () => {
     vi.useFakeTimers();
 
     const handleContinue = vi.fn();
@@ -75,8 +76,19 @@ describe("BloodbathStrategyReveal", () => {
       vi.advanceTimersByTime(650);
     });
 
-    expect(screen.getByText("Mothman")).toBeInTheDocument();
-    expect(screen.getByText("Mario")).toBeInTheDocument();
+    const tributeList = screen.getByRole("list", {
+      name: "Tributes who ran for the Cornucopia",
+    });
+
+    expect(within(tributeList).getByText("Mothman")).toBeInTheDocument();
+    expect(within(tributeList).getByText("Mario")).toBeInTheDocument();
+
+    const tributeItems = within(tributeList).getAllByRole("listitem");
+
+    expect(tributeItems[0]).toHaveAttribute("data-reveal-index", "0");
+    expect(tributeItems[0]).toHaveStyle({ animationDelay: "80ms" });
+    expect(tributeItems[1]).toHaveAttribute("data-reveal-index", "1");
+    expect(tributeItems[1]).toHaveStyle({ animationDelay: "190ms" });
 
     expect(screen.getByText("The remaining 2 tributes ran for the trees.")).toBeInTheDocument();
 

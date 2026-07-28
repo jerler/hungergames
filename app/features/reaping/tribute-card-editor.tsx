@@ -45,6 +45,7 @@ export function TributeCardEditor({
 
   const nameErrorId = `${tribute.id}-name-error`;
   const portraitErrorId = `${tribute.id}-portrait-error`;
+  const portraitHelpId = `${tribute.id}-portrait-help`;
 
   const updateStat = (stat: keyof TributeStats, value: TributeStatValue) => {
     onChange({
@@ -156,12 +157,39 @@ export function TributeCardEditor({
         .join(" ")}
     >
       <header className="tribute-card__header">
-        <span>Tribute {tribute.districtPosition}</span>
+        <div className="tribute-card__title-field">
+          <label className="visually-hidden" htmlFor={tribute.id + "-name"}>
+            Tribute name
+          </label>
+
+          <input
+            id={tribute.id + "-name"}
+            className="tribute-card__name tribute-card__name--title"
+            type="text"
+            value={tribute.name}
+            maxLength={60}
+            placeholder="Enter a name"
+            aria-invalid={Boolean(validationErrors?.name)}
+            aria-describedby={validationErrors?.name ? nameErrorId : undefined}
+            onChange={(event) => {
+              onChange({
+                ...tribute,
+                name: event.currentTarget.value,
+              });
+            }}
+          />
+
+          {validationErrors?.name ? (
+            <p className="tribute-card__field-error" id={nameErrorId}>
+              {validationErrors.name}
+            </p>
+          ) : null}
+        </div>
 
         <button
           className="tribute-card__randomize"
           type="button"
-          aria-label={`Randomize ${tributeLabel}`}
+          aria-label={"Randomize " + tributeLabel}
           title="Randomize this tribute"
           onClick={() => {
             setPortraitError(null);
@@ -208,46 +236,6 @@ export function TributeCardEditor({
           )}
         </div>
 
-        <div className="tribute-card__portrait-controls">
-          {tribute.portraitPreviewUrl ? (
-            <button
-              className="portrait-remove"
-              type="button"
-              onClick={() => {
-                setPortraitError(null);
-
-                onChange({
-                  ...tribute,
-                  portraitPreviewUrl: null,
-                  portraitPosition: {
-                    x: 50,
-                    y: 50,
-                  },
-                });
-              }}
-            >
-              Remove portrait
-            </button>
-          ) : (
-            <label className="portrait-upload">
-              <input
-                className="visually-hidden"
-                type="file"
-                accept={PORTRAIT_ACCEPT_ATTRIBUTE}
-                aria-label={`Upload portrait for ${tributeLabel}`}
-                aria-describedby={portraitError ? portraitErrorId : undefined}
-                onChange={(event) => {
-                  void handlePortraitSelection(event);
-                }}
-              />
-
-              <span>Add portrait</span>
-            </label>
-          )}
-        </div>
-
-        <p className="portrait-help">JPEG, PNG, or WebP · 5 MB max · Drag to reposition</p>
-
         {portraitError ? (
           <p className="tribute-card__field-error" id={portraitErrorId} role="alert">
             {portraitError}
@@ -256,33 +244,6 @@ export function TributeCardEditor({
       </div>
 
       <div className="tribute-card__details">
-        <label className="tribute-card__name-label" htmlFor={`${tribute.id}-name`}>
-          Tribute name
-        </label>
-
-        <input
-          id={`${tribute.id}-name`}
-          className="tribute-card__name"
-          type="text"
-          value={tribute.name}
-          maxLength={60}
-          placeholder="Enter a name"
-          aria-invalid={Boolean(validationErrors?.name)}
-          aria-describedby={validationErrors?.name ? nameErrorId : undefined}
-          onChange={(event) => {
-            onChange({
-              ...tribute,
-              name: event.currentTarget.value,
-            });
-          }}
-        />
-
-        {validationErrors?.name ? (
-          <p className="tribute-card__field-error" id={nameErrorId}>
-            {validationErrors.name}
-          </p>
-        ) : null}
-
         <label className="tribute-card__pronouns-label" htmlFor={`${tribute.id}-pronouns`}>
           Pronouns
         </label>
@@ -337,6 +298,52 @@ export function TributeCardEditor({
         {validationErrors?.stats ? (
           <p className="tribute-card__field-error">{validationErrors.stats}</p>
         ) : null}
+      </div>
+
+      <div className="tribute-card__portrait-actions">
+        <div className="tribute-card__portrait-controls">
+          {tribute.portraitPreviewUrl ? (
+            <button
+              className="portrait-remove"
+              type="button"
+              onClick={() => {
+                setPortraitError(null);
+
+                onChange({
+                  ...tribute,
+                  portraitPreviewUrl: null,
+                  portraitPosition: {
+                    x: 50,
+                    y: 50,
+                  },
+                });
+              }}
+            >
+              Remove portrait
+            </button>
+          ) : (
+            <label className="portrait-upload">
+              <input
+                className="visually-hidden"
+                type="file"
+                accept={PORTRAIT_ACCEPT_ATTRIBUTE}
+                aria-label={"Upload portrait for " + tributeLabel}
+                aria-describedby={[portraitHelpId, portraitError ? portraitErrorId : null]
+                  .filter(Boolean)
+                  .join(" ")}
+                onChange={(event) => {
+                  void handlePortraitSelection(event);
+                }}
+              />
+
+              <span>Add portrait</span>
+            </label>
+          )}
+        </div>
+
+        <p className="portrait-help" id={portraitHelpId}>
+          JPEG, PNG, or WebP · 5 MB max · Drag to reposition
+        </p>
       </div>
     </article>
   );

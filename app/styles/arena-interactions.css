@@ -1,0 +1,595 @@
+/* Generated arena interactions: tribute dock and outcome drawers. */
+
+/* ------------------------------------------------------------------------ */
+/* Compact sticky tribute dock                                               */
+/* ------------------------------------------------------------------------ */
+
+.tribute-dock__sentinel {
+  width: 100%;
+  height: 1px;
+  margin-bottom: -1px;
+  pointer-events: none;
+}
+
+.tribute-dock {
+  --fallen-dock-width: 8rem;
+
+  /*
+   * Prevent the browser from compensating for the intentional dock height
+   * change by shifting the document underneath the user's pointer.
+   */
+  overflow-anchor: none;
+
+  position: sticky;
+  z-index: 45;
+  top: 0;
+  width: min(calc(100% - 3rem), 90rem);
+  padding-block: 0.35rem;
+  margin-inline: auto;
+  background: linear-gradient(
+    to bottom,
+    rgb(14 14 17 / 99%) 70%,
+    rgb(14 14 17 / 90%) 88%,
+    transparent
+  );
+}
+
+.tribute-dock__panel {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgb(24 22 30 / 97%);
+  box-shadow: 0 0.65rem 1.75rem rgb(0 0 0 / 28%);
+  backdrop-filter: blur(1rem);
+}
+
+.tribute-dock__header {
+  display: grid;
+  min-height: 2.65rem;
+  padding: 0.45rem var(--space-3);
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.tribute-dock__heading {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.tribute-dock__heading .eyebrow {
+  margin: 0;
+  font-size: 0.58rem;
+}
+
+.tribute-dock__heading h2 {
+  margin: 0;
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.tribute-dock__counts {
+  display: flex;
+  color: var(--color-text-muted);
+  font-size: 0.62rem;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.tribute-dock__counts span + span::before {
+  margin-right: var(--space-2);
+  content: "·";
+}
+
+.tribute-dock__toggle {
+  display: inline-flex;
+  min-height: 2rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 750;
+}
+
+.tribute-dock__toggle:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.tribute-dock__toggle svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  transition: transform var(--transition-fast);
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__toggle svg {
+  transform: rotate(180deg);
+}
+
+.tribute-dock__content {
+  display: grid;
+  min-width: 0;
+  padding: 0 var(--space-3) 0.55rem;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(8rem, min(var(--fallen-dock-width), 38vw));
+  align-items: stretch;
+  gap: var(--space-3);
+}
+
+.tribute-dock__living {
+  min-width: 0;
+}
+
+.tribute-dock__living-list,
+.tribute-dock__fallen-list,
+.tribute-dock__relationship-list,
+.tribute-dock__statuses {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.tribute-dock__living-list {
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 0.15rem 0 0.25rem;
+  align-items: flex-start;
+  gap: 0.42rem;
+  scrollbar-width: thin;
+}
+
+.tribute-dock__tribute {
+  flex: 0 0 3.45rem;
+  min-width: 0;
+}
+
+.tribute-dock__portrait {
+  position: relative;
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 850;
+  place-items: center;
+}
+
+.tribute-dock__portrait > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tribute-dock__name {
+  display: block;
+  overflow: hidden;
+  margin-top: 0.18rem;
+  font-size: 0.56rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tribute-dock__statuses {
+  position: absolute;
+  right: 0.12rem;
+  bottom: 0.12rem;
+  left: 0.12rem;
+  display: flex;
+  flex-wrap: wrap-reverse;
+  justify-content: flex-end;
+  gap: 0.08rem;
+  pointer-events: none;
+}
+
+.tribute-dock__status {
+  display: grid;
+  width: 0.95rem;
+  height: 0.95rem;
+  padding: 0.12rem;
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 50%;
+  background: rgb(112 39 43 / 96%);
+  color: #fff;
+  place-items: center;
+}
+
+.tribute-dock__status[data-status-tone="beneficial"] {
+  background: rgb(91 76 166 / 96%);
+}
+
+.tribute-dock__status[data-status-tone="warning"] {
+  background: rgb(202 151 40 / 96%);
+  color: #1c1404;
+}
+
+.tribute-dock__status[data-status-tone="temporary"] {
+  background: rgb(65 82 113 / 96%);
+}
+
+.tribute-dock__status[data-status-tone="stable"] {
+  background: rgb(39 111 66 / 96%);
+}
+
+.tribute-dock__status :is(svg, .sidebar-tribute__status-icon) {
+  width: 100%;
+  height: 100%;
+  font-size: 0.42rem;
+}
+
+.tribute-dock__fallen {
+  min-width: 0;
+  padding-left: var(--space-3);
+  border-left: 1px solid rgb(219 98 98 / 24%);
+  background: linear-gradient(90deg, rgb(87 27 31 / 10%), rgb(87 27 31 / 3%));
+}
+
+.tribute-dock__fallen-heading {
+  display: flex;
+  height: 1.2rem;
+  margin-bottom: 0.15rem;
+  align-items: center;
+  gap: 0.35rem;
+  color: rgb(226 165 165);
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tribute-dock__fallen-list {
+  display: flex;
+  overflow-x: auto;
+  padding: 0.15rem 0 0.25rem;
+  gap: 0.35rem;
+  scrollbar-width: thin;
+}
+
+.tribute-dock__tribute--fallen {
+  flex-basis: 2.85rem;
+}
+
+.tribute-dock__tribute--fallen .tribute-dock__portrait {
+  border-color: rgb(219 98 98 / 26%);
+}
+
+.tribute-dock__tribute--fallen .tribute-dock__portrait :is(img, span) {
+  filter: grayscale(1);
+  opacity: 0.32;
+}
+
+.tribute-dock__tribute--fallen .tribute-dock__name {
+  color: var(--color-text-muted);
+}
+
+.tribute-dock__fallen-empty {
+  display: grid;
+  min-height: 3.25rem;
+  margin: 0;
+  align-items: center;
+  color: var(--color-text-muted);
+  font-size: 0.62rem;
+  text-align: center;
+}
+
+.tribute-dock__relationships {
+  display: grid;
+  overflow: hidden;
+  max-height: 4.25rem;
+  padding: 0.45rem var(--space-3);
+  border-top: 1px solid var(--color-border);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  opacity: 1;
+  transition:
+    max-height 180ms ease,
+    padding 180ms ease,
+    opacity 120ms ease;
+}
+
+.tribute-dock__relationships-label {
+  color: var(--color-text-muted);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tribute-dock__relationship-list {
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+  gap: 0.45rem;
+  scrollbar-width: thin;
+}
+
+.tribute-dock__relationship {
+  display: inline-flex;
+  flex: none;
+  min-height: 2rem;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid rgb(110 157 207 / 34%);
+  border-radius: 999px;
+  align-items: center;
+  background: rgb(110 157 207 / 8%);
+}
+
+.tribute-dock__relationship[data-relationship-kind="romantic"] {
+  border-color: rgb(209 105 139 / 38%);
+  background: rgb(209 105 139 / 9%);
+  color: rgb(235 155 180);
+}
+
+.tribute-dock__relationship-connector {
+  display: grid;
+  margin-inline: 0.15rem;
+  place-items: center;
+}
+
+.tribute-dock__relationship-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.tribute-dock__relationship-portrait {
+  display: grid;
+  width: 1.55rem;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface-raised);
+  color: var(--color-accent);
+  font-size: 0.48rem;
+  font-weight: 850;
+  place-items: center;
+}
+
+.tribute-dock__relationship-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__header {
+  min-height: 2.25rem;
+  padding-block: 0.25rem;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__content {
+  padding-bottom: 0.3rem;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__tribute {
+  flex-basis: 2.35rem;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__tribute--fallen {
+  flex-basis: 2.15rem;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__name,
+.tribute-dock[data-expanded="false"] .tribute-dock__fallen-heading,
+.tribute-dock[data-expanded="false"] .tribute-dock__fallen-empty {
+  display: none;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__relationships {
+  max-height: 0;
+  padding-block: 0;
+  border-top-width: 0;
+  opacity: 0;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__living-list,
+.tribute-dock[data-expanded="false"] .tribute-dock__fallen-list {
+  padding-block: 0;
+}
+
+/* The previous roster wrapper is obsolete when this component is present. */
+.arena-roster-dock:has(+ .tribute-dock),
+.arena-roster-dock:empty {
+  display: none;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Collapsed event outcome drawers                                           */
+/* ------------------------------------------------------------------------ */
+
+.event-card__outcomes {
+  border-top: 1px solid var(--color-border);
+  background: rgb(0 0 0 / 7%);
+}
+
+.event-card__outcome-drawer {
+  display: block;
+}
+
+.event-card__outcome-drawer + .event-card__outcome-drawer {
+  border-top: 1px solid var(--color-border);
+}
+
+.event-card__outcome-summary {
+  display: grid;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.65rem var(--space-5);
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  list-style: none;
+  text-transform: uppercase;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.event-card__outcome-summary::-webkit-details-marker {
+  display: none;
+}
+
+.event-card__outcome-summary:hover {
+  background: rgb(255 255 255 / 3%);
+  color: var(--color-text);
+}
+
+.event-card__outcome-summary:focus-visible {
+  outline: 0.16rem solid var(--color-accent);
+  outline-offset: -0.2rem;
+}
+
+.event-card__outcome-drawer[data-outcome-kind="deaths"] .event-card__outcome-summary {
+  color: rgb(226 165 165);
+}
+
+.event-card__outcome-drawer[data-outcome-kind="statuses"] .event-card__outcome-summary {
+  color: rgb(171 158 244);
+}
+
+.event-card__outcome-drawer[data-outcome-kind="items"] .event-card__outcome-summary {
+  color: rgb(110 157 207);
+}
+
+.event-card__outcome-count {
+  display: grid;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  padding-inline: 0.35rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 6%);
+  color: currentcolor;
+  place-items: center;
+}
+
+.event-card__outcome-chevron {
+  width: 1rem;
+  height: 1rem;
+  transition: transform 180ms ease;
+}
+
+.event-card__outcome-drawer[open] .event-card__outcome-chevron {
+  transform: rotate(180deg);
+}
+
+.event-card__outcome-body {
+  padding: 0 var(--space-5) var(--space-4);
+  animation: event-outcome-open 160ms ease-out;
+}
+
+.event-card__outcome-drawer[open] .event-card__outcome-summary {
+  color: var(--color-text);
+}
+
+.event-card {
+  scroll-margin-top: 6.75rem;
+}
+
+@keyframes event-outcome-open {
+  from {
+    opacity: 0;
+    transform: translateY(-0.2rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 52rem) {
+  .tribute-dock__content {
+    grid-template-columns: minmax(0, 1fr) minmax(6.5rem, 28vw);
+  }
+
+  .tribute-dock__counts span:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 40rem) {
+  .tribute-dock {
+    width: 100%;
+    padding-block: 0;
+  }
+
+  .tribute-dock__panel {
+    border-inline: 0;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+  }
+
+  .tribute-dock__header {
+    padding-inline: var(--space-2);
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .tribute-dock__counts {
+    display: none;
+  }
+
+  .tribute-dock__content {
+    padding-inline: var(--space-2);
+    grid-template-columns: minmax(0, 1fr) 6rem;
+    gap: var(--space-2);
+  }
+
+  .tribute-dock__fallen {
+    padding-left: var(--space-2);
+  }
+
+  .tribute-dock__relationships {
+    padding-inline: var(--space-2);
+  }
+
+  .tribute-dock__relationships-label {
+    display: none;
+  }
+
+  .tribute-dock__relationships {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .event-card__outcome-summary {
+    padding-inline: var(--space-3);
+  }
+
+  .event-card__outcome-body {
+    padding-inline: var(--space-3);
+  }
+
+  .event-card {
+    scroll-margin-top: 5.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tribute-dock__relationships,
+  .tribute-dock__toggle svg,
+  .event-card__outcome-chevron {
+    transition: none;
+  }
+
+  .event-card__outcome-body {
+    animation: none;
+  }
+}

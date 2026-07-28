@@ -1,23 +1,25 @@
 import { useCallback, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
-import { ActiveTruceSummary } from "~/features/arena/active-truce-summary";
+
+import { BloodbathStrategyReveal } from "~/features/arena/bloodbath-strategy-reveal";
+import { unlockCannonAudio } from "~/features/arena/cannon-audio";
+import { DayOneOpening } from "~/features/arena/day-one-opening";
+import { InventorySummary } from "~/features/arena/inventory-summary";
+import { NightSummary } from "~/features/arena/night-summary";
 import { RoundEventFeed } from "~/features/arena/round-event-feed";
-import { TributeSidebar } from "~/features/arena/tribute-sidebar";
+import { TributeDock } from "~/features/arena/tribute-dock";
 import { VictoryFanfare } from "~/features/victory/victory-fanfare";
 import { VictorySummary } from "~/features/victory/victory-summary";
-import { InventorySummary } from "~/features/arena/inventory-summary";
 import { formatRoundLabel } from "~/game/engine/rounds";
 import {
   selectHiddenEventCount,
   selectLivingTributes,
   selectNextRoundLabel,
   selectRevealedRoundEvents,
-  selectVictors,
   selectRoundTributesByFeedGroup,
+  selectVictors,
 } from "~/game/selectors/game-selectors";
 import { useGameSession } from "~/state/game-session-context";
-import { DayOneOpening } from "~/features/arena/day-one-opening";
-import { BloodbathStrategyReveal } from "~/features/arena/bloodbath-strategy-reveal";
 
 export function meta() {
   return [
@@ -34,11 +36,12 @@ export default function GamePlayPage() {
   const { activeGame, dispatch } = useGameSession();
 
   const [hasAcknowledgedFinalEvent, setHasAcknowledgedFinalEvent] = useState(false);
-
   const [hasCompletedVictoryFanfare, setHasCompletedVictoryFanfare] = useState(false);
   const [acknowledgedBloodbathStrategyGameId, setAcknowledgedBloodbathStrategyGameId] = useState<
     string | null
   >(null);
+  const [openedNightSummaryKey, setOpenedNightSummaryKey] = useState<string | null>(null);
+
   const acknowledgeFinalEvent = useCallback(() => {
     setHasAcknowledgedFinalEvent(true);
   }, []);
@@ -70,7 +73,6 @@ export default function GamePlayPage() {
   }
 
   const livingTributes = selectLivingTributes(activeGame);
-
   const victors = selectVictors(activeGame);
 
   const beginRound = () => {
@@ -81,6 +83,8 @@ export default function GamePlayPage() {
   };
 
   const revealNextEvent = () => {
+    unlockCannonAudio();
+
     dispatch({
       type: "event/revealed",
       now: new Date().toISOString(),
@@ -88,6 +92,8 @@ export default function GamePlayPage() {
   };
 
   const revealAllEvents = () => {
+    unlockCannonAudio();
+
     dispatch({
       type: "round/revealed",
       now: new Date().toISOString(),
@@ -123,7 +129,6 @@ export default function GamePlayPage() {
   }
 
   const revealedEvents = selectRevealedRoundEvents(activeGame);
-
   const hiddenEventCount = selectHiddenEventCount(activeGame);
   const isDayOneBloodbath =
     activeGame.currentRound?.day === 1 && activeGame.currentRound.period === "day";
@@ -138,9 +143,34 @@ export default function GamePlayPage() {
   const acknowledgeBloodbathStrategy = () => {
     setAcknowledgedBloodbathStrategyGameId(activeGame.id);
   };
+
   const totalPrimaryEventCount = activeGame.roundEvents.filter(
     (event) => event.kind === "primary",
   ).length;
+
+  const currentNightSummaryKey =
+    activeGame.currentRound?.period === "night"
+      ? `${activeGame.id}:night:${activeGame.currentRound.day}`
+      : null;
+
+  const isCompletedNight =
+    activeGame.currentRound?.period === "night" &&
+    (activeGame.phase === "round-complete" || activeGame.phase === "victory");
+
+  const shouldShowNightSummary =
+    isCompletedNight &&
+    currentNightSummaryKey !== null &&
+    openedNightSummaryKey === currentNightSummaryKey &&
+    !hasAcknowledgedFinalEvent;
+
+  const openNightSummary = () => {
+    if (currentNightSummaryKey === null) {
+      return;
+    }
+
+    unlockCannonAudio();
+    setOpenedNightSummaryKey(currentNightSummaryKey);
+  };
 
   return (
     <div className="arena-page">
@@ -163,43 +193,108 @@ export default function GamePlayPage() {
         </div>
       </header>
 
-      <div className="arena-layout">
-        <main className="arena-main">
-          {activeGame.phase === "opening" ? (
-            <DayOneOpening tributeCount={activeGame.tributes.length} onFireCannon={beginRound} />
-          ) : null}
-          {shouldShowBloodbathStrategyReveal ? (
-            <BloodbathStrategyReveal
-              cornucopiaTributes={cornucopiaTributes}
-              totalTributeCount={activeGame.tributes.length}
-              onContinue={acknowledgeBloodbathStrategy}
-            />
-          ) : null}
+      <div className="arena-content-shell">
+        <TributeDock tributes={activeGame.tributes} truces={activeGame.truces} />
 
-          {activeGame.currentRound &&
-          !shouldShowBloodbathStrategyReveal &&
-          (activeGame.phase === "round-events" ||
-            activeGame.phase === "round-complete" ||
-            activeGame.phase === "victory") ? (
-            <>
-              <RoundEventFeed
-                events={revealedEvents}
-                tributes={activeGame.tributes}
-                round={activeGame.currentRound}
-                totalPrimaryEventCount={totalPrimaryEventCount}
+        <div className="arena-layout">
+          <main className="arena-main">
+            {activeGame.phase === "opening" ? (
+              <DayOneOpening tributeCount={activeGame.tributes.length} onFireCannon={beginRound} />
+            ) : null}
+
+            {shouldShowBloodbathStrategyReveal ? (
+              <BloodbathStrategyReveal
+                cornucopiaTributes={cornucopiaTributes}
+                totalTributeCount={activeGame.tributes.length}
+                onContinue={acknowledgeBloodbathStrategy}
               />
+            ) : null}
 
-              <footer className="arena-controls">
+            {shouldShowNightSummary && activeGame.currentRound ? (
+              <NightSummary
+                day={activeGame.currentRound.day}
+                tributes={activeGame.tributes}
+                continueLabel={
+                  activeGame.phase === "victory"
+                    ? "Reveal the victor"
+                    : `Continue to ${selectNextRoundLabel(activeGame)}`
+                }
+                onContinue={activeGame.phase === "victory" ? acknowledgeFinalEvent : beginRound}
+              />
+            ) : null}
+
+            {activeGame.currentRound &&
+            !shouldShowBloodbathStrategyReveal &&
+            !shouldShowNightSummary &&
+            (activeGame.phase === "round-events" ||
+              activeGame.phase === "round-complete" ||
+              activeGame.phase === "victory") ? (
+              <div className="event-feed-stack">
+                <div className="event-feed-frame">
+                  <RoundEventFeed
+                    events={revealedEvents}
+                    tributes={activeGame.tributes}
+                    round={activeGame.currentRound}
+                    totalPrimaryEventCount={totalPrimaryEventCount}
+                  />
+
+                  <footer className="event-feed-frame__controls">
+                    {activeGame.phase === "round-events" && hiddenEventCount > 0 ? (
+                      <>
+                        <button
+                          className="event-feed-frame__primary-action"
+                          type="button"
+                          onClick={revealNextEvent}
+                        >
+                          Reveal next event
+                        </button>
+                      </>
+                    ) : null}
+
+                    {activeGame.phase === "round-complete" ? (
+                      activeGame.currentRound.period === "night" ? (
+                        <button
+                          className="arena-primary-button"
+                          type="button"
+                          onClick={openNightSummary}
+                        >
+                          View night summary
+                          <span aria-hidden="true">→</span>
+                        </button>
+                      ) : (
+                        <button className="arena-primary-button" type="button" onClick={beginRound}>
+                          Continue to {selectNextRoundLabel(activeGame)}
+                          <span aria-hidden="true">→</span>
+                        </button>
+                      )
+                    ) : null}
+
+                    {activeGame.phase === "victory" && !hasAcknowledgedFinalEvent ? (
+                      activeGame.currentRound.period === "night" ? (
+                        <button
+                          className="arena-primary-button"
+                          type="button"
+                          onClick={openNightSummary}
+                        >
+                          View night summary
+                          <span aria-hidden="true">→</span>
+                        </button>
+                      ) : (
+                        <button
+                          className="arena-primary-button"
+                          type="button"
+                          onClick={acknowledgeFinalEvent}
+                        >
+                          Reveal the victor
+                          <span aria-hidden="true">→</span>
+                        </button>
+                      )
+                    ) : null}
+                  </footer>
+                </div>
+
                 {activeGame.phase === "round-events" && hiddenEventCount > 0 ? (
-                  <>
-                    <button
-                      className="arena-primary-button"
-                      type="button"
-                      onClick={revealNextEvent}
-                    >
-                      Reveal next event
-                    </button>
-
+                  <div className="arena-reveal-all">
                     <button
                       className="arena-secondary-button"
                       type="button"
@@ -207,36 +302,15 @@ export default function GamePlayPage() {
                     >
                       Reveal all events
                     </button>
-                  </>
+                  </div>
                 ) : null}
+              </div>
+            ) : null}
+          </main>
 
-                {activeGame.phase === "round-complete" ? (
-                  <button className="arena-primary-button" type="button" onClick={beginRound}>
-                    Continue to {selectNextRoundLabel(activeGame)}
-                    <span aria-hidden="true">→</span>
-                  </button>
-                ) : null}
-                {activeGame.phase === "victory" && !hasAcknowledgedFinalEvent ? (
-                  <button
-                    className="arena-primary-button"
-                    type="button"
-                    onClick={acknowledgeFinalEvent}
-                  >
-                    Reveal the victor
-                    <span aria-hidden="true">→</span>
-                  </button>
-                ) : null}
-              </footer>
-            </>
-          ) : null}
-        </main>
-
-        <div className="arena-rail">
-          <TributeSidebar tributes={activeGame.tributes} />
-
-          <ActiveTruceSummary truces={activeGame.truces} tributes={activeGame.tributes} />
-
-          <InventorySummary tributes={activeGame.tributes} />
+          <div className="arena-rail">
+            <InventorySummary tributes={activeGame.tributes} />
+          </div>
         </div>
       </div>
     </div>

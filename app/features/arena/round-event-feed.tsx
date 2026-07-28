@@ -1,4 +1,7 @@
+import { useEffect, useRef } from "react";
+
 import { EventCard } from "~/features/arena/event-card";
+import { usePrefersReducedMotion } from "~/hooks/use-prefers-reduced-motion";
 import { formatRoundLabel } from "~/game/engine/rounds";
 
 import type {
@@ -87,6 +90,32 @@ export function RoundEventFeed({
    */
   const arenaEvents = events.filter((event) => event.kind !== "preparation");
 
+  const feedRef = useRef<HTMLElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const previousArenaEventCountRef = useRef(arenaEvents.length);
+  const lastRevealedEventId = arenaEvents.at(-1)?.id ?? null;
+
+  useEffect(() => {
+    const previousEventCount = previousArenaEventCountRef.current;
+
+    previousArenaEventCountRef.current = arenaEvents.length;
+
+    if (arenaEvents.length <= previousEventCount || lastRevealedEventId === null) {
+      return;
+    }
+
+    const eventElements = feedRef.current?.querySelectorAll<HTMLElement>("[data-event-id]");
+
+    const newlyRevealedEvent = eventElements
+      ? Array.from(eventElements).find((element) => element.dataset.eventId === lastRevealedEventId)
+      : null;
+
+    newlyRevealedEvent?.scrollIntoView({
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  }, [arenaEvents.length, lastRevealedEventId, prefersReducedMotion]);
+
   const bloodbathGroups = BLOODBATH_EVENT_FEED_GROUPS.map((group) => ({
     ...group,
 
@@ -118,7 +147,7 @@ export function RoundEventFeed({
         description: "Reveal the first event to discover what happens.",
       };
   return (
-    <section className="event-feed" aria-labelledby="event-feed-title">
+    <section ref={feedRef} className="event-feed" aria-labelledby="event-feed-title">
       <header className="event-feed__header">
         <div>
           <p className="eyebrow">Arena report</p>

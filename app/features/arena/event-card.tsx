@@ -122,9 +122,9 @@ function EventTypeIcon({ type, className = "event-card__type-icon" }: EventTypeI
           strokeLinejoin="round"
           aria-hidden="true"
         >
-          <path d="M7 8V6a5 5 0 0 1 10 0v2" />
-          <path d="M5 8h14l1 13H4Z" />
-          <path d="M9 12h6" />
+          <path d="m4 8 8-4 8 4-8 4Z" />
+          <path d="M4 8v8l8 4 8-4V8" />
+          <path d="M12 12v8" />
         </svg>
       );
 
@@ -163,7 +163,7 @@ function EventTypeIcon({ type, className = "event-card__type-icon" }: EventTypeI
   }
 }
 
-function CannonIcon() {
+function SkullIcon() {
   return (
     <svg
       className="event-card__outcome-icon"
@@ -175,12 +175,28 @@ function CannonIcon() {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M5 13h11l2 3H8Z" />
-      <circle cx="8" cy="18" r="2" />
-      <path d="M4 11 15 6l2 5" />
-      <path d="M18 5h3" />
-      <path d="m18.5 2.5 2 1" />
-      <path d="m18.5 7.5 2-1" />
+      <path d="M5 10a7 7 0 1 1 14 0c0 3-1.5 4.8-3.5 6v3H8.5v-3C6.5 14.8 5 13 5 10Z" />
+      <circle cx="9" cy="10" r="1.2" />
+      <circle cx="15" cy="10" r="1.2" />
+      <path d="m10 14 2-1 2 1" />
+      <path d="M10 19v2M14 19v2" />
+    </svg>
+  );
+}
+
+function OutcomeChevronIcon() {
+  return (
+    <svg
+      className="event-card__outcome-chevron"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m6 9 6 6 6-6" />
     </svg>
   );
 }
@@ -209,14 +225,11 @@ export function EventCard({ event, tributes }: EventCardProps) {
     presentation.statusChanges.length > 0 ||
     presentation.itemChanges.length > 0;
 
-  const deathHeadingId = `${event.id}-deaths`;
-  const statusHeadingId = `${event.id}-status-changes`;
-  const itemHeadingId = `${event.id}-item-changes`;
-
   return (
     <li
       className="event-card"
       data-event-kind={event.kind}
+      data-event-id={event.id}
       data-event-type={presentation.visualKind}
     >
       <div
@@ -262,155 +275,155 @@ export function EventCard({ event, tributes }: EventCardProps) {
       {hasOutcomes ? (
         <div className="event-card__outcomes">
           {presentation.deaths.length > 0 ? (
-            <section
-              className="event-card__outcome-section event-card__outcome-section--deaths"
-              aria-labelledby={deathHeadingId}
-            >
-              <h4 id={deathHeadingId} className="event-card__outcome-heading">
-                <CannonIcon />
+            <details className="event-card__outcome-drawer" data-outcome-kind="deaths">
+              <summary className="event-card__outcome-summary">
+                <SkullIcon />
+                <span className="event-card__outcome-summary-label">Deaths</span>
+                <span className="event-card__outcome-count">{presentation.deaths.length}</span>
+                <OutcomeChevronIcon />
+              </summary>
 
-                <span>
-                  {presentation.deaths.length === 1
-                    ? "Eliminated"
-                    : `${presentation.deaths.length} eliminated`}
-                </span>
-              </h4>
+              <div className="event-card__outcome-body">
+                <div className="event-card__death-grid">
+                  {presentation.deaths.map((death) => (
+                    <article
+                      className="event-card__death"
+                      data-event-death-id={death.tribute?.id ?? "unknown"}
+                      key={death.key}
+                    >
+                      <EventTributeAvatar
+                        tribute={death.tribute}
+                        fallbackName={death.tributeName}
+                        muted
+                      />
 
-              <div className="event-card__death-grid">
-                {presentation.deaths.map((death) => (
-                  <article
-                    className="event-card__death"
-                    data-event-death-id={death.tribute?.id ?? "unknown"}
-                    key={death.key}
-                  >
-                    <EventTributeAvatar
-                      tribute={death.tribute}
-                      fallbackName={death.tributeName}
-                      muted
-                    />
+                      <div className="event-card__death-copy">
+                        <strong>{death.tributeName}</strong>
+                        <span>{death.causeLabel}</span>
 
-                    <div className="event-card__death-copy">
-                      <strong>{death.tributeName}</strong>
-
-                      <span>{death.causeLabel}</span>
-
-                      <p>{death.summary}</p>
-
-                      {death.killerNames.length > 0 ? (
-                        <small>Killed by {formatNameList(death.killerNames)}</small>
-                      ) : null}
-                    </div>
-                  </article>
-                ))}
+                        {death.killerNames.length > 0 ? (
+                          <small>Killed by {formatNameList(death.killerNames)}</small>
+                        ) : null}
+                      </div>
+                    </article>
+                  ))}
+                </div>
               </div>
-            </section>
+            </details>
           ) : null}
 
           {presentation.statusChanges.length > 0 ? (
-            <section className="event-card__outcome-section" aria-labelledby={statusHeadingId}>
-              <h4 id={statusHeadingId} className="event-card__outcome-heading">
+            <details className="event-card__outcome-drawer" data-outcome-kind="statuses">
+              <summary className="event-card__outcome-summary">
                 <EventTypeIcon type="status" className="event-card__outcome-icon" />
+                <span className="event-card__outcome-summary-label">Status changes</span>
+                <span className="event-card__outcome-count">
+                  {presentation.statusChanges.length}
+                </span>
+                <OutcomeChevronIcon />
+              </summary>
 
-                <span>Status changes</span>
-              </h4>
-
-              <div className="event-card__status-list">
-                {presentation.statusChanges.map((statusChange) => (
-                  <div
-                    className="event-card__status-change"
-                    data-status-tone={statusChange.tone}
-                    key={statusChange.key}
-                    title={statusChange.description}
-                  >
-                    <EventTributeAvatar
-                      tribute={statusChange.tribute}
-                      fallbackName={statusChange.tributeName}
-                    />
-
-                    <div className="event-card__status-copy">
-                      <strong>{statusChange.tributeName}</strong>
-
-                      <span>
-                        {statusChange.action === "removed"
-                          ? `${statusChange.label} cleared`
-                          : statusChange.label}
-                      </span>
-                    </div>
-
-                    <span className="event-card__status-meta">{statusChange.meta}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          {presentation.itemChanges.length > 0 ? (
-            <section className="event-card__outcome-section" aria-labelledby={itemHeadingId}>
-              <h4 id={itemHeadingId} className="event-card__outcome-heading">
-                <EventTypeIcon type="inventory" className="event-card__outcome-icon" />
-
-                <span>Items</span>
-              </h4>
-
-              <div className="event-card__item-list">
-                {presentation.itemChanges.map((itemChange) =>
-                  itemChange.kind === "acquired" ? (
-                    <div className="event-card__item-acquisition" key={itemChange.key}>
+              <div className="event-card__outcome-body">
+                <div className="event-card__status-list">
+                  {presentation.statusChanges.map((statusChange) => (
+                    <div
+                      className="event-card__status-change"
+                      data-status-tone={statusChange.tone}
+                      key={statusChange.key}
+                      title={statusChange.description}
+                    >
                       <EventTributeAvatar
-                        tribute={itemChange.tribute}
-                        fallbackName={itemChange.tributeName}
+                        tribute={statusChange.tribute}
+                        fallbackName={statusChange.tributeName}
                       />
 
-                      <div className="event-card__item-copy">
-                        <strong>{itemChange.tributeName}</strong>
+                      <div className="event-card__status-copy">
+                        <strong>{statusChange.tributeName}</strong>
 
                         <span>
-                          Acquired <b>{itemChange.itemLabel}</b>
+                          {statusChange.action === "removed"
+                            ? `${statusChange.label} cleared`
+                            : statusChange.label}
                         </span>
                       </div>
 
-                      <span className="event-card__item-source">{itemChange.sourceLabel}</span>
+                      <span className="event-card__status-meta">{statusChange.meta}</span>
                     </div>
-                  ) : (
-                    <div
-                      className="event-card__item-transfer"
-                      data-transfer-kind={itemChange.kind}
-                      key={itemChange.key}
-                    >
-                      <div className="event-card__transfer-person">
-                        <EventTributeAvatar
-                          tribute={itemChange.fromTribute}
-                          fallbackName={itemChange.fromTributeName}
-                        />
-
-                        <span>{itemChange.fromTributeName}</span>
-                      </div>
-
-                      <div className="event-card__transfer-action">
-                        {itemChange.kind === "stolen" ? (
-                          <EventTypeIcon type="theft" className="event-card__transfer-icon" />
-                        ) : null}
-
-                        <span>{itemChange.kind === "stolen" ? "Stolen" : "Transferred"}</span>
-
-                        <strong>{itemChange.itemLabel}</strong>
-
-                        <span aria-hidden="true">→</span>
-                      </div>
-
-                      <div className="event-card__transfer-person event-card__transfer-person--recipient">
-                        <EventTributeAvatar
-                          tribute={itemChange.toTribute}
-                          fallbackName={itemChange.toTributeName}
-                        />
-
-                        <span>{itemChange.toTributeName}</span>
-                      </div>
-                    </div>
-                  ),
-                )}
+                  ))}
+                </div>
               </div>
-            </section>
+            </details>
+          ) : null}
+
+          {presentation.itemChanges.length > 0 ? (
+            <details className="event-card__outcome-drawer" data-outcome-kind="items">
+              <summary className="event-card__outcome-summary">
+                <EventTypeIcon type="inventory" className="event-card__outcome-icon" />
+                <span className="event-card__outcome-summary-label">Item changes</span>
+                <span className="event-card__outcome-count">{presentation.itemChanges.length}</span>
+                <OutcomeChevronIcon />
+              </summary>
+
+              <div className="event-card__outcome-body">
+                <div className="event-card__item-list">
+                  {presentation.itemChanges.map((itemChange) =>
+                    itemChange.kind === "acquired" ? (
+                      <div className="event-card__item-acquisition" key={itemChange.key}>
+                        <EventTributeAvatar
+                          tribute={itemChange.tribute}
+                          fallbackName={itemChange.tributeName}
+                        />
+
+                        <div className="event-card__item-copy">
+                          <strong>{itemChange.tributeName}</strong>
+
+                          <span>
+                            Acquired <b>{itemChange.itemLabel}</b>
+                          </span>
+                        </div>
+
+                        <span className="event-card__item-source">{itemChange.sourceLabel}</span>
+                      </div>
+                    ) : (
+                      <div
+                        className="event-card__item-transfer"
+                        data-transfer-kind={itemChange.kind}
+                        key={itemChange.key}
+                      >
+                        <div className="event-card__transfer-person">
+                          <EventTributeAvatar
+                            tribute={itemChange.fromTribute}
+                            fallbackName={itemChange.fromTributeName}
+                          />
+
+                          <span>{itemChange.fromTributeName}</span>
+                        </div>
+
+                        <div className="event-card__transfer-action">
+                          {itemChange.kind === "stolen" ? (
+                            <EventTypeIcon type="theft" className="event-card__transfer-icon" />
+                          ) : null}
+
+                          <span>{itemChange.kind === "stolen" ? "Stolen" : "Transferred"}</span>
+
+                          <strong>{itemChange.itemLabel}</strong>
+                          <span aria-hidden="true">→</span>
+                        </div>
+
+                        <div className="event-card__transfer-person event-card__transfer-person--recipient">
+                          <EventTributeAvatar
+                            tribute={itemChange.toTribute}
+                            fallbackName={itemChange.toTributeName}
+                          />
+
+                          <span>{itemChange.toTributeName}</span>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </div>
+            </details>
           ) : null}
         </div>
       ) : null}

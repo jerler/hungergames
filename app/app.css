@@ -5,5 +5,10 @@
 @import "./styles/configuration.css";
 @import "./styles/reaping.css";
 @import "./styles/arena.css";
+@import "./styles/tribute-roll.css";
 @import "./styles/victory.css";
 @import "./styles/results.css";
+@import "./styles/interface-refinements.css";
+@import "./styles/arena-interactions.css";
+@import "./styles/layout-consistency.css";
+@import "./styles/arena-flow-fixes.css";

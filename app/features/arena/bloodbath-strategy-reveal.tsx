@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { EventTributeAvatar } from "~/features/arena/event-tribute-avatar";
+import { StaggeredTributeList } from "~/features/arena/staggered-tribute-list";
 import type { GameTribute } from "~/game/types/game-state";
 import { usePrefersReducedMotion } from "~/hooks/use-prefers-reduced-motion";
 
@@ -56,12 +57,16 @@ export function BloodbathStrategyReveal({
 
         {hasRevealedTributes ? (
           <div className="bloodbath-strategy-reveal__result">
-            <ul
+            <StaggeredTributeList
+              tributes={cornucopiaTributes}
+              ariaLabel="Tributes who ran for the Cornucopia"
+              tone="cornucopia"
               className="bloodbath-strategy-reveal__tributes"
-              aria-label="Tributes who ran for the Cornucopia"
-            >
-              {cornucopiaTributes.map((tribute) => (
-                <li className="bloodbath-strategy-reveal__tribute" key={tribute.id}>
+              itemClassName="bloodbath-strategy-reveal__tribute"
+              initialDelayMs={80}
+              staggerMs={110}
+              renderTribute={(tribute) => (
+                <>
                   <EventTributeAvatar
                     tribute={tribute}
                     fallbackName={tribute.snapshot.name}
@@ -71,9 +76,9 @@ export function BloodbathStrategyReveal({
                   <strong>{tribute.snapshot.name}</strong>
 
                   <span>District {tribute.district}</span>
-                </li>
-              ))}
-            </ul>
+                </>
+              )}
+            />
 
             <p className="bloodbath-strategy-reveal__fleeing-summary">{fleeingSummary}</p>
 

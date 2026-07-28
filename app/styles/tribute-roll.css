@@ -1,0 +1,450 @@
+.staggered-tribute-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.staggered-tribute-list__item {
+  opacity: 0;
+  animation: tribute-roll-arrival 460ms cubic-bezier(0.2, 0.85, 0.25, 1.2) both;
+}
+
+.staggered-tribute-list__item[data-tribute-reveal-tone="cornucopia"] {
+  animation-name: tribute-roll-cornucopia-arrival;
+}
+
+.staggered-tribute-list__item[data-tribute-reveal-tone="fallen"] {
+  animation-duration: 720ms;
+  animation-name: tribute-roll-fallen-arrival;
+}
+
+.bloodbath-strategy-reveal__result {
+  animation: none;
+}
+
+.bloodbath-strategy-reveal__tribute {
+  position: relative;
+}
+
+.bloodbath-strategy-reveal__tribute::before {
+  position: absolute;
+  top: -0.45rem;
+  left: 50%;
+  width: 5.5rem;
+  aspect-ratio: 1;
+  border: 1px solid rgb(227 182 91 / 35%);
+  border-radius: 50%;
+  box-shadow: 0 0 2rem rgb(227 182 91 / 18%);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) scale(0.6);
+  animation: tribute-roll-cornucopia-halo 600ms ease-out both;
+  animation-delay: var(--tribute-reveal-delay, 0ms);
+}
+
+.night-summary {
+  position: relative;
+  min-height: 65vh;
+  overflow: hidden;
+  padding: clamp(var(--space-5), 6vw, var(--space-8));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 50% 0%, rgb(219 98 98 / 13%), transparent 26rem),
+    radial-gradient(circle at 80% 72%, rgb(227 182 91 / 9%), transparent 24rem),
+    var(--color-surface);
+  box-shadow: var(--shadow-raised);
+}
+
+.night-summary__atmosphere {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(110deg, transparent 0 48%, rgb(255 255 255 / 2%) 50%, transparent 52%),
+    radial-gradient(circle at 50% 12%, rgb(255 255 255 / 4%), transparent 18rem);
+  background-size:
+    18rem 100%,
+    100% 100%;
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.night-summary__header,
+.night-summary__sections,
+.night-summary__footer {
+  position: relative;
+  z-index: 1;
+}
+
+.night-summary__header {
+  display: grid;
+  max-width: 52rem;
+  margin-inline: auto;
+  justify-items: center;
+  text-align: center;
+}
+
+.night-summary__header h1 {
+  max-width: 16ch;
+  margin-bottom: var(--space-3);
+  font-size: clamp(2.8rem, 7vw, 5.6rem);
+  letter-spacing: -0.055em;
+  line-height: 0.95;
+}
+
+.night-summary__header > p:last-child {
+  max-width: 42rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+}
+
+.night-summary__sections {
+  display: grid;
+  margin-top: clamp(var(--space-6), 6vw, var(--space-8));
+  gap: var(--space-6);
+}
+
+.night-summary__section {
+  padding: clamp(var(--space-4), 4vw, var(--space-6));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: rgb(255 255 255 / 2.5%);
+}
+
+.night-summary__section--fallen {
+  border-color: rgb(219 98 98 / 34%);
+  background: linear-gradient(135deg, rgb(111 24 31 / 18%), transparent 52%), rgb(255 255 255 / 2%);
+}
+
+.night-summary__section--living {
+  border-color: rgb(227 182 91 / 26%);
+}
+
+.night-summary__section-header {
+  display: flex;
+  margin-bottom: var(--space-5);
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.night-summary__section-header .eyebrow {
+  margin-bottom: var(--space-1);
+}
+
+.night-summary__section-header h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2.35rem);
+}
+
+.night-summary__section-header > span {
+  flex: none;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid rgb(219 98 98 / 35%);
+  border-radius: 999px;
+  color: rgb(245 188 188);
+  font-size: var(--font-size-sm);
+  font-weight: 750;
+}
+
+.night-summary__fallen-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 7.5rem));
+  justify-content: center;
+  gap: clamp(var(--space-3), 3vw, var(--space-5));
+}
+
+.night-summary__fallen-card {
+  position: relative;
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 0.18rem solid rgb(219 98 98 / 55%);
+  border-radius: 50%;
+  background: rgb(112 25 32 / 20%);
+  box-shadow:
+    0 0 0 0.22rem rgb(112 25 32 / 20%),
+    0 0 1.5rem rgb(219 98 98 / 16%);
+  place-items: center;
+}
+
+.night-summary__fallen-card::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 20%) 50%, transparent 70%);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-100%);
+  animation: night-summary-cannon-flash 780ms ease-out both;
+  animation-delay: var(--tribute-reveal-delay, 0ms);
+}
+
+.night-summary__fallen-card .event-tribute-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  filter: grayscale(0.8) contrast(0.9) brightness(0.72);
+}
+
+.night-summary__living-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+}
+
+.night-summary__identity {
+  display: grid;
+  min-width: 0;
+}
+
+.night-summary__identity strong {
+  overflow: hidden;
+  font-size: var(--font-size-lg);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.night-summary__identity span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.night-summary__no-fallen {
+  padding: var(--space-5);
+  border: 1px dashed rgb(219 98 98 / 28%);
+  border-radius: var(--radius-md);
+  margin: 0;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.night-summary__living-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: var(--space-3);
+}
+
+.night-summary__living-card {
+  display: grid;
+  min-width: 0;
+  height: 100%;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-top: 0.22rem solid rgb(227 182 91 / 72%);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.night-summary__living-card > .event-tribute-avatar {
+  width: 100%;
+  border-radius: 50%;
+}
+
+.night-summary__statuses {
+  display: flex;
+  padding: 0;
+  margin: 0;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+}
+
+.night-summary__status {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 1.75rem;
+  padding: 0.25rem 0.48rem 0.25rem 0.35rem;
+  border: 1px solid rgb(178 208 242 / 42%);
+  border-radius: 999px;
+  align-items: center;
+  gap: 0.32rem;
+  background: rgb(49 67 97 / 45%);
+  color: rgb(218 233 250);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.night-summary__status[data-status-tone="critical"] {
+  border-color: rgb(255 177 177 / 58%);
+  background: rgb(126 29 35 / 62%);
+  color: rgb(255 222 222);
+}
+
+.night-summary__status[data-status-tone="warning"] {
+  border-color: rgb(255 218 139 / 58%);
+  background: rgb(130 91 23 / 58%);
+  color: rgb(255 232 175);
+}
+
+.night-summary__status[data-status-tone="stable"] {
+  border-color: rgb(165 224 181 / 52%);
+  background: rgb(32 100 55 / 55%);
+  color: rgb(207 246 217);
+}
+
+.night-summary__status[data-status-tone="beneficial"] {
+  border-color: rgb(213 205 255 / 58%);
+  background: rgb(79 65 145 / 62%);
+  color: rgb(235 231 255);
+}
+
+.night-summary__status-icon {
+  display: grid;
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  place-items: center;
+}
+
+.night-summary__status-icon .sidebar-tribute__status-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.night-summary__status-severity {
+  display: grid;
+  width: 1rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 28%);
+  font-size: 0.58rem;
+  place-items: center;
+}
+
+.night-summary__status-empty {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.night-summary__footer {
+  display: flex;
+  padding-top: var(--space-6);
+  justify-content: center;
+}
+
+@keyframes tribute-roll-arrival {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes tribute-roll-cornucopia-arrival {
+  0% {
+    opacity: 0;
+    transform: translateY(1.5rem) scale(0.72);
+  }
+
+  68% {
+    opacity: 1;
+    transform: translateY(-0.18rem) scale(1.05);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes tribute-roll-cornucopia-halo {
+  0%,
+  45% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.55);
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1.2);
+  }
+}
+
+@keyframes tribute-roll-fallen-arrival {
+  0% {
+    opacity: 0;
+    filter: brightness(2.1);
+    transform: translateY(-2.2rem) scale(1.14) rotate(-1.5deg);
+  }
+
+  28% {
+    opacity: 1;
+    filter: brightness(1.45);
+    transform: translateY(0.35rem) scale(1.035) rotate(0.4deg);
+  }
+
+  62% {
+    filter: brightness(0.85);
+    transform: translateY(-0.08rem) scale(0.99);
+  }
+
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+    transform: translateY(0) scale(1) rotate(0);
+  }
+}
+
+@keyframes night-summary-cannon-flash {
+  0%,
+  18% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+
+  30% {
+    opacity: 0.9;
+  }
+
+  62%,
+  100% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+@media (max-width: 40rem) {
+  .night-summary {
+    padding: var(--space-4);
+  }
+
+  .night-summary__section {
+    padding: var(--space-4);
+  }
+
+  .night-summary__section-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .night-summary__living-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .staggered-tribute-list__item,
+  .bloodbath-strategy-reveal__tribute::before,
+  .night-summary__fallen-card::after {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    animation: none;
+  }
+}

@@ -15,6 +15,14 @@ test("configures tributes and creates an initial Game", async ({ page }) => {
     })
     .click();
 
+  await expect(page.getByText("Step 1 of 2")).toHaveCount(0);
+
+  await expect(
+    page.getByRole("heading", {
+      name: "Configure your arena",
+    }),
+  ).toBeVisible();
+
   await page
     .getByRole("radio", {
       name: /Half Games/i,

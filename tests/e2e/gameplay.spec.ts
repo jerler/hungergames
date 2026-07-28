@@ -95,6 +95,20 @@ test("runs a local Game through its victory sequence", async ({ page }) => {
       await revealAllButton.click();
     }
 
+    const nightSummaryButton = page.getByRole("button", {
+      name: "View night summary",
+    });
+
+    if (await nightSummaryButton.isVisible()) {
+      await nightSummaryButton.click();
+
+      await expect(
+        page.getByRole("heading", {
+          name: "The Fallen and the Remaining",
+        }),
+      ).toBeVisible();
+    }
+
     const revealVictorButton = page.getByRole("button", {
       name: "Reveal the victor",
     });

@@ -48,8 +48,6 @@ export default function CreatePage() {
           </span>
           <span>Hunger Games Simulator</span>
         </Link>
-
-        <p>Step 1 of 2</p>
       </header>
 
       <main className="configuration-main">

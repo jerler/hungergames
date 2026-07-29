@@ -84,28 +84,6 @@ function HeartIcon() {
   );
 }
 
-function MiniPortrait({ tribute }: { tribute: GameTribute }) {
-  return (
-    <span
-      className="tribute-dock__relationship-portrait"
-      title={tribute.snapshot.name}
-      aria-hidden="true"
-    >
-      {tribute.snapshot.portraitUrl ? (
-        <img
-          src={tribute.snapshot.portraitUrl}
-          alt=""
-          style={{
-            objectPosition: `${tribute.snapshot.portraitPosition?.x ?? 50}% ${tribute.snapshot.portraitPosition?.y ?? 50}%`,
-          }}
-        />
-      ) : (
-        <span>{getInitials(tribute.snapshot.name)}</span>
-      )}
-    </span>
-  );
-}
-
 function TributePortrait({ tribute, tributeNameById, fallen = false }: TributePortraitProps) {
   const statusPresentations = fallen
     ? []
@@ -194,26 +172,73 @@ export function TributeDock({ tributes, truces }: TributeDockProps) {
       truce,
       tributes: truce.tributeIds
         .map((tributeId) => tributeById.get(tributeId))
-        .filter((tribute): tribute is GameTribute => Boolean(tribute)),
+        .filter((tribute): tribute is GameTribute => Boolean(tribute?.isAlive))
+        .sort(compareTributes),
     }))
     .filter(({ tributes: relatedTributes }) => relatedTributes.length >= 2);
+
+  const relationshipByTributeId = new Map<string, (typeof visibleRelationships)[number]>();
+
+  for (const relationship of visibleRelationships) {
+    for (const tribute of relationship.tributes) {
+      if (!relationshipByTributeId.has(tribute.id)) {
+        relationshipByTributeId.set(tribute.id, relationship);
+      }
+    }
+  }
+
+  const renderedLivingTributeIds = new Set<string>();
+
+  const livingRosterGroups: Array<{
+    relationship: (typeof visibleRelationships)[number] | null;
+    tributes: readonly GameTribute[];
+  }> = [];
+
+  for (const tribute of livingTributes) {
+    if (renderedLivingTributeIds.has(tribute.id)) {
+      continue;
+    }
+
+    const relationship = relationshipByTributeId.get(tribute.id) ?? null;
+
+    if (!relationship) {
+      renderedLivingTributeIds.add(tribute.id);
+      livingRosterGroups.push({
+        relationship: null,
+        tributes: [tribute],
+      });
+      continue;
+    }
+
+    const groupedTributes = relationship.tributes.filter(
+      (relatedTribute) => !renderedLivingTributeIds.has(relatedTribute.id),
+    );
+
+    if (groupedTributes.length < 2) {
+      renderedLivingTributeIds.add(tribute.id);
+      livingRosterGroups.push({
+        relationship: null,
+        tributes: [tribute],
+      });
+      continue;
+    }
+
+    for (const groupedTribute of groupedTributes) {
+      renderedLivingTributeIds.add(groupedTribute.id);
+    }
+
+    livingRosterGroups.push({
+      relationship,
+      tributes: groupedTributes,
+    });
+  }
 
   const livingProfileSize =
     livingTributes.length <= 5 ? "largest" : livingTributes.length <= 10 ? "large" : "default";
 
-  const livingColumnCount =
-    fallenTributes.length === 0
-      ? Math.max(1, livingTributes.length)
-      : livingTributes.length <= 5
-        ? Math.max(1, livingTributes.length)
-        : livingTributes.length <= 10
-          ? 5
-          : Math.min(12, Math.ceil(livingTributes.length / 2));
-
-  const fallenColumnCount = Math.max(1, Math.min(fallenTributes.length, 8));
+  const fallenColumnCount = Math.max(1, fallenTributes.length);
 
   const dockStyle = {
-    "--living-columns": livingColumnCount,
     "--fallen-columns": fallenColumnCount,
   } as CSSProperties;
 
@@ -317,8 +342,6 @@ export function TributeDock({ tributes, truces }: TributeDockProps) {
         data-expanded={isExpanded}
         data-has-fallen={fallenTributes.length > 0}
         data-living-profile-size={livingProfileSize}
-        data-living-columns={livingColumnCount}
-        data-fallen-columns={fallenColumnCount}
         style={dockStyle}
         aria-labelledby="tribute-dock-title"
       >
@@ -348,42 +371,30 @@ export function TributeDock({ tributes, truces }: TributeDockProps) {
               aria-label="Living tributes and active relationships"
             >
               <ol className="tribute-dock__living-list">
-                {livingTributes.map((tribute) => (
-                  <TributePortrait
-                    tribute={tribute}
-                    tributeNameById={tributeNameById}
-                    key={tribute.id}
-                  />
-                ))}
+                {livingRosterGroups.map(({ relationship, tributes: groupedTributes }) => {
+                  const names = groupedTributes.map((tribute) => tribute.snapshot.name);
 
-                {visibleRelationships.map(({ truce, tributes: relatedTributes }) => {
-                  const names = relatedTributes.map((tribute) => tribute.snapshot.name);
                   const relationshipLabel =
-                    truce.kind === "romantic"
+                    relationship?.truce.kind === "romantic"
                       ? `Romantic relationship: ${names.join(", ")}`
                       : `Truce: ${names.join(", ")}`;
 
-                  return (
-                    <li
-                      className="tribute-dock__relationship"
-                      data-relationship-kind={truce.kind}
-                      aria-label={relationshipLabel}
-                      title={relationshipLabel}
-                      key={truce.id}
-                    >
-                      {relatedTributes.map((tribute, tributeIndex) => (
-                        <Fragment key={tribute.id}>
-                          {tributeIndex > 0 ? (
-                            <span className="tribute-dock__relationship-connector">
-                              {truce.kind === "romantic" ? <HeartIcon /> : <ChainIcon />}
-                            </span>
-                          ) : null}
+                  return groupedTributes.map((tribute, tributeIndex) => (
+                    <Fragment key={`${relationship?.truce.id ?? "solo"}:${tribute.id}`}>
+                      {relationship && tributeIndex > 0 ? (
+                        <li
+                          className="tribute-dock__relationship-connector-item"
+                          data-relationship-kind={relationship.truce.kind}
+                          aria-label={relationshipLabel}
+                          title={relationshipLabel}
+                        >
+                          {relationship.truce.kind === "romantic" ? <HeartIcon /> : <ChainIcon />}
+                        </li>
+                      ) : null}
 
-                          <MiniPortrait tribute={tribute} />
-                        </Fragment>
-                      ))}
-                    </li>
-                  );
+                      <TributePortrait tribute={tribute} tributeNameById={tributeNameById} />
+                    </Fragment>
+                  ));
                 })}
               </ol>
             </section>

@@ -538,3 +538,175 @@
 /* END fallen-row-height-minimization */
 
 /* END arena-balance-pass overrides */
+
+/* BEGIN definitive-tribute-dock-layout */
+
+.tribute-dock {
+  --living-portrait-size: 3.45rem;
+  --fallen-portrait-size: 2.85rem;
+  --relationship-connector-width: 1.25rem;
+}
+
+.tribute-dock[data-expanded="false"] {
+  --living-portrait-size: 2.2rem;
+  --fallen-portrait-size: 2rem;
+  --relationship-connector-width: 1rem;
+}
+
+/*
+ * Profile-size thresholds apply in both expanded and collapsed states.
+ * The portrait fills its tribute item, so changing this variable changes
+ * the actual image rather than only changing surrounding grid arithmetic.
+ */
+.tribute-dock[data-living-profile-size="large"] {
+  --living-portrait-size: 4.6rem;
+  --relationship-connector-width: 1.4rem;
+}
+
+.tribute-dock[data-living-profile-size="largest"] {
+  --living-portrait-size: 6rem;
+  --relationship-connector-width: 1.6rem;
+}
+
+.tribute-dock__content[data-has-fallen="true"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0;
+}
+
+.tribute-dock__living {
+  min-width: 0;
+}
+
+.tribute-dock__living-list {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 0.42rem;
+}
+
+.tribute-dock__living-list > .tribute-dock__tribute:not(.tribute-dock__tribute--fallen) {
+  width: var(--living-portrait-size);
+  flex: 0 0 var(--living-portrait-size);
+}
+
+.tribute-dock__relationship-connector-item {
+  display: grid;
+  width: var(--relationship-connector-width);
+  height: var(--living-portrait-size);
+  padding: 0;
+  margin: 0;
+  border: 0;
+  flex: 0 0 var(--relationship-connector-width);
+  align-self: flex-start;
+  background: transparent;
+  color: rgb(148 183 222);
+  list-style: none;
+  place-items: center;
+}
+
+.tribute-dock__relationship-connector-item[data-relationship-kind="romantic"] {
+  color: rgb(235 155 180);
+}
+
+.tribute-dock__relationship-connector-item .tribute-dock__relationship-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/*
+ * More than ten survivors: Living consumes the flexible track, while Fallen
+ * shrink-wraps every portrait into one row until real viewport space runs out.
+ * There is no arbitrary eight-profile cap.
+ */
+.tribute-dock__fallen {
+  box-sizing: border-box;
+  width: fit-content;
+  min-width: 0;
+  max-width: min(60vw, 100%);
+  padding-left: var(--space-3);
+  border-left: 1px solid rgb(219 98 98 / 24%);
+}
+
+.tribute-dock__fallen-list,
+.tribute-dock[data-expanded="false"] .tribute-dock__fallen-list {
+  display: flex;
+  width: max-content;
+  max-width: 100%;
+  overflow: visible;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 0.35rem;
+}
+
+.tribute-dock__fallen-list > .tribute-dock__tribute--fallen {
+  width: var(--fallen-portrait-size);
+  flex: 0 0 var(--fallen-portrait-size);
+}
+
+/*
+ * At ten or fewer survivors, Living shrink-wraps its enlarged portraits and
+ * Fallen receives every remaining pixel. Its portraits then wrap only against
+ * the actual remaining width.
+ */
+.tribute-dock[data-living-profile-size="large"] .tribute-dock__content[data-has-fallen="true"],
+.tribute-dock[data-living-profile-size="largest"] .tribute-dock__content[data-has-fallen="true"] {
+  grid-template-columns: max-content minmax(0, 1fr);
+}
+
+.tribute-dock[data-living-profile-size="large"] .tribute-dock__living,
+.tribute-dock[data-living-profile-size="largest"] .tribute-dock__living {
+  width: max-content;
+  max-width: 100%;
+}
+
+.tribute-dock[data-living-profile-size="large"] .tribute-dock__living-list,
+.tribute-dock[data-living-profile-size="largest"] .tribute-dock__living-list {
+  width: max-content;
+  max-width: 100%;
+}
+
+.tribute-dock[data-living-profile-size="large"] .tribute-dock__fallen,
+.tribute-dock[data-living-profile-size="largest"] .tribute-dock__fallen {
+  width: 100%;
+  max-width: none;
+}
+
+.tribute-dock[data-living-profile-size="large"] .tribute-dock__fallen-list,
+.tribute-dock[data-living-profile-size="largest"] .tribute-dock__fallen-list {
+  width: 100%;
+  max-width: none;
+}
+
+@media (max-width: 40rem) {
+  .tribute-dock__content[data-has-fallen="true"],
+  .tribute-dock[data-living-profile-size="large"] .tribute-dock__content[data-has-fallen="true"],
+  .tribute-dock[data-living-profile-size="largest"] .tribute-dock__content[data-has-fallen="true"] {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .tribute-dock__fallen,
+  .tribute-dock[data-living-profile-size="large"] .tribute-dock__fallen,
+  .tribute-dock[data-living-profile-size="largest"] .tribute-dock__fallen {
+    width: 100%;
+    max-width: none;
+    padding-top: var(--space-2);
+    padding-left: 0;
+    border-top: 1px solid rgb(219 98 98 / 24%);
+    border-left: 0;
+  }
+
+  .tribute-dock__fallen-list,
+  .tribute-dock[data-expanded="false"] .tribute-dock__fallen-list {
+    width: 100%;
+  }
+}
+
+/* END definitive-tribute-dock-layout */

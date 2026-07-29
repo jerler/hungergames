@@ -132,13 +132,37 @@ describe("TributeDock", () => {
     ).toHaveTextContent("Casey Singh");
   });
 
-  it("places relationships alongside the living portraits", () => {
-    render(<TributeDock tributes={[AVERY, BLAKE]} truces={[ROMANTIC_TRUCE]} />);
+  it("places a relationship connector between the existing living portraits without duplicating them", () => {
+    const { container } = render(
+      <TributeDock tributes={[AVERY, BLAKE]} truces={[ROMANTIC_TRUCE]} />,
+    );
 
-    const relationship = screen.getByLabelText("Romantic relationship: Avery Chen, Blake Morgan");
+    const livingList = container.querySelector(".tribute-dock__living-list");
 
-    expect(relationship).toHaveAttribute("data-relationship-kind", "romantic");
-    expect(relationship.closest(".tribute-dock__living-list")).not.toBeNull();
+    expect(livingList).not.toBeNull();
+
+    const livingChildren = [...(livingList?.children ?? [])];
+
+    expect(livingChildren).toHaveLength(3);
+    expect(livingChildren[0]).toHaveAttribute(
+      "aria-label",
+      expect.stringMatching(/Avery Chen, District 1, alive/i),
+    );
+    expect(livingChildren[1]).toHaveClass("tribute-dock__relationship-connector-item");
+    expect(livingChildren[1]).toHaveAttribute("data-relationship-kind", "romantic");
+    expect(livingChildren[1]).toHaveAttribute(
+      "aria-label",
+      "Romantic relationship: Avery Chen, Blake Morgan",
+    );
+    expect(livingChildren[2]).toHaveAttribute(
+      "aria-label",
+      expect.stringMatching(/Blake Morgan, District 1, alive/i),
+    );
+
+    expect(container.querySelector(".tribute-dock__relationship-portrait")).not.toBeInTheDocument();
+
+    expect(screen.getAllByLabelText(/Avery Chen, District 1, alive/i)).toHaveLength(1);
+    expect(screen.getAllByLabelText(/Blake Morgan, District 1, alive/i)).toHaveLength(1);
   });
 
   it("can collapse manually while retaining the portrait content", () => {
@@ -193,21 +217,21 @@ describe("TributeDock", () => {
       writable: true,
     });
   });
-  it("uses five living columns and up to eight fallen columns for a ten-survivor roster", () => {
-    const { container } = render(<TributeDock tributes={createRoster(10, 14)} truces={[]} />);
+  it("marks six to ten survivors for large portraits", () => {
+    const { container } = render(<TributeDock tributes={createRoster(10, 4)} truces={[]} />);
 
-    const dock = container.querySelector(".tribute-dock");
-
-    expect(dock).toHaveAttribute("data-living-columns", "5");
-    expect(dock).toHaveAttribute("data-fallen-columns", "8");
+    expect(container.querySelector(".tribute-dock")).toHaveAttribute(
+      "data-living-profile-size",
+      "large",
+    );
   });
 
-  it("uses one living column per survivor when five or fewer remain", () => {
-    const { container } = render(<TributeDock tributes={createRoster(5, 19)} truces={[]} />);
+  it("marks five or fewer survivors for the largest portraits", () => {
+    const { container } = render(<TributeDock tributes={createRoster(5, 9)} truces={[]} />);
 
-    const dock = container.querySelector(".tribute-dock");
-
-    expect(dock).toHaveAttribute("data-living-columns", "5");
-    expect(dock).toHaveAttribute("data-fallen-columns", "8");
+    expect(container.querySelector(".tribute-dock")).toHaveAttribute(
+      "data-living-profile-size",
+      "largest",
+    );
   });
 });

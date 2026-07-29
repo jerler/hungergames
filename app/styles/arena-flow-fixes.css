@@ -346,25 +346,108 @@
   border-radius: 0;
 }
 
-.tribute-dock[data-expanded="true"] .tribute-dock__content[data-has-fallen="true"] {
-  grid-template-columns: minmax(0, 1fr);
+.tribute-dock {
+  --living-profile-gap: 0.42rem;
+  --living-profile-slot: 3.87rem;
+  --fallen-profile-width: 2.85rem;
+  --fallen-profile-gap: 0.35rem;
+  --fallen-profile-slot: 3.2rem;
 }
 
-.tribute-dock[data-expanded="true"] .tribute-dock__fallen {
-  width: 100%;
+.tribute-dock[data-expanded="true"][data-living-profile-size="large"] {
+  --living-profile-slot: 5.02rem;
+}
+
+.tribute-dock[data-expanded="true"][data-living-profile-size="largest"] {
+  --living-profile-slot: 6.42rem;
+}
+
+.tribute-dock[data-expanded="false"] {
+  --fallen-profile-width: 2rem;
+  --fallen-profile-gap: 0.25rem;
+  --fallen-profile-slot: 2.25rem;
+}
+
+/*
+ * More than ten living tributes, including the collapsed state:
+ * Living consumes every available pixel and Fallen hugs the right edge.
+ * This produces the fewest possible roster rows.
+ */
+.tribute-dock__content[data-has-fallen="true"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: start;
+  gap: 0;
+}
+
+.tribute-dock__content[data-has-fallen="true"] > .tribute-dock__living {
+  width: auto;
+  min-width: 0;
   max-width: none;
-  padding-top: var(--space-2);
-  padding-left: 0;
-  border-top: 1px solid rgb(219 98 98 / 24%);
-  border-left: 0;
-  grid-column: 1 / -1;
 }
 
-.tribute-dock[data-expanded="true"] .tribute-dock__fallen-list {
-  display: flex;
+.tribute-dock__living-list {
+  width: 100%;
+}
+
+/*
+ * Six to ten living tributes intentionally use five enlarged columns.
+ * Fallen receives the rest of the row so its portraits can wrap efficiently.
+ */
+.tribute-dock[data-expanded="true"][data-living-profile-size="large"]
+  .tribute-dock__content[data-has-fallen="true"] {
+  grid-template-columns:
+    minmax(0, calc(5 * var(--living-profile-slot) - var(--living-profile-gap)))
+    minmax(0, 1fr);
+}
+
+/*
+ * Five or fewer living tributes use exactly one enlarged column per survivor.
+ */
+.tribute-dock[data-expanded="true"][data-living-profile-size="largest"]
+  .tribute-dock__content[data-has-fallen="true"] {
+  grid-template-columns:
+    minmax(
+      0,
+      calc(var(--living-columns, 1) * var(--living-profile-slot) - var(--living-profile-gap))
+    )
+    minmax(0, 1fr);
+}
+
+.tribute-dock__fallen {
+  box-sizing: border-box;
+  width: min(
+    25.6rem,
+    max(
+      var(--fallen-profile-width),
+      calc(var(--fallen-columns, 1) * var(--fallen-profile-slot) - var(--fallen-profile-gap))
+    )
+  );
+  min-width: var(--fallen-profile-width);
+  max-width: 100%;
+}
+
+.tribute-dock[data-expanded="true"][data-living-profile-size="large"] .tribute-dock__fallen,
+.tribute-dock[data-expanded="true"][data-living-profile-size="largest"] .tribute-dock__fallen {
+  width: 100%;
+}
+
+.tribute-dock__fallen-list {
+  display: grid;
   width: 100%;
   overflow: visible;
-  flex-wrap: wrap;
+  grid-template-columns: repeat(var(--fallen-columns, 1), var(--fallen-profile-width));
+  align-items: start;
+  align-content: start;
+  justify-content: start;
+  gap: var(--fallen-profile-gap);
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__fallen {
+  width: min(
+    18rem,
+    calc(var(--fallen-columns, 1) * var(--fallen-profile-slot) - var(--fallen-profile-gap))
+  );
 }
 
 .tribute-dock[data-expanded="true"][data-living-profile-size="large"]
@@ -388,5 +471,70 @@
 .tribute-dock[data-expanded="true"][data-living-profile-size="largest"] .tribute-dock__name {
   font-size: 0.75rem;
 }
+
+@media (max-width: 40rem) {
+  .tribute-dock__content[data-has-fallen="true"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .tribute-dock__content[data-has-fallen="true"] > .tribute-dock__living,
+  .tribute-dock__content[data-has-fallen="true"] > .tribute-dock__fallen {
+    width: 100%;
+    max-width: none;
+  }
+
+  .tribute-dock__fallen {
+    padding-top: var(--space-2);
+    padding-left: 0;
+    border-top: 1px solid rgb(219 98 98 / 24%);
+    border-left: 0;
+  }
+
+  .tribute-dock__fallen-list {
+    grid-template-columns: repeat(auto-fit, var(--fallen-profile-width));
+  }
+}
+
+/* BEGIN fallen-row-height-minimization */
+
+/*
+ * In compact/default layouts, Fallen is a max-content grid track.
+ * The portrait grid—not an earlier width calculation—determines its width.
+ * This prevents two or more fallen portraits from stacking while unused
+ * horizontal space remains beside them.
+ */
+.tribute-dock__content[data-has-fallen="true"] > .tribute-dock__fallen {
+  width: max-content;
+  min-width: 0;
+  max-width: min(100%, 25.6rem);
+}
+
+.tribute-dock__content[data-has-fallen="true"] > .tribute-dock__fallen > .tribute-dock__fallen-list,
+.tribute-dock[data-expanded="false"] .tribute-dock__fallen-list {
+  width: max-content;
+  max-width: 100%;
+  grid-template-columns: repeat(var(--fallen-columns, 1), var(--fallen-profile-width));
+}
+
+/*
+ * These enlarged layouts intentionally give Fallen the remaining row width.
+ * Here its portraits may wrap to use that space without increasing the dock
+ * more than necessary.
+ */
+.tribute-dock[data-expanded="true"][data-living-profile-size="large"] .tribute-dock__fallen,
+.tribute-dock[data-expanded="true"][data-living-profile-size="largest"] .tribute-dock__fallen {
+  width: 100%;
+  max-width: none;
+}
+
+.tribute-dock[data-expanded="true"][data-living-profile-size="large"] .tribute-dock__fallen-list,
+.tribute-dock[data-expanded="true"][data-living-profile-size="largest"] .tribute-dock__fallen-list {
+  width: 100%;
+  grid-template-columns: repeat(auto-fit, var(--fallen-profile-width));
+}
+
+/* END fallen-row-height-minimization */
 
 /* END arena-balance-pass overrides */

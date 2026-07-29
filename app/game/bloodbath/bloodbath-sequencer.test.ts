@@ -8,6 +8,8 @@ import { resolveRound } from "~/game/engine/resolve-round";
 import { createRoundSeed } from "~/game/engine/rounds";
 import {
   CORNUCOPIA_EVENTS,
+  CORNUCOPIA_GROUP_CONFLICT_EVENTS,
+  CORNUCOPIA_PAIR_CONFLICT_EVENTS,
   FLEE_EVENTS,
   BLOODBATH_EVENT_CATALOGUE,
 } from "~/game/events/catalogue/bloodbath";
@@ -123,6 +125,59 @@ describe("Bloodbath sequencer", () => {
     const game = createTestGame("deterministic-bloodbath");
 
     expect(sequenceBloodbathEvents(game, DAY_ONE)).toEqual(sequenceBloodbathEvents(game, DAY_ONE));
+  });
+
+  it.each([6 as const, 12 as const])(
+    "never repeats an event definition within one Bloodbath for %s districts",
+    (districtCount) => {
+      for (let index = 0; index < 250; index += 1) {
+        const game = createTestGame(`unique-bloodbath-${districtCount}-${index}`, districtCount);
+
+        const definitionIds = sequenceBloodbathEvents(game, DAY_ONE).map(
+          (event) => event.definitionId,
+        );
+
+        expect(
+          new Set(definitionIds).size,
+          `Repeated definition for seed "${game.seed}": ${definitionIds.join(", ")}`,
+        ).toBe(definitionIds.length);
+      }
+    },
+  );
+
+  /*
+   * Do not impose a one-way "multi fatalities, then solo fatalities"
+   * phase ordering here.
+   *
+   * Post-target pair and group conflicts may legitimately occur after
+   * a unique solo fatality. The meaningful contracts are covered by:
+   *
+   * - definition uniqueness;
+   * - fatality balance;
+   * - participant coverage;
+   * - pair/group conflict-family reachability.
+   */
+
+  it("keeps pair and group conflict families reachable under definition uniqueness", () => {
+    const pairConflictIds = new Set(CORNUCOPIA_PAIR_CONFLICT_EVENTS.map((event) => event.id));
+    const groupConflictIds = new Set(CORNUCOPIA_GROUP_CONFLICT_EVENTS.map((event) => event.id));
+
+    let sawPairConflict = false;
+    let sawGroupConflict = false;
+
+    for (let index = 0; index < 500 && (!sawPairConflict || !sawGroupConflict); index += 1) {
+      const game = createTestGame(`conflict-family-reachability-${index}`, 12);
+
+      const definitionIds = sequenceBloodbathEvents(game, DAY_ONE).map(
+        (event) => event.definitionId,
+      );
+
+      sawPairConflict ||= definitionIds.some((definitionId) => pairConflictIds.has(definitionId));
+      sawGroupConflict ||= definitionIds.some((definitionId) => groupConflictIds.has(definitionId));
+    }
+
+    expect(sawPairConflict).toBe(true);
+    expect(sawGroupConflict).toBe(true);
   });
 
   it("represents every starting tribute exactly once", () => {

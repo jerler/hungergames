@@ -84,6 +84,22 @@ const CASEY = createTribute({
   isAlive: false,
 });
 
+function createRoster(livingCount: number, fallenCount: number): GameTribute[] {
+  return Array.from(
+    {
+      length: livingCount + fallenCount,
+    },
+    (_, index) =>
+      createTribute({
+        id: `tribute-${index + 1}`,
+        name: `Tribute ${index + 1}`,
+        district: Math.floor(index / 2) + 1,
+        districtPosition: index % 2 === 0 ? 1 : 2,
+        isAlive: index < livingCount,
+      }),
+  );
+}
+
 const ROMANTIC_TRUCE = {
   id: "romantic-truce",
   kind: "romantic",
@@ -176,5 +192,22 @@ describe("TributeDock", () => {
       value: originalScrollY,
       writable: true,
     });
+  });
+  it("uses five living columns and up to eight fallen columns for a ten-survivor roster", () => {
+    const { container } = render(<TributeDock tributes={createRoster(10, 14)} truces={[]} />);
+
+    const dock = container.querySelector(".tribute-dock");
+
+    expect(dock).toHaveAttribute("data-living-columns", "5");
+    expect(dock).toHaveAttribute("data-fallen-columns", "8");
+  });
+
+  it("uses one living column per survivor when five or fewer remain", () => {
+    const { container } = render(<TributeDock tributes={createRoster(5, 19)} truces={[]} />);
+
+    const dock = container.querySelector(".tribute-dock");
+
+    expect(dock).toHaveAttribute("data-living-columns", "5");
+    expect(dock).toHaveAttribute("data-fallen-columns", "8");
   });
 });

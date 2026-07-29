@@ -342,6 +342,21 @@ export function createAccidentalTruceDissolutionEvents(
       return [];
     }
 
+    /*
+     * Primary changes may already have ended this truce. In that case
+     * there is nothing left for automatic death aftermath to dissolve.
+     *
+     * Checking the post-primary state prevents a stale accidental
+     * break-truce change from being generated.
+     */
+    const truceStillExists = afterPrimaryEventState.truces.some(
+      (candidate) => candidate.id === truce.id,
+    );
+
+    if (!truceStillExists) {
+      return [];
+    }
+
     const lostMember = truce.tributeIds.some((tributeId) => eliminatedTributeIds.has(tributeId));
 
     if (!lostMember) {

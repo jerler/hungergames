@@ -50,6 +50,7 @@ export function reserveEventCommitments(
   changes: readonly GameChange[],
   unavailableTributeIds: Set<string>,
   unavailableItemInstanceIds: Set<string>,
+  state?: GameState,
 ): void {
   /*
    * Visible participants cannot appear in another event
@@ -86,6 +87,48 @@ export function reserveEventCommitments(
    */
   for (const change of changes) {
     switch (change.type) {
+      case "eliminate-tribute": {
+        unavailableTributeIds.add(change.tributeId);
+
+        /*
+         * A death can automatically dissolve an active truce when the
+         * event is revealed. Reserve every member now so no later event
+         * in this already-resolved round can also consume that truce.
+         */
+        for (const truce of state?.truces ?? []) {
+          if (!truce.tributeIds.includes(change.tributeId)) {
+            continue;
+          }
+
+          for (const tributeId of truce.tributeIds) {
+            unavailableTributeIds.add(tributeId);
+          }
+        }
+
+        break;
+      }
+
+      case "form-truce":
+        for (const tributeId of change.truce.tributeIds) {
+          unavailableTributeIds.add(tributeId);
+        }
+        break;
+
+      case "break-truce": {
+        const truce = state?.truces.find((candidate) => candidate.id === change.truceId);
+
+        for (const tributeId of truce?.tributeIds ?? []) {
+          unavailableTributeIds.add(tributeId);
+        }
+
+        break;
+      }
+
+      case "form-vendetta":
+        unavailableTributeIds.add(change.vendetta.hunterTributeId);
+        unavailableTributeIds.add(change.vendetta.targetTributeId);
+        break;
+
       case "acquire-item":
       case "use-item":
       case "consume-item":
@@ -94,7 +137,6 @@ export function reserveEventCommitments(
 
       case "transfer-item":
         unavailableTributeIds.add(change.fromTributeId);
-
         unavailableTributeIds.add(change.toTributeId);
         break;
 
@@ -334,6 +376,7 @@ export function sequenceRoundEvents(
       resolution.changes,
       unavailableTributeIds,
       unavailableItemInstanceIds,
+      state,
     );
   }
 

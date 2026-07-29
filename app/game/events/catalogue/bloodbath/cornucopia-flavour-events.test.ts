@@ -94,7 +94,7 @@ describe("imported non-fatal Cornucopia events", () => {
       ...CORNUCOPIA_NONFATAL_INTERACTION_EVENTS,
     ];
 
-    expect(importedDefinitions).toHaveLength(19);
+    expect(importedDefinitions).toHaveLength(31);
     expect(new Set(importedDefinitions.map((definition) => definition.id)).size).toBe(
       importedDefinitions.length,
     );
@@ -136,7 +136,7 @@ describe("imported non-fatal Cornucopia events", () => {
     }
   });
 
-  it("resolves the cooperative group interactions", () => {
+  it("resolves the group interactions", () => {
     const state = createTestGame("group-flavour-resolution");
     const trio = state.tributes.slice(0, 3);
     const quartet = state.tributes.slice(0, 4);

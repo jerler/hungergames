@@ -128,9 +128,9 @@ describe("authored fatal Bloodbath events", () => {
     const catalogueIds = new Set(CORNUCOPIA_EVENTS.map((definition) => definition.id));
     const authoredIds = CORNUCOPIA_FATAL_BLOODBATH_EVENTS.map((definition) => definition.id);
 
-    expect(CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(29);
+    expect(CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(35);
     expect(CORNUCOPIA_FATAL_DELAYED_EVENTS).toHaveLength(2);
-    expect(authoredIds).toHaveLength(31);
+    expect(authoredIds).toHaveLength(37);
     expect(new Set(authoredIds).size).toBe(authoredIds.length);
 
     for (const eventId of authoredIds) {
@@ -148,6 +148,41 @@ describe("authored fatal Bloodbath events", () => {
       expect(eliminationCount).toBeGreaterThanOrEqual(profile.minImmediateEliminations);
       expect(eliminationCount).toBeLessThanOrEqual(profile.maxImmediateEliminations);
     }
+  });
+
+  it("makes podium fatalities rare and mutually exclusive", () => {
+    const bitsDefinition = requireDefinition("cornucopia-fatal-podium-detonation-bits");
+    const balloonDefinition = requireDefinition("cornucopia-fatal-podium-detonation-balloon");
+    const baseState = createTestGame("podium-rarity");
+
+    expect(bitsDefinition.baseWeight).toBe(0.15);
+    expect(balloonDefinition.baseWeight).toBe(0.15);
+
+    let eligibleGameCount = 0;
+
+    for (let index = 0; index < 2_000; index += 1) {
+      const state = {
+        ...baseState,
+        seed: `podium-rarity-${index}`,
+      };
+      const context = {
+        state,
+        round: DAY_ONE,
+        livingTributes: state.tributes,
+      };
+
+      const bitsEligible = bitsDefinition.isEligible?.(context) ?? true;
+      const balloonEligible = balloonDefinition.isEligible?.(context) ?? true;
+
+      expect(bitsEligible && balloonEligible).toBe(false);
+
+      if (bitsEligible || balloonEligible) {
+        eligibleGameCount += 1;
+      }
+    }
+
+    expect(eligibleGameCount).toBeGreaterThan(100);
+    expect(eligibleGameCount).toBeLessThan(220);
   });
 
   it("keeps temporary Bloodbath props out of persistent inventory", () => {

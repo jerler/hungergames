@@ -1,4 +1,5 @@
 import { sequenceRoundEvents } from "~/game/engine/event-sequencer";
+import { shuffleRoundEventsForPresentation } from "~/game/engine/event-presentation-order";
 import type { GameState, ResolvedEvent, RoundReference } from "~/game/types/game-state";
 
 export function resolveRound(
@@ -6,5 +7,7 @@ export function resolveRound(
   round: RoundReference,
   committedItemInstanceIds: ReadonlySet<string> = new Set<string>(),
 ): ResolvedEvent[] {
-  return sequenceRoundEvents(state, round, committedItemInstanceIds);
+  const sequencedEvents = sequenceRoundEvents(state, round, committedItemInstanceIds);
+
+  return shuffleRoundEventsForPresentation(state, round, sequencedEvents);
 }

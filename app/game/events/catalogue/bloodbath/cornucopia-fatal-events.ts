@@ -1,5 +1,6 @@
+import { ADDITIONAL_CORNUCOPIA_SOLO_FATAL_EVENTS } from "./cornucopia-solo-fatal-variety-events";
 import { getEffectiveStats } from "~/game/engine/effective-stats";
-import { selectRandomItem, type RandomSource } from "~/game/engine/random";
+import { createSeededRandom, selectRandomItem, type RandomSource } from "~/game/engine/random";
 import { getNextRound } from "~/game/engine/rounds";
 import {
   getAwarenessScore,
@@ -62,6 +63,26 @@ const STABBING_ITEM_IDS = [
   "spear",
   "trident",
 ] as const satisfies readonly ItemDefinitionId[];
+
+const PODIUM_DEATH_GAME_CHANCE = 0.08;
+
+type PodiumDeathVariant = "bits" | "balloon";
+
+function getPodiumDeathVariant(gameSeed: string): PodiumDeathVariant | null {
+  const random = createSeededRandom(`${gameSeed}:bloodbath-podium-death-rarity`);
+
+  if (random() >= PODIUM_DEATH_GAME_CHANCE) {
+    return null;
+  }
+
+  return random() < 0.5 ? "bits" : "balloon";
+}
+
+function createPodiumDeathEligibility(
+  variant: PodiumDeathVariant,
+): NonNullable<EventDefinition["isEligible"]> {
+  return ({ state }) => getPodiumDeathVariant(state.seed) === variant;
+}
 
 function getCombatWeight(tribute: GameTribute): number {
   return Math.max(0.25, getCombatScore(tribute));
@@ -206,6 +227,7 @@ interface SoloFatalEventOptions {
   text: (actor: GameTribute) => string;
   baseWeight?: number;
   causeLabel: string;
+  isEligible?: EventDefinition["isEligible"];
 }
 
 function createSoloFatalEvent({
@@ -213,6 +235,7 @@ function createSoloFatalEvent({
   text: getText,
   baseWeight = 1.5,
   causeLabel,
+  isEligible,
 }: SoloFatalEventOptions): EventDefinition {
   return {
     id,
@@ -220,6 +243,7 @@ function createSoloFatalEvent({
     tags: ["fatal", "environment"],
     periods: ["day"],
     baseWeight,
+    isEligible,
     roles: [
       {
         id: "actor",
@@ -278,6 +302,8 @@ function createTemporaryTruceChange(
 
 const PODIUM_DETONATION_BITS_EVENT = createSoloFatalEvent({
   id: "cornucopia-fatal-podium-detonation-bits",
+  baseWeight: 0.15,
+  isEligible: createPodiumDeathEligibility("bits"),
   causeLabel: "Podium mine detonation",
   text: (actor) =>
     `${actor.snapshot.name} steps off the podium before the countdown ends. ` +
@@ -287,6 +313,8 @@ const PODIUM_DETONATION_BITS_EVENT = createSoloFatalEvent({
 
 const PODIUM_DETONATION_BALLOON_EVENT = createSoloFatalEvent({
   id: "cornucopia-fatal-podium-detonation-balloon",
+  baseWeight: 0.15,
+  isEligible: createPodiumDeathEligibility("balloon"),
   causeLabel: "Podium mine detonation",
   text: (actor) =>
     `${actor.snapshot.name} panics at the last second and faints, falling off the ` +
@@ -308,13 +336,11 @@ const THROWN_KNIFE_HEAD_EVENT = createPairFatalEvent({
   id: "cornucopia-fatal-thrown-knife-head",
   baseWeight: 3.2,
   getText: (actor, target) => {
-    const targetPronouns = getTributePronouns(target);
-
     return (
-      `${actor.snapshot.name} sees a throwing knife shine nearby. Quickly, ` +
-      `${actor.snapshot.name} grabs it and chucks it into the chaos of tributes. ` +
+      `${actor.snapshot.name} sees a tower of throwing knives piled inside the Cornucopia. Quickly, ` +
+      `${getTributePronouns(actor).subject} grabs one and chucks it into the chaos of tributes. ` +
       `The knife strikes ${target.snapshot.name} in the head before ` +
-      `${targetPronouns.subject} can turn.`
+      `${getTributePronouns(target).subject} can turn.`
     );
   },
 });
@@ -1308,6 +1334,7 @@ export const CORNUCOPIA_FATAL_TARGET_PROFILES = [
   oneDeath(PODIUM_DETONATION_BITS_EVENT),
   oneDeath(PODIUM_DETONATION_BALLOON_EVENT),
   oneDeath(FALLING_INTO_PIT_EVENT),
+  ...ADDITIONAL_CORNUCOPIA_SOLO_FATAL_EVENTS.map(oneDeath),
   oneDeath(THROWN_KNIFE_HEAD_EVENT),
   oneDeath(THROWN_KNIFE_CHEST_EVENT),
   oneDeath(ARROW_THROUGH_HEAD_EVENT),

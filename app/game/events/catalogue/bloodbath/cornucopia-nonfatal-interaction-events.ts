@@ -17,6 +17,10 @@ import {
   selectCornucopiaContestedDirectWeapon,
   selectCornucopiaPackItem,
 } from "~/game/events/catalogue/bloodbath/cornucopia-item-pool";
+import {
+  ADDITIONAL_CORNUCOPIA_NONFATAL_QUARTET_EVENTS,
+  ADDITIONAL_CORNUCOPIA_NONFATAL_TRIO_EVENTS,
+} from "~/game/events/catalogue/bloodbath/cornucopia-group-variety-events";
 import { createTruceInstance } from "~/game/truces/truce-engine";
 import type { GameChange, GameTribute } from "~/game/types/game-state";
 import { getTributePronouns } from "~/game/tributes/pronouns";
@@ -588,10 +592,12 @@ export const CORNUCOPIA_NONFATAL_PAIR_EVENTS = [
 
 export const CORNUCOPIA_NONFATAL_TRIO_EVENTS = [
   THREE_PERSON_SUPPLY_TEAM_EVENT,
+  ...ADDITIONAL_CORNUCOPIA_NONFATAL_TRIO_EVENTS,
 ] satisfies readonly EventDefinition[];
 
 export const CORNUCOPIA_NONFATAL_QUARTET_EVENTS = [
   FOUR_PERSON_SHARED_HAUL_EVENT,
+  ...ADDITIONAL_CORNUCOPIA_NONFATAL_QUARTET_EVENTS,
 ] satisfies readonly EventDefinition[];
 
 export const CORNUCOPIA_NONFATAL_INTERACTION_EVENTS = [

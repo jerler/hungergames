@@ -19,6 +19,7 @@ import {
   selectCornucopiaContestedDirectWeapon,
   selectCornucopiaPackItem,
 } from "./cornucopia-item-pool";
+import { getItemDefinition } from "~/game/items/item-catalogue";
 
 type PairConflictOutcome = "attacker-dies" | "both-retreat" | "attacker-wins" | "defender-dies";
 
@@ -60,6 +61,7 @@ interface ConflictDefinitionOptions {
   selectItem: (recipient: GameTribute, random: RandomSource) => ItemDefinitionId;
 
   resourceDescription: string;
+  usesSelectedItemInText?: boolean;
 }
 
 function getContestWeight(tribute: GameTribute): number {
@@ -141,6 +143,7 @@ function createPairConflictEvent({
   baseWeight,
   selectItem,
   resourceDescription,
+  usesSelectedItemInText = false,
 }: ConflictDefinitionOptions): EventDefinition {
   return {
     id,
@@ -175,31 +178,50 @@ function createPairConflictEvent({
 
       switch (outcome) {
         case "attacker-dies": {
-          const itemId = selectItem(defender, random);
+  const itemId = selectItem(defender, random);
+  const itemLabel = getItemDefinition(
+    itemId,
+  ).label.toLowerCase();
 
-          const text =
-            `${attacker.snapshot.name} attacks ` +
-            `${defender.snapshot.name} over ` +
-            `${resourceDescription}, but ` +
-            `${defender.snapshot.name} turns the attack ` +
-            `against ${attackerPronouns.object} and kills ${attackerPronouns.object}.`;
+  const contestedItemDescription =
+    usesSelectedItemInText
+      ? `the same ${itemLabel}`
+      : resourceDescription;
 
-          return {
-            text,
+  const counterattackDescription =
+    usesSelectedItemInText
+      ? `the ${itemLabel}`
+      : "the attack";
 
-            changes: [
-              ...createFatalChanges(attacker, id, "Killed at the Cornucopia", text, defender),
+  const text =
+    `${attacker.snapshot.name} attacks ` +
+    `${defender.snapshot.name} over ` +
+    `${contestedItemDescription}, but ` +
+    `${defender.snapshot.name} turns ` +
+    `${counterattackDescription} against ` +
+    `${attackerPronouns.object} and kills ` +
+    `${attackerPronouns.object}.`;
 
-              ...createItemAcquisitionAndSurvivalChanges(
-                eventId,
-                defender,
-                [itemId],
-                round,
-                "cornucopia",
-              ),
-            ],
-          };
-        }
+  return {
+    text,
+    changes: [
+      ...createFatalChanges(
+        attacker,
+        id,
+        "Killed at the Cornucopia",
+        text,
+        defender,
+      ),
+      ...createItemAcquisitionAndSurvivalChanges(
+        eventId,
+        defender,
+        [itemId],
+        round,
+        "cornucopia",
+      ),
+    ],
+  };
+}
 
         case "both-retreat":
           return {
@@ -429,12 +451,11 @@ function createGroupConflictEvent({
 export const CORNUCOPIA_PAIR_CONFLICT_EVENTS = [
   createPairConflictEvent({
     id: "cornucopia-contested-weapon",
-
     baseWeight: 6,
-
-    selectItem: selectCornucopiaContestedDirectWeapon,
-
+    selectItem:
+      selectCornucopiaContestedDirectWeapon,
     resourceDescription: "the same weapon",
+    usesSelectedItemInText: true,
   }),
 
   createPairConflictEvent({

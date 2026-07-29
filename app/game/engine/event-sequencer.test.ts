@@ -839,3 +839,62 @@ describe("forced combat elimination", () => {
     expect(combatEvent?.changes.some((change) => change.type === "use-item")).toBe(true);
   });
 });
+
+describe("ordinary round relationship reservations", () => {
+  it("reserves every truce member when one member is scheduled to die", () => {
+    const { state, owner, firstBorrower, secondBorrower, outsider } =
+      createSharedItemFixture("knife");
+    const unavailableTributeIds = new Set<string>();
+
+    reserveEventCommitments(
+      createResolutionOnlySelection([outsider.id]),
+      [
+        {
+          type: "eliminate-tribute",
+          tributeId: owner.id,
+          causeId: "relationship-reservation-test",
+          causeLabel: "Relationship reservation test",
+          summary: "A truce member is scheduled to die.",
+          killerTributeIds: [],
+        },
+      ],
+      unavailableTributeIds,
+      new Set<string>(),
+      state,
+    );
+
+    expect(unavailableTributeIds).toContain(owner.id);
+    expect(unavailableTributeIds).toContain(firstBorrower.id);
+    expect(unavailableTributeIds).toContain(secondBorrower.id);
+  });
+
+  it("reserves every member when an event schedules the truce to end", () => {
+    const { state, owner, firstBorrower, secondBorrower, outsider } =
+      createSharedItemFixture("knife");
+    const truce = state.truces[0];
+
+    if (!truce) {
+      throw new Error("Expected an active truce fixture.");
+    }
+
+    const unavailableTributeIds = new Set<string>();
+
+    reserveEventCommitments(
+      createResolutionOnlySelection([outsider.id]),
+      [
+        {
+          type: "break-truce",
+          truceId: truce.id,
+          reason: "amicable",
+        },
+      ],
+      unavailableTributeIds,
+      new Set<string>(),
+      state,
+    );
+
+    expect(unavailableTributeIds).toContain(owner.id);
+    expect(unavailableTributeIds).toContain(firstBorrower.id);
+    expect(unavailableTributeIds).toContain(secondBorrower.id);
+  });
+});

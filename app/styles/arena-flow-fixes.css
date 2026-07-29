@@ -878,3 +878,32 @@
 }
 
 /* END expanded-small-roster-living-priority */
+
+/* BEGIN square-event-feed-control-seam */
+
+/*
+ * The outer event-feed frame owns the true rounded corners. The event feed
+ * itself sits directly above the controls, so its bottom edge is an internal
+ * seam and must remain square.
+ */
+.event-feed-frame > .event-feed {
+  border-radius: 0;
+}
+
+/*
+ * Prevent the final event card or its outcome drawer from reintroducing
+ * rounding at the same internal seam.
+ */
+.event-feed-frame
+  > .event-feed
+  :is(
+    .event-card:last-child,
+    .event-card__outcomes,
+    .event-card__outcome-drawer:last-child,
+    .event-card__outcome-drawer:last-child > .event-card__outcome-summary
+  ) {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* END square-event-feed-control-seam */

@@ -733,6 +733,18 @@ export function applyGameChange(
     case "break-truce": {
       const truce = state.truces.find((candidate) => candidate.id === change.truceId);
 
+      if (!truce && event.kind === "aftermath" && change.reason === "accidental") {
+        /*
+         * Automatic death aftermath is derived from a snapshot taken
+         * around the primary event. If another primary change already
+         * ended the same truce, the generated accidental dissolution is
+         * stale and its intended result has already been achieved.
+         *
+         * Explicit breakup events remain strict and still throw below.
+         */
+        return state;
+      }
+
       if (!truce) {
         throw new Error(`Cannot break missing truce "${change.truceId}".`);
       }

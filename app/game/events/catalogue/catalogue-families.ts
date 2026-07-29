@@ -31,6 +31,10 @@ import { HUNTING_EVENTS } from "./encounters/hunting-events";
 
 import { ITEM_USE_EVENTS } from "./encounters/item-use-events";
 
+import { ACCIDENTAL_FATAL_NIGHT_EVENTS } from "./encounters/accidental-fatal-night-events";
+
+import { FATAL_NIGHT_EVENTS } from "./encounters/fatal-night-events";
+
 import { NIGHT_EVENTS } from "./encounters/night-events";
 
 import { SURVIVAL_EVENTS } from "./encounters/survival-events";
@@ -135,6 +139,16 @@ export const ORDINARY_EVENT_CATALOGUE_FAMILIES = [
     events: SURVIVAL_EVENTS,
   },
 
+  {
+    name: "night-accidental-fatal",
+
+    events: ACCIDENTAL_FATAL_NIGHT_EVENTS,
+  },
+  {
+    name: "night-fatal",
+
+    events: FATAL_NIGHT_EVENTS,
+  },
   {
     name: "night",
 

@@ -234,4 +234,22 @@ describe("TributeDock", () => {
       "largest",
     );
   });
+  it("places the header and living roster beside the full-height fallen panel", () => {
+    const { container } = render(<TributeDock tributes={[AVERY, BLAKE, CASEY]} truces={[]} />);
+
+    const content = container.querySelector<HTMLElement>(".tribute-dock__content");
+    const main = container.querySelector<HTMLElement>(".tribute-dock__main");
+    const header = container.querySelector<HTMLElement>(".tribute-dock__header");
+    const living = container.querySelector<HTMLElement>(".tribute-dock__living");
+    const fallen = container.querySelector<HTMLElement>(".tribute-dock__fallen");
+
+    expect(content).not.toBeNull();
+    expect(main).not.toBeNull();
+    expect(fallen).not.toBeNull();
+    expect(content?.children).toHaveLength(2);
+    expect(content?.firstElementChild).toBe(main);
+    expect(main).toContainElement(header);
+    expect(main).toContainElement(living);
+    expect(fallen?.parentElement).toBe(content);
+  });
 });

@@ -67,9 +67,8 @@
 }
 
 .landing-emblem__inner {
-  transform: translateY(clamp(1rem, 2.2vh, 1.75rem));
+  transform: translateY(clamp(1.3rem, calc(0.5rem + 3.2vh), 2rem));
 }
-
 /* ------------------------------------------------------------------------ */
 /* Configuration                                                            */
 /* ------------------------------------------------------------------------ */

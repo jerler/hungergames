@@ -181,10 +181,6 @@
   margin-top: 0;
 }
 
-.tribute-card__stats {
-  margin-top: var(--space-3);
-}
-
 .tribute-card__portrait {
   margin-bottom: var(--space-2);
 }

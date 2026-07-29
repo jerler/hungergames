@@ -710,3 +710,171 @@
 }
 
 /* END definitive-tribute-dock-layout */
+
+/* BEGIN full-height-fallen-tribute-dock */
+
+.tribute-dock__panel {
+  overflow: hidden;
+}
+
+.tribute-dock__content,
+.tribute-dock__content[data-has-fallen="true"] {
+  padding: 0;
+  align-items: stretch;
+  gap: 0;
+}
+
+.tribute-dock__main {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+}
+
+.tribute-dock__living {
+  min-width: 0;
+  padding: 0 var(--space-3) 0.55rem;
+}
+
+.tribute-dock__fallen,
+.tribute-dock__content[data-has-fallen="true"] > .tribute-dock__fallen {
+  align-self: stretch;
+  display: flex;
+  min-height: 100%;
+  padding: 0.45rem var(--space-3) 0.55rem;
+  border-left: 1px solid rgb(219 98 98 / 30%);
+  flex-direction: column;
+  background: linear-gradient(90deg, rgb(87 27 31 / 34%), rgb(87 27 31 / 17%)), rgb(42 20 24 / 88%);
+}
+
+.tribute-dock__fallen-list {
+  flex: 0 0 auto;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__content {
+  padding: 0;
+  gap: 0;
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__living {
+  padding: 0.35rem var(--space-2);
+}
+
+.tribute-dock[data-expanded="false"] .tribute-dock__fallen,
+.tribute-dock[data-expanded="false"]
+  .tribute-dock__content[data-has-fallen="true"]
+  > .tribute-dock__fallen {
+  min-height: 100%;
+  padding: 0.35rem var(--space-2);
+  justify-content: center;
+}
+
+@media (max-width: 40rem) {
+  .tribute-dock__content[data-has-fallen="true"],
+  .tribute-dock[data-living-profile-size="large"] .tribute-dock__content[data-has-fallen="true"],
+  .tribute-dock[data-living-profile-size="largest"] .tribute-dock__content[data-has-fallen="true"] {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .tribute-dock__fallen,
+  .tribute-dock[data-expanded="false"] .tribute-dock__fallen,
+  .tribute-dock[data-living-profile-size="large"] .tribute-dock__fallen,
+  .tribute-dock[data-living-profile-size="largest"] .tribute-dock__fallen {
+    width: 100%;
+    min-height: 0;
+    max-width: none;
+    padding: var(--space-2);
+    border-top: 1px solid rgb(219 98 98 / 30%);
+    border-left: 0;
+  }
+}
+
+/* END full-height-fallen-tribute-dock */
+
+/* BEGIN complete-tribute-dock-track-fill */
+
+/*
+ * The dock's two grid tracks must always consume the complete panel width.
+ * Living fills its assigned track, and Fallen fills its assigned track,
+ * regardless of whether the dock is expanded or collapsed.
+ */
+.tribute-dock__panel,
+.tribute-dock__content,
+.tribute-dock__content[data-has-fallen="true"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tribute-dock__main {
+  min-width: 0;
+}
+
+.tribute-dock[data-expanded="true"]
+  .tribute-dock__content[data-has-fallen="true"]
+  > .tribute-dock__fallen,
+.tribute-dock[data-expanded="false"]
+  .tribute-dock__content[data-has-fallen="true"]
+  > .tribute-dock__fallen {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  align-self: stretch;
+  justify-self: stretch;
+}
+
+/* END complete-tribute-dock-track-fill */
+
+/* BEGIN expanded-small-roster-living-priority */
+
+/*
+ * With ten or fewer survivors, Living portraits are deliberately enlarged.
+ * Keep every survivor and relationship connector on one horizontal row.
+ * The Living column shrink-wraps that row; Fallen receives every remaining
+ * pixel and wraps its smaller portraits into as many rows as necessary.
+ *
+ * These selectors include data-expanded so they outrank the older fixed
+ * five-column rules without affecting the already-correct collapsed dock.
+ */
+.tribute-dock[data-expanded="true"][data-living-profile-size="large"]
+  .tribute-dock__content[data-has-fallen="true"],
+.tribute-dock[data-expanded="true"][data-living-profile-size="largest"]
+  .tribute-dock__content[data-has-fallen="true"] {
+  grid-template-columns: max-content minmax(0, 1fr);
+}
+
+.tribute-dock[data-expanded="true"][data-living-profile-size="large"]
+  :is(.tribute-dock__main, .tribute-dock__living, .tribute-dock__living-list),
+.tribute-dock[data-expanded="true"][data-living-profile-size="largest"]
+  :is(.tribute-dock__main, .tribute-dock__living, .tribute-dock__living-list) {
+  width: max-content;
+  min-width: 0;
+  max-width: none;
+  overflow: visible;
+}
+
+.tribute-dock[data-expanded="true"][data-living-profile-size="large"] .tribute-dock__living-list,
+.tribute-dock[data-expanded="true"][data-living-profile-size="largest"] .tribute-dock__living-list {
+  flex-wrap: nowrap;
+}
+
+.tribute-dock[data-expanded="true"][data-living-profile-size="large"]
+  .tribute-dock__content[data-has-fallen="true"]
+  > .tribute-dock__fallen,
+.tribute-dock[data-expanded="true"][data-living-profile-size="largest"]
+  .tribute-dock__content[data-has-fallen="true"]
+  > .tribute-dock__fallen {
+  width: 100%;
+  min-width: var(--fallen-portrait-size);
+  max-width: none;
+  justify-self: stretch;
+}
+
+.tribute-dock[data-expanded="true"][data-living-profile-size="large"] .tribute-dock__fallen-list,
+.tribute-dock[data-expanded="true"][data-living-profile-size="largest"] .tribute-dock__fallen-list {
+  width: 100%;
+  max-width: none;
+  flex-wrap: wrap;
+}
+
+/* END expanded-small-roster-living-priority */

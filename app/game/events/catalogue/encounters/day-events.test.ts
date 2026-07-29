@@ -108,8 +108,8 @@ describe("Day events 3.1 through 3.15", () => {
         truce: expect.objectContaining({
           tributeIds: ["actor", "target"],
           expiresAfterRound: {
-            day: 2,
-            period: "night",
+            day: 4,
+            period: "day",
           },
         }),
       }),

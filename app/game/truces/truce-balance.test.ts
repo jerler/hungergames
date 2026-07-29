@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import { createSeededRandom, selectWeightedItem } from "~/game/engine/random";
 import { STANDARD_FORMATION_EVENTS } from "~/game/events/catalogue/relationships/standard-formation-events";
+import { getEventDefinitionSpecificityMultiplier } from "~/game/events/event-specificity";
 import { getEventDefinitionWeight } from "~/game/events/event-weighting";
 import { getTruceFormationPopulationMultiplier } from "~/game/truces/truce-engine";
 import {
@@ -211,7 +212,7 @@ describe("truce balance", () => {
       getTruceFormationPopulationMultiplier(withLivingTributeCount(game, livingCount)),
     );
 
-    expect(multipliers).toEqual([1, 0.65, 0.25, 0.05, 0]);
+    expect(multipliers).toEqual([1, 0.65, 0.25, 0, 0]);
 
     const observedRates = multipliers.map((multiplier, index) =>
       sampleFormationRate(multiplier, `formation-population-${populations[index]}`),
@@ -223,7 +224,7 @@ describe("truce balance", () => {
 
     expect(observedRates[2]).toBeGreaterThan(observedRates[3]);
 
-    expect(observedRates[3]).toBeGreaterThan(observedRates[4]);
+    expect(observedRates[3]).toBe(0);
 
     expect(observedRates[4]).toBe(0);
 
@@ -254,7 +255,7 @@ describe("truce balance", () => {
       },
       {
         livingCount: 4,
-        multiplier: 0.05,
+        multiplier: 0,
       },
       {
         livingCount: 3,
@@ -279,8 +280,10 @@ describe("truce balance", () => {
       expect(getTruceFormationPopulationMultiplier(state)).toBe(multiplier);
 
       for (const definition of STANDARD_FORMATION_EVENTS) {
+        const specificityMultiplier = getEventDefinitionSpecificityMultiplier(definition);
+
         expect(getEventDefinitionWeight(definition, context)).toBeCloseTo(
-          definition.baseWeight * multiplier,
+          definition.baseWeight * multiplier * specificityMultiplier,
           10,
         );
       }

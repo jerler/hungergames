@@ -50,6 +50,13 @@ export const ITEM_USE_EVENTS = [
     tags: ["weapon", "item", "status", "resource"],
     periods: ["day"],
     weight: 3.5,
+    recoveryTargets: [
+      {
+        kind: "survival-need",
+        roleId: "tribute",
+        need: "food",
+      },
+    ],
     outcomes: {
       criticalFailure: result({
         text: ({ tribute }) =>
@@ -85,6 +92,18 @@ export const ITEM_USE_EVENTS = [
     periods: ["day"],
     weight: 3.5,
     roleOptions: { getWeight: getVulnerabilityWeight },
+    recoveryTargets: [
+      {
+        kind: "survival-need",
+        roleId: "tribute",
+        need: "food",
+      },
+      {
+        kind: "survival-need",
+        roleId: "tribute",
+        need: "water",
+      },
+    ],
     outcomes: {
       criticalFailure: result({
         text: ({ tribute }) =>

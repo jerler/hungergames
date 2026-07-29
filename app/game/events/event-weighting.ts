@@ -1,4 +1,5 @@
 import type { EventDefinition, EventSelectionContext } from "~/game/events/event-schema";
+import { getEventDefinitionSpecificityMultiplier } from "~/game/events/event-specificity";
 import { getEventCategoryMultiplier } from "~/game/engine/stat-formulas";
 
 export function getEventDefinitionWeight(
@@ -12,5 +13,10 @@ export function getEventDefinitionWeight(
 
   const definitionMultiplier = definition.getWeightMultiplier?.(context) ?? 1;
 
-  return Math.max(0, definition.baseWeight * categoryMultiplier * definitionMultiplier);
+  const specificityMultiplier = getEventDefinitionSpecificityMultiplier(definition);
+
+  return Math.max(
+    0,
+    definition.baseWeight * categoryMultiplier * definitionMultiplier * specificityMultiplier,
+  );
 }

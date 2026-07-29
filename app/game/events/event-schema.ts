@@ -20,6 +20,8 @@ import type {
   RoundReference,
 } from "~/game/types/game-state";
 import type { ItemDefinitionId, ItemTag } from "~/game/items/item-schema";
+import type { StatusEffectId } from "~/game/statuses/status-schema";
+import type { SurvivalNeed } from "~/game/survival/survival-schema";
 
 export type EventCategory = "fatal" | "survival" | "hazard";
 
@@ -42,6 +44,44 @@ export type EventTag =
   | "romantic"
   | "ambush"
   | "victory";
+
+export type EventSpecificityReason =
+  | "stat-requirement"
+  | "status-requirement"
+  | "deprivation-requirement"
+  | "truce-requirement"
+  | "item-requirement"
+  | "custom-eligibility";
+
+export interface EventSelectionProfile {
+  /**
+   * Additive authored specificity points.
+   *
+   * The engine converts these points into a capped weighting multiplier.
+   */
+  specificityScore: number;
+
+  /**
+   * Human-readable categories retained for tests and future balance reports.
+   */
+  specificityReasons: readonly EventSpecificityReason[];
+}
+
+export type EventRecoveryTarget =
+  | {
+      kind: "status";
+      roleId: string;
+      statusIds: readonly StatusEffectId[];
+    }
+  | {
+      kind: "survival-need";
+      roleId: string;
+      need: SurvivalNeed;
+    };
+
+export interface EventRecoveryProfile {
+  targets: readonly EventRecoveryTarget[];
+}
 
 export interface EventSelectionContext {
   state: GameState;
@@ -177,6 +217,19 @@ export interface EventDefinition {
   periods: readonly RoundReference["period"][];
   baseWeight: number;
   tags: readonly EventTag[];
+
+  /**
+   * Describes why an event is unusually narrow once its prerequisites exist.
+   *
+   * Authored events receive this automatically from declarative requirements.
+   * Direct definitions may provide it explicitly.
+   */
+  selectionProfile?: EventSelectionProfile;
+
+  /**
+   * Active problems this event can attempt to fix.
+   */
+  recoveryProfile?: EventRecoveryProfile;
 
   /**
    * Declares how this definition behaves when selected

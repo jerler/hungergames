@@ -15,7 +15,7 @@ import type {
   RoundReference,
 } from "~/game/types/game-state";
 
-import { completeNightRestCoverage } from "./night-rest-coverage";
+import { applyMissingNightRestBookkeeping, completeNightRestCoverage } from "./night-rest-coverage";
 import { prepareRound } from "./round-preparation";
 
 const NIGHT_TWO = {
@@ -110,8 +110,33 @@ describe("rest and deprivation integration", () => {
       const [completedEvent] = completeNightRestCoverage(state, NIGHT_THREE, [rawEvent]);
 
       expect(completedEvent).toBeDefined();
-      expect(completedEvent ? countRestChanges(completedEvent, tribute.id) : 0).toBe(1);
-      expect(completedEvent?.text).toMatch(/remains exposed through the night/i);
+      expect(completedEvent ? countRestChanges(completedEvent, tribute.id) : 0).toBe(0);
+
+      expect(completedEvent?.text).toBe(rawEvent.text);
+
+      const stateAfterVisibleEvent = completedEvent
+        ? applyResolvedEvent(
+            {
+              ...state,
+              currentRound: NIGHT_THREE,
+              roundEvents: [completedEvent],
+              revealedEventCount: 1,
+            },
+            completedEvent,
+          )
+        : state;
+
+      const stateAfterBookkeeping = applyMissingNightRestBookkeeping(stateAfterVisibleEvent);
+
+      const bookkeepingEvent = stateAfterBookkeeping.eventHistory.find(
+        (event) =>
+          event.kind === "preparation" &&
+          event.preparation?.mechanic === "night-rest-preparation" &&
+          event.participantTributeIds.includes(tribute.id),
+      );
+
+      expect(bookkeepingEvent).toBeDefined();
+      expect(bookkeepingEvent ? countRestChanges(bookkeepingEvent, tribute.id) : 0).toBe(1);
     },
   );
 

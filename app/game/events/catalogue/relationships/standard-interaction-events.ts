@@ -17,15 +17,19 @@ import {
   type EventDefinition,
   type EventResolution,
 } from "~/game/events/event-schema";
-import { getActiveTruceForTribute } from "~/game/truces/truce-engine";
+import {
+  canStandardTruceEnd,
+  getActiveTruceForTribute,
+  getLivingTruceMembers,
+} from "~/game/truces/truce-engine";
 import { TRUCE_GROUP_SIZE_WEIGHTS, type TruceGroupSize } from "~/game/truces/truce-selection";
+import { getTributePronouns } from "~/game/tributes/pronouns";
 import type {
   GameState,
   GameTribute,
   TransferInventoryItemChange,
   Truce,
 } from "~/game/types/game-state";
-import { getTributePronouns } from "~/game/tributes/pronouns";
 
 const BETRAYAL_TOTAL_WEIGHT = 1.5;
 
@@ -169,7 +173,7 @@ function createBetrayalTheftChanges(
 
 function describeTheft(itemCount: number): string {
   if (itemCount === 0) {
-    return "finds nothing worth taking";
+    throw new Error("A successful truce betrayal resolved without any item to steal.");
   }
 
   if (itemCount === 1) {
@@ -191,13 +195,27 @@ function createBetrayalEvent(groupSize: TruceGroupSize, groupSizeWeight: number)
 
     baseWeight: BETRAYAL_TOTAL_WEIGHT * (groupSizeWeight / 100),
 
+    selectionProfile: {
+      specificityScore: 4,
+      specificityReasons: ["truce-requirement", "item-requirement"],
+    },
+
     roles: [
       {
         id: "betrayer",
         count: 1,
 
-        isEligible: (tribute, { state }) =>
-          isStandardTruceOfSize(getActiveTruceForTribute(state, tribute.id), groupSize),
+        isEligible: (tribute, { state }) => {
+          const truce = getActiveTruceForTribute(state, tribute.id);
+
+          if (!isStandardTruceOfSize(truce, groupSize)) {
+            return false;
+          }
+
+          return getLivingTruceMembers(state, truce).some(
+            (member) => member.id !== tribute.id && member.inventory.length > 0,
+          );
+        },
       },
       {
         id: "partners",
@@ -217,8 +235,13 @@ function createBetrayalEvent(groupSize: TruceGroupSize, groupSizeWeight: number)
       },
     ],
 
-    isEligible: ({ state }) =>
-      state.truces.some((truce) => isStandardTruceOfSize(truce, groupSize)),
+    isEligible: ({ state, round }) =>
+      canStandardTruceEnd(state, round) &&
+      state.truces.some(
+        (truce) =>
+          isStandardTruceOfSize(truce, groupSize) &&
+          getLivingTruceMembers(state, truce).some((member) => member.inventory.length > 0),
+      ),
 
     resolve({ state, eventId, round, random, participantsByRole }): EventResolution {
       const betrayer = requireSingleParticipant(participantsByRole, "betrayer");

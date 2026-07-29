@@ -114,7 +114,10 @@ describe("truce formation events", () => {
 
         createdRound: DAY_ONE,
 
-        expiresAfterRound: NIGHT_ONE,
+        expiresAfterRound: {
+          day: 4,
+          period: "day",
+        },
       }),
     ]);
 
@@ -153,7 +156,7 @@ describe("truce formation events", () => {
         createdRound: NIGHT_ONE,
 
         expiresAfterRound: {
-          day: 2,
+          day: 4,
           period: "day",
         },
       },
@@ -185,7 +188,10 @@ describe("truce formation events", () => {
 
       createdRound: DAY_ONE,
 
-      expiresAfterRound: NIGHT_ONE,
+      expiresAfterRound: {
+        day: 4,
+        period: "day",
+      },
     } as const;
 
     const state = {

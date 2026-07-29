@@ -63,7 +63,8 @@ describe("Bloodbath Cornucopia provisions", () => {
       );
 
       if (survivors.length > 0) {
-        expect(event.text).toMatch(/pack of food and water from the Cornucopia/i);
+        expect(event.text).not.toMatch(/pack of food and water from the Cornucopia/i);
+        expect(event.text).not.toMatch(/survivors each escape with a pack of food/i);
       }
 
       for (const tributeId of event.participantTributeIds) {

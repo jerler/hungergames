@@ -315,3 +315,78 @@
     transition: none;
   }
 }
+
+/* BEGIN arena-balance-pass overrides */
+
+.event-feed-frame,
+.event-feed,
+.event-feed__groups,
+.event-feed-group,
+.event-feed__list,
+.event-feed__list > li,
+.event-card {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+}
+
+.event-feed__list {
+  padding-inline: 0;
+}
+
+.event-feed-frame > .event-feed {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.event-card {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  border-radius: 0;
+}
+
+.tribute-dock[data-expanded="true"] .tribute-dock__content[data-has-fallen="true"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.tribute-dock[data-expanded="true"] .tribute-dock__fallen {
+  width: 100%;
+  max-width: none;
+  padding-top: var(--space-2);
+  padding-left: 0;
+  border-top: 1px solid rgb(219 98 98 / 24%);
+  border-left: 0;
+  grid-column: 1 / -1;
+}
+
+.tribute-dock[data-expanded="true"] .tribute-dock__fallen-list {
+  display: flex;
+  width: 100%;
+  overflow: visible;
+  flex-wrap: wrap;
+}
+
+.tribute-dock[data-expanded="true"][data-living-profile-size="large"]
+  .tribute-dock__living-list
+  > .tribute-dock__tribute:not(.tribute-dock__tribute--fallen) {
+  width: 4.6rem;
+  flex: 0 0 4.6rem;
+}
+
+.tribute-dock[data-expanded="true"][data-living-profile-size="largest"]
+  .tribute-dock__living-list
+  > .tribute-dock__tribute:not(.tribute-dock__tribute--fallen) {
+  width: 6rem;
+  flex: 0 0 6rem;
+}
+
+.tribute-dock[data-expanded="true"][data-living-profile-size="large"] .tribute-dock__name {
+  font-size: 0.66rem;
+}
+
+.tribute-dock[data-expanded="true"][data-living-profile-size="largest"] .tribute-dock__name {
+  font-size: 0.75rem;
+}
+
+/* END arena-balance-pass overrides */

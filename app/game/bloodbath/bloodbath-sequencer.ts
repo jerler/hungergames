@@ -39,9 +39,16 @@ import type {
 } from "~/game/types/game-state";
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
 import { createInventoryItemInstance } from "~/game/items/inventory-engine";
+import { getItemDefinition } from "~/game/items/item-catalogue";
 import { CORNUCOPIA_PROVISIONS_ITEM_ID } from "~/game/items/deprivation-protection";
 import { validateEventResolution } from "~/game/events/validation/validate-event-resolution";
 import { selectEventParticipants } from "~/game/events/participant-selection";
+import {
+  hasUsableCornucopiaContestedDirectWeapon,
+  hasUsableCornucopiaPackItem,
+  selectCornucopiaContestedDirectWeapon,
+  selectCornucopiaPackItem,
+} from "~/game/events/catalogue/bloodbath/cornucopia-item-pool";
 
 function createEventId(round: RoundReference, eventIndex: number, definitionId: string): string {
   return ["bloodbath", round.period, round.day, eventIndex, definitionId].join("-");
@@ -135,15 +142,8 @@ function addCornucopiaProvisions(
     }
   }
 
-  const supplyText =
-    survivors.length === 1
-      ? `${survivors[0]?.snapshot.name} also escapes ` +
-        "with a pack of food and water from the Cornucopia."
-      : "The survivors each escape with a pack of food " + "and water from the Cornucopia.";
-
   return {
     ...event,
-    text: `${event.text} ${supplyText}`,
     changes: [...event.changes, ...additionalChanges],
   };
 }
@@ -279,6 +279,11 @@ function selectBloodbathAcquisitionEvent(
     ...CORNUCOPIA_ACQUISITION_EVENTS,
     ...CORNUCOPIA_FLAVOUR_ACQUISITION_EVENTS,
   ].filter((definition) => isEventDefinitionEligible(definition, context));
+
+  /* Weapon-first Cornucopia acquisition policy. */
+  candidateDefinitions = candidateDefinitions.filter((definition) =>
+    (definition.tags as readonly string[]).includes("weapon"),
+  );
 
   while (candidateDefinitions.length > 0) {
     const definition = selectWeightedItem(
@@ -537,6 +542,119 @@ function selectAuthoredFatalBloodbathEvent(
   return null;
 }
 
+const RARE_CORNUCOPIA_BONUS_ITEM_CHANCE = 0.1;
+
+function normalizeCornucopiaAcquisitions(
+  event: ResolvedEvent,
+  tributes: readonly GameTribute[],
+  random: RandomSource,
+): ResolvedEvent {
+  const acquisitionTributeIds = [
+    ...new Set(
+      event.changes.flatMap((change) =>
+        change.type === "acquire-item" && change.item.definitionId !== CORNUCOPIA_PROVISIONS_ITEM_ID
+          ? [change.tributeId]
+          : [],
+      ),
+    ),
+  ];
+
+  if (acquisitionTributeIds.length === 0) {
+    return event;
+  }
+
+  let normalizedChanges = [...event.changes];
+
+  for (const tributeId of acquisitionTributeIds) {
+    const tribute = tributes.find((candidate) => candidate.id === tributeId);
+
+    if (!tribute) {
+      throw new Error(
+        `Cornucopia event "${event.id}" awarded an item to missing tribute "${tributeId}".`,
+      );
+    }
+
+    const tributeAcquisitions = normalizedChanges.filter(
+      (change) =>
+        change.type === "acquire-item" &&
+        change.tributeId === tributeId &&
+        change.item.definitionId !== CORNUCOPIA_PROVISIONS_ITEM_ID,
+    );
+
+    const offensiveAcquisitions = tributeAcquisitions.filter(
+      (change) =>
+        change.type === "acquire-item" &&
+        Boolean(getItemDefinition(change.item.definitionId).offense),
+    );
+
+    const supplyAcquisitions = tributeAcquisitions.filter(
+      (change) =>
+        change.type === "acquire-item" && !getItemDefinition(change.item.definitionId).offense,
+    );
+
+    /*
+     * Remove every non-offensive acquisition first.
+     * At most one may be restored as the rare
+     * secondary item after a weapon is guaranteed.
+     */
+    const supplyItemInstanceIds = new Set(
+      supplyAcquisitions.flatMap((change) =>
+        change.type === "acquire-item" ? [change.item.id] : [],
+      ),
+    );
+
+    normalizedChanges = normalizedChanges.filter(
+      (change) => change.type !== "acquire-item" || !supplyItemInstanceIds.has(change.item.id),
+    );
+
+    if (offensiveAcquisitions.length === 0) {
+      if (!hasUsableCornucopiaContestedDirectWeapon(tribute)) {
+        throw new Error(
+          `Cornucopia event "${event.id}" could not award tribute "${tributeId}" a usable weapon.`,
+        );
+      }
+
+      const weaponItemId = selectCornucopiaContestedDirectWeapon(tribute, random);
+
+      normalizedChanges.push({
+        type: "acquire-item",
+        tributeId,
+        acquisitionSource: "cornucopia",
+        item: createInventoryItemInstance(event.id, tributeId, weaponItemId, event.round),
+      });
+    }
+
+    if (random() >= RARE_CORNUCOPIA_BONUS_ITEM_CHANCE) {
+      continue;
+    }
+
+    const existingSupply = supplyAcquisitions.find((change) => change.type === "acquire-item");
+
+    if (existingSupply?.type === "acquire-item") {
+      normalizedChanges.push(existingSupply);
+      continue;
+    }
+
+    if (!hasUsableCornucopiaPackItem(tribute)) {
+      continue;
+    }
+
+    const bonusItemId = selectCornucopiaPackItem(tribute, random);
+
+    normalizedChanges.push({
+      type: "acquire-item",
+      tributeId,
+      acquisitionSource: "cornucopia",
+      item: createInventoryItemInstance(event.id, tributeId, bonusItemId, event.round),
+    });
+  }
+
+  return {
+    ...event,
+    changes: normalizedChanges,
+  };
+}
+
 type PostTargetEventShape = "solo" | "pair" | "trio" | "quartet" | "delayed-fatal";
 
 interface PostTargetEventShapeOption {
@@ -570,7 +688,7 @@ function selectPostTargetCornucopiaEvent(
   const shapeOptions: PostTargetEventShapeOption[] = [
     {
       shape: "solo",
-      weight: 5,
+      weight: 14,
     },
   ];
 
@@ -778,7 +896,17 @@ function sequenceCornucopiaEvents(
       unavailableItemInstanceIds,
     });
 
-    const event = addCornucopiaProvisions(resolvedEvent, livingTributes);
+    const bonusRandom = createSeededRandom(
+      [state.seed, resolvedEvent.id, "cornucopia-bonus-item"].join(":"),
+    );
+
+    const eventWithPossibleBonus = normalizeCornucopiaAcquisitions(
+      resolvedEvent,
+      livingTributes,
+      bonusRandom,
+    );
+
+    const event = addCornucopiaProvisions(eventWithPossibleBonus, livingTributes);
 
     plannedEliminationCount += countPlannedEliminations(event.changes);
 

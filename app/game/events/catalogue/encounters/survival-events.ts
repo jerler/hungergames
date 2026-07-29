@@ -34,6 +34,18 @@ export const SURVIVAL_EVENTS = [
     .tags("survival", "item", "tool", "status", "resource")
     .during("day")
     .weight(4)
+    .addresses(
+      {
+        kind: "survival-need",
+        roleId: "tribute",
+        need: "food",
+      },
+      {
+        kind: "survival-need",
+        roleId: "tribute",
+        need: "water",
+      },
+    )
     .resolve(
       statCheck("tribute", brains(3), {
         criticalFailure: result({

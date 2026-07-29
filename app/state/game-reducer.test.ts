@@ -226,13 +226,42 @@ describe("gameReducer", () => {
 
     const completedTribute = completed.tributes.find((candidate) => candidate.id === tribute.id);
 
-    expect(completedTribute?.survival).toEqual(tribute.survival);
+    expect(completedTribute?.survival).toEqual({
+      ...tribute.survival,
+      lastNightRest: {
+        round: NIGHT_ONE,
+        quality: "unsheltered",
+      },
+    });
     expect(completedTribute?.statuses.map((status) => status.definitionId)).toEqual([
       "hungry",
       "thirsty",
     ]);
 
-    expect(completed.eventHistory).toEqual(game.eventHistory);
+    expect(completed.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          definitionId: "night-rest-fallback",
+          kind: "preparation",
+          participantTributeIds: [tribute.id],
+          preparation: expect.objectContaining({
+            mechanic: "night-rest-preparation",
+            actingTributeId: tribute.id,
+            restQuality: "unsheltered",
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      completed.eventHistory.some((event) =>
+        event.changes.some(
+          (change) =>
+            change.type === "apply-status" &&
+            (change.status.definitionId === "hungry" || change.status.definitionId === "thirsty"),
+        ),
+      ),
+    ).toBe(false);
 
     expect(completed.tributes.filter((candidate) => candidate.isAlive)).toHaveLength(
       game.tributes.length,

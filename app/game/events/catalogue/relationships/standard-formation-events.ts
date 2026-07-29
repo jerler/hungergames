@@ -1,4 +1,3 @@
-import { getNextRound } from "~/game/engine/rounds";
 import {
   requireParticipants,
   type EventDefinition,
@@ -6,9 +5,11 @@ import {
 } from "~/game/events/event-schema";
 import { createNightRestChanges, createSurvivalChanges } from "~/game/events/event-change-builders";
 import {
+  canStandardTrucePersist,
   createTruceInstance,
   getActiveTruceForTribute,
   getTruceFormationPopulationMultiplier,
+  STANDARD_TRUCE_EXPIRY_ROUND,
 } from "~/game/truces/truce-engine";
 import {
   getAverageDistrictAffinityWeight,
@@ -73,7 +74,10 @@ function createFormationEvent(
       },
     ],
 
-    isEligible: ({ state, livingTributes }) => {
+    isEligible: ({ state, round, livingTributes }) => {
+      if (!canStandardTrucePersist(state, round)) {
+        return false;
+      }
       if (livingTributes.length <= 3) {
         return false;
       }
@@ -85,7 +89,7 @@ function createFormationEvent(
       return availableTributes.length >= groupSize;
     },
 
-    getWeightMultiplier: ({ state }) => getTruceFormationPopulationMultiplier(state),
+    getWeightMultiplier: ({ state, round }) => getTruceFormationPopulationMultiplier(state, round),
 
     resolve({ eventId: resolvedEventId, round, participantsByRole }): EventResolution {
       const tributes = requireParticipants(participantsByRole, "tributes");
@@ -102,7 +106,7 @@ function createFormationEvent(
         resolvedEventId,
         tributes.map((tribute) => tribute.id),
         round,
-        getNextRound(round),
+        STANDARD_TRUCE_EXPIRY_ROUND,
       );
 
       const text = travelsTogether

@@ -219,8 +219,19 @@ describe("truce conflict events", () => {
     const game = createGame();
 
     const members = game.tributes.slice(0, 3);
+    const itemOwner = members[1];
 
-    const state = formTruce(game, members);
+    if (!itemOwner) {
+      throw new Error("Missing betrayal item-owner fixture.");
+    }
+
+    let state = acquireItem(game, itemOwner, "knife", "cornucopia", 1);
+
+    const memberIds = new Set(members.map((member) => member.id));
+
+    const stateMembers = state.tributes.filter((tribute) => memberIds.has(tribute.id));
+
+    state = formTruce(state, stateMembers);
 
     const definition = requireConflictEvent("truce-betrayal-3");
 
@@ -229,18 +240,13 @@ describe("truce conflict events", () => {
       {
         state,
         round: DAY_ONE,
-
         livingTributes: state.tributes,
       },
-
       createSequenceRandom([0, 0, 0]),
-
       new Set(),
     );
 
-    expect(new Set(selection?.participantTributeIds)).toEqual(
-      new Set(members.map((member) => member.id)),
-    );
+    expect(new Set(selection?.participantTributeIds)).toEqual(memberIds);
   });
 
   it("does not allow romantic truces into betrayal events", () => {
@@ -266,27 +272,39 @@ describe("truce conflict events", () => {
     const game = createGame();
 
     const betrayer = withStats(game.tributes[0], BALANCED_STATS);
-
     const partner = withStats(game.tributes[1], BALANCED_STATS);
 
-    const state = formTruce(
-      {
-        ...game,
+    let state: GameState = {
+      ...game,
+      tributes: game.tributes.map((tribute) => {
+        if (tribute.id === betrayer.id) {
+          return betrayer;
+        }
 
-        tributes: game.tributes.map((tribute) => {
-          if (tribute.id === betrayer.id) {
-            return betrayer;
-          }
+        if (tribute.id === partner.id) {
+          return partner;
+        }
 
-          if (tribute.id === partner.id) {
-            return partner;
-          }
+        return tribute;
+      }),
+    };
 
-          return tribute;
-        }),
-      },
-      [betrayer, partner],
-    );
+    const partnerBeforeItem = state.tributes.find((tribute) => tribute.id === partner.id);
+
+    if (!partnerBeforeItem) {
+      throw new Error("Missing betrayal partner fixture.");
+    }
+
+    state = acquireItem(state, partnerBeforeItem, "med-kit", "cornucopia", 1);
+
+    const stateBetrayer = state.tributes.find((tribute) => tribute.id === betrayer.id);
+    const statePartner = state.tributes.find((tribute) => tribute.id === partner.id);
+
+    if (!stateBetrayer || !statePartner) {
+      throw new Error("Missing refreshed betrayal participants.");
+    }
+
+    state = formTruce(state, [stateBetrayer, statePartner]);
 
     const definition = requireConflictEvent("truce-betrayal-2");
 
@@ -296,9 +314,8 @@ describe("truce conflict events", () => {
           definition,
           state,
           {
-            betrayer: [betrayer],
-
-            partners: [partner],
+            betrayer: [stateBetrayer],
+            partners: [statePartner],
           },
           [randomValue],
         ).text,

@@ -12,6 +12,35 @@ import type {
 import { createSeededRandom } from "~/game/engine/random";
 import { createEvenTruceInventoryRedistributionChanges } from "~/game/truces/truce-inventory";
 
+export const STANDARD_TRUCE_END_DAY = 4;
+export const STANDARD_TRUCE_MINIMUM_LIVING_COUNT = 6;
+
+export const STANDARD_TRUCE_EXPIRY_ROUND = {
+  day: STANDARD_TRUCE_END_DAY,
+  period: "day",
+} as const satisfies RoundReference;
+
+function getLivingTributeCount(state: GameState): number {
+  return state.tributes.filter((tribute) => tribute.isAlive).length;
+}
+
+export function canStandardTrucePersist(
+  state: GameState,
+  round: RoundReference | null = state.currentRound,
+): boolean {
+  return (
+    getLivingTributeCount(state) >= STANDARD_TRUCE_MINIMUM_LIVING_COUNT &&
+    (round === null || round.day < STANDARD_TRUCE_END_DAY)
+  );
+}
+
+export function canStandardTruceEnd(
+  state: GameState,
+  round: RoundReference | null = state.currentRound,
+): boolean {
+  return !canStandardTrucePersist(state, round);
+}
+
 export function createTruceInstance(
   eventId: string,
   tributeIds: readonly string[],
@@ -80,13 +109,15 @@ export function getLivingTruceMembers(state: GameState, truce: Truce): GameTribu
   });
 }
 
-export function getTruceFormationPopulationMultiplier(state: GameState): number {
-  const livingCount = state.tributes.filter((tribute) => tribute.isAlive).length;
-
-  if (livingCount <= 3) {
+export function getTruceFormationPopulationMultiplier(
+  state: GameState,
+  round: RoundReference | null = state.currentRound,
+): number {
+  if (!canStandardTrucePersist(state, round)) {
     return 0;
   }
 
+  const livingCount = getLivingTributeCount(state);
   const livingRatio = livingCount / state.tributes.length;
 
   if (livingRatio > 0.75) {
@@ -120,9 +151,17 @@ function formatNameList(names: readonly string[]): string {
   return `${names.slice(0, -1).join(", ")}, and ` + names[names.length - 1];
 }
 
-function hasTruceExpired(truce: Truce, completedRound: RoundReference): boolean {
-  if (!truce.expiresAfterRound) {
+function hasTruceExpired(
+  truce: Truce,
+  completedRound: RoundReference,
+  livingTributeCount: number,
+): boolean {
+  if (truce.kind !== "standard" || !truce.expiresAfterRound) {
     return false;
+  }
+
+  if (livingTributeCount < STANDARD_TRUCE_MINIMUM_LIVING_COUNT) {
+    return true;
   }
 
   return getRoundSequence(completedRound) >= getRoundSequence(truce.expiresAfterRound);
@@ -135,7 +174,11 @@ export function expireTrucesAfterRound(state: GameState): GameState {
     return state;
   }
 
-  const expiredTruces = state.truces.filter((truce) => hasTruceExpired(truce, completedRound));
+  const livingTributeCount = getLivingTributeCount(state);
+
+  const expiredTruces = state.truces.filter((truce) =>
+    hasTruceExpired(truce, completedRound, livingTributeCount),
+  );
 
   if (expiredTruces.length === 0) {
     return state;

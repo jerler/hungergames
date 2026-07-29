@@ -8,6 +8,7 @@ import {
 } from "~/game/events/authoring";
 import type { EventDefinition } from "~/game/events/event-schema";
 import { getEffectiveLuck } from "~/game/engine/effective-stats";
+import { getActiveTruceForTribute } from "~/game/truces/truce-engine";
 
 export const HIGH_LUCK_EVENTS = [
   /* Day Only */
@@ -21,11 +22,12 @@ export const HIGH_LUCK_EVENTS = [
     requirements: [minimumStat("tribute", "luck", 4)],
 
     category: "survival",
-    tags: ["status"],
+    tags: ["status", "truce"],
     periods: ["day", "night"],
     weight: 3.5,
 
     roleOptions: {
+      isEligible: (tribute, { state }) => getActiveTruceForTribute(state, tribute.id) !== null,
       getWeight: (tribute) => getEffectiveLuck(tribute),
     },
 

@@ -7,7 +7,7 @@ import {
 } from "~/game/events/authoring/testing/authoring-test-fixtures";
 import type { GameState, ResolvedEvent, RoundReference } from "~/game/types/game-state";
 
-import { completeNightRestCoverage } from "./night-rest-coverage";
+import { applyMissingNightRestBookkeeping, completeNightRestCoverage } from "./night-rest-coverage";
 import { prepareRound } from "./round-preparation";
 
 const NIGHT_ROUND = {
@@ -110,7 +110,16 @@ describe("night-rest lifecycle integration", () => {
       ]),
     ]);
 
-    const afterNight = applyEvents(state, completedEvents);
+    const afterVisibleNight = applyEvents(
+      {
+        ...state,
+        roundEvents: [...completedEvents],
+        revealedEventCount: completedEvents.length,
+      },
+      completedEvents,
+    );
+
+    const afterNight = applyMissingNightRestBookkeeping(afterVisibleNight);
 
     const morning = prepareRound(afterNight, MORNING_ROUND);
 

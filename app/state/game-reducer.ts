@@ -9,6 +9,7 @@ import { advanceStatusDurations } from "~/game/statuses/status-engine";
 import { expireTrucesAfterRound } from "~/game/truces/truce-engine";
 import { createSoleVictoryOutcome } from "~/game/victory/victory-outcome";
 import { loadGameState } from "~/game/persistence/game-state-loader";
+import { applyMissingNightRestBookkeeping } from "~/game/survival/night-rest-coverage";
 import { prepareRound } from "~/game/survival/round-preparation";
 
 export type GameReducerState = GameState | null;
@@ -93,7 +94,9 @@ function completeRound(state: GameState, now: string): GameState {
     });
   }
 
-  const stateWithAdvancedStatuses = advanceStatusDurations(state);
+  const stateWithNightRestBookkeeping = applyMissingNightRestBookkeeping(state);
+
+  const stateWithAdvancedStatuses = advanceStatusDurations(stateWithNightRestBookkeeping);
 
   const stateAfterRoundProcessing = expireTrucesAfterRound(stateWithAdvancedStatuses);
   const containedElimination = stateAfterRoundProcessing.roundEvents.some((event) =>

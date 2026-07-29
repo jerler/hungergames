@@ -198,6 +198,9 @@ export function TributeDock({ tributes, truces }: TributeDockProps) {
     }))
     .filter(({ tributes: relatedTributes }) => relatedTributes.length >= 2);
 
+  const livingProfileSize =
+    livingTributes.length <= 5 ? "largest" : livingTributes.length <= 10 ? "large" : "default";
+
   const fallenColumnCount = Math.max(1, Math.min(fallenTributes.length, 8));
 
   const dockStyle = {
@@ -303,6 +306,7 @@ export function TributeDock({ tributes, truces }: TributeDockProps) {
         className="tribute-dock"
         data-expanded={isExpanded}
         data-has-fallen={fallenTributes.length > 0}
+        data-living-profile-size={livingProfileSize}
         style={dockStyle}
         aria-labelledby="tribute-dock-title"
       >

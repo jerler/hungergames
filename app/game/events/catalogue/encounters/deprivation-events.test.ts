@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { applyResolvedEvent } from "~/game/engine/apply-game-change";
 import {
   createAuthoringTestGame,
   createAuthoringTestTribute,
@@ -7,7 +8,10 @@ import {
 } from "~/game/events/authoring/testing/authoring-test-fixtures";
 import { CORNUCOPIA_PROVISION_EVENTS } from "~/game/events/catalogue/encounters/cornucopia-provision-events";
 import { selectEventParticipants } from "~/game/events/participant-selection";
-import { completeNightRestCoverage } from "~/game/survival/night-rest-coverage";
+import {
+  applyMissingNightRestBookkeeping,
+  completeNightRestCoverage,
+} from "~/game/survival/night-rest-coverage";
 import { createStatusEffectInstance } from "~/game/statuses/status-engine";
 import type { EventDefinition, EventSelectionContext } from "~/game/events/event-schema";
 import type {
@@ -191,21 +195,56 @@ describe("deprivation events", () => {
     expect(definition.tags).not.toContain("resource");
   });
 
-  it("coexists with the night-rest fallback", () => {
+  it("keeps deprivation prose authored while recording hidden night-rest bookkeeping", () => {
     const tribute = createAuthoringTestTribute({
       id: "night-hunger",
     });
+
     const state: GameState = {
       ...createAuthoringTestGame([tribute]),
       currentRound: NIGHT_THREE,
     };
+
     const event = resolve(requireEvent("becomes-hungry"), tribute, NIGHT_THREE, 0);
 
     const [completed] = completeNightRestCoverage(state, NIGHT_THREE, [event]);
 
-    expect(completed?.text).toContain("remains exposed through the night");
+    expect(completed).toBeDefined();
+    expect(completed?.text).toBe(event.text);
+
     expect(completed?.changes.filter((change) => change.type === "record-night-rest")).toHaveLength(
-      1,
+      0,
     );
+
+    if (!completed) {
+      throw new Error("Expected the authored deprivation event to remain visible.");
+    }
+
+    const stateAfterVisibleEvent = applyResolvedEvent(
+      {
+        ...state,
+        roundEvents: [completed],
+        revealedEventCount: 1,
+      },
+      completed,
+    );
+
+    const stateAfterBookkeeping = applyMissingNightRestBookkeeping(stateAfterVisibleEvent);
+
+    const bookkeepingEvent = stateAfterBookkeeping.eventHistory.find(
+      (candidate) =>
+        candidate.kind === "preparation" &&
+        candidate.preparation?.mechanic === "night-rest-preparation" &&
+        candidate.participantTributeIds.includes(tribute.id),
+    );
+
+    expect(bookkeepingEvent).toBeDefined();
+
+    expect(bookkeepingEvent?.changes).toContainEqual({
+      type: "record-night-rest",
+      tributeId: tribute.id,
+      round: NIGHT_THREE,
+      quality: "unsheltered",
+    });
   });
 });

@@ -112,6 +112,11 @@ export function createSurvivalNeedTheftEvent(
     .tags("hazard", "resource", "deprivation")
     .during("day")
     .weight(weight)
+    .addresses({
+      kind: "survival-need",
+      roleId: "thief",
+      need,
+    })
     .resolve(
       customResolution(
         (context, helpers) => {

@@ -12,5 +12,6 @@ export function createEvent(id: string): EventBuilder {
 
     roles: [],
     requirements: [],
+    recoveryTargets: [],
   });
 }

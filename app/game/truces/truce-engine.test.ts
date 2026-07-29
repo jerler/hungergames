@@ -8,6 +8,7 @@ import {
   expireTrucesAfterRound,
   getActiveTruceForTribute,
   getTruceFormationPopulationMultiplier,
+  STANDARD_TRUCE_EXPIRY_ROUND,
 } from "~/game/truces/truce-engine";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
@@ -363,53 +364,55 @@ describe("truce engine", () => {
     ).toBe(true);
   });
 
-  it("expires a truce after its final active round", () => {
+  it("keeps standard truces until Day 4 or fewer than six tributes remain", () => {
     const game = createGame();
-
     const truce = createTruceInstance(
       "form-event",
       [game.tributes[0].id, game.tributes[1].id],
       DAY_ONE,
-      NIGHT_ONE,
+      STANDARD_TRUCE_EXPIRY_ROUND,
     );
+
+    expect(truce.expiresAfterRound).toEqual({
+      day: 4,
+      period: "day",
+    });
 
     const formedState = applyResolvedEvent(
       game,
-      createEvent(
-        "form-event",
-        [
-          {
-            type: "form-truce",
-            truce,
-          },
-        ],
-        truce.tributeIds,
-      ),
+      createEvent("form-event", [{ type: "form-truce", truce }], truce.tributeIds),
     );
 
-    const expiredState = expireTrucesAfterRound({
-      ...formedState,
-      currentRound: NIGHT_ONE,
-      roundEvents: [],
-      revealedEventCount: 0,
-    });
+    expect(
+      expireTrucesAfterRound({
+        ...formedState,
+        currentRound: { day: 3, period: "night" },
+        roundEvents: [],
+        revealedEventCount: 0,
+      }).truces,
+    ).toEqual([truce]);
 
-    expect(expiredState.truces).toEqual([]);
+    expect(
+      expireTrucesAfterRound({
+        ...formedState,
+        currentRound: { day: 4, period: "day" },
+        roundEvents: [],
+        revealedEventCount: 0,
+      }).truces,
+    ).toEqual([]);
 
-    expect(expiredState.roundEvents).toEqual([
-      expect.objectContaining({
-        definitionId: "truce-expired",
-        kind: "aftermath",
-        participantTributeIds: truce.tributeIds,
-      }),
-    ]);
-
-    expect(expiredState.eventHistory.at(-1)).toMatchObject({
-      definitionId: "truce-expired",
-      kind: "aftermath",
-    });
-
-    expect(expiredState.revealedEventCount).toBe(1);
+    expect(
+      expireTrucesAfterRound({
+        ...formedState,
+        currentRound: { day: 2, period: "day" },
+        tributes: formedState.tributes.map((tribute, index) => ({
+          ...tribute,
+          isAlive: index < 5,
+        })),
+        roundEvents: [],
+        revealedEventCount: 0,
+      }).truces,
+    ).toEqual([]);
   });
 
   it("makes formation less likely as the population falls", () => {

@@ -334,7 +334,7 @@ describe("truce selection", () => {
 
     expect(getTruceFormationPopulationMultiplier(withLivingCount(8))).toBe(0.65);
 
-    expect(getTruceFormationPopulationMultiplier(withLivingCount(5))).toBe(0.25);
+    expect(getTruceFormationPopulationMultiplier(withLivingCount(5))).toBe(0);
 
     expect(getTruceFormationPopulationMultiplier(withLivingCount(3))).toBe(0);
   });

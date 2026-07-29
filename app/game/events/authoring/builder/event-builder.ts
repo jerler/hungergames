@@ -1,4 +1,9 @@
-import type { EventCategory, EventDefinition, EventTag } from "~/game/events/event-schema";
+import type {
+  EventCategory,
+  EventDefinition,
+  EventRecoveryTarget,
+  EventTag,
+} from "~/game/events/event-schema";
 import type { AuthoredRequirement } from "~/game/events/authoring/requirements/requirement-schema";
 import { groupRole, soloRole } from "~/game/events/authoring/roles/role-presets";
 import type {
@@ -91,6 +96,15 @@ export class EventBuilder {
   public when(...requirements: readonly AuthoredRequirement[]): EventBuilder {
     return this.with({
       requirements: [...this.configuration.requirements, ...requirements],
+    });
+  }
+
+  /**
+   * Declares active problems this event can attempt to resolve.
+   */
+  public addresses(...targets: readonly EventRecoveryTarget[]): EventBuilder {
+    return this.with({
+      recoveryTargets: [...this.configuration.recoveryTargets, ...targets],
     });
   }
 

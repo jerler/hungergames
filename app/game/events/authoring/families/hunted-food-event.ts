@@ -72,6 +72,7 @@ export function createHuntedFoodEvent(
     tags = [],
     roleOptions = {},
     requirements = [],
+    recoveryTargets = [],
   }: HuntedFoodEventOptions,
 ): EventDefinition {
   if (!HUNTED_FOOD_RESOURCE_IDS.includes(foodResourceId)) {
@@ -120,6 +121,14 @@ export function createHuntedFoodEvent(
     .tags(...mergeEventTags(["survival", "item", "resource", "status"], tags))
     .during(...periods)
     .weight(weight)
+    .addresses(
+      {
+        kind: "survival-need",
+        roleId,
+        need: "food",
+      },
+      ...recoveryTargets,
+    )
     .resolve(
       customResolution(
         (context, { resolveResult }) => {

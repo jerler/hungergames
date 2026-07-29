@@ -15,6 +15,7 @@ import type { AuthoredRoleSpecification } from "~/game/events/authoring/roles/ro
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { ITEM_TAGS, type ItemTag } from "~/game/items/item-schema";
 import { getStatusDefinition } from "~/game/statuses/status-catalogue";
+import { validateAuthoredRecoveryTargets } from "./validate-authored-recovery-targets";
 
 const EVENT_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -268,7 +269,7 @@ export function validateAuthoredEvent(
   configuration: AuthoredEventConfiguration,
   strategy: EventResolutionStrategy,
 ): void {
-  const { id, baseWeight, periods, roles, requirements } = configuration;
+  const { id, baseWeight, periods, roles, requirements, recoveryTargets } = configuration;
 
   if (!EVENT_ID_PATTERN.test(id)) {
     throw new Error(`Event ID "${id}" must be non-empty kebab-case text.`);
@@ -305,6 +306,8 @@ export function validateAuthoredEvent(
   for (const requirement of requirements) {
     validateRequirement(id, requirement, knownRoleIds);
   }
+
+  validateAuthoredRecoveryTargets(id, recoveryTargets, knownRoleIds);
 
   validateRequiredItemCounts(id, requirements);
   validateItemSelectionKinds(id, roles, requirements);

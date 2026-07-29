@@ -1,6 +1,7 @@
 import type {
   EventCategory,
   EventDefinition,
+  EventRecoveryTarget,
   EventResolution,
   EventResolutionContext,
   EventTag,
@@ -24,6 +25,7 @@ export interface AuthoredEventConfiguration {
 
   roles: readonly AuthoredRoleSpecification[];
   requirements: readonly AuthoredRequirement[];
+  recoveryTargets: readonly EventRecoveryTarget[];
 }
 
 export interface EventResolutionStrategy {

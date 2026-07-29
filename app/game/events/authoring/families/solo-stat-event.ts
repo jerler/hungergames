@@ -27,6 +27,7 @@ export function createSoloStatEvent(
     weight = 1,
     roleOptions = {},
     requirements = [],
+    recoveryTargets = [],
   }: SoloStatEventOptions,
 ): EventDefinition {
   return createEvent(id)
@@ -36,5 +37,6 @@ export function createSoloStatEvent(
     .tags(...mergeEventTags([category], tags))
     .during(...periods)
     .weight(weight)
+    .addresses(...recoveryTargets)
     .resolve(statCheck(roleId, check, outcomes));
 }

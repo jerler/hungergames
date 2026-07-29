@@ -1,5 +1,4 @@
 import { getEffectiveStats } from "~/game/engine/effective-stats";
-import { getNextRound } from "~/game/engine/rounds";
 import { getAwarenessScore } from "~/game/engine/stat-formulas";
 import {
   createFatalChanges,
@@ -11,7 +10,11 @@ import { resolveScoreCheck, type StatCheckOutcome } from "~/game/events/event-ou
 import { requireSingleParticipant, type EventDefinition } from "~/game/events/event-schema";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
 import type { SurvivalNeed } from "~/game/survival/survival-schema";
-import { createTruceInstance, getActiveTruceForTribute } from "~/game/truces/truce-engine";
+import {
+  createTruceInstance,
+  getActiveTruceForTribute,
+  STANDARD_TRUCE_EXPIRY_ROUND,
+} from "~/game/truces/truce-engine";
 import { getTributePronouns } from "~/game/tributes/pronouns";
 import type { GameChange, GameTribute, RoundReference } from "~/game/types/game-state";
 
@@ -860,7 +863,7 @@ function createBreakAwayFromCrowdEvent(): EventDefinition {
         context.eventId,
         [actor.id, ally.id],
         context.round,
-        getNextRound(context.round),
+        STANDARD_TRUCE_EXPIRY_ROUND,
       );
 
       if (outcome === "success") {

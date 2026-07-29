@@ -1,5 +1,4 @@
 import { getEffectiveStats } from "~/game/engine/effective-stats";
-import { getNextRound } from "~/game/engine/rounds";
 import { getAwarenessScore, getForagingScore, getSurvivalScore } from "~/game/engine/stat-formulas";
 import { selectWeightedItem } from "~/game/engine/random";
 import {
@@ -26,6 +25,8 @@ import {
   createTruceInstance,
   getActiveTruceForTribute,
   getLivingTruceMembers,
+  canStandardTrucePersist,
+  STANDARD_TRUCE_EXPIRY_ROUND,
 } from "~/game/truces/truce-engine";
 import { getTributePronouns } from "~/game/tributes/pronouns";
 import type { GameChange, GameTribute } from "~/game/types/game-state";
@@ -311,7 +312,7 @@ function createStandardTruceChange(
       context.eventId,
       tributes.map((tribute) => tribute.id),
       context.round,
-      getNextRound(context.round),
+      STANDARD_TRUCE_EXPIRY_ROUND,
     ),
   };
 }
@@ -434,6 +435,8 @@ const WORKING_TOGETHER: EventDefinition = {
       isEligible: isUntruced,
     },
   ],
+  isEligible: ({ state, round }) => canStandardTrucePersist(state, round),
+
   resolve(context) {
     const actor = requireSingleParticipant(context.participantsByRole, "actor");
     const target = requireSingleParticipant(context.participantsByRole, "target");

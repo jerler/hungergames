@@ -1,6 +1,6 @@
+import { applyResolvedEvent } from "~/game/engine/apply-game-change";
 import { createNightRestChanges } from "~/game/events/event-change-builders";
 import { validateEventResolution } from "~/game/events/validation/validate-event-resolution";
-import type { NightRestQuality } from "./survival-schema";
 import type {
   GameState,
   GameTribute,
@@ -8,8 +8,15 @@ import type {
   RoundReference,
 } from "~/game/types/game-state";
 
+import type { NightRestQuality } from "./survival-schema";
+
 export const NIGHT_REST_FALLBACK_DEFINITION_ID = "night-rest-fallback";
 export const PREPARED_CAVE_SHELTER_DEFINITION_ID = "day-discovering-cave-shelter";
+export const PREPARED_CAVE_NIGHT_DEFINITION_ID = "night-prepared-cave-shelter";
+
+function isSameRound(first: RoundReference, second: RoundReference): boolean {
+  return first.day === second.day && first.period === second.period;
+}
 
 function getEliminatedTributeIds(events: readonly ResolvedEvent[]): ReadonlySet<string> {
   return new Set(
@@ -52,6 +59,7 @@ function applyPreparedCaveShelter(
   event: ResolvedEvent,
 ): ResolvedEvent {
   const upgradedTributeIds = new Set<string>();
+
   const changes = event.changes.map((change) => {
     if (
       change.type !== "record-night-rest" ||
@@ -105,17 +113,6 @@ function getParticipantEventIndexes(events: readonly ResolvedEvent[], tributeId:
   );
 }
 
-function getFallbackText(tribute: GameTribute, quality: NightRestQuality): string {
-  if (quality === "sheltered") {
-    return getPreparedCaveText(tribute);
-  }
-
-  return (
-    `${tribute.snapshot.name} finds no time to secure shelter ` +
-    "and remains exposed through the night."
-  );
-}
-
 function validateResolvedEvent(event: ResolvedEvent): void {
   validateEventResolution({
     eventId: event.id,
@@ -129,18 +126,58 @@ function validateResolvedEvent(event: ResolvedEvent): void {
   });
 }
 
+function createPreparedCaveEvent(
+  round: RoundReference,
+  eventIndex: number,
+  tribute: GameTribute,
+): ResolvedEvent {
+  const [restChange] = createNightRestChanges([tribute], round, "sheltered");
+
+  if (!restChange) {
+    throw new Error(`Could not create prepared-cave rest for "${tribute.id}".`);
+  }
+
+  const event: ResolvedEvent = {
+    id: [round.period, round.day, eventIndex, PREPARED_CAVE_NIGHT_DEFINITION_ID].join("-"),
+    definitionId: PREPARED_CAVE_NIGHT_DEFINITION_ID,
+
+    kind: "primary",
+    resolutionMode: "standard",
+
+    round: {
+      ...round,
+    },
+
+    participantTributeIds: [tribute.id],
+
+    text: getPreparedCaveText(tribute),
+
+    changes: [
+      restChange,
+      {
+        type: "increment-statistic",
+        tributeId: tribute.id,
+        statistic: "eventsSurvived",
+        amount: 1,
+      },
+    ],
+  };
+
+  validateResolvedEvent(event);
+
+  return event;
+}
+
 /**
- * Completes night-rest coverage after ordinary primary events
- * have been selected.
+ * Completes authored night-event presentation.
  *
- * Explicit shelter outcomes remain authoritative. Every living
- * tribute who survives the planned night without an explicit
- * outcome receives exactly one visible unsheltered result.
+ * Explicit rest outcomes remain authoritative. A prepared cave may
+ * upgrade an authored unsheltered outcome or create one visible payoff
+ * event when its tribute otherwise received no event.
  *
- * A tribute already participating in an event receives the
- * fallback on that same event, preserving the one-primary-event
- * slot. An otherwise unassigned tribute receives one standalone
- * visible fallback event.
+ * Ordinary missing rest outcomes are intentionally not converted into
+ * visible arena events. They are applied later by
+ * applyMissingNightRestBookkeeping() when the round completes.
  */
 export function completeNightRestCoverage(
   state: GameState,
@@ -154,7 +191,6 @@ export function completeNightRestCoverage(
   const completedEvents = events.map((event) => applyPreparedCaveShelter(state, round, event));
 
   const eliminatedTributeIds = getEliminatedTributeIds(completedEvents);
-
   const restCounts = countRestOutcomes(completedEvents);
 
   for (const [tributeId, count] of restCounts) {
@@ -165,12 +201,8 @@ export function completeNightRestCoverage(
     }
   }
 
-  let fallbackIndex = 0;
-
   for (const tribute of state.tributes.filter((candidate) => candidate.isAlive)) {
-    const existingRestCount = restCounts.get(tribute.id) ?? 0;
-
-    if (existingRestCount === 1) {
+    if ((restCounts.get(tribute.id) ?? 0) === 1) {
       continue;
     }
 
@@ -187,94 +219,139 @@ export function completeNightRestCoverage(
       );
     }
 
-    const restQuality: NightRestQuality = hasPreparedCaveShelter(state, round, tribute.id)
-      ? "sheltered"
-      : "unsheltered";
-    const [restChange] = createNightRestChanges([tribute], round, restQuality);
-
-    if (!restChange) {
-      throw new Error(`Could not create a night-rest change for "${tribute.id}".`);
-    }
-
-    const fallbackText = getFallbackText(tribute, restQuality);
-    const participantEventIndex = participantEventIndexes[0];
-
-    if (participantEventIndex !== undefined) {
-      const event = completedEvents[participantEventIndex];
-
-      if (!event) {
-        throw new Error(`Could not recover the primary event for "${tribute.id}".`);
-      }
-
-      const completedEvent: ResolvedEvent = {
-        ...event,
-
-        text: `${event.text} ${fallbackText}`,
-
-        changes: [...event.changes, restChange],
-      };
-
-      validateResolvedEvent(completedEvent);
-
-      completedEvents[participantEventIndex] = completedEvent;
-      restCounts.set(tribute.id, 1);
-
+    if (!hasPreparedCaveShelter(state, round, tribute.id)) {
       continue;
     }
 
-    const eventId = [
-      round.period,
-      round.day,
-      events.length + fallbackIndex,
-      NIGHT_REST_FALLBACK_DEFINITION_ID,
-    ].join("-");
+    const [restChange] = createNightRestChanges([tribute], round, "sheltered");
 
-    fallbackIndex += 1;
+    if (!restChange) {
+      throw new Error(`Could not create prepared-cave rest for "${tribute.id}".`);
+    }
 
-    const fallbackEvent: ResolvedEvent = {
-      id: eventId,
-      definitionId: NIGHT_REST_FALLBACK_DEFINITION_ID,
+    const participantEventIndex = participantEventIndexes[0];
 
-      kind: "primary",
-      resolutionMode: "standard",
+    if (participantEventIndex === undefined) {
+      completedEvents.push(createPreparedCaveEvent(round, completedEvents.length, tribute));
+      restCounts.set(tribute.id, 1);
+      continue;
+    }
 
-      round: {
-        ...round,
-      },
+    const event = completedEvents[participantEventIndex];
 
-      participantTributeIds: [tribute.id],
+    if (!event) {
+      throw new Error(`Could not recover the primary event for "${tribute.id}".`);
+    }
 
-      text: fallbackText,
-
-      changes: [
-        restChange,
-
-        {
-          type: "increment-statistic",
-          tributeId: tribute.id,
-          statistic: "eventsSurvived",
-          amount: 1,
-        },
-      ],
+    const completedEvent: ResolvedEvent = {
+      ...event,
+      text: `${event.text} ${getPreparedCaveText(tribute)}`,
+      changes: [...event.changes, restChange],
     };
 
-    validateResolvedEvent(fallbackEvent);
+    validateResolvedEvent(completedEvent);
 
-    completedEvents.push(fallbackEvent);
+    completedEvents[participantEventIndex] = completedEvent;
     restCounts.set(tribute.id, 1);
   }
 
-  for (const tribute of state.tributes.filter(
-    (candidate) => candidate.isAlive && !eliminatedTributeIds.has(candidate.id),
-  )) {
-    const restCount = restCounts.get(tribute.id) ?? 0;
+  return completedEvents;
+}
 
-    if (restCount !== 1) {
-      throw new Error(
-        `Surviving tribute "${tribute.id}" received ` + `${restCount} night-rest outcomes.`,
-      );
-    }
+function hasRecordedRestForRound(
+  state: GameState,
+  round: RoundReference,
+  tributeId: string,
+): boolean {
+  return state.eventHistory.some(
+    (event) =>
+      isSameRound(event.round, round) &&
+      event.changes.some(
+        (change) =>
+          change.type === "record-night-rest" &&
+          change.tributeId === tributeId &&
+          isSameRound(change.round, round),
+      ),
+  );
+}
+
+function createNightRestBookkeepingEvent(
+  state: GameState,
+  round: RoundReference,
+  eventIndex: number,
+  tribute: GameTribute,
+): ResolvedEvent {
+  const quality: NightRestQuality = hasPreparedCaveShelter(state, round, tribute.id)
+    ? "sheltered"
+    : "unsheltered";
+
+  const [restChange] = createNightRestChanges([tribute], round, quality);
+
+  if (!restChange) {
+    throw new Error(`Could not create night-rest bookkeeping for "${tribute.id}".`);
   }
 
-  return completedEvents;
+  const event: ResolvedEvent = {
+    id: [round.period, round.day, "bookkeeping", eventIndex, tribute.id].join("-"),
+    definitionId: NIGHT_REST_FALLBACK_DEFINITION_ID,
+
+    kind: "preparation",
+    resolutionMode: "standard",
+
+    round: {
+      ...round,
+    },
+
+    participantTributeIds: [tribute.id],
+
+    /*
+     * Preparation events require valid text for event-history integrity,
+     * but the arena feed filters them from player-facing presentation.
+     */
+    text: `Automatic night-rest bookkeeping for ${tribute.snapshot.name}.`,
+
+    changes: [restChange],
+
+    preparation: {
+      mechanic: "night-rest-preparation",
+      actingTributeId: tribute.id,
+      restQuality: quality,
+    },
+  };
+
+  validateResolvedEvent(event);
+
+  return event;
+}
+
+/**
+ * Applies missing night-rest records after every authored event has
+ * already been revealed.
+ *
+ * The generated preparation events are applied directly to tribute
+ * state and event history. They never enter roundEvents, so players
+ * neither click through nor see generic fallback cards. They exist only
+ * to preserve the morning exhaustion/well-rested lifecycle.
+ */
+export function applyMissingNightRestBookkeeping(state: GameState): GameState {
+  const round = state.currentRound;
+
+  if (!round || round.period !== "night") {
+    return state;
+  }
+
+  const bookkeepingEvents = state.tributes
+    .filter((tribute) => tribute.isAlive && !hasRecordedRestForRound(state, round, tribute.id))
+    .map((tribute, eventIndex) =>
+      createNightRestBookkeepingEvent(state, round, eventIndex, tribute),
+    );
+
+  if (bookkeepingEvents.length === 0) {
+    return state;
+  }
+
+  return bookkeepingEvents.reduce(
+    (nextState, event) => applyResolvedEvent(nextState, event),
+    state,
+  );
 }

@@ -93,7 +93,7 @@ describe("high-Luck events", () => {
 
       category: "survival",
 
-      tags: ["survival", "status"],
+      tags: ["survival", "status", "truce"],
 
       periods: ["day", "night"],
 
@@ -109,31 +109,47 @@ describe("high-Luck events", () => {
     });
   });
 
-  it("only accepts tributes with high Luck", () => {
+  it("only accepts high-Luck tributes who belong to a truce", () => {
     const game = createTestGame();
-
     const luckyTribute = withLuck(game.tributes[0], 5, "Fortuna");
+    const partner = withLuck(game.tributes[1], 3, "Partner");
+    const soloLucky = withLuck(game.tributes[2], 5, "Solo Fortuna");
 
-    const averageTribute = withLuck(game.tributes[1], 3, "Average");
+    const state: GameState = {
+      ...game,
+      tributes: game.tributes.map((tribute) =>
+        tribute.id === luckyTribute.id
+          ? luckyTribute
+          : tribute.id === partner.id
+            ? partner
+            : tribute.id === soloLucky.id
+              ? soloLucky
+              : tribute,
+      ),
+      truces: [
+        {
+          id: "pep-talk-truce",
+          kind: "standard",
+          tributeIds: [luckyTribute.id, partner.id],
+          createdRound: ROUND,
+          expiresAfterRound: { day: 4, period: "day" },
+        },
+      ],
+    };
 
     const context = {
-      state: game,
+      state,
       round: ROUND,
-
-      livingTributes: game.tributes.filter((tribute) => tribute.isAlive),
-
+      livingTributes: state.tributes.filter((tribute) => tribute.isAlive),
       participantsByRole: {},
     };
 
-    for (const event of HIGH_LUCK_EVENTS) {
-      const role = event.roles[0];
+    const role = requireHighLuckEvent("unexpected-pep-talk").roles[0];
 
-      expect(role.isEligible?.(luckyTribute, context)).toBe(true);
-
-      expect(role.isEligible?.(averageTribute, context)).toBe(false);
-
-      expect(role.getWeight?.(luckyTribute, context)).toBe(5);
-    }
+    expect(role.isEligible?.(luckyTribute, context)).toBe(true);
+    expect(role.isEligible?.(partner, context)).toBe(false);
+    expect(role.isEligible?.(soloLucky, context)).toBe(false);
+    expect(role.getWeight?.(luckyTribute, context)).toBe(5);
   });
 
   it.each([

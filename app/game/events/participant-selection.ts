@@ -1,3 +1,4 @@
+import { getParticipantRecoveryPriorityMultiplier } from "~/game/events/event-recovery-priority";
 import { selectWeightedItem, type RandomSource } from "~/game/engine/random";
 import type {
   EventDefinition,
@@ -124,6 +125,7 @@ interface RoleCandidate {
   accessibleItem: AccessibleInventoryItem | null;
 
   targetingWeightMultiplier: number;
+  recoveryWeightMultiplier: number;
 }
 
 /**
@@ -247,6 +249,12 @@ export function selectEventParticipants(
           return [];
         }
 
+        const recoveryWeightMultiplier = getParticipantRecoveryPriorityMultiplier(
+          definition,
+          role.id,
+          tribute,
+        );
+
         const accessibleItem = selectsItem
           ? findAvailableRoleItem(
               context,
@@ -271,6 +279,7 @@ export function selectEventParticipants(
             tribute,
             accessibleItem,
             targetingWeightMultiplier,
+            recoveryWeightMultiplier,
           },
         ];
       },
@@ -279,8 +288,10 @@ export function selectEventParticipants(
     while (remainingCandidates.length > 0) {
       const selectedCandidate = selectWeightedItem(
         remainingCandidates,
-        ({ tribute, targetingWeightMultiplier }) =>
-          (role.getWeight?.(tribute, roleContext) ?? 1) * targetingWeightMultiplier,
+        ({ tribute, targetingWeightMultiplier, recoveryWeightMultiplier }) =>
+          (role.getWeight?.(tribute, roleContext) ?? 1) *
+          targetingWeightMultiplier *
+          recoveryWeightMultiplier,
         random,
       );
 

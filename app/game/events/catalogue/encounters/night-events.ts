@@ -1,6 +1,5 @@
 import { getEffectiveStats } from "~/game/engine/effective-stats";
 import { getCombatScore } from "~/game/engine/stat-formulas";
-import { getNextRound } from "~/game/engine/rounds";
 import {
   createItemUseChange,
   createNightRestChanges,
@@ -25,6 +24,8 @@ import {
   createTruceInstance,
   getActiveTruceForTribute,
   getLivingTruceMembers,
+  canStandardTrucePersist,
+  STANDARD_TRUCE_EXPIRY_ROUND,
 } from "~/game/truces/truce-engine";
 import { getTributePronouns } from "~/game/tributes/pronouns";
 import type {
@@ -244,7 +245,7 @@ function createStandardTruceChange(
 ): GameChange {
   return {
     type: "form-truce",
-    truce: createTruceInstance(eventId, tributeIds, round, getNextRound(round)),
+    truce: createTruceInstance(eventId, tributeIds, round, STANDARD_TRUCE_EXPIRY_ROUND),
   };
 }
 
@@ -800,6 +801,15 @@ const NATURAL_WOUND_TREATMENT_EVENT: EventDefinition = {
   periods: ["night"],
   baseWeight: 2.5,
   tags: ["survival", "status"],
+  recoveryProfile: {
+    targets: [
+      {
+        kind: "status",
+        roleId: "actor",
+        statusIds: ["injured"],
+      },
+    ],
+  },
   roles: [
     {
       id: "actor",
@@ -944,7 +954,8 @@ const NIGHT_TRUCE_EVENT: EventDefinition = {
   baseWeight: 1.8,
   tags: ["survival", "truce", "cooperative"],
   roles: untrucedPairRoles(),
-  isEligible: ({ state, livingTributes }) =>
+  isEligible: ({ state, round, livingTributes }) =>
+    canStandardTrucePersist(state, round) &&
     livingTributes.filter((tribute) => getActiveTruceForTribute(state, tribute.id) === null)
       .length >= 2,
   resolve(context): EventResolution {
@@ -1170,9 +1181,13 @@ function createHuddlingTruceChanges(
   const secondTruce = getActiveTruceForTribute(context.state, second.id);
 
   if (!firstTruce && !secondTruce) {
-    return context.random() < 0.15
-      ? [createRomanticTruceChange(context.eventId, context.round, [first.id, second.id])]
-      : [createStandardTruceChange(context.eventId, context.round, [first.id, second.id])];
+    if (context.random() < 0.15) {
+      return [createRomanticTruceChange(context.eventId, context.round, [first.id, second.id])];
+    }
+
+    return canStandardTrucePersist(context.state, context.round)
+      ? [createStandardTruceChange(context.eventId, context.round, [first.id, second.id])]
+      : [];
   }
 
   if (!firstTruce || firstTruce.id !== secondTruce?.id) {
@@ -1366,6 +1381,11 @@ const SHARING_SHELTER_EVENT: EventDefinition = {
       isEligible: (tribute, { state }) => getActiveTruceForTribute(state, tribute.id) === null,
     },
   ],
+  isEligible: ({ state, round, livingTributes }) =>
+    canStandardTrucePersist(state, round) &&
+    livingTributes.filter((tribute) => getActiveTruceForTribute(state, tribute.id) === null)
+      .length >= 2,
+
   resolve(context): EventResolution {
     const actor = requireSingleParticipant(context.participantsByRole, "actor");
     const target = requireSingleParticipant(context.participantsByRole, "target");

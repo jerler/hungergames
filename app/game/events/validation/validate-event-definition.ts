@@ -1,6 +1,7 @@
 import type { EventDefinition, ParticipantRoleDefinition } from "~/game/events/event-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { ITEM_TAGS, type ItemDefinitionId, type ItemTag } from "~/game/items/item-schema";
+import { validateEventRecoveryProfile } from "./validate-event-recovery-profile";
 
 const EVENT_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -28,6 +29,15 @@ const EVENT_TAGS = new Set([
 ]);
 
 const ITEM_TAG_SET = new Set<ItemTag>(ITEM_TAGS);
+
+const EVENT_SPECIFICITY_REASONS = new Set([
+  "stat-requirement",
+  "status-requirement",
+  "deprivation-requirement",
+  "truce-requirement",
+  "item-requirement",
+  "custom-eligibility",
+]);
 
 function validateUniqueValues(eventId: string, label: string, values: readonly string[]): void {
   if (new Set(values).size !== values.length) {
@@ -235,6 +245,32 @@ function validateRole(
   validateItemTags(eventId, role.id, "optional", optionalItemTags);
 }
 
+function validateSelectionProfile(definition: EventDefinition): void {
+  const profile = definition.selectionProfile;
+
+  if (!profile) {
+    return;
+  }
+
+  if (!Number.isFinite(profile.specificityScore) || profile.specificityScore <= 0) {
+    throw new Error(`Event "${definition.id}" has an invalid specificity score.`);
+  }
+
+  if (profile.specificityReasons.length === 0) {
+    throw new Error(`Event "${definition.id}" declares specificity without any reasons.`);
+  }
+
+  validateUniqueValues(definition.id, "specificity reasons", profile.specificityReasons);
+
+  for (const reason of profile.specificityReasons) {
+    if (!EVENT_SPECIFICITY_REASONS.has(reason)) {
+      throw new Error(
+        `Event "${definition.id}" has invalid specificity reason "${String(reason)}".`,
+      );
+    }
+  }
+}
+
 export function validateEventDefinition(definition: EventDefinition): void {
   if (!EVENT_ID_PATTERN.test(definition.id)) {
     throw new Error(`Event ID "${definition.id}" must be non-empty kebab-case text.`);
@@ -256,6 +292,9 @@ export function validateEventDefinition(definition: EventDefinition): void {
   if (!Number.isFinite(definition.baseWeight) || definition.baseWeight <= 0) {
     throw new Error(`Event "${definition.id}" must have a positive finite weight.`);
   }
+
+  validateSelectionProfile(definition);
+  validateEventRecoveryProfile(definition);
 
   if (definition.periods.length === 0) {
     throw new Error(`Event "${definition.id}" must declare at least one period.`);

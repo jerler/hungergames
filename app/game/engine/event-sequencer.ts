@@ -1,12 +1,16 @@
 import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
-import type { EventDefinition, EventSelectionContext } from "~/game/events/event-schema";
+import type { EventSelectionContext } from "~/game/events/event-schema";
 import { isEventDefinitionEligible } from "~/game/events/event-eligibility";
 import {
   selectEventParticipants,
   type ParticipantSelection,
 } from "~/game/events/participant-selection";
-import { getEventDefinitionWeight } from "~/game/events/event-weighting";
-import { createSeededRandom, selectWeightedItem } from "~/game/engine/random";
+import {
+  createEventCandidateSelectionSeed,
+  createFeasibleEventCandidates,
+  selectFeasibleEventCandidate,
+} from "~/game/engine/event-candidate-selection";
+import { createSeededRandom } from "~/game/engine/random";
 import { createRoundSeed } from "~/game/engine/rounds";
 import { getRoundEventTargetCount } from "~/game/engine/stat-formulas";
 import { sequenceBloodbathEvents } from "~/game/bloodbath/bloodbath-sequencer";
@@ -33,47 +37,6 @@ export function shouldForceElimination(state: GameState): boolean {
 
 function createEventId(round: RoundReference, eventIndex: number, definitionId: string): string {
   return [round.period, round.day, eventIndex, definitionId].join("-");
-}
-
-function selectDefinitionAndParticipants(
-  definitions: readonly EventDefinition[],
-  context: EventSelectionContext,
-  unavailableTributeIds: ReadonlySet<string>,
-  unavailableItemInstanceIds: ReadonlySet<string>,
-  random: () => number,
-) {
-  let remainingDefinitions = [...definitions];
-
-  while (remainingDefinitions.length > 0) {
-    const definition = selectWeightedItem(
-      remainingDefinitions,
-
-      (candidate) => getEventDefinitionWeight(candidate, context),
-
-      random,
-    );
-
-    const selection = selectEventParticipants(
-      definition,
-      context,
-      random,
-      unavailableTributeIds,
-      unavailableItemInstanceIds,
-    );
-
-    if (selection) {
-      return {
-        definition,
-        selection,
-      };
-    }
-
-    remainingDefinitions = remainingDefinitions.filter(
-      (candidate) => candidate.id !== definition.id,
-    );
-  }
-
-  return null;
 }
 
 /**
@@ -261,6 +224,9 @@ export function sequenceRoundEvents(
   const unavailableTributeIds = getCommittedItemOwnerIds(state, unavailableItemInstanceIds);
 
   const events: ResolvedEvent[] = [];
+  const usedDefinitionIds = new Set<string>();
+
+  let feasibilitySelectionsByDefinitionId = new Map<string, ParticipantSelection>();
 
   for (let eventIndex = 0; eventIndex < targetEventCount; eventIndex += 1) {
     const isSafetyResolution = eventIndex === 0 && shouldForceElimination(state);
@@ -272,24 +238,56 @@ export function sequenceRoundEvents(
      * Checked direct attacks opt in through explicit
      * force-success metadata.
      */
-    const candidateDefinitions = isSafetyResolution
-      ? eligibleDefinitions.filter(
-          (definition) =>
-            definition.category === "fatal" ||
-            ("safetyResolution" in definition && definition.safetyResolution === "force-success"),
-        )
-      : eligibleDefinitions;
+    const candidateDefinitions = (
+      isSafetyResolution
+        ? eligibleDefinitions.filter(
+            (definition) =>
+              definition.category === "fatal" ||
+              ("safetyResolution" in definition && definition.safetyResolution === "force-success"),
+          )
+        : eligibleDefinitions
+    ).filter((definition) => !usedDefinitionIds.has(definition.id));
 
-    const selected = selectDefinitionAndParticipants(
-      candidateDefinitions,
+    const feasibleCandidates = createFeasibleEventCandidates({
+      definitions: candidateDefinitions,
       context,
       unavailableTributeIds,
       unavailableItemInstanceIds,
-      random,
+      selectionSeed: createEventCandidateSelectionSeed(state.seed, round, eventIndex),
+      previousSelectionsByDefinitionId: feasibilitySelectionsByDefinitionId,
+    });
+
+    feasibilitySelectionsByDefinitionId = new Map(
+      feasibleCandidates.map((candidate) => [
+        candidate.definition.id,
+        candidate.feasibilitySelection,
+      ]),
     );
+
+    const selected = selectFeasibleEventCandidate(feasibleCandidates, random);
 
     if (!selected) {
       break;
+    }
+
+    /*
+     * The private feasibility witness only proves that this
+     * definition can form a complete event. The winning
+     * definition still selects its real participants with
+     * the main round RNG.
+     */
+    const selection = selectEventParticipants(
+      selected.definition,
+      context,
+      random,
+      unavailableTributeIds,
+      unavailableItemInstanceIds,
+    );
+
+    if (!selection) {
+      throw new Error(
+        `Feasible event "${selected.definition.id}" could not reproduce a participant selection.`,
+      );
     }
 
     const eventId = createEventId(round, eventIndex, selected.definition.id);
@@ -304,9 +302,9 @@ export function sequenceRoundEvents(
 
       resolutionMode,
 
-      participantsByRole: selected.selection.participantsByRole,
+      participantsByRole: selection.participantsByRole,
 
-      itemsByRole: selected.selection.itemsByRole,
+      itemsByRole: selection.itemsByRole,
 
       unavailableItemInstanceIds,
     });
@@ -324,13 +322,15 @@ export function sequenceRoundEvents(
       kind: "primary",
       resolutionMode,
       round,
-      participantTributeIds: selected.selection.participantTributeIds,
+      participantTributeIds: selection.participantTributeIds,
       text: resolution.text,
       changes: resolution.changes,
     });
 
+    usedDefinitionIds.add(selected.definition.id);
+
     reserveEventCommitments(
-      selected.selection,
+      selection,
       resolution.changes,
       unavailableTributeIds,
       unavailableItemInstanceIds,

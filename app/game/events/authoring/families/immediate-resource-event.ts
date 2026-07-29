@@ -32,6 +32,7 @@ export function createImmediateResourceEvent(
     weight = 8,
     tags = [],
     requirements = [],
+    recoveryTargets = [],
   }: ImmediateResourceEventOptions,
 ): EventDefinition {
   if (needs.length === 0) {
@@ -54,5 +55,13 @@ export function createImmediateResourceEvent(
     .tags(...mergeEventTags(["survival", "resource"], tags))
     .during(...periods)
     .weight(weight)
+    .addresses(
+      ...needs.map((need) => ({
+        kind: "survival-need" as const,
+        roleId,
+        need,
+      })),
+      ...recoveryTargets,
+    )
     .resolve(always(outcome));
 }

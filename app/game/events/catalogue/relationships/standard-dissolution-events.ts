@@ -4,7 +4,7 @@ import {
   type EventResolution,
 } from "~/game/events/event-schema";
 import { createSurvivalChanges } from "~/game/events/event-change-builders";
-import { getActiveTruceForTribute } from "~/game/truces/truce-engine";
+import { canStandardTruceEnd, getActiveTruceForTribute } from "~/game/truces/truce-engine";
 import { createEvenTruceInventoryRedistributionChanges } from "~/game/truces/truce-inventory";
 import { TRUCE_GROUP_SIZE_WEIGHTS, type TruceGroupSize } from "~/game/truces/truce-selection";
 import type { Truce } from "~/game/types/game-state";
@@ -60,7 +60,9 @@ function createAmicableSeparationEvent(size: TruceGroupSize, sizeWeight: number)
       },
     ],
 
-    isEligible: ({ state }) => state.truces.some((truce) => isStandardTruceOfSize(truce, size)),
+    isEligible: ({ state, round }) =>
+      canStandardTruceEnd(state, round) &&
+      state.truces.some((truce) => isStandardTruceOfSize(truce, size)),
 
     resolve({ state, random, participantsByRole }): EventResolution {
       const members = requireParticipants(participantsByRole, "members");

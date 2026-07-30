@@ -326,6 +326,59 @@ describe("Bloodbath sequencer", () => {
     expect(observedDefinitionIds).toEqual(expectedDefinitionIds);
   }, 60_000);
 
+  it.each([
+    {
+      label: "Half Games",
+      districtCount: 6 as const,
+      sampleCount: 200,
+      minimumCornucopiaNonSoloShare: 0.6,
+      // Accepted after a deterministic 200-game sample reached 62.1%
+      // while materially improving concentration and overlap.
+      minimumFleeNonSoloShare: 0.4,
+    },
+    {
+      label: "Full Games",
+      districtCount: 12 as const,
+      sampleCount: 100,
+      minimumCornucopiaNonSoloShare: 0.75,
+      minimumFleeNonSoloShare: 0.45,
+    },
+  ])(
+    "meets the accepted Phase 3C Day 1 participant-shape targets in $label",
+    ({ districtCount, sampleCount, minimumCornucopiaNonSoloShare, minimumFleeNonSoloShare }) => {
+      let cornucopiaSelections = 0;
+      let cornucopiaNonSoloSelections = 0;
+      let fleeSelections = 0;
+      let fleeNonSoloSelections = 0;
+
+      for (let index = 0; index < sampleCount; index += 1) {
+        const game = createTestGame(`phase-3c-shapes-${districtCount}-${index}`, districtCount);
+
+        for (const event of sequenceBloodbathEvents(game, DAY_ONE)) {
+          const isNonSolo = new Set(event.participantTributeIds).size > 1;
+
+          if (event.feedGroup === "bloodbath-cornucopia") {
+            cornucopiaSelections += 1;
+            cornucopiaNonSoloSelections += isNonSolo ? 1 : 0;
+          } else if (event.feedGroup === "bloodbath-flee") {
+            fleeSelections += 1;
+            fleeNonSoloSelections += isNonSolo ? 1 : 0;
+          }
+        }
+      }
+
+      expect(cornucopiaSelections).toBeGreaterThan(0);
+      expect(fleeSelections).toBeGreaterThan(0);
+      expect(cornucopiaNonSoloSelections / cornucopiaSelections).toBeGreaterThanOrEqual(
+        minimumCornucopiaNonSoloShare,
+      );
+      expect(fleeNonSoloSelections / fleeSelections).toBeGreaterThanOrEqual(
+        minimumFleeNonSoloShare,
+      );
+    },
+    60_000,
+  );
+
   it("does not commit an item instance twice", () => {
     const game = createTestGame("item-reservations");
 

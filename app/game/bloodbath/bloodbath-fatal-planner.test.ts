@@ -56,7 +56,7 @@ const context = {
 } as unknown as EventSelectionContext;
 
 describe("Bloodbath fatal candidate planner", () => {
-  it("applies the Bloodbath solo penalty without escalating larger shapes", () => {
+  it("applies the Phase 3C fatal efficiency weighting", () => {
     const solo = createProfile("solo", 1, 1);
     const pair = createProfile("pair", 2, 1);
     const trio = createProfile("trio", 3, 2);
@@ -66,10 +66,10 @@ describe("Bloodbath fatal candidate planner", () => {
       getBloodbathFatalProfileWeight(profile, context) /
       getEventDefinitionWeight(profile.definition, context);
 
-    expect(shapeMultiplier(solo)).toBeCloseTo(0.2);
-    expect(shapeMultiplier(pair)).toBeCloseTo(1);
-    expect(shapeMultiplier(trio)).toBeCloseTo(1);
-    expect(shapeMultiplier(group)).toBeCloseTo(1);
+    expect(shapeMultiplier(solo)).toBeCloseTo(0.03);
+    expect(shapeMultiplier(pair)).toBeCloseTo(1.5);
+    expect(shapeMultiplier(trio)).toBeCloseTo(3.75);
+    expect(shapeMultiplier(group)).toBeCloseTo(3.75);
   });
 
   it("finds an exact fatality composition across different shapes", () => {

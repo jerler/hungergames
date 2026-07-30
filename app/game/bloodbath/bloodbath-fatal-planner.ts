@@ -1,5 +1,6 @@
 import type { EventDefinition, EventSelectionContext } from "~/game/events/event-schema";
 import { getEventDefinitionWeight } from "~/game/events/event-weighting";
+import { getBloodbathFatalTuningMultiplier } from "./bloodbath-cornucopia-balance";
 import {
   getEventParticipantCount,
   getEventParticipantShapeMultiplier,
@@ -42,9 +43,15 @@ export function getBloodbathFatalProfileWeight(
   profile: BloodbathFatalSelectionProfile,
   context: EventSelectionContext,
 ): number {
+  const tuningMultiplier =
+    profile.selectionWeightMultiplier === undefined
+      ? getBloodbathFatalTuningMultiplier(profile)
+      : 1;
+
   return (
     getEventDefinitionWeight(profile.definition, context) *
     getEventParticipantShapeMultiplier("bloodbath-cornucopia", profile.definition) *
+    tuningMultiplier *
     (profile.selectionWeightMultiplier ?? 1)
   );
 }

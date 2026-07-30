@@ -74,7 +74,7 @@ describe("additional solo Cornucopia fatalities", () => {
     }
   });
 
-  it("makes exactly three seeded variants eligible in every game", () => {
+  it("makes exactly one seeded variant eligible in every game", () => {
     const observedIds = new Set<string>();
 
     for (let index = 0; index < 500; index += 1) {
@@ -88,7 +88,7 @@ describe("additional solo Cornucopia fatalities", () => {
         (definition) => definition.isEligible?.(context) ?? true,
       );
 
-      expect(eligibleDefinitions).toHaveLength(3);
+      expect(eligibleDefinitions).toHaveLength(1);
 
       for (const definition of eligibleDefinitions) {
         observedIds.add(definition.id);

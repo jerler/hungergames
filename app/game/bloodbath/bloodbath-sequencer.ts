@@ -909,16 +909,14 @@ function sequenceCornucopiaEvents(
   const softFatalityTarget = fatalityTarget;
 
   /*
-   * Reserve a seeded one-to-four-person group for the acquisition and
-   * non-fatal Cornucopia catalogues. These tributes are not special;
-   * the reservation only prevents the fatal phase from consuming the
-   * complete Cornucopia roster before post-target selection can run.
+   * Reserve a seeded one-to-four-person group for acquisition and
+   * nonfatal Cornucopia events. Fatal planning may release entrants
+   * one at a time when real role or item feasibility requires it.
    */
   const maximumRequestedPostTargetReservation = Math.min(
     4,
     Math.max(1, remainingTributes.length - 1),
   );
-
   const requestedPostTargetCount = selectWeightedItem(
     Array.from(
       {
@@ -942,13 +940,11 @@ function sequenceCornucopiaEvents(
     },
     random,
   );
-
   const protectedPostTargetFatalityTarget = getBloodbathFatalityTargetForPostTargetReservation({
     fatalityTarget: softFatalityTarget,
     startingTributeCount: livingTributes.length,
     requestedPostTargetCount,
   });
-
   const fatalPlanningContext: EventSelectionContext = {
     state,
     round,
@@ -957,7 +953,6 @@ function sequenceCornucopiaEvents(
   const eligibleFatalSelectionProfiles = getBloodbathFatalSelectionProfiles().filter((profile) =>
     isEventDefinitionEligible(profile.definition, fatalPlanningContext),
   );
-
   let reservedPostTargetCount = getMaximumReachablePostTargetReservation({
     profiles: eligibleFatalSelectionProfiles,
     totalParticipantCount: remainingTributes.length,

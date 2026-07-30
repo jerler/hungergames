@@ -8,7 +8,7 @@ import {
 import { getTributePronouns } from "~/game/tributes/pronouns";
 import type { GameTribute } from "~/game/types/game-state";
 
-const SOLO_FATAL_VARIETY_SLOT_COUNT = 3;
+const SOLO_FATAL_VARIETY_SLOT_COUNT = 1;
 
 const SOLO_FATAL_VARIETY_EVENT_IDS = [
   "cornucopia-fatal-spiked-pit",

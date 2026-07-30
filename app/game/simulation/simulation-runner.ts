@@ -15,6 +15,10 @@ import type { DistrictCount } from "~/game/types/game-config";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 
 import type { GameState } from "~/game/types/game-state";
+import {
+  captureEventSelectionDiagnostics,
+  type EventSelectionDiagnosticsSnapshot,
+} from "~/game/simulation/event-selection-diagnostics";
 
 import { gameReducer } from "~/state/game-reducer";
 
@@ -29,6 +33,7 @@ export interface SimulationRun {
   roundsCompleted: number;
   roundSnapshots: readonly SimulationRoundSnapshot[];
   state: GameState;
+  selectionDiagnostics?: EventSelectionDiagnosticsSnapshot;
 }
 
 export interface SimulateGameOptions {
@@ -37,12 +42,14 @@ export interface SimulateGameOptions {
 
   maxRounds?: number;
   createdAt?: string;
+  captureSelectionDiagnostics?: boolean;
 }
 
 export interface SimulationBatchDefinition {
   seedPrefix: string;
   count: number;
   districtCount: DistrictCount;
+  captureSelectionDiagnostics?: boolean;
 }
 
 function createSimulationGame({
@@ -102,7 +109,25 @@ export function simulateGame({
   districtCount,
   maxRounds = 100,
   createdAt = "2026-07-25T12:00:00.000Z",
+  captureSelectionDiagnostics: shouldCaptureSelectionDiagnostics = false,
 }: SimulateGameOptions): SimulationRun {
+  if (shouldCaptureSelectionDiagnostics) {
+    const { result, diagnostics } = captureEventSelectionDiagnostics(() =>
+      simulateGame({
+        seed,
+        districtCount,
+        maxRounds,
+        createdAt,
+        captureSelectionDiagnostics: false,
+      }),
+    );
+
+    return {
+      ...result,
+      selectionDiagnostics: diagnostics,
+    };
+  }
+
   let state: GameState | null = createSimulationGame({
     seed,
     districtCount,
@@ -175,24 +200,31 @@ export function simulateGame({
 export function simulateGameBatch(
   definitions: readonly SimulationBatchDefinition[],
 ): SimulationRun[] {
-  return definitions.flatMap(({ seedPrefix, count, districtCount }) => {
-    if (!Number.isInteger(count) || count <= 0) {
-      throw new Error(
-        `Simulation batch "${seedPrefix}" must contain a positive integer number of games.`,
+  return definitions.flatMap(
+    ({ seedPrefix, count, districtCount, captureSelectionDiagnostics }) => {
+      if (!Number.isInteger(count) || count <= 0) {
+        throw new Error(
+          `Simulation batch "${seedPrefix}" must contain a positive integer number of games.`,
+        );
+      }
+
+      return Array.from(
+        {
+          length: count,
+        },
+
+        (_, index) =>
+          simulateGame({
+            seed: `${seedPrefix}-${index}`,
+
+            districtCount,
+            ...(captureSelectionDiagnostics !== undefined
+              ? {
+                  captureSelectionDiagnostics,
+                }
+              : {}),
+          }),
       );
-    }
-
-    return Array.from(
-      {
-        length: count,
-      },
-
-      (_, index) =>
-        simulateGame({
-          seed: `${seedPrefix}-${index}`,
-
-          districtCount,
-        }),
-    );
-  });
+    },
+  );
 }

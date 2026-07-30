@@ -35,6 +35,12 @@ import {
   getRoundLethalityProfile,
   isPotentiallyLethalDefinition,
 } from "~/game/engine/round-lethality";
+import {
+  isEventSelectionDiagnosticsActive,
+  recordEventSelectionCandidateEvaluation,
+  recordEventSelectionOpportunity,
+  type EventSelectionRejectionReason,
+} from "~/game/simulation/event-selection-diagnostics";
 
 export const MAX_CONSECUTIVE_NON_ELIMINATION_ROUNDS = 2;
 
@@ -265,6 +271,9 @@ export function sequenceRoundEvents(
   const eligibleDefinitions = EVENT_CATALOGUE.filter((definition) =>
     isEventDefinitionEligible(definition, context),
   );
+  const eligibleDefinitionIds = new Set(eligibleDefinitions.map((definition) => definition.id));
+  const diagnosticPoolId = round.period === "night" ? ("night" as const) : ("later-day" as const);
+  const captureSelectionDiagnostics = isEventSelectionDiagnosticsActive();
 
   const targetEventCount = getRoundEventTargetCount(livingTributes.length);
 
@@ -293,6 +302,40 @@ export function sequenceRoundEvents(
     const isSafetyResolution =
       eventIndex === 0 && hasEliminationBudget && shouldForceElimination(state);
 
+    if (captureSelectionDiagnostics) {
+      for (const definition of EVENT_CATALOGUE) {
+        let rejectionReason: EventSelectionRejectionReason | null = null;
+        const isEligible = eligibleDefinitionIds.has(definition.id);
+
+        if (!isEligible) {
+          rejectionReason = "definition-ineligible";
+        } else if (
+          isSafetyResolution &&
+          definition.category !== "fatal" &&
+          !("safetyResolution" in definition && definition.safetyResolution === "force-success")
+        ) {
+          rejectionReason = "planner-stage-not-attempted";
+        } else if (usedDefinitionIds.has(definition.id)) {
+          rejectionReason = "already-used-definition";
+        } else if (lethalityRejectedDefinitionIds.has(definition.id)) {
+          rejectionReason = "fatality-target-overshoot";
+        } else if (!hasEliminationBudget && isPotentiallyLethalDefinition(definition)) {
+          rejectionReason = "lethality-budget-exhausted";
+        }
+
+        if (rejectionReason) {
+          recordEventSelectionCandidateEvaluation({
+            poolId: diagnosticPoolId,
+            stage: "ordinary",
+            definition,
+            eligible: isEligible,
+            feasible: false,
+            rejectionReason,
+          });
+        }
+      }
+    }
+
     const candidateDefinitions = (
       isSafetyResolution
         ? eligibleDefinitions.filter(
@@ -315,6 +358,14 @@ export function sequenceRoundEvents(
       unavailableItemInstanceIds,
       selectionSeed: createEventCandidateSelectionSeed(state.seed, round, eventIndex),
       previousSelectionsByDefinitionId: feasibilitySelectionsByDefinitionId,
+      ...(captureSelectionDiagnostics
+        ? {
+            diagnostics: {
+              poolId: diagnosticPoolId,
+              stage: "ordinary" as const,
+            },
+          }
+        : {}),
     });
 
     feasibilitySelectionsByDefinitionId = new Map(
@@ -334,6 +385,8 @@ export function sequenceRoundEvents(
     }));
 
     let acceptedEvent = false;
+    let acceptedDefinition: (typeof feasibleCandidates)[number]["definition"] | null = null;
+    const opportunityRejectionReasons = new Map<string, EventSelectionRejectionReason>();
 
     while (remainingCandidates.length > 0) {
       const selected = selectFeasibleEventCandidate(remainingCandidates, random);
@@ -380,6 +433,7 @@ export function sequenceRoundEvents(
 
       if (plannedEliminationCount + eventEliminationCount > lethalityProfile.maxEliminations) {
         lethalityRejectedDefinitionIds.add(selected.definition.id);
+        opportunityRejectionReasons.set(selected.definition.id, "fatality-target-overshoot");
         remainingCandidates = remainingCandidates.filter(
           (candidate) => candidate.definition.id !== selected.definition.id,
         );
@@ -407,8 +461,22 @@ export function sequenceRoundEvents(
         unavailableItemInstanceIds,
       );
 
+      acceptedDefinition = selected.definition;
       acceptedEvent = true;
       break;
+    }
+
+    if (captureSelectionDiagnostics) {
+      recordEventSelectionOpportunity({
+        poolId: diagnosticPoolId,
+        stage: "ordinary",
+        feasibleDefinitions: feasibleCandidates.map((candidate) => candidate.definition),
+        selectedDefinition: acceptedDefinition,
+        plannerConsideredDefinitionIds: new Set(
+          feasibleCandidates.map((candidate) => candidate.definition.id),
+        ),
+        rejectionReasonsByDefinitionId: opportunityRejectionReasons,
+      });
     }
 
     if (!acceptedEvent) {

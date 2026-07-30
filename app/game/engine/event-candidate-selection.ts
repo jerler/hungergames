@@ -9,6 +9,13 @@ import {
 } from "~/game/events/participant-selection";
 import type { RoundReference } from "~/game/types/game-state";
 import { getEventSelectionRecoveryPriorityMultiplier } from "~/game/events/event-recovery-priority";
+import {
+  diagnoseEventSelectionFeasibilityRejection,
+  isEventSelectionDiagnosticsActive,
+  recordEventSelectionCandidateEvaluation,
+  type EventSelectionDiagnosticPoolId,
+  type EventSelectionDiagnosticStage,
+} from "~/game/simulation/event-selection-diagnostics";
 
 export interface FeasibleEventCandidate {
   definition: EventDefinition;
@@ -46,6 +53,11 @@ export interface CreateFeasibleEventCandidatesOptions {
    * have since been reserved.
    */
   previousSelectionsByDefinitionId?: ReadonlyMap<string, ParticipantSelection>;
+
+  diagnostics?: {
+    poolId: EventSelectionDiagnosticPoolId;
+    stage: EventSelectionDiagnosticStage;
+  };
 }
 
 export function createEventCandidateSelectionSeed(
@@ -109,6 +121,7 @@ export function createFeasibleEventCandidates({
   unavailableItemInstanceIds,
   selectionSeed,
   previousSelectionsByDefinitionId = new Map(),
+  diagnostics,
 }: CreateFeasibleEventCandidatesOptions): FeasibleEventCandidate[] {
   return definitions.flatMap((definition): FeasibleEventCandidate[] => {
     const previousSelection = previousSelectionsByDefinitionId.get(definition.id);
@@ -130,7 +143,32 @@ export function createFeasibleEventCandidates({
           );
 
     if (!feasibilitySelection) {
+      if (diagnostics && isEventSelectionDiagnosticsActive()) {
+        recordEventSelectionCandidateEvaluation({
+          ...diagnostics,
+          definition,
+          eligible: true,
+          feasible: false,
+          rejectionReason: diagnoseEventSelectionFeasibilityRejection({
+            definition,
+            context,
+            unavailableTributeIds,
+            unavailableItemInstanceIds,
+            selectionSeed,
+          }),
+        });
+      }
+
       return [];
+    }
+
+    if (diagnostics && isEventSelectionDiagnosticsActive()) {
+      recordEventSelectionCandidateEvaluation({
+        ...diagnostics,
+        definition,
+        eligible: true,
+        feasible: true,
+      });
     }
 
     return [

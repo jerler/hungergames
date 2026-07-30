@@ -258,6 +258,7 @@ describe("event distribution report", () => {
     expect(firstReport).toContain("### Day 2+");
     expect(firstReport).toContain("### Night");
     expect(firstReport).toContain("#### Participant shape");
+    expect(firstReport).toContain("#### Selection diagnostics");
     expect(firstReport).toContain("#### Never selected");
   });
 });

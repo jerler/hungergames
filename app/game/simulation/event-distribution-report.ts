@@ -35,6 +35,66 @@ function formatDefinitionIdList(definitionIds: readonly string[]): string[] {
   return definitionIds.map((definitionId) => `- \`${definitionId}\``);
 }
 
+function getTopRejection(rejectionCounts: Readonly<Record<string, number>>): string {
+  const [reason, count] = Object.entries(rejectionCounts).sort(
+    ([firstReason, firstCount], [secondReason, secondCount]) =>
+      secondCount - firstCount || firstReason.localeCompare(secondReason),
+  )[0] ?? ["none", 0];
+
+  return count > 0 ? `${reason} (${count})` : "—";
+}
+
+function createSelectionDiagnosticsSection(pool: EventDistributionPoolMetric): string[] {
+  const diagnostics = pool.selectionDiagnostics;
+
+  if (diagnostics.capturedGames === 0) {
+    return [
+      "#### Selection diagnostics",
+      "",
+      "_Selection diagnostics were not captured for this sample._",
+      "",
+    ];
+  }
+
+  return [
+    "#### Selection diagnostics",
+    "",
+    `- Games captured: ${diagnostics.capturedGames}`,
+    `- Selection opportunities: ${diagnostics.opportunities}`,
+    `- Solo selected while a non-solo candidate was feasible: ${diagnostics.selectedSoloWithNonSoloFeasible}`,
+    `- Opportunities with no feasible non-solo candidate: ${diagnostics.noNonSoloFeasible}`,
+    `- Opportunities with no feasible candidate: ${diagnostics.noFeasibleCandidates}`,
+    "",
+    "| Shape | Feasible appearances | Selected |",
+    "| --- | ---: | ---: |",
+    ...EVENT_PARTICIPANT_SHAPES.map(
+      (shape) =>
+        `| ${SHAPE_LABELS[shape]} | ${diagnostics.feasibleByShape[shape]} | ${diagnostics.selectedByShape[shape]} |`,
+    ),
+    "",
+    "| Stage | Opportunities | Solo over non-solo | No non-solo feasible |",
+    "| --- | ---: | ---: | ---: |",
+    ...(diagnostics.stages.length > 0
+      ? diagnostics.stages.map(
+          (stage) =>
+            `| ${stage.stage} | ${stage.opportunities} | ${stage.selectedSoloWithNonSoloFeasible} | ${stage.noNonSoloFeasible} |`,
+        )
+      : ["| _No stages captured_ | 0 | 0 | 0 |"]),
+    "",
+    "| Event | Shape | Considered | Eligible | Feasible | Selected | Selected when feasible | Top rejection |",
+    "| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |",
+    ...(diagnostics.definitions.length > 0
+      ? diagnostics.definitions.map((definition) => {
+          const selectedWhenFeasible =
+            definition.feasible === 0 ? 0 : definition.selected / definition.feasible;
+
+          return `| \`${escapeTableCell(definition.definitionId)}\` | ${SHAPE_LABELS[definition.participantShape]} | ${definition.considered} | ${definition.eligible} | ${definition.feasible} | ${definition.selected} | ${formatRate(selectedWhenFeasible)} | ${escapeTableCell(getTopRejection(definition.rejectionCounts))} |`;
+        })
+      : ["| _No definitions captured_ | — | 0 | 0 | 0 | 0 | 0.0% | — |"]),
+    "",
+  ];
+}
+
 function formatEventRow(event: EventDistributionEventMetric): string {
   return [
     `\`${escapeTableCell(event.definitionId)}\``,
@@ -80,6 +140,7 @@ function createPoolSection(pool: EventDistributionPoolMetric): string[] {
       return `| ${SHAPE_LABELS[shape]} | ${metric.selections} | ${formatRate(metric.share)} |`;
     }),
     "",
+    ...createSelectionDiagnosticsSection(pool),
     "#### Catalogue family",
     "",
     "| Family | Selections | Games containing | Appearance | Pool share |",
@@ -153,7 +214,8 @@ export function createEventDistributionReport(metrics: EventDistributionMetrics)
     "- Appearance is the percentage of games containing a definition at least once.",
     "- Pool share is the percentage of all selections in the same game-size and period pool.",
     "- Consecutive-game overlap counts distinct definition IDs shared by adjacent seeded simulations.",
-    "- Never-selected lists are based on catalogue membership and declared periods; they do not prove that every definition was eligible in the sampled games.",
+    "- Never-selected lists are based on catalogue membership and declared periods; selection diagnostics distinguish ineligible, infeasible, planner-bypassed, and weighted-but-unselected definitions.",
+    "- Diagnostic feasibility uses isolated deterministic random streams and does not consume gameplay randomness.",
     "",
   );
 

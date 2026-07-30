@@ -15,6 +15,11 @@ import type { ResolvedEvent } from "~/game/types/game-state";
 export { EVENT_PARTICIPANT_SHAPES };
 export type { EventParticipantShape };
 
+import {
+  mergeEventSelectionDiagnostics,
+  summarizeEventSelectionDiagnosticsForPool,
+  type EventSelectionPoolDiagnosticsSummary,
+} from "./event-selection-diagnostics";
 import type { SimulationRun } from "./simulation-runner";
 
 export const EVENT_DISTRIBUTION_GAME_SIZE_IDS = ["half-game", "full-game"] as const;
@@ -71,6 +76,10 @@ export interface EventDistributionFamilyMetric {
   selectionShare: number;
 }
 
+export interface EventDistributionSelectionDiagnosticsMetric extends EventSelectionPoolDiagnosticsSummary {
+  capturedGames: number;
+}
+
 export interface EventDistributionPoolMetric {
   id: EventDistributionPoolId;
   label: string;
@@ -95,6 +104,7 @@ export interface EventDistributionPoolMetric {
   families: readonly EventDistributionFamilyMetric[];
   events: readonly EventDistributionEventMetric[];
   neverSelectedEventIds: readonly string[];
+  selectionDiagnostics: EventDistributionSelectionDiagnosticsMetric;
 }
 
 export interface EventDistributionGameSizeMetric {
@@ -493,6 +503,15 @@ function createPoolMetric(
       .map((event) => event.definitionId)
       .sort();
 
+  const diagnosticRuns = runs.filter((run) => run.selectionDiagnostics !== undefined);
+  const mergedSelectionDiagnostics = mergeEventSelectionDiagnostics(
+    diagnosticRuns.flatMap((run) => (run.selectionDiagnostics ? [run.selectionDiagnostics] : [])),
+  );
+  const selectionDiagnostics = summarizeEventSelectionDiagnosticsForPool(
+    mergedSelectionDiagnostics,
+    poolId,
+  );
+
   const participantShapes = Object.fromEntries(
     EVENT_PARTICIPANT_SHAPES.map((shape) => [
       shape,
@@ -522,6 +541,10 @@ function createPoolMetric(
     families,
     events,
     neverSelectedEventIds,
+    selectionDiagnostics: {
+      capturedGames: diagnosticRuns.length,
+      ...selectionDiagnostics,
+    },
   };
 }
 

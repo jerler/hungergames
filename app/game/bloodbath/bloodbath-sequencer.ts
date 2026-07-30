@@ -44,6 +44,14 @@ import { CORNUCOPIA_PROVISIONS_ITEM_ID } from "~/game/items/deprivation-protecti
 import { validateEventResolution } from "~/game/events/validation/validate-event-resolution";
 import { selectEventParticipants } from "~/game/events/participant-selection";
 import {
+  isEventSelectionDiagnosticsActive,
+  recordEventSelectionCandidateEvaluation,
+  recordEventSelectionOpportunity,
+  type EventSelectionDiagnosticPoolId,
+  type EventSelectionDiagnosticStage,
+  type EventSelectionRejectionReason,
+} from "~/game/simulation/event-selection-diagnostics";
+import {
   hasUsableCornucopiaContestedDirectWeapon,
   hasUsableCornucopiaPackItem,
   selectCornucopiaContestedDirectWeapon,
@@ -347,6 +355,106 @@ function getDefinitionParticipantCount(definition: EventDefinition): number {
   return definition.roles.reduce((total, role) => total + role.count, 0);
 }
 
+function collectBloodbathDiagnosticFeasibleDefinitions({
+  state,
+  round,
+  remainingTributes,
+  definitions,
+  usedDefinitionIds,
+  poolId,
+  stage,
+  diagnosticKey,
+  getHardRejectionReason,
+}: {
+  state: GameState;
+  round: RoundReference;
+  remainingTributes: readonly GameTribute[];
+  definitions: readonly EventDefinition[];
+  usedDefinitionIds: ReadonlySet<string>;
+  poolId: EventSelectionDiagnosticPoolId;
+  stage: EventSelectionDiagnosticStage;
+  diagnosticKey: string;
+  getHardRejectionReason?: (definition: EventDefinition) => EventSelectionRejectionReason | null;
+}): EventDefinition[] {
+  if (!isEventSelectionDiagnosticsActive()) {
+    return [];
+  }
+
+  const context: EventSelectionContext = {
+    state,
+    round,
+    livingTributes: remainingTributes,
+  };
+  const uniqueDefinitions = [
+    ...new Map(definitions.map((definition) => [definition.id, definition])).values(),
+  ];
+  const feasibleDefinitions: EventDefinition[] = [];
+
+  for (const definition of uniqueDefinitions) {
+    let rejectionReason: EventSelectionRejectionReason | null;
+
+    if (usedDefinitionIds.has(definition.id)) {
+      rejectionReason = "already-used-definition";
+    } else if (!isEventDefinitionEligible(definition, context)) {
+      rejectionReason = "definition-ineligible";
+    } else {
+      rejectionReason = getHardRejectionReason?.(definition) ?? null;
+    }
+
+    if (rejectionReason) {
+      recordEventSelectionCandidateEvaluation({
+        poolId,
+        stage,
+        definition,
+        eligible: rejectionReason !== "definition-ineligible",
+        feasible: false,
+        rejectionReason,
+      });
+      continue;
+    }
+
+    const diagnosticSelection = selectEventParticipants(
+      definition,
+      context,
+      createSeededRandom(
+        [
+          state.seed,
+          round.day,
+          round.period,
+          "selection-diagnostics",
+          diagnosticKey,
+          definition.id,
+        ].join(":"),
+      ),
+      new Set<string>(),
+      new Set<string>(),
+    );
+
+    if (!diagnosticSelection) {
+      recordEventSelectionCandidateEvaluation({
+        poolId,
+        stage,
+        definition,
+        eligible: true,
+        feasible: false,
+        rejectionReason: "participant-or-item-infeasible",
+      });
+      continue;
+    }
+
+    recordEventSelectionCandidateEvaluation({
+      poolId,
+      stage,
+      definition,
+      eligible: true,
+      feasible: true,
+    });
+    feasibleDefinitions.push(definition);
+  }
+
+  return feasibleDefinitions;
+}
+
 function removeSelectedBloodbathParticipants(
   remainingTributes: GameTribute[],
   participantTributeIds: readonly string[],
@@ -464,6 +572,65 @@ function selectAuthoredFatalBloodbathEvent(
    * deficit, events may collectively leave at most two survivors.
    */
   const fatalSurvivorBudget = Math.max(0, availableFatalParticipants - fatalityDeficit);
+  const diagnosticFeasibleDefinitions = collectBloodbathDiagnosticFeasibleDefinitions({
+    state,
+    round,
+    remainingTributes,
+    definitions: fatalSelectionProfiles.map((profile) => profile.definition),
+    usedDefinitionIds,
+    poolId: "bloodbath-cornucopia",
+    stage: "cornucopia-fatal",
+    diagnosticKey: [
+      "fatal",
+      remainingTributes.length,
+      fatalityDeficit,
+      reservedPostTargetCount,
+    ].join(":"),
+    getHardRejectionReason: (definition) => {
+      const profile = fatalSelectionProfiles.find(
+        (candidate) => candidate.definition.id === definition.id,
+      );
+
+      if (!profile) {
+        return "participant-or-item-infeasible";
+      }
+
+      const participantCount = getDefinitionParticipantCount(definition);
+      const worstCaseSurvivorCost = participantCount - profile.minImmediateEliminations;
+
+      if (participantCount > remainingTributes.length) {
+        return "participant-count-unavailable";
+      }
+
+      if (participantCount > availableFatalParticipants) {
+        return "reservation-blocked";
+      }
+
+      if (profile.maxImmediateEliminations > fatalityDeficit + 1) {
+        return "fatality-target-overshoot";
+      }
+
+      if (worstCaseSurvivorCost > fatalSurvivorBudget) {
+        return "fatality-survivor-budget";
+      }
+
+      return null;
+    },
+  });
+  const plannerConsideredDefinitionIds = new Set<string>();
+  const finishSelection = (
+    selection: BloodbathAcquisitionSelection | null,
+  ): BloodbathAcquisitionSelection | null => {
+    recordEventSelectionOpportunity({
+      poolId: "bloodbath-cornucopia",
+      stage: "cornucopia-fatal",
+      feasibleDefinitions: diagnosticFeasibleDefinitions,
+      selectedDefinition: selection?.definition ?? null,
+      plannerConsideredDefinitionIds,
+    });
+
+    return selection;
+  };
 
   const candidateProfiles = fatalSelectionProfiles.filter((profile) => {
     const participantCount = getDefinitionParticipantCount(profile.definition);
@@ -486,6 +653,10 @@ function selectAuthoredFatalBloodbathEvent(
   function selectFromProfiles(
     profiles: typeof candidateProfiles,
   ): BloodbathAcquisitionSelection | null {
+    for (const profile of profiles) {
+      plannerConsideredDefinitionIds.add(profile.definition.id);
+    }
+
     let remainingProfiles = [...profiles];
 
     while (remainingProfiles.length > 0) {
@@ -563,19 +734,19 @@ function selectAuthoredFatalBloodbathEvent(
     const efficientMultiDeath = selectFromProfiles(efficientMultiDeathProfiles);
 
     if (efficientMultiDeath) {
-      return efficientMultiDeath;
+      return finishSelection(efficientMultiDeath);
     }
 
     const expensiveMultiDeath = selectFromProfiles(expensiveMultiDeathProfiles);
 
     if (expensiveMultiDeath) {
-      return expensiveMultiDeath;
+      return finishSelection(expensiveMultiDeath);
     }
 
     const guaranteedPair = selectFromProfiles(guaranteedOneDeathPairProfiles);
 
     if (guaranteedPair) {
-      return guaranteedPair;
+      return finishSelection(guaranteedPair);
     }
   }
 
@@ -587,7 +758,7 @@ function selectAuthoredFatalBloodbathEvent(
   const soloSelection = selectFromProfiles(soloProfiles);
 
   if (soloSelection) {
-    return soloSelection;
+    return finishSelection(soloSelection);
   }
 
   /*
@@ -595,11 +766,11 @@ function selectAuthoredFatalBloodbathEvent(
    * remain reachable, but they cannot displace the guaranteed sequence
    * required to preserve the established fatality range.
    */
-  return (
+  return finishSelection(
     selectFromProfiles(guaranteedOneDeathPairProfiles) ??
-    selectFromProfiles(variableMultiParticipantProfiles) ??
-    selectFromProfiles(expensiveMultiDeathProfiles) ??
-    selectFromProfiles(efficientMultiDeathProfiles)
+      selectFromProfiles(variableMultiParticipantProfiles) ??
+      selectFromProfiles(expensiveMultiDeathProfiles) ??
+      selectFromProfiles(efficientMultiDeathProfiles),
   );
 }
 
@@ -745,6 +916,49 @@ function selectPostTargetCornucopiaEvent(
     round,
     livingTributes,
   };
+  const postTargetDefinitions = [
+    ...CORNUCOPIA_GROUP_CONFLICT_EVENTS,
+    ...CORNUCOPIA_PAIR_CONFLICT_EVENTS,
+    ...CORNUCOPIA_NONFATAL_QUARTET_EVENTS,
+    ...CORNUCOPIA_NONFATAL_TRIO_EVENTS,
+    ...CORNUCOPIA_NONFATAL_PAIR_EVENTS,
+    ...CORNUCOPIA_FATAL_DELAYED_EVENTS,
+    ...CORNUCOPIA_ACQUISITION_EVENTS,
+    ...CORNUCOPIA_FLAVOUR_ACQUISITION_EVENTS,
+  ];
+  const diagnosticFeasibleDefinitions = collectBloodbathDiagnosticFeasibleDefinitions({
+    state,
+    round,
+    remainingTributes,
+    definitions: postTargetDefinitions,
+    usedDefinitionIds,
+    poolId: "bloodbath-cornucopia",
+    stage: "cornucopia-post-target",
+    diagnosticKey: ["post-target", remainingTributes.length].join(":"),
+    getHardRejectionReason: (definition) =>
+      getDefinitionParticipantCount(definition) > remainingTributes.length
+        ? "participant-count-unavailable"
+        : null,
+  });
+  const plannerConsideredDefinitionIds = new Set<string>();
+  const markPlannerDefinitions = (definitions: readonly EventDefinition[]): void => {
+    for (const definition of definitions) {
+      plannerConsideredDefinitionIds.add(definition.id);
+    }
+  };
+  const finishSelection = (
+    selection: BloodbathAcquisitionSelection | null,
+  ): BloodbathAcquisitionSelection | null => {
+    recordEventSelectionOpportunity({
+      poolId: "bloodbath-cornucopia",
+      stage: "cornucopia-post-target",
+      feasibleDefinitions: diagnosticFeasibleDefinitions,
+      selectedDefinition: selection?.definition ?? null,
+      plannerConsideredDefinitionIds,
+    });
+
+    return selection;
+  };
 
   /*
    * Preserve the original conflict catalogues as post-target volatility.
@@ -763,6 +977,7 @@ function selectPostTargetCornucopiaEvent(
    * the shared usedDefinitionIds set still prevents repeated prose.
    */
   if (livingTributes.length > 12 && remainingTributes.length >= 3) {
+    markPlannerDefinitions(CORNUCOPIA_GROUP_CONFLICT_EVENTS);
     const groupConflictSelection = selectBloodbathEventForRemainingTributes(
       CORNUCOPIA_GROUP_CONFLICT_EVENTS,
       state,
@@ -773,11 +988,12 @@ function selectPostTargetCornucopiaEvent(
     );
 
     if (groupConflictSelection) {
-      return groupConflictSelection;
+      return finishSelection(groupConflictSelection) as BloodbathAcquisitionSelection;
     }
   }
 
   if (livingTributes.length > 12 && remainingTributes.length >= 2) {
+    markPlannerDefinitions(CORNUCOPIA_PAIR_CONFLICT_EVENTS);
     const pairConflictSelection = selectBloodbathEventForRemainingTributes(
       CORNUCOPIA_PAIR_CONFLICT_EVENTS,
       state,
@@ -788,7 +1004,7 @@ function selectPostTargetCornucopiaEvent(
     );
 
     if (pairConflictSelection) {
-      return pairConflictSelection;
+      return finishSelection(pairConflictSelection) as BloodbathAcquisitionSelection;
     }
   }
 
@@ -800,6 +1016,7 @@ function selectPostTargetCornucopiaEvent(
    * the weighted shape roll repeatedly chose "solo".
    */
   if (remainingTributes.length >= 4) {
+    markPlannerDefinitions(CORNUCOPIA_NONFATAL_QUARTET_EVENTS);
     const definition = selectDefinition(
       CORNUCOPIA_NONFATAL_QUARTET_EVENTS,
       context,
@@ -808,16 +1025,17 @@ function selectPostTargetCornucopiaEvent(
     );
 
     if (definition) {
-      return {
+      return finishSelection({
         definition,
         participantsByRole: {
           tributes: takeRemainingTributes(remainingTributes, 4, "quartet"),
         },
-      };
+      }) as BloodbathAcquisitionSelection;
     }
   }
 
   if (remainingTributes.length >= 3) {
+    markPlannerDefinitions(CORNUCOPIA_NONFATAL_TRIO_EVENTS);
     const definition = selectDefinition(
       CORNUCOPIA_NONFATAL_TRIO_EVENTS,
       context,
@@ -826,12 +1044,12 @@ function selectPostTargetCornucopiaEvent(
     );
 
     if (definition) {
-      return {
+      return finishSelection({
         definition,
         participantsByRole: {
           tributes: takeRemainingTributes(remainingTributes, 3, "trio"),
         },
-      };
+      }) as BloodbathAcquisitionSelection;
     }
   }
 
@@ -846,16 +1064,19 @@ function selectPostTargetCornucopiaEvent(
       ? CORNUCOPIA_NONFATAL_PAIR_EVENTS
       : CORNUCOPIA_FATAL_DELAYED_EVENTS;
 
-    const pairSelection =
-      selectBloodbathEventForRemainingTributes(
-        preferredDefinitions,
-        state,
-        round,
-        remainingTributes,
-        usedDefinitionIds,
-        random,
-      ) ??
-      selectBloodbathEventForRemainingTributes(
+    markPlannerDefinitions(preferredDefinitions);
+    let pairSelection = selectBloodbathEventForRemainingTributes(
+      preferredDefinitions,
+      state,
+      round,
+      remainingTributes,
+      usedDefinitionIds,
+      random,
+    );
+
+    if (!pairSelection) {
+      markPlannerDefinitions(fallbackDefinitions);
+      pairSelection = selectBloodbathEventForRemainingTributes(
         fallbackDefinitions,
         state,
         round,
@@ -863,12 +1084,17 @@ function selectPostTargetCornucopiaEvent(
         usedDefinitionIds,
         random,
       );
+    }
 
     if (pairSelection) {
-      return pairSelection;
+      return finishSelection(pairSelection) as BloodbathAcquisitionSelection;
     }
   }
 
+  markPlannerDefinitions([
+    ...CORNUCOPIA_ACQUISITION_EVENTS,
+    ...CORNUCOPIA_FLAVOUR_ACQUISITION_EVENTS,
+  ]);
   const soloSelection = selectBloodbathAcquisitionEvent(
     state,
     round,
@@ -878,8 +1104,10 @@ function selectPostTargetCornucopiaEvent(
   );
 
   if (soloSelection) {
-    return soloSelection;
+    return finishSelection(soloSelection) as BloodbathAcquisitionSelection;
   }
+
+  finishSelection(null);
 
   throw new Error(
     `No unused Bloodbath event definition could cover ${remainingTributes.length} remaining Cornucopia tribute(s).`,
@@ -1076,6 +1304,7 @@ function sequenceFleeEvents(
   startingEventIndex: number,
   random: RandomSource,
   unavailableItemInstanceIds: Set<string>,
+  recordDiagnostics = true,
 ): ResolvedEvent[] {
   const remainingTributes = shuffleItems(fleeingTributes, random);
   const events: ResolvedEvent[] = [];
@@ -1083,6 +1312,23 @@ function sequenceFleeEvents(
   let eventIndex = startingEventIndex;
 
   while (remainingTributes.length > 0) {
+    const diagnosticFeasibleDefinitions = recordDiagnostics
+      ? collectBloodbathDiagnosticFeasibleDefinitions({
+          state,
+          round,
+          remainingTributes,
+          definitions: FLEE_EVENTS,
+          usedDefinitionIds,
+          poolId: "bloodbath-flee",
+          stage: "flee",
+          diagnosticKey: ["flee", remainingTributes.length].join(":"),
+          getHardRejectionReason: (definition) =>
+            getDefinitionParticipantCount(definition) > remainingTributes.length
+              ? "participant-count-unavailable"
+              : null,
+        })
+      : [];
+
     /*
      * Most flee events consume one tribute, while the crowd-breakaway
      * truce event consumes two. The shared remaining-participant
@@ -1097,6 +1343,16 @@ function sequenceFleeEvents(
       usedDefinitionIds,
       random,
     );
+
+    if (recordDiagnostics) {
+      recordEventSelectionOpportunity({
+        poolId: "bloodbath-flee",
+        stage: "flee",
+        feasibleDefinitions: diagnosticFeasibleDefinitions,
+        selectedDefinition: selection?.definition ?? null,
+        plannerConsideredDefinitionIds: new Set(FLEE_EVENTS.map((definition) => definition.id)),
+      });
+    }
 
     if (!selection) {
       throw new Error("No eligible Bloodbath flee event could cover the remaining tributes.");
@@ -1217,6 +1473,7 @@ export function sequenceBloodbathEvents(state: GameState, round: RoundReference)
     0,
     createSeededRandom(fleeSeed),
     new Set<string>(),
+    false,
   );
   const fleePlanningChanges = fleePlanningEvents.flatMap((event) => event.changes);
   const cornucopiaFatalityTarget = getRemainingBloodbathFatalityTarget(

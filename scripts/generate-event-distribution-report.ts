@@ -101,6 +101,7 @@ const batchDefinitions = [
           seedPrefix: `${configuration.seedPrefix}-half-game`,
           count: configuration.halfGames,
           districtCount: 6 as const,
+          captureSelectionDiagnostics: true,
         },
       ]
     : []),
@@ -110,6 +111,7 @@ const batchDefinitions = [
           seedPrefix: `${configuration.seedPrefix}-full-game`,
           count: configuration.fullGames,
           districtCount: 12 as const,
+          captureSelectionDiagnostics: true,
         },
       ]
     : []),

@@ -8,9 +8,10 @@ import {
 import { getTributePronouns } from "~/game/tributes/pronouns";
 import type { GameTribute } from "~/game/types/game-state";
 
-const SOLO_FATAL_VARIETY_SLOT_COUNT = 2;
+const SOLO_FATAL_VARIETY_SLOT_COUNT = 3;
 
 const SOLO_FATAL_VARIETY_EVENT_IDS = [
+  "cornucopia-fatal-spiked-pit",
   "cornucopia-fatal-crate-avalanche",
   "cornucopia-fatal-shield-sled",
   "cornucopia-fatal-loaded-crossbow-inspection",
@@ -69,6 +70,16 @@ function createSoloFatalVarietyEvent({
     },
   };
 }
+
+const FALLING_INTO_PIT_EVENT = createSoloFatalVarietyEvent({
+  id: "cornucopia-fatal-spiked-pit",
+  baseWeight: 1.5,
+  causeLabel: "Fell into a spiked pit",
+  getText: (actor) =>
+    `${actor.snapshot.name} gets scared by the chaos and backs away from the fighting ` +
+    `without looking behind ${getTributePronouns(actor).object}, falling directly into ` +
+    "a spiked pit.",
+});
 
 const CRATE_AVALANCHE_EVENT = createSoloFatalVarietyEvent({
   id: "cornucopia-fatal-crate-avalanche",
@@ -140,6 +151,7 @@ const CAST_IRON_COOKWARE_EVENT = createSoloFatalVarietyEvent({
 });
 
 export const ADDITIONAL_CORNUCOPIA_SOLO_FATAL_EVENTS = [
+  FALLING_INTO_PIT_EVENT,
   CRATE_AVALANCHE_EVENT,
   SHIELD_SLED_EVENT,
   LOADED_CROSSBOW_INSPECTION_EVENT,

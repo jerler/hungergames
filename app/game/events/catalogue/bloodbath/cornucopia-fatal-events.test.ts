@@ -128,9 +128,9 @@ describe("authored fatal Bloodbath events", () => {
     const catalogueIds = new Set(CORNUCOPIA_EVENTS.map((definition) => definition.id));
     const authoredIds = CORNUCOPIA_FATAL_BLOODBATH_EVENTS.map((definition) => definition.id);
 
-    expect(CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(35);
+    expect(CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(37);
     expect(CORNUCOPIA_FATAL_DELAYED_EVENTS).toHaveLength(2);
-    expect(authoredIds).toHaveLength(37);
+    expect(authoredIds).toHaveLength(39);
     expect(new Set(authoredIds).size).toBe(authoredIds.length);
 
     for (const eventId of authoredIds) {
@@ -183,6 +183,42 @@ describe("authored fatal Bloodbath events", () => {
 
     expect(eligibleGameCount).toBeGreaterThan(100);
     expect(eligibleGameCount).toBeLessThan(220);
+  });
+
+  it("makes exactly two seeded efficient trio fatalities eligible in every game", () => {
+    const efficientTrioEventIds = [
+      "cornucopia-fatal-three-way-fight",
+      "cornucopia-fatal-double-cherry-bomb",
+      "cornucopia-fatal-supply-net-counterweight",
+      "cornucopia-fatal-weapon-rack-chain-reaction",
+    ] as const;
+    const observedIds = new Set<string>();
+    const baseState = createTestGame("efficient-trio-variety");
+
+    for (let index = 0; index < 500; index += 1) {
+      const state = {
+        ...baseState,
+        seed: `efficient-trio-slot-${index}`,
+      };
+      const context = {
+        state,
+        round: DAY_ONE,
+        livingTributes: state.tributes,
+      };
+      const eligibleIds = efficientTrioEventIds.filter((eventId) => {
+        const definition = requireDefinition(eventId);
+
+        return definition.isEligible?.(context) ?? true;
+      });
+
+      expect(eligibleIds).toHaveLength(2);
+
+      for (const eventId of eligibleIds) {
+        observedIds.add(eventId);
+      }
+    }
+
+    expect(observedIds).toEqual(new Set(efficientTrioEventIds));
   });
 
   it("keeps temporary Bloodbath props out of persistent inventory", () => {

@@ -54,12 +54,12 @@ function createTestGame(seed = "solo-fatal-variety"): GameState {
 }
 
 describe("additional solo Cornucopia fatalities", () => {
-  it("adds six unique one-person fatal variants", () => {
-    expect(ADDITIONAL_CORNUCOPIA_SOLO_FATAL_EVENTS).toHaveLength(6);
+  it("adds seven unique one-person fatal variants", () => {
+    expect(ADDITIONAL_CORNUCOPIA_SOLO_FATAL_EVENTS).toHaveLength(7);
 
     expect(
       new Set(ADDITIONAL_CORNUCOPIA_SOLO_FATAL_EVENTS.map((definition) => definition.id)).size,
-    ).toBe(6);
+    ).toBe(7);
 
     for (const definition of ADDITIONAL_CORNUCOPIA_SOLO_FATAL_EVENTS) {
       expect(() => validateEventDefinition(definition)).not.toThrow();
@@ -74,7 +74,7 @@ describe("additional solo Cornucopia fatalities", () => {
     }
   });
 
-  it("makes exactly two seeded variants eligible in every game", () => {
+  it("makes exactly three seeded variants eligible in every game", () => {
     const observedIds = new Set<string>();
 
     for (let index = 0; index < 500; index += 1) {
@@ -88,7 +88,7 @@ describe("additional solo Cornucopia fatalities", () => {
         (definition) => definition.isEligible?.(context) ?? true,
       );
 
-      expect(eligibleDefinitions).toHaveLength(2);
+      expect(eligibleDefinitions).toHaveLength(3);
 
       for (const definition of eligibleDefinitions) {
         observedIds.add(definition.id);

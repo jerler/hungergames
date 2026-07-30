@@ -9,6 +9,7 @@ export interface BloodbathFatalSelectionProfile {
   definition: EventDefinition;
   minImmediateEliminations: number;
   maxImmediateEliminations: number;
+  selectionWeightMultiplier?: number;
 }
 
 function assertProfile(profile: BloodbathFatalSelectionProfile): void {
@@ -43,7 +44,8 @@ export function getBloodbathFatalProfileWeight(
 ): number {
   return (
     getEventDefinitionWeight(profile.definition, context) *
-    getEventParticipantShapeMultiplier("bloodbath-cornucopia", profile.definition)
+    getEventParticipantShapeMultiplier("bloodbath-cornucopia", profile.definition) *
+    (profile.selectionWeightMultiplier ?? 1)
   );
 }
 

@@ -1,6 +1,11 @@
 import { ADDITIONAL_CORNUCOPIA_SOLO_FATAL_EVENTS } from "./cornucopia-solo-fatal-variety-events";
 import { getEffectiveStats } from "~/game/engine/effective-stats";
-import { createSeededRandom, selectRandomItem, type RandomSource } from "~/game/engine/random";
+import {
+  createSeededRandom,
+  selectRandomItem,
+  shuffleItems,
+  type RandomSource,
+} from "~/game/engine/random";
 import { getNextRound } from "~/game/engine/rounds";
 import {
   getAwarenessScore,
@@ -82,6 +87,93 @@ function createPodiumDeathEligibility(
   variant: PodiumDeathVariant,
 ): NonNullable<EventDefinition["isEligible"]> {
   return ({ state }) => getPodiumDeathVariant(state.seed) === variant;
+}
+
+const EFFICIENT_TRIO_FATAL_VARIETY_SLOT_COUNT = 2;
+
+const EFFICIENT_TRIO_FATAL_VARIETY_EVENT_IDS = [
+  "cornucopia-fatal-three-way-fight",
+  "cornucopia-fatal-double-cherry-bomb",
+  "cornucopia-fatal-supply-net-counterweight",
+  "cornucopia-fatal-weapon-rack-chain-reaction",
+] as const;
+
+type EfficientTrioFatalVarietyEventId = (typeof EFFICIENT_TRIO_FATAL_VARIETY_EVENT_IDS)[number];
+
+function getEligibleEfficientTrioFatalVarietyIds(
+  gameSeed: string,
+): ReadonlySet<EfficientTrioFatalVarietyEventId> {
+  const shuffledIds = shuffleItems(
+    EFFICIENT_TRIO_FATAL_VARIETY_EVENT_IDS,
+    createSeededRandom(`${gameSeed}:efficient-trio-fatal-variety-slots`),
+  );
+
+  return new Set(shuffledIds.slice(0, EFFICIENT_TRIO_FATAL_VARIETY_SLOT_COUNT));
+}
+
+function createEfficientTrioFatalEligibility(
+  id: EfficientTrioFatalVarietyEventId,
+): NonNullable<EventDefinition["isEligible"]> {
+  return ({ state }) => getEligibleEfficientTrioFatalVarietyIds(state.seed).has(id);
+}
+
+interface EfficientTrioFatalEventOptions {
+  id: EfficientTrioFatalVarietyEventId;
+  baseWeight: number;
+  causeLabel: string;
+  getText: (actor: GameTribute, target: GameTribute, bystander: GameTribute) => string;
+}
+
+function createEfficientTrioFatalEvent({
+  id,
+  baseWeight,
+  causeLabel,
+  getText,
+}: EfficientTrioFatalEventOptions): EventDefinition {
+  return {
+    id,
+    category: "fatal",
+    tags: ["fatal", "combat"],
+    periods: ["day"],
+    baseWeight,
+    isEligible: createEfficientTrioFatalEligibility(id),
+    roles: [
+      {
+        id: "actor",
+        count: 1,
+        getWeight: getCombatWeight,
+        opposesRoleIds: ["target", "bystander"],
+      },
+      {
+        id: "target",
+        count: 1,
+        targeting: "hostile",
+        getWeight: getVulnerableWeight,
+        opposesRoleIds: ["actor"],
+      },
+      {
+        id: "bystander",
+        count: 1,
+        targeting: "hostile",
+        getWeight: getVulnerableWeight,
+        opposesRoleIds: ["actor"],
+      },
+    ],
+    resolve({ participantsByRole }): EventResolution {
+      const actor = requireSingleParticipant(participantsByRole, "actor");
+      const target = requireSingleParticipant(participantsByRole, "target");
+      const bystander = requireSingleParticipant(participantsByRole, "bystander");
+      const text = getText(actor, target, bystander);
+
+      return {
+        text,
+        changes: [
+          ...createSharedFatalChanges([target, bystander], [actor], id, causeLabel, text),
+          ...createSurvivalChanges([actor]),
+        ],
+      };
+    },
+  };
 }
 
 function getCombatWeight(tribute: GameTribute): number {
@@ -321,15 +413,6 @@ const PODIUM_DETONATION_BALLOON_EVENT = createSoloFatalEvent({
     "podium before the countdown ends. The mine beneath it detonates before " +
     `${getTributePronouns(actor).subject} can reach the ground, popping ` +
     `${actor.snapshot.name} like a balloon.`,
-});
-
-const FALLING_INTO_PIT_EVENT = createSoloFatalEvent({
-  id: "cornucopia-fatal-spiked-pit",
-  causeLabel: "Fell into a spiked pit",
-  text: (actor) =>
-    `${actor.snapshot.name} gets scared by the chaos and backs away from the fighting ` +
-    `without looking behind ${getTributePronouns(actor).object}, falling directly into ` +
-    "a spiked pit.",
 });
 
 const THROWN_KNIFE_HEAD_EVENT = createPairFatalEvent({
@@ -1113,6 +1196,7 @@ const THREE_WAY_FIGHT_EVENT: EventDefinition = {
   tags: ["fatal", "combat", "weapon"],
   periods: ["day"],
   baseWeight: 0.65,
+  isEligible: createEfficientTrioFatalEligibility("cornucopia-fatal-three-way-fight"),
   roles: [
     {
       id: "actor",
@@ -1166,6 +1250,7 @@ const DOUBLE_CHERRY_BOMB_EVENT: EventDefinition = {
   tags: ["fatal", "combat"],
   periods: ["day"],
   baseWeight: 1.6,
+  isEligible: createEfficientTrioFatalEligibility("cornucopia-fatal-double-cherry-bomb"),
   roles: [
     {
       id: "actor",
@@ -1212,6 +1297,29 @@ const DOUBLE_CHERRY_BOMB_EVENT: EventDefinition = {
     };
   },
 };
+
+const SUPPLY_NET_COUNTERWEIGHT_EVENT = createEfficientTrioFatalEvent({
+  id: "cornucopia-fatal-supply-net-counterweight",
+  baseWeight: 1.3,
+  causeLabel: "Crushed by a Cornucopia supply-net counterweight",
+  getText: (actor, target, bystander) =>
+    `${actor.snapshot.name} cuts the wrong-looking rope beside a hanging supply net. ` +
+    `The net rockets upward while its stone counterweight drops directly onto ` +
+    `${target.snapshot.name} and ${bystander.snapshot.name}. ` +
+    `${actor.snapshot.name} stares at the flattened pair, decides the rope was actually ` +
+    "the right-looking one, and leaves.",
+});
+
+const WEAPON_RACK_CHAIN_REACTION_EVENT = createEfficientTrioFatalEvent({
+  id: "cornucopia-fatal-weapon-rack-chain-reaction",
+  baseWeight: 1.15,
+  causeLabel: "Killed in a Cornucopia weapon-rack chain reaction",
+  getText: (actor, target, bystander) =>
+    `${actor.snapshot.name} shoves a rolling weapon rack toward ${target.snapshot.name}. ` +
+    `${target.snapshot.name} dodges, but the rack clips a second display and sends both ` +
+    `toppling onto ${target.snapshot.name} and ${bystander.snapshot.name}. ` +
+    `${actor.snapshot.name} surveys the result and quietly stops pretending that was planned.`,
+});
 
 const TWO_AGAINST_TWO_EVENT: EventDefinition = {
   id: "cornucopia-fatal-two-against-two",
@@ -1333,7 +1441,6 @@ function twoDeaths(definition: EventDefinition): CornucopiaFatalTargetProfile {
 export const CORNUCOPIA_FATAL_TARGET_PROFILES = [
   oneDeath(PODIUM_DETONATION_BITS_EVENT),
   oneDeath(PODIUM_DETONATION_BALLOON_EVENT),
-  oneDeath(FALLING_INTO_PIT_EVENT),
   ...ADDITIONAL_CORNUCOPIA_SOLO_FATAL_EVENTS.map(oneDeath),
   oneDeath(THROWN_KNIFE_HEAD_EVENT),
   oneDeath(THROWN_KNIFE_CHEST_EVENT),
@@ -1364,6 +1471,8 @@ export const CORNUCOPIA_FATAL_TARGET_PROFILES = [
   },
   twoDeaths(THREE_WAY_FIGHT_EVENT),
   twoDeaths(DOUBLE_CHERRY_BOMB_EVENT),
+  twoDeaths(SUPPLY_NET_COUNTERWEIGHT_EVENT),
+  twoDeaths(WEAPON_RACK_CHAIN_REACTION_EVENT),
   twoDeaths(TWO_AGAINST_TWO_EVENT),
 ] satisfies readonly CornucopiaFatalTargetProfile[];
 

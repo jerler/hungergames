@@ -1,6 +1,17 @@
 import type { BalanceMetrics } from "./balance-metrics";
 
-const INFORMATIONAL_EVENT_FAMILY_IDS = new Set<string>(["ordinary:standard-dissolution"]);
+const INFORMATIONAL_EVENT_FAMILY_IDS = new Set<string>([
+  "ordinary:standard-dissolution",
+
+  /*
+   * Romantic formation intentionally carries a very low weight.
+   * Focused romantic-event tests cover formation, permanence,
+   * partner targeting, protection outcomes, and joint victory.
+   * Keep aggregate occurrence visible in reports without requiring
+   * every deterministic balance corpus to select one.
+   */
+  "ordinary:romantic",
+]);
 
 export interface BalanceGuardrailResult {
   id: string;

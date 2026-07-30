@@ -7,12 +7,18 @@ import { createSeededRandom } from "~/game/engine/random";
 import { resolveRound } from "~/game/engine/resolve-round";
 import { createRoundSeed } from "~/game/engine/rounds";
 import {
+  CORNUCOPIA_NONFATAL_TRIO_EVENTS,
+  CORNUCOPIA_NONFATAL_QUARTET_EVENTS,
+  CORNUCOPIA_NONFATAL_PAIR_EVENTS,
+  CORNUCOPIA_FLAVOUR_ACQUISITION_EVENTS,
+  CORNUCOPIA_ACQUISITION_EVENTS,
   CORNUCOPIA_EVENTS,
   CORNUCOPIA_GROUP_CONFLICT_EVENTS,
   CORNUCOPIA_PAIR_CONFLICT_EVENTS,
   FLEE_EVENTS,
   BLOODBATH_EVENT_CATALOGUE,
 } from "~/game/events/catalogue/bloodbath";
+import { getEventParticipantShape } from "~/game/events/event-participant-shape";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
@@ -151,11 +157,8 @@ describe("Bloodbath sequencer", () => {
   );
 
   /*
-   * Do not impose a one-way "multi fatalities, then solo fatalities"
-   * phase ordering here.
-   *
-   * Post-target pair and group conflicts may legitimately occur after
-   * a unique solo fatality. The meaningful contracts are covered by:
+   * Pair and group conflicts compete inside the unified fatal pool.
+   * Their meaningful contracts are covered by:
    *
    * - definition uniqueness;
    * - fatality balance;
@@ -184,6 +187,36 @@ describe("Bloodbath sequencer", () => {
     expect(sawPairConflict).toBe(true);
     expect(sawGroupConflict).toBe(true);
   });
+
+  it("keeps every nonfatal Cornucopia participant shape reachable", () => {
+    const weaponAcquisitionDefinitions = [
+      ...CORNUCOPIA_ACQUISITION_EVENTS,
+      ...CORNUCOPIA_FLAVOUR_ACQUISITION_EVENTS,
+    ].filter((definition) => (definition.tags as readonly string[]).includes("weapon"));
+    const shapeByDefinitionId = new Map(
+      [
+        ...CORNUCOPIA_NONFATAL_PAIR_EVENTS,
+        ...CORNUCOPIA_NONFATAL_TRIO_EVENTS,
+        ...CORNUCOPIA_NONFATAL_QUARTET_EVENTS,
+        ...weaponAcquisitionDefinitions,
+      ].map((definition) => [definition.id, getEventParticipantShape(definition)]),
+    );
+    const observedShapes = new Set<string>();
+
+    for (let index = 0; index < 500 && observedShapes.size < 4; index += 1) {
+      const game = createTestGame(`post-target-shape-reachability-${index}`, 12);
+
+      for (const event of sequenceBloodbathEvents(game, DAY_ONE)) {
+        const shape = shapeByDefinitionId.get(event.definitionId);
+
+        if (shape) {
+          observedShapes.add(shape);
+        }
+      }
+    }
+
+    expect(observedShapes).toEqual(new Set(["solo", "pair", "trio", "group-four-plus"]));
+  }, 30_000);
 
   it("represents every starting tribute exactly once", () => {
     const game = createTestGame();

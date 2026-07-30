@@ -9,6 +9,8 @@ import {
   canReachBloodbathFatalityTarget,
   getBloodbathFatalProfileWeight,
   type BloodbathFatalSelectionProfile,
+  getMaximumReachablePostTargetReservation,
+  getBestEffortBloodbathFatalProfiles,
 } from "./bloodbath-fatal-planner";
 
 function createDefinition(id: string, participantCount: number): EventDefinition {
@@ -98,6 +100,56 @@ describe("Bloodbath fatal candidate planner", () => {
         fatalityDeficit: 2,
       }),
     ).toBe(false);
+  });
+
+  it("prioritizes the lowest survivor cost during best-effort completion", () => {
+    const solo = createProfile("solo", 1, 1);
+    const pair = createProfile("pair", 2, 1);
+    const trio = createProfile("trio", 3, 2);
+
+    expect(
+      getBestEffortBloodbathFatalProfiles([pair, trio, solo]).map(
+        (profile) => profile.definition.id,
+      ),
+    ).toEqual(["solo"]);
+  });
+
+  it("prefers more guaranteed deaths when survivor costs are equal", () => {
+    const pair = createProfile("pair", 2, 1);
+    const trio = createProfile("trio", 3, 2);
+
+    expect(
+      getBestEffortBloodbathFatalProfiles([pair, trio]).map((profile) => profile.definition.id),
+    ).toEqual(["trio"]);
+  });
+
+  it("preserves a requested survivor when six solo fatalities can reach six deaths", () => {
+    const profiles = Array.from({ length: 6 }, (_, index) => createProfile(`solo-${index}`, 1, 1));
+
+    expect(
+      getMaximumReachablePostTargetReservation({
+        profiles,
+        totalParticipantCount: 7,
+        fatalityDeficit: 6,
+        requestedReservation: 1,
+      }),
+    ).toBe(1);
+  });
+
+  it("releases a requested reservation when only an optimistic variable outcome would preserve it", () => {
+    const profiles = [
+      ...Array.from({ length: 5 }, (_, index) => createProfile(`solo-${index}`, 1, 1)),
+      createProfile("variable-group", 3, 0, 3),
+    ];
+
+    expect(
+      getMaximumReachablePostTargetReservation({
+        profiles,
+        totalParticipantCount: 7,
+        fatalityDeficit: 6,
+        requestedReservation: 1,
+      }),
+    ).toBe(0);
   });
 
   it("keeps a candidate only when every authored outcome leaves a completion path", () => {

@@ -29,6 +29,7 @@ export const CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS = [
   "spear",
   "trident",
   "bow",
+  "crossbow",
   "hand-axe",
   "club",
 ] as const satisfies readonly ItemDefinitionId[];
@@ -53,7 +54,6 @@ export const CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS = [
  * entries use the poison, trap, or risky-area families.
  */
 export const CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS = [
-  "crossbow",
   "blowgun",
   "poison-vial",
   "bear-trap",
@@ -64,7 +64,6 @@ export const CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS = [
 export const CORNUCOPIA_CONTESTED_DIRECT_WEAPON_ITEM_IDS = [
   ...CORNUCOPIA_EDGE_DIRECT_WEAPON_ITEM_IDS,
   ...CORNUCOPIA_HEAVY_DIRECT_WEAPON_ITEM_IDS,
-  "crossbow",
 ] as const satisfies readonly ItemDefinitionId[];
 
 export const CORNUCOPIA_PACK_ITEM_POOL = [

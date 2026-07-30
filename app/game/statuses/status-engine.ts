@@ -195,6 +195,59 @@ export function countPendingFatalStatusResolutions(
   return Math.min(fatalCandidateCount, Math.max(0, livingTributes.length - 1));
 }
 
+function deferUnresolvedFatalStatuses(state: GameState): GameState {
+  let changed = false;
+
+  const tributes = state.tributes.map((tribute) => {
+    if (!tribute.isAlive) {
+      return tribute;
+    }
+
+    let tributeChanged = false;
+    const statuses = tribute.statuses.map((status) => {
+      if (status.remainingRounds === null || status.remainingRounds > 0) {
+        return status;
+      }
+
+      const definition = getStatusDefinition(status.definitionId);
+
+      if (definition.duration.kind !== "timed" || definition.duration.expiration !== "fatal") {
+        return status;
+      }
+
+      tributeChanged = true;
+
+      return {
+        ...status,
+        /*
+         * The round's lethality cap may defer an otherwise imminent
+         * fatal status. Keep it imminent for the following round
+         * instead of leaving an invalid zero-duration instance.
+         */
+        remainingRounds: 1,
+      };
+    });
+
+    if (!tributeChanged) {
+      return tribute;
+    }
+
+    changed = true;
+
+    return {
+      ...tribute,
+      statuses,
+    };
+  });
+
+  return changed
+    ? {
+        ...state,
+        tributes,
+      }
+    : state;
+}
+
 export function advanceStatusDurations(
   state: GameState,
   maxFatalityCount = Number.POSITIVE_INFINITY,
@@ -321,5 +374,5 @@ export function advanceStatusDurations(
     resolvedFatalityCount += 1;
   }
 
-  return resolvedState;
+  return deferUnresolvedFatalStatuses(resolvedState);
 }

@@ -3,6 +3,13 @@ import {
   determineBloodbathFatalityTarget,
   getRemainingBloodbathFatalityTarget,
 } from "~/game/bloodbath/bloodbath-balance";
+import {
+  canCompleteBloodbathFatalityTargetAfterProfile,
+  getBloodbathFatalProfileWeight,
+  type BloodbathFatalSelectionProfile,
+  getMaximumReachablePostTargetReservation,
+  getBestEffortBloodbathFatalProfiles,
+} from "~/game/bloodbath/bloodbath-fatal-planner";
 import { assignBloodbathStrategies } from "~/game/bloodbath/bloodbath-strategy";
 import {
   createSeededRandom,
@@ -331,26 +338,6 @@ function selectBloodbathAcquisitionEvent(
   return null;
 }
 
-function getMinimumUniqueFatalSurvivorBudget(fatalityTarget: number): number {
-  if (fatalityTarget <= 3) {
-    return 0;
-  }
-
-  if (fatalityTarget <= 5) {
-    return 1;
-  }
-
-  if (fatalityTarget <= 7) {
-    return 2;
-  }
-
-  if (fatalityTarget <= 9) {
-    return 4;
-  }
-
-  return fatalityTarget - 5;
-}
-
 function getDefinitionParticipantCount(definition: EventDefinition): number {
   return definition.roles.reduce((total, role) => total + role.count, 0);
 }
@@ -524,28 +511,8 @@ function selectBloodbathEventForRemainingTributes(
   return null;
 }
 
-function selectAuthoredFatalBloodbathEvent(
-  state: GameState,
-  round: RoundReference,
-  remainingTributes: GameTribute[],
-  fatalityDeficit: number,
-  reservedPostTargetCount: number,
-  usedDefinitionIds: ReadonlySet<string>,
-  random: RandomSource,
-): BloodbathAcquisitionSelection | null {
-  const context: EventSelectionContext = {
-    state,
-    round,
-    livingTributes: remainingTributes,
-  };
-
-  /*
-   * The authored catalogue and the original conflict families share
-   * one planning pool. Delayed bleeding and poison events remain in
-   * the post-target pool because they do not contribute an immediate
-   * Day 1 elimination.
-   */
-  const fatalSelectionProfiles = [
+function getBloodbathFatalSelectionProfiles(): BloodbathFatalSelectionProfile[] {
+  const rawProfiles: BloodbathFatalSelectionProfile[] = [
     ...CORNUCOPIA_FATAL_TARGET_PROFILES,
     ...CORNUCOPIA_PAIR_CONFLICT_EVENTS.map((definition) => ({
       definition,
@@ -559,19 +526,115 @@ function selectAuthoredFatalBloodbathEvent(
     })),
   ];
 
+  return [...new Map(rawProfiles.map((profile) => [profile.definition.id, profile])).values()];
+}
+
+function selectAuthoredFatalBloodbathEvent(
+  state: GameState,
+  round: RoundReference,
+  remainingTributes: GameTribute[],
+  fatalityDeficit: number,
+  reservedPostTargetCount: number,
+  usedDefinitionIds: ReadonlySet<string>,
+  random: RandomSource,
+): BloodbathAcquisitionSelection | null {
+  /*
+   * Phase 3: unified Cornucopia fatal candidate pool.
+   *
+   * Every hard-feasible fatal definition competes in one weighted draw.
+   * Participant shape changes effective weight, but no shape receives a
+   * separate planner branch or structural priority.
+   */
+  const context: EventSelectionContext = {
+    state,
+    round,
+    livingTributes: remainingTributes,
+  };
+
+  const fatalSelectionProfiles = getBloodbathFatalSelectionProfiles();
+
   const availableFatalParticipants = Math.max(
     0,
     remainingTributes.length - reservedPostTargetCount,
   );
-
-  /*
-   * This is the number of survivors the fatal phase may spend while
-   * still leaving enough participants to reach the current soft goal.
-   *
-   * Example: with seven fatal-phase participants and a five-death
-   * deficit, events may collectively leave at most two survivors.
-   */
   const fatalSurvivorBudget = Math.max(0, availableFatalParticipants - fatalityDeficit);
+
+  const getHardRejectionReason = (
+    profile: BloodbathFatalSelectionProfile,
+  ): EventSelectionRejectionReason | null => {
+    const participantCount = getDefinitionParticipantCount(profile.definition);
+    const worstCaseSurvivorCost = participantCount - profile.minImmediateEliminations;
+
+    if (usedDefinitionIds.has(profile.definition.id)) {
+      return "already-used-definition";
+    }
+
+    if (participantCount > remainingTributes.length) {
+      return "participant-count-unavailable";
+    }
+
+    if (participantCount > availableFatalParticipants) {
+      return "reservation-blocked";
+    }
+
+    if (profile.maxImmediateEliminations > fatalityDeficit + 1) {
+      return "fatality-target-overshoot";
+    }
+
+    if (worstCaseSurvivorCost > fatalSurvivorBudget) {
+      return "fatality-survivor-budget";
+    }
+
+    return null;
+  };
+
+  const hardFeasibleProfiles = fatalSelectionProfiles.filter(
+    (profile) =>
+      getHardRejectionReason(profile) === null &&
+      isEventDefinitionEligible(profile.definition, context),
+  );
+
+  const candidateProfiles = hardFeasibleProfiles.filter((profile) =>
+    canCompleteBloodbathFatalityTargetAfterProfile({
+      profile,
+      remainingProfiles: hardFeasibleProfiles.filter(
+        (candidate) => candidate.definition.id !== profile.definition.id,
+      ),
+      availableParticipantCount: availableFatalParticipants,
+      fatalityDeficit,
+    }),
+  );
+  const relaxedFeasibleProfiles = fatalSelectionProfiles.filter((profile) => {
+    const participantCount = getDefinitionParticipantCount(profile.definition);
+
+    return (
+      !usedDefinitionIds.has(profile.definition.id) &&
+      participantCount <= availableFatalParticipants &&
+      profile.maxImmediateEliminations <= fatalityDeficit + 1 &&
+      profile.maxImmediateEliminations > 0 &&
+      isEventDefinitionEligible(profile.definition, context)
+    );
+  });
+  const bestEffortProfiles =
+    candidateProfiles.length === 0 && reservedPostTargetCount === 0
+      ? (() => {
+          const guaranteedProgressProfiles = relaxedFeasibleProfiles.filter(
+            (profile) => profile.minImmediateEliminations > 0,
+          );
+
+          return guaranteedProgressProfiles.length > 0
+            ? guaranteedProgressProfiles
+            : relaxedFeasibleProfiles;
+        })()
+      : [];
+
+  const candidateDefinitionIds = new Set(candidateProfiles.map((profile) => profile.definition.id));
+
+  const plannerEligibleDefinitionIds = new Set([
+    ...candidateDefinitionIds,
+    ...bestEffortProfiles.map((profile) => profile.definition.id),
+  ]);
+
   const diagnosticFeasibleDefinitions = collectBloodbathDiagnosticFeasibleDefinitions({
     state,
     round,
@@ -581,7 +644,7 @@ function selectAuthoredFatalBloodbathEvent(
     poolId: "bloodbath-cornucopia",
     stage: "cornucopia-fatal",
     diagnosticKey: [
-      "fatal",
+      "fatal-unified",
       remainingTributes.length,
       fatalityDeficit,
       reservedPostTargetCount,
@@ -595,29 +658,19 @@ function selectAuthoredFatalBloodbathEvent(
         return "participant-or-item-infeasible";
       }
 
-      const participantCount = getDefinitionParticipantCount(definition);
-      const worstCaseSurvivorCost = participantCount - profile.minImmediateEliminations;
+      const hardRejectionReason = getHardRejectionReason(profile);
 
-      if (participantCount > remainingTributes.length) {
-        return "participant-count-unavailable";
+      if (hardRejectionReason) {
+        return hardRejectionReason;
       }
 
-      if (participantCount > availableFatalParticipants) {
-        return "reservation-blocked";
-      }
-
-      if (profile.maxImmediateEliminations > fatalityDeficit + 1) {
-        return "fatality-target-overshoot";
-      }
-
-      if (worstCaseSurvivorCost > fatalSurvivorBudget) {
-        return "fatality-survivor-budget";
-      }
-
-      return null;
+      return plannerEligibleDefinitionIds.has(definition.id) ? null : "fatality-target-stranded";
     },
   });
-  const plannerConsideredDefinitionIds = new Set<string>();
+
+  const plannerConsideredDefinitionIds = new Set(plannerEligibleDefinitionIds);
+  const opportunityRejectionReasons = new Map<string, EventSelectionRejectionReason>();
+
   const finishSelection = (
     selection: BloodbathAcquisitionSelection | null,
   ): BloodbathAcquisitionSelection | null => {
@@ -627,151 +680,69 @@ function selectAuthoredFatalBloodbathEvent(
       feasibleDefinitions: diagnosticFeasibleDefinitions,
       selectedDefinition: selection?.definition ?? null,
       plannerConsideredDefinitionIds,
+      rejectionReasonsByDefinitionId: opportunityRejectionReasons,
     });
 
     return selection;
   };
 
-  const candidateProfiles = fatalSelectionProfiles.filter((profile) => {
-    const participantCount = getDefinitionParticipantCount(profile.definition);
-    const worstCaseSurvivorCost = participantCount - profile.minImmediateEliminations;
+  const usingBestEffortProfiles = candidateProfiles.length === 0;
+  let remainingProfiles = usingBestEffortProfiles
+    ? [...bestEffortProfiles]
+    : [...candidateProfiles];
 
-    return (
-      !usedDefinitionIds.has(profile.definition.id) &&
-      participantCount <= availableFatalParticipants &&
-      /*
-       * The target is deliberately soft. Permit at most one planned
-       * death beyond the current deficit so two-death events can close
-       * a one-death gap without creating a large overshoot.
-       */
-      profile.maxImmediateEliminations <= fatalityDeficit + 1 &&
-      worstCaseSurvivorCost <= fatalSurvivorBudget &&
-      isEventDefinitionEligible(profile.definition, context)
+  while (remainingProfiles.length > 0) {
+    const selectableProfiles = usingBestEffortProfiles
+      ? getBestEffortBloodbathFatalProfiles(remainingProfiles)
+      : remainingProfiles;
+
+    const profile = selectWeightedItem(
+      selectableProfiles,
+      (candidate) => getBloodbathFatalProfileWeight(candidate, context),
+      random,
     );
-  });
+    const selection = selectEventParticipants(
+      profile.definition,
+      context,
+      random,
+      new Set<string>(),
+    );
 
-  function selectFromProfiles(
-    profiles: typeof candidateProfiles,
-  ): BloodbathAcquisitionSelection | null {
-    for (const profile of profiles) {
-      plannerConsideredDefinitionIds.add(profile.definition.id);
-    }
-
-    let remainingProfiles = [...profiles];
-
-    while (remainingProfiles.length > 0) {
-      const profile = selectWeightedItem(
-        remainingProfiles,
-        (candidate) => getEventDefinitionWeight(candidate.definition, context),
-        random,
+    if (!selection) {
+      opportunityRejectionReasons.set(profile.definition.id, "participant-or-item-infeasible");
+      remainingProfiles = remainingProfiles.filter(
+        (candidate) => candidate.definition.id !== profile.definition.id,
       );
 
-      const selection = selectEventParticipants(
-        profile.definition,
-        context,
-        random,
-        new Set<string>(),
-      );
-
-      if (!selection) {
-        remainingProfiles = remainingProfiles.filter(
-          (candidate) => candidate.definition.id !== profile.definition.id,
+      if (!usingBestEffortProfiles) {
+        remainingProfiles = remainingProfiles.filter((candidate) =>
+          canCompleteBloodbathFatalityTargetAfterProfile({
+            profile: candidate,
+            remainingProfiles: remainingProfiles.filter(
+              (other) => other.definition.id !== candidate.definition.id,
+            ),
+            availableParticipantCount: availableFatalParticipants,
+            fatalityDeficit,
+          }),
         );
-        continue;
       }
 
-      removeSelectedBloodbathParticipants(
-        remainingTributes,
-        selection.participantTributeIds,
-        profile.definition.id,
-      );
-
-      return {
-        definition: profile.definition,
-        participantsByRole: selection.participantsByRole,
-      };
+      continue;
     }
 
-    return null;
+    removeSelectedBloodbathParticipants(
+      remainingTributes,
+      selection.participantTributeIds,
+      profile.definition.id,
+    );
+
+    return finishSelection({
+      definition: profile.definition,
+      participantsByRole: selection.participantsByRole,
+    });
   }
 
-  const efficientMultiDeathProfiles = candidateProfiles.filter(
-    (profile) =>
-      profile.minImmediateEliminations >= 2 &&
-      getDefinitionParticipantCount(profile.definition) === 3,
-  );
-
-  const expensiveMultiDeathProfiles = candidateProfiles.filter(
-    (profile) =>
-      profile.minImmediateEliminations >= 2 &&
-      getDefinitionParticipantCount(profile.definition) > 3,
-  );
-
-  const guaranteedOneDeathPairProfiles = candidateProfiles.filter(
-    (profile) =>
-      profile.minImmediateEliminations === 1 &&
-      getDefinitionParticipantCount(profile.definition) > 1,
-  );
-
-  const variableMultiParticipantProfiles = candidateProfiles.filter(
-    (profile) =>
-      profile.minImmediateEliminations === 0 &&
-      getDefinitionParticipantCount(profile.definition) > 1,
-  );
-
-  const soloProfiles = candidateProfiles.filter(
-    ({ definition }) => getDefinitionParticipantCount(definition) === 1,
-  );
-
-  /*
-   * The remaining unique solo definitions can finish this many deaths
-   * without spending another survivor. Use larger fatalities only for
-   * the portion of the deficit that the solo pool cannot cover.
-   */
-  const deathsBeyondSoloCapacity = Math.max(0, fatalityDeficit - soloProfiles.length);
-
-  if (deathsBeyondSoloCapacity > 0) {
-    const efficientMultiDeath = selectFromProfiles(efficientMultiDeathProfiles);
-
-    if (efficientMultiDeath) {
-      return finishSelection(efficientMultiDeath);
-    }
-
-    const expensiveMultiDeath = selectFromProfiles(expensiveMultiDeathProfiles);
-
-    if (expensiveMultiDeath) {
-      return finishSelection(expensiveMultiDeath);
-    }
-
-    const guaranteedPair = selectFromProfiles(guaranteedOneDeathPairProfiles);
-
-    if (guaranteedPair) {
-      return finishSelection(guaranteedPair);
-    }
-  }
-
-  /*
-   * Once the unique solo pool can finish the target, use it directly.
-   * This prevents an unnecessary pair event from consuming the final
-   * survivor budget and making the target unreachable.
-   */
-  const soloSelection = selectFromProfiles(soloProfiles);
-
-  if (soloSelection) {
-    return finishSelection(soloSelection);
-  }
-
-  /*
-   * These are last-resort unique fallbacks. Variable conflict events
-   * remain reachable, but they cannot displace the guaranteed sequence
-   * required to preserve the established fatality range.
-   */
-  return finishSelection(
-    selectFromProfiles(guaranteedOneDeathPairProfiles) ??
-      selectFromProfiles(variableMultiParticipantProfiles) ??
-      selectFromProfiles(expensiveMultiDeathProfiles) ??
-      selectFromProfiles(efficientMultiDeathProfiles),
-  );
+  return finishSelection(null);
 }
 
 const RARE_CORNUCOPIA_BONUS_ITEM_CHANCE = 0.1;
@@ -1134,14 +1105,10 @@ function sequenceCornucopiaEvents(
   let plannedEliminationCount = 0;
 
   /*
-   * The target is intentionally soft. Most games aim at the seeded
-   * planning target, while a smaller share stop one or two deaths
-   * earlier. This preserves meaningful variation instead of forcing
-   * an identical Bloodbath total for every Half Game.
+   * determineBloodbathFatalityTarget already supplies a seeded,
+   * intentionally soft target. Do not reduce it a second time here.
    */
-  const targetReductionRoll = random();
-  const targetReduction = targetReductionRoll < 0.1 ? 2 : targetReductionRoll < 0.35 ? 1 : 0;
-  const softFatalityTarget = Math.max(0, fatalityTarget - targetReduction);
+  const softFatalityTarget = fatalityTarget;
 
   /*
    * Reserve a seeded one-to-four-person group for the acquisition and
@@ -1178,25 +1145,21 @@ function sequenceCornucopiaEvents(
     random,
   );
 
-  const requiredFatalSurvivorBudget = getMinimumUniqueFatalSurvivorBudget(softFatalityTarget);
-
-  /*
-   * Preserve a post-target Cornucopia group whenever possible.
-   *
-   * Under strict definition uniqueness, some Full Games need every
-   * Cornucopia participant to reach the existing fatality target.
-   * In those cases only, permit the reservation to fall to zero rather
-   * than silently undershooting the Bloodbath balance contract.
-   */
-  const maximumReservationThatPreservesTarget = Math.max(
-    0,
-    remainingTributes.length - softFatalityTarget - requiredFatalSurvivorBudget,
+  const fatalPlanningContext: EventSelectionContext = {
+    state,
+    round,
+    livingTributes: remainingTributes,
+  };
+  const eligibleFatalSelectionProfiles = getBloodbathFatalSelectionProfiles().filter((profile) =>
+    isEventDefinitionEligible(profile.definition, fatalPlanningContext),
   );
 
-  const reservedPostTargetCount = Math.min(
-    requestedPostTargetCount,
-    maximumReservationThatPreservesTarget,
-  );
+  let reservedPostTargetCount = getMaximumReachablePostTargetReservation({
+    profiles: eligibleFatalSelectionProfiles,
+    totalParticipantCount: remainingTributes.length,
+    fatalityDeficit: softFatalityTarget,
+    requestedReservation: requestedPostTargetCount,
+  });
 
   while (remainingTributes.length > 0) {
     const fatalityDeficit = softFatalityTarget - plannedEliminationCount;
@@ -1222,10 +1185,20 @@ function sequenceCornucopiaEvents(
      * undershoot and the rest of the entrants receive acquisition or
      * non-fatal interaction events.
      */
-    const shouldTryFatalEvent =
-      fatalityDeficit > 0 && remainingTributes.length > reservedPostTargetCount;
-    const fatalSelection = shouldTryFatalEvent
-      ? selectAuthoredFatalBloodbathEvent(
+    let fatalSelection: BloodbathAcquisitionSelection | null = null;
+
+    if (fatalityDeficit > 0) {
+      while (remainingTributes.length > 0) {
+        if (remainingTributes.length <= reservedPostTargetCount) {
+          if (reservedPostTargetCount === 0) {
+            break;
+          }
+
+          reservedPostTargetCount -= 1;
+          continue;
+        }
+
+        fatalSelection = selectAuthoredFatalBloodbathEvent(
           state,
           round,
           remainingTributes,
@@ -1233,8 +1206,19 @@ function sequenceCornucopiaEvents(
           reservedPostTargetCount,
           usedDefinitionIds,
           random,
-        )
-      : null;
+        );
+
+        if (fatalSelection || reservedPostTargetCount === 0) {
+          break;
+        }
+
+        /*
+         * Real role or item feasibility removed the abstract completion
+         * route. Release one reserved entrant and retry the fatal phase.
+         */
+        reservedPostTargetCount -= 1;
+      }
+    }
 
     if (fatalSelection) {
       definition = fatalSelection.definition;

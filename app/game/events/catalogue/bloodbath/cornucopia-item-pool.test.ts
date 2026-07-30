@@ -220,7 +220,6 @@ describe("Cornucopia item pool", () => {
 
   it("provides a Brains-oriented offense cache", () => {
     expect(CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS).toEqual([
-      "crossbow",
       "blowgun",
       "poison-vial",
       "bear-trap",

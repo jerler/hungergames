@@ -124,6 +124,71 @@ export function canReachBloodbathFatalityTarget({
   );
 }
 
+export function getBestEffortBloodbathFatalProfiles(
+  profiles: readonly BloodbathFatalSelectionProfile[],
+): BloodbathFatalSelectionProfile[] {
+  if (profiles.length === 0) {
+    return [];
+  }
+
+  const survivorCost = (profile: BloodbathFatalSelectionProfile): number =>
+    getEventParticipantCount(profile.definition) - profile.minImmediateEliminations;
+
+  const minimumSurvivorCost = Math.min(...profiles.map(survivorCost));
+  const mostParticipantEfficientProfiles = profiles.filter(
+    (profile) => survivorCost(profile) === minimumSurvivorCost,
+  );
+  const maximumGuaranteedEliminations = Math.max(
+    ...mostParticipantEfficientProfiles.map((profile) => profile.minImmediateEliminations),
+  );
+
+  return mostParticipantEfficientProfiles.filter(
+    (profile) => profile.minImmediateEliminations === maximumGuaranteedEliminations,
+  );
+}
+
+export function getMaximumReachablePostTargetReservation({
+  profiles,
+  totalParticipantCount,
+  fatalityDeficit,
+  requestedReservation,
+}: {
+  profiles: readonly BloodbathFatalSelectionProfile[];
+  totalParticipantCount: number;
+  fatalityDeficit: number;
+  requestedReservation: number;
+}): number {
+  for (const [label, value] of [
+    ["Total fatal participant count", totalParticipantCount],
+    ["Bloodbath fatality deficit", fatalityDeficit],
+    ["Requested post-target reservation", requestedReservation],
+  ] as const) {
+    if (!Number.isInteger(value) || value < 0) {
+      throw new Error(`${label} must be a non-negative integer.`);
+    }
+  }
+
+  const guaranteedProfiles = profiles.map((profile) => ({
+    ...profile,
+    maxImmediateEliminations: profile.minImmediateEliminations,
+  }));
+  const maximumReservation = Math.min(requestedReservation, totalParticipantCount);
+
+  for (let reservation = maximumReservation; reservation >= 0; reservation -= 1) {
+    if (
+      canReachBloodbathFatalityTarget({
+        profiles: guaranteedProfiles,
+        availableParticipantCount: totalParticipantCount - reservation,
+        fatalityDeficit,
+      })
+    ) {
+      return reservation;
+    }
+  }
+
+  return 0;
+}
+
 export function canCompleteBloodbathFatalityTargetAfterProfile({
   profile,
   remainingProfiles,

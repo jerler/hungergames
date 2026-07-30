@@ -346,7 +346,6 @@ describe("combat equipment contract", () => {
 
   it("keeps the Brains-oriented cache focused on usable offensive equipment", () => {
     expect(CORNUCOPIA_BRAINS_OFFENSE_ITEM_IDS).toEqual([
-      "crossbow",
       "blowgun",
       "poison-vial",
       "bear-trap",

@@ -12,6 +12,7 @@ import {
   CORNUCOPIA_PAIR_CONFLICT_EVENTS,
   FLEE_EVENTS,
 } from "~/game/events/catalogue/bloodbath";
+import { MULTI_PARTICIPANT_FLEE_EVENTS } from "~/game/events/catalogue/bloodbath/flee-multi-events";
 import type { EventDefinition, ParticipantsByRole } from "~/game/events/event-schema";
 import { EVENT_CATALOGUE } from "~/game/events/catalogue";
 import { getItemDefinition } from "~/game/items/item-catalogue";
@@ -506,8 +507,12 @@ describe("Bloodbath outcome coverage", () => {
     }
   });
 
-  it("reaches all four authored outcomes for every flee event", () => {
+  it("preserves legacy flee outcomes and revised multi-participant variation", () => {
     const game = createTestGame();
+    const multiParticipantDefinitionIds = new Set(
+      MULTI_PARTICIPANT_FLEE_EVENTS.map((definition) => definition.id),
+    );
+    const deterministicMultiDefinitionIds = new Set(["bloodbath-flee-trio-redirect-pursuit"]);
 
     for (const definition of FLEE_EVENTS) {
       const participantsByRole = createDeterministicParticipantsByRole(definition, game.tributes);
@@ -516,13 +521,24 @@ describe("Bloodbath outcome coverage", () => {
         (resolution) => resolution.text,
       );
 
-      /*
-       * The expanded catalogue intentionally uses distinct prose
-       * for all four stat-check outcomes. Testing resolved text
-       * avoids forcing unrelated events into the three legacy
-       * woods/stream/forage effect signatures.
-       */
-      expect(outcomeTexts.size).toBe(4);
+      if (!multiParticipantDefinitionIds.has(definition.id)) {
+        expect(outcomeTexts.size, definition.id).toBe(4);
+        continue;
+      }
+
+      const resolutionSignatures = sampleOutcomeSignatures(
+        (randomValue) => resolveDefinition(definition, game, participantsByRole, randomValue),
+        (resolution) =>
+          JSON.stringify({
+            text: resolution.text,
+            changes: resolution.changes,
+          }),
+      );
+      const minimumSignatureCount = deterministicMultiDefinitionIds.has(definition.id) ? 1 : 2;
+
+      expect(resolutionSignatures.size, definition.id).toBeGreaterThanOrEqual(
+        minimumSignatureCount,
+      );
     }
   });
 

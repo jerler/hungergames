@@ -15,6 +15,10 @@ import {
   canCoverBloodbathPostTargetParticipantsAfterDefinition,
   getBloodbathPostTargetDefinitionWeight,
 } from "~/game/bloodbath/bloodbath-post-target-planner";
+import {
+  canCoverBloodbathFleeParticipantsAfterDefinition,
+  getBloodbathFleeDefinitionWeight,
+} from "~/game/bloodbath/bloodbath-flee-planner";
 import { assignBloodbathStrategies } from "~/game/bloodbath/bloodbath-strategy";
 import {
   createSeededRandom,
@@ -41,7 +45,6 @@ import type {
   EventSelectionContext,
   ParticipantsByRole,
 } from "~/game/events/event-schema";
-import { getEventDefinitionWeight } from "~/game/events/event-weighting";
 import type {
   EventFeedGroup,
   GameState,
@@ -369,57 +372,6 @@ function removeSelectedBloodbathParticipants(
 
     remainingTributes.splice(tributeIndex, 1);
   }
-}
-
-function selectBloodbathEventForRemainingTributes(
-  definitions: readonly EventDefinition[],
-  state: GameState,
-  round: RoundReference,
-  remainingTributes: GameTribute[],
-  usedDefinitionIds: ReadonlySet<string>,
-  random: RandomSource,
-): BloodbathAcquisitionSelection | null {
-  const context: EventSelectionContext = {
-    state,
-    round,
-    livingTributes: remainingTributes,
-  };
-
-  let candidateDefinitions = definitions.filter(
-    (definition) =>
-      !usedDefinitionIds.has(definition.id) &&
-      getDefinitionParticipantCount(definition) <= remainingTributes.length &&
-      isEventDefinitionEligible(definition, context),
-  );
-
-  while (candidateDefinitions.length > 0) {
-    const definition = selectWeightedItem(
-      candidateDefinitions,
-      (candidate) => getEventDefinitionWeight(candidate, context),
-      random,
-    );
-    const selection = selectEventParticipants(definition, context, random, new Set<string>());
-
-    if (!selection) {
-      candidateDefinitions = candidateDefinitions.filter(
-        (candidate) => candidate.id !== definition.id,
-      );
-      continue;
-    }
-
-    removeSelectedBloodbathParticipants(
-      remainingTributes,
-      selection.participantTributeIds,
-      definition.id,
-    );
-
-    return {
-      definition,
-      participantsByRole: selection.participantsByRole,
-    };
-  }
-
-  return null;
 }
 
 function getBloodbathFatalSelectionProfiles(): BloodbathFatalSelectionProfile[] {
@@ -1140,6 +1092,140 @@ function sequenceCornucopiaEvents(
   };
 }
 
+function selectFleeBloodbathEvent(
+  state: GameState,
+  round: RoundReference,
+  remainingTributes: GameTribute[],
+  usedDefinitionIds: ReadonlySet<string>,
+  random: RandomSource,
+  recordDiagnostics: boolean,
+): BloodbathAcquisitionSelection | null {
+  const context: EventSelectionContext = {
+    state,
+    round,
+    livingTributes: remainingTributes,
+  };
+  const uniqueDefinitions = [
+    ...new Map(FLEE_EVENTS.map((definition) => [definition.id, definition])).values(),
+  ];
+  const hardFeasibleDefinitions = uniqueDefinitions.filter(
+    (definition) =>
+      !usedDefinitionIds.has(definition.id) &&
+      getDefinitionParticipantCount(definition) <= remainingTributes.length &&
+      isEventDefinitionEligible(definition, context),
+  );
+  const rejectionReasonsByDefinitionId = new Map<string, EventSelectionRejectionReason>();
+  const feasibleSelections = hardFeasibleDefinitions.flatMap((definition) => {
+    const selection = selectEventParticipants(
+      definition,
+      context,
+      createSeededRandom(
+        [
+          state.seed,
+          round.day,
+          round.period,
+          "flee-candidate",
+          remainingTributes
+            .map((tribute) => tribute.id)
+            .sort()
+            .join(","),
+          definition.id,
+        ].join(":"),
+      ),
+      new Set<string>(),
+      new Set<string>(),
+    );
+
+    if (!selection) {
+      rejectionReasonsByDefinitionId.set(definition.id, "participant-or-item-infeasible");
+      return [];
+    }
+
+    return [
+      {
+        definition,
+        participantsByRole: selection.participantsByRole,
+        participantTributeIds: selection.participantTributeIds,
+      },
+    ];
+  });
+  const coverageSafeSelections = feasibleSelections.filter((selection) =>
+    canCoverBloodbathFleeParticipantsAfterDefinition({
+      definition: selection.definition,
+      remainingDefinitions: feasibleSelections
+        .filter((candidate) => candidate.definition.id !== selection.definition.id)
+        .map((candidate) => candidate.definition),
+      availableParticipantCount: remainingTributes.length,
+    }),
+  );
+  const coverageSafeDefinitionIds = new Set(
+    coverageSafeSelections.map((selection) => selection.definition.id),
+  );
+
+  for (const selection of feasibleSelections) {
+    if (!coverageSafeDefinitionIds.has(selection.definition.id)) {
+      rejectionReasonsByDefinitionId.set(selection.definition.id, "participant-or-item-infeasible");
+    }
+  }
+
+  const diagnosticFeasibleDefinitions = recordDiagnostics
+    ? collectBloodbathDiagnosticFeasibleDefinitions({
+        state,
+        round,
+        remainingTributes,
+        definitions: uniqueDefinitions,
+        usedDefinitionIds,
+        poolId: "bloodbath-flee",
+        stage: "flee",
+        diagnosticKey: ["flee-unified", remainingTributes.length].join(":"),
+        getHardRejectionReason: (definition) =>
+          getDefinitionParticipantCount(definition) > remainingTributes.length
+            ? "participant-count-unavailable"
+            : null,
+      })
+    : [];
+  const plannerConsideredDefinitionIds = new Set(
+    feasibleSelections.map((selection) => selection.definition.id),
+  );
+  const finishSelection = (
+    selection: BloodbathAcquisitionSelection | null,
+  ): BloodbathAcquisitionSelection | null => {
+    if (recordDiagnostics) {
+      recordEventSelectionOpportunity({
+        poolId: "bloodbath-flee",
+        stage: "flee",
+        feasibleDefinitions: diagnosticFeasibleDefinitions,
+        selectedDefinition: selection?.definition ?? null,
+        plannerConsideredDefinitionIds,
+        rejectionReasonsByDefinitionId,
+      });
+    }
+
+    return selection;
+  };
+
+  if (coverageSafeSelections.length === 0) {
+    return finishSelection(null);
+  }
+
+  const selected = selectWeightedItem(
+    coverageSafeSelections,
+    (selection) => getBloodbathFleeDefinitionWeight(selection.definition, context),
+    random,
+  );
+
+  removeSelectedBloodbathParticipants(
+    remainingTributes,
+    selected.participantTributeIds,
+    selected.definition.id,
+  );
+
+  return finishSelection({
+    definition: selected.definition,
+    participantsByRole: selected.participantsByRole,
+  });
+}
+
 function sequenceFleeEvents(
   state: GameState,
   round: RoundReference,
@@ -1156,50 +1242,24 @@ function sequenceFleeEvents(
   let eventIndex = startingEventIndex;
 
   while (remainingTributes.length > 0) {
-    const diagnosticFeasibleDefinitions = recordDiagnostics
-      ? collectBloodbathDiagnosticFeasibleDefinitions({
-          state,
-          round,
-          remainingTributes,
-          definitions: FLEE_EVENTS,
-          usedDefinitionIds,
-          poolId: "bloodbath-flee",
-          stage: "flee",
-          diagnosticKey: ["flee", remainingTributes.length].join(":"),
-          getHardRejectionReason: (definition) =>
-            getDefinitionParticipantCount(definition) > remainingTributes.length
-              ? "participant-count-unavailable"
-              : null,
-        })
-      : [];
-
     /*
-     * Most flee events consume one tribute, while the crowd-breakaway
-     * truce event consumes two. The shared remaining-participant
-     * selector filters out definitions whose role counts no longer fit
-     * and removes every selected participant exactly once.
+     * Every hard-feasible fleeing definition competes in one weighted
+     * pool. Exact-cover look-ahead prevents the selected participant
+     * shape from stranding an unusable final group.
      */
-    const selection = selectBloodbathEventForRemainingTributes(
-      FLEE_EVENTS,
+    const selection = selectFleeBloodbathEvent(
       state,
       round,
       remainingTributes,
       usedDefinitionIds,
       random,
+      recordDiagnostics,
     );
 
-    if (recordDiagnostics) {
-      recordEventSelectionOpportunity({
-        poolId: "bloodbath-flee",
-        stage: "flee",
-        feasibleDefinitions: diagnosticFeasibleDefinitions,
-        selectedDefinition: selection?.definition ?? null,
-        plannerConsideredDefinitionIds: new Set(FLEE_EVENTS.map((definition) => definition.id)),
-      });
-    }
-
     if (!selection) {
-      throw new Error("No eligible Bloodbath flee event could cover the remaining tributes.");
+      throw new Error(
+        "No eligible Bloodbath flee event could exactly cover the remaining tributes.",
+      );
     }
 
     const event = resolveBloodbathEvent({
@@ -1222,7 +1282,6 @@ function sequenceFleeEvents(
 
     usedDefinitionIds.add(selection.definition.id);
     events.push(event);
-
     eventIndex += 1;
   }
 

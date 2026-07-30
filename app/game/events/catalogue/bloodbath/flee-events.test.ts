@@ -17,27 +17,22 @@ const DAY_ONE = {
 
 const OUTCOME_RANDOM_VALUES = [0, 0.2, 0.7, 0.99] as const;
 
-function createTestTributes(): [GameTribute, GameTribute] {
-  return [
-    createAuthoringTestTribute({
-      id: "actor",
-      name: "Actor",
-      stats: {
-        brains: 3,
-        brawn: 3,
-        luck: 3,
-      },
-    }),
-    createAuthoringTestTribute({
-      id: "ally",
-      name: "Ally",
-      stats: {
-        brains: 3,
-        brawn: 3,
-        luck: 3,
-      },
-    }),
-  ];
+function createTestTributes(): GameTribute[] {
+  return Array.from(
+    {
+      length: 4,
+    },
+    (_, index) =>
+      createAuthoringTestTribute({
+        id: `tribute-${index + 1}`,
+        name: `Tribute ${index + 1}`,
+        stats: {
+          brains: 3,
+          brawn: 3,
+          luck: 3,
+        },
+      }),
+  );
 }
 
 function createParticipantsByRole(
@@ -89,6 +84,7 @@ function resolveDefinition(definition: EventDefinition, randomValue: number) {
     resolution,
     state,
     tributes,
+    participantsByRole: createParticipantsByRole(definition, tributes),
   };
 }
 
@@ -111,10 +107,10 @@ function getStatuses(changes: readonly GameChange[]) {
 }
 
 describe("Bloodbath flee events", () => {
-  it("registers all fourteen approved concepts exactly once", () => {
+  it("registers all thirty-one approved concepts exactly once", () => {
     const ids = FLEE_EVENTS.map((definition) => definition.id);
 
-    expect(ids).toHaveLength(14);
+    expect(ids).toHaveLength(31);
     expect(new Set(ids).size).toBe(ids.length);
     expect(
       FLEE_EVENTS.every(
@@ -134,19 +130,216 @@ describe("Bloodbath flee events", () => {
   });
 
   it("uses immediate fatalities only for the approved lethal branches", () => {
-    const expectedFatalOutcomes = [
-      ["bloodbath-flee-leap-across-creek", 0],
-      ["bloodbath-flee-cross-fallen-tree", 0],
-      ["bloodbath-flee-cross-fallen-tree", 0.2],
-      ["bloodbath-flee-escape-stampede", 0],
+    const fatalCases = [
+      {
+        definitionId: "bloodbath-flee-leap-across-creek",
+        randomValue: 0,
+        eliminations: [
+          {
+            victimIndex: 0,
+            killerIndices: [],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-cross-fallen-tree",
+        randomValue: 0,
+        eliminations: [
+          {
+            victimIndex: 0,
+            killerIndices: [],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-cross-fallen-tree",
+        randomValue: 0.2,
+        eliminations: [
+          {
+            victimIndex: 0,
+            killerIndices: [],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-escape-stampede",
+        randomValue: 0,
+        eliminations: [
+          {
+            victimIndex: 0,
+            killerIndices: [],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-pair-fallen-log-cooperation",
+        randomValue: 0.3,
+        eliminations: [
+          {
+            victimIndex: 0,
+            killerIndices: [1],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-pair-fallen-log-cooperation",
+        randomValue: 0.4,
+        eliminations: [
+          {
+            victimIndex: 1,
+            killerIndices: [0],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-pair-abandoned-at-creek",
+        randomValue: 0,
+        eliminations: [
+          {
+            victimIndex: 1,
+            killerIndices: [0],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-trio-narrow-deer-path",
+        randomValue: 0.87,
+        eliminations: [
+          {
+            victimIndex: 0,
+            killerIndices: [1, 2],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-trio-narrow-deer-path",
+        randomValue: 0.92,
+        eliminations: [
+          {
+            victimIndex: 1,
+            killerIndices: [0, 2],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-trio-narrow-deer-path",
+        randomValue: 0.97,
+        eliminations: [
+          {
+            victimIndex: 2,
+            killerIndices: [0, 1],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-trio-use-third-as-decoy",
+        randomValue: 0.75,
+        eliminations: [
+          {
+            victimIndex: 2,
+            killerIndices: [0],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-trio-ravine-betrayal",
+        randomValue: 0,
+        eliminations: [
+          {
+            victimIndex: 1,
+            killerIndices: [0],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-trio-ravine-betrayal",
+        randomValue: 0.5,
+        eliminations: [
+          {
+            victimIndex: 0,
+            killerIndices: [],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-trio-ravine-betrayal",
+        randomValue: 0.75,
+        eliminations: [
+          {
+            victimIndex: 1,
+            killerIndices: [],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-trio-ravine-betrayal",
+        randomValue: 0.9,
+        eliminations: [
+          {
+            victimIndex: 1,
+            killerIndices: [0],
+          },
+          {
+            victimIndex: 2,
+            killerIndices: [0],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-trio-ravine-betrayal",
+        randomValue: 0.99,
+        eliminations: [
+          {
+            victimIndex: 1,
+            killerIndices: [],
+          },
+          {
+            victimIndex: 0,
+            killerIndices: [1],
+          },
+          {
+            victimIndex: 2,
+            killerIndices: [0],
+          },
+        ],
+      },
+      {
+        definitionId: "bloodbath-flee-quartet-rope-bridge-chain-reaction",
+        randomValue: 0,
+        eliminations: [
+          {
+            victimIndex: 3,
+            killerIndices: [],
+          },
+        ],
+      },
     ] as const;
 
-    for (const [definitionId, randomValue] of expectedFatalOutcomes) {
-      const { resolution } = resolveDefinition(requireDefinition(definitionId), randomValue);
+    for (const fatalCase of fatalCases) {
+      const definition = requireDefinition(fatalCase.definitionId);
+      const { resolution, participantsByRole } = resolveDefinition(
+        definition,
+        fatalCase.randomValue,
+      );
+      const participants = definition.roles.flatMap((role) => participantsByRole[role.id] ?? []);
       const eliminations = getEliminations(resolution.changes);
+      const eliminationByVictimId = new Map(
+        eliminations.map((change) => [change.tributeId, change]),
+      );
 
-      expect(eliminations).toHaveLength(1);
-      expect(eliminations[0]?.killerTributeIds).toEqual([]);
+      expect(eliminations).toHaveLength(fatalCase.eliminations.length);
+
+      for (const expected of fatalCase.eliminations) {
+        const victim = participants[expected.victimIndex];
+        const killerTributeIds = expected.killerIndices.map(
+          (killerIndex) => participants[killerIndex]?.id,
+        );
+
+        expect(victim).toBeDefined();
+        expect(eliminationByVictimId.get(victim?.id ?? "")?.killerTributeIds).toEqual(
+          killerTributeIds,
+        );
+      }
     }
   });
 
@@ -174,10 +367,13 @@ describe("Bloodbath flee events", () => {
   });
 
   it("forms a two-person truce and hides both tributes on exceptional success", () => {
-    const { resolution, tributes } = resolveDefinition(
+    const { resolution, participantsByRole } = resolveDefinition(
       requireDefinition("bloodbath-flee-break-away-crowd"),
       0.99,
     );
+    const participantIds = Object.values(participantsByRole)
+      .flat()
+      .map((tribute) => tribute.id);
     const truceChanges = resolution.changes.flatMap((change) =>
       change.type === "form-truce" ? [change] : [],
     );
@@ -188,8 +384,8 @@ describe("Bloodbath flee events", () => {
     );
 
     expect(truceChanges).toHaveLength(1);
-    expect(truceChanges[0]?.truce.tributeIds).toEqual(tributes.map((tribute) => tribute.id));
-    expect(new Set(hiddenTributeIds)).toEqual(new Set(tributes.map((tribute) => tribute.id)));
+    expect(truceChanges[0]?.truce.tributeIds).toEqual(participantIds);
+    expect(new Set(hiddenTributeIds)).toEqual(new Set(participantIds));
   });
 
   it("persists the stampede knife without granting provisions", () => {
@@ -209,13 +405,23 @@ describe("Bloodbath flee events", () => {
     ).toBe(false);
   });
 
-  it("keeps fatal-capable concepts rarer than ordinary flee events", () => {
-    const fatalCapable = FLEE_EVENTS.filter((definition) => definition.tags.includes("fatal"));
-    const ordinary = FLEE_EVENTS.filter((definition) => !definition.tags.includes("fatal"));
-    const highestFatalWeight = Math.max(...fatalCapable.map((definition) => definition.baseWeight));
-    const lowestOrdinaryWeight = Math.min(...ordinary.map((definition) => definition.baseWeight));
+  it("marks every immediate-death-capable concept as fatal", () => {
+    const fatalCapableIds = FLEE_EVENTS.filter((definition) =>
+      definition.tags.includes("fatal"),
+    ).map((definition) => definition.id);
 
-    expect(fatalCapable).toHaveLength(3);
-    expect(highestFatalWeight).toBeLessThan(lowestOrdinaryWeight);
+    expect(new Set(fatalCapableIds)).toEqual(
+      new Set([
+        "bloodbath-flee-leap-across-creek",
+        "bloodbath-flee-cross-fallen-tree",
+        "bloodbath-flee-escape-stampede",
+        "bloodbath-flee-pair-fallen-log-cooperation",
+        "bloodbath-flee-pair-abandoned-at-creek",
+        "bloodbath-flee-trio-narrow-deer-path",
+        "bloodbath-flee-trio-use-third-as-decoy",
+        "bloodbath-flee-trio-ravine-betrayal",
+        "bloodbath-flee-quartet-rope-bridge-chain-reaction",
+      ]),
+    );
   });
 });

@@ -18,6 +18,8 @@ import {
 import { getTributePronouns } from "~/game/tributes/pronouns";
 import type { GameChange, GameTribute, RoundReference } from "~/game/types/game-state";
 
+import { MULTI_PARTICIPANT_FLEE_EVENTS } from "./flee-multi-events";
+
 const FLEE_CHECK_DIFFICULTY = 3;
 
 type FleeCheck = "brains" | "brawn" | "luck" | "brains-or-awareness" | "brawn-or-luck";
@@ -1202,4 +1204,5 @@ export const FLEE_EVENTS = [
   LEAP_ACROSS_CREEK,
   CROSS_FALLEN_TREE,
   ESCAPE_STAMPEDE,
+  ...MULTI_PARTICIPANT_FLEE_EVENTS,
 ] satisfies readonly EventDefinition[];

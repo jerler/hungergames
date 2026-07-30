@@ -19,6 +19,7 @@ import {
   BLOODBATH_EVENT_CATALOGUE,
 } from "~/game/events/catalogue/bloodbath";
 import { getEventParticipantShape } from "~/game/events/event-participant-shape";
+import { MULTI_PARTICIPANT_FLEE_EVENTS } from "~/game/events/catalogue/bloodbath/flee-multi-events";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
@@ -301,6 +302,29 @@ describe("Bloodbath sequencer", () => {
     expect(pairedEvent?.participantTributeIds).toHaveLength(2);
     expect(new Set(pairedEvent?.participantTributeIds ?? []).size).toBe(2);
   });
+
+  it("keeps every new multi-participant flee event reachable in seeded Bloodbaths", () => {
+    const expectedDefinitionIds = new Set(
+      MULTI_PARTICIPANT_FLEE_EVENTS.map((definition) => definition.id),
+    );
+    const observedDefinitionIds = new Set<string>();
+
+    for (
+      let index = 0;
+      index < 1_200 && observedDefinitionIds.size < expectedDefinitionIds.size;
+      index += 1
+    ) {
+      const game = createTestGame(`multi-flee-reachability-${index}`, 12);
+
+      for (const event of sequenceBloodbathEvents(game, DAY_ONE)) {
+        if (expectedDefinitionIds.has(event.definitionId)) {
+          observedDefinitionIds.add(event.definitionId);
+        }
+      }
+    }
+
+    expect(observedDefinitionIds).toEqual(expectedDefinitionIds);
+  }, 60_000);
 
   it("does not commit an item instance twice", () => {
     const game = createTestGame("item-reservations");

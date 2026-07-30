@@ -28,6 +28,13 @@ import {
 import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
 import { validateEventResolution } from "~/game/events/validation/validate-event-resolution";
 import { completeNightRestCoverage } from "~/game/survival/night-rest-coverage";
+import { countPendingFatalStatusResolutions } from "~/game/statuses/status-engine";
+import {
+  countEliminationChanges,
+  getLethalCandidateWeightMultiplier,
+  getRoundLethalityProfile,
+  isPotentiallyLethalDefinition,
+} from "~/game/engine/round-lethality";
 
 export const MAX_CONSECUTIVE_NON_ELIMINATION_ROUNDS = 2;
 
@@ -268,18 +275,24 @@ export function sequenceRoundEvents(
   const events: ResolvedEvent[] = [];
   const usedDefinitionIds = new Set<string>();
 
+  const lethalityProfile = getRoundLethalityProfile(round, livingTributes.length);
+
+  const pendingFatalStatusEliminationCount = countPendingFatalStatusResolutions(state, round);
+
+  let plannedEliminationCount = Math.min(
+    lethalityProfile.maxEliminations,
+    pendingFatalStatusEliminationCount,
+  );
+  const lethalityRejectedDefinitionIds = new Set<string>();
+
   let feasibilitySelectionsByDefinitionId = new Map<string, ParticipantSelection>();
 
   for (let eventIndex = 0; eventIndex < targetEventCount; eventIndex += 1) {
-    const isSafetyResolution = eventIndex === 0 && shouldForceElimination(state);
+    const hasEliminationBudget = plannedEliminationCount < lethalityProfile.maxEliminations;
 
-    /*
-     * Existing fatal definitions remain valid safety
-     * candidates.
-     *
-     * Checked direct attacks opt in through explicit
-     * force-success metadata.
-     */
+    const isSafetyResolution =
+      eventIndex === 0 && hasEliminationBudget && shouldForceElimination(state);
+
     const candidateDefinitions = (
       isSafetyResolution
         ? eligibleDefinitions.filter(
@@ -288,7 +301,12 @@ export function sequenceRoundEvents(
               ("safetyResolution" in definition && definition.safetyResolution === "force-success"),
           )
         : eligibleDefinitions
-    ).filter((definition) => !usedDefinitionIds.has(definition.id));
+    ).filter(
+      (definition) =>
+        !usedDefinitionIds.has(definition.id) &&
+        !lethalityRejectedDefinitionIds.has(definition.id) &&
+        (hasEliminationBudget || !isPotentiallyLethalDefinition(definition)),
+    );
 
     const feasibleCandidates = createFeasibleEventCandidates({
       definitions: candidateDefinitions,
@@ -306,78 +324,96 @@ export function sequenceRoundEvents(
       ]),
     );
 
-    const selected = selectFeasibleEventCandidate(feasibleCandidates, random);
+    let remainingCandidates = feasibleCandidates.map((candidate) => ({
+      ...candidate,
+      effectiveWeight:
+        candidate.effectiveWeight *
+        (isPotentiallyLethalDefinition(candidate.definition)
+          ? getLethalCandidateWeightMultiplier(lethalityProfile, plannedEliminationCount)
+          : 1),
+    }));
 
-    if (!selected) {
+    let acceptedEvent = false;
+
+    while (remainingCandidates.length > 0) {
+      const selected = selectFeasibleEventCandidate(remainingCandidates, random);
+
+      if (!selected) {
+        break;
+      }
+
+      const selection = selectEventParticipants(
+        selected.definition,
+        context,
+        random,
+        unavailableTributeIds,
+        unavailableItemInstanceIds,
+      );
+
+      if (!selection) {
+        throw new Error(
+          `Feasible event "${selected.definition.id}" could not reproduce a participant selection.`,
+        );
+      }
+
+      const eventId = createEventId(round, eventIndex, selected.definition.id);
+      const resolutionMode: EventResolutionMode = isSafetyResolution ? "safety" : "standard";
+
+      const resolution = selected.definition.resolve({
+        ...context,
+        eventId,
+        random,
+        resolutionMode,
+        participantsByRole: selection.participantsByRole,
+        itemsByRole: selection.itemsByRole,
+        unavailableItemInstanceIds,
+      });
+
+      validateEventResolution({
+        eventId,
+        definitionId: selected.definition.id,
+        round,
+        resolution,
+      });
+
+      const eventEliminationCount = countEliminationChanges(resolution.changes);
+
+      if (plannedEliminationCount + eventEliminationCount > lethalityProfile.maxEliminations) {
+        lethalityRejectedDefinitionIds.add(selected.definition.id);
+        remainingCandidates = remainingCandidates.filter(
+          (candidate) => candidate.definition.id !== selected.definition.id,
+        );
+        continue;
+      }
+
+      events.push({
+        id: eventId,
+        definitionId: selected.definition.id,
+        kind: "primary",
+        resolutionMode,
+        round,
+        participantTributeIds: selection.participantTributeIds,
+        text: resolution.text,
+        changes: resolution.changes,
+      });
+
+      plannedEliminationCount += eventEliminationCount;
+      usedDefinitionIds.add(selected.definition.id);
+
+      reserveEventCommitments(
+        selection,
+        resolution.changes,
+        unavailableTributeIds,
+        unavailableItemInstanceIds,
+      );
+
+      acceptedEvent = true;
       break;
     }
 
-    /*
-     * The private feasibility witness only proves that this
-     * definition can form a complete event. The winning
-     * definition still selects its real participants with
-     * the main round RNG.
-     */
-    const selection = selectEventParticipants(
-      selected.definition,
-      context,
-      random,
-      unavailableTributeIds,
-      unavailableItemInstanceIds,
-    );
-
-    if (!selection) {
-      throw new Error(
-        `Feasible event "${selected.definition.id}" could not reproduce a participant selection.`,
-      );
+    if (!acceptedEvent) {
+      break;
     }
-
-    const eventId = createEventId(round, eventIndex, selected.definition.id);
-
-    const resolutionMode: EventResolutionMode = isSafetyResolution ? "safety" : "standard";
-
-    const resolution = selected.definition.resolve({
-      ...context,
-
-      eventId,
-      random,
-
-      resolutionMode,
-
-      participantsByRole: selection.participantsByRole,
-
-      itemsByRole: selection.itemsByRole,
-
-      unavailableItemInstanceIds,
-    });
-
-    validateEventResolution({
-      eventId,
-      definitionId: selected.definition.id,
-      round,
-      resolution,
-    });
-
-    events.push({
-      id: eventId,
-      definitionId: selected.definition.id,
-      kind: "primary",
-      resolutionMode,
-      round,
-      participantTributeIds: selection.participantTributeIds,
-      text: resolution.text,
-      changes: resolution.changes,
-    });
-
-    usedDefinitionIds.add(selected.definition.id);
-
-    reserveEventCommitments(
-      selection,
-      resolution.changes,
-      unavailableTributeIds,
-      unavailableItemInstanceIds,
-      state,
-    );
   }
 
   const completedEvents = completeNightRestCoverage(state, round, events);

@@ -18,6 +18,7 @@
     "test:e2e": "npm run build && playwright test",
     "test:e2e:ui": "npm run build && playwright test --ui",
     "balance:report": "tsx scripts/generate-balance-report.ts",
+    "event-distribution": "tsx scripts/generate-event-distribution-report.ts",
     "ready": "npm run format && npm run typecheck && npm run lint && npm run test && npm run test:e2e && npm run build",
     "validate:release": "npm run format:check && npm run typecheck && npm run lint && npm run test && npm run test:e2e",
     "check": "npm run validate:release"

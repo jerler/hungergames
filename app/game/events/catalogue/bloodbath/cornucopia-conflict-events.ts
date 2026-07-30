@@ -178,50 +178,40 @@ function createPairConflictEvent({
 
       switch (outcome) {
         case "attacker-dies": {
-  const itemId = selectItem(defender, random);
-  const itemLabel = getItemDefinition(
-    itemId,
-  ).label.toLowerCase();
+          const itemId = selectItem(defender, random);
+          const itemLabel = getItemDefinition(itemId).label.toLowerCase();
 
-  const contestedItemDescription =
-    usesSelectedItemInText
-      ? `the same ${itemLabel}`
-      : resourceDescription;
+          const contestedItemDescription = usesSelectedItemInText
+            ? `the same ${itemLabel}`
+            : resourceDescription;
 
-  const counterattackDescription =
-    usesSelectedItemInText
-      ? `the ${itemLabel}`
-      : "the attack";
+          const counterattackDescription = usesSelectedItemInText
+            ? `the ${itemLabel}`
+            : "the attack";
 
-  const text =
-    `${attacker.snapshot.name} attacks ` +
-    `${defender.snapshot.name} over ` +
-    `${contestedItemDescription}, but ` +
-    `${defender.snapshot.name} turns ` +
-    `${counterattackDescription} against ` +
-    `${attackerPronouns.object} and kills ` +
-    `${attackerPronouns.object}.`;
+          const text =
+            `${attacker.snapshot.name} attacks ` +
+            `${defender.snapshot.name} over ` +
+            `${contestedItemDescription}, but ` +
+            `${defender.snapshot.name} turns ` +
+            `${counterattackDescription} against ` +
+            `${attackerPronouns.object} and kills ` +
+            `${attackerPronouns.object}.`;
 
-  return {
-    text,
-    changes: [
-      ...createFatalChanges(
-        attacker,
-        id,
-        "Killed at the Cornucopia",
-        text,
-        defender,
-      ),
-      ...createItemAcquisitionAndSurvivalChanges(
-        eventId,
-        defender,
-        [itemId],
-        round,
-        "cornucopia",
-      ),
-    ],
-  };
-}
+          return {
+            text,
+            changes: [
+              ...createFatalChanges(attacker, id, "Killed at the Cornucopia", text, defender),
+              ...createItemAcquisitionAndSurvivalChanges(
+                eventId,
+                defender,
+                [itemId],
+                round,
+                "cornucopia",
+              ),
+            ],
+          };
+        }
 
         case "both-retreat":
           return {
@@ -452,8 +442,7 @@ export const CORNUCOPIA_PAIR_CONFLICT_EVENTS = [
   createPairConflictEvent({
     id: "cornucopia-contested-weapon",
     baseWeight: 6,
-    selectItem:
-      selectCornucopiaContestedDirectWeapon,
+    selectItem: selectCornucopiaContestedDirectWeapon,
     resourceDescription: "the same weapon",
     usesSelectedItemInText: true,
   }),

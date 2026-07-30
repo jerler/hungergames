@@ -573,7 +573,7 @@ const BECOMING_LOST_EVENT = createStaticSoloNightEvent({
       "circles, eventually becoming disoriented.",
     (actor) =>
       `${actor.snapshot.name} tries navigating by the stars, chooses the brightest one, and walks ` +
-      "directly away from every landmark they recognize.",
+      "directly away from every recognizable landmark.",
   ],
 });
 
@@ -642,7 +642,7 @@ const SLEEPING_IN_TREE_EVENT: EventDefinition = {
           text:
             `${actor.snapshot.name} selects a tree with dense leaves, tests every branch before ` +
             `trusting it, and secures ${pronouns.reflexive} tightly enough to sleep without ` +
-            "plummeting to their death. This is what passes for luxury now.",
+            `${pronouns.possessiveAdjective} death. This is what passes for luxury now.`,
           changes: createRestChanges(
             context,
             [{ tribute: actor, quality: "comfortable" }],
@@ -705,7 +705,7 @@ const COMFORTABLE_BUSH_EVENT: EventDefinition = {
     return {
       text:
         `${actor.snapshot.name} discovers a hollow beneath a dense flowering bush, lines it with ` +
-        "dry leaves, and disappears so completely that even a rabbit fails to notice them before " +
+        `dry leaves, and disappears so completely that even a rabbit fails to notice ${pronouns.object} before ` +
         "curling up in the burrow right next door.",
       changes: createRestChanges(
         context,
@@ -725,9 +725,9 @@ const SIMPLY_SLEEPING_EVENT = createStaticSoloNightEvent({
       `${actor.snapshot.name} finds the least threatening patch of ground available, lies down, ` +
       "and goes to sleep despite every instinct screaming that this is an objectively terrible idea.",
     (actor) =>
-      `${actor.snapshot.name} wraps ${getTributePronouns(actor).reflexive} in whatever fabric ` +
-      'they can find and falls asleep almost immediately, deciding "if I die, I die," which ' +
-      "somehow works, and they sleep fine.",
+      `${actor.snapshot.name} wraps ${getTributePronouns(actor).reflexive} in whatever fabric is ` +
+      'available and falls asleep almost immediately, deciding "if I die, I die," which ' +
+      "somehow works and produces a perfectly decent night's sleep.",
   ],
 });
 
@@ -847,7 +847,7 @@ const SEEING_DISTANT_FIRE_EVENT = createStaticSoloNightEvent({
       "quietly backs away.",
     (actor) =>
       `${actor.snapshot.name} spots smoke rising above the trees. Warmth sounds nice, but not nice ` +
-      "enough to introduce themselves to whoever is confidently broadcasting their location.",
+      `enough to introduce ${getTributePronouns(actor).reflexive} to whoever is confidently broadcasting a campsite's location.`,
   ],
 });
 
@@ -860,11 +860,11 @@ const SCREAMING_FOR_HELP_EVENT = createStaticSoloNightEvent({
   texts: [
     (actor) =>
       `${actor.snapshot.name} sees something moving in the darkness and tries to attack, but loses ` +
-      "their nerve and screams out in terror before running away.",
+      `${getTributePronouns(actor).possessiveAdjective} nerve and screams out in terror before running away.`,
     (actor) =>
-      `${actor.snapshot.name} sees something moving in the darkness and calls out to ask if they can ` +
-      "keep each other safe overnight. No one answers, but something large starts charging toward " +
-      `them. Terrified, ${actor.snapshot.name} runs in the opposite direction until collapsing from ` +
+      `${actor.snapshot.name} sees something moving in the darkness and calls out with an offer to ` +
+      "share watch overnight. No one answers, but something large starts charging toward " +
+      `${getTributePronouns(actor).object}. Terrified, ${actor.snapshot.name} runs in the opposite direction until collapsing from ` +
       "exhaustion as the sun starts to rise.",
   ],
 });
@@ -878,7 +878,7 @@ const STAYING_AWAKE_EVENT = createStaticSoloNightEvent({
       `${actor.snapshot.name} stays awake all night, reacting to every snapped twig, falling leaf, ` +
       "distant owl, and suspiciously aggressive cricket.",
     (actor) =>
-      `${actor.snapshot.name} promises to close their eyes for only a second, immediately hears ` +
+      `${actor.snapshot.name} promises to close ${getTributePronouns(actor).possessiveAdjective} eyes for only a second, immediately hears ` +
       "something move nearby, and spends the rest of the night staring into the darkness with a weapon in hand.",
   ],
 });
@@ -891,10 +891,10 @@ const PASSING_OUT_EXHAUSTED_EVENT = createStaticSoloNightEvent({
   texts: [
     (actor) =>
       `${actor.snapshot.name} tries to find shelter but falls asleep while still walking, collapsing ` +
-      "beneath the first tree that does not actively reject them.",
+      `beneath the first tree that does not actively reject ${getTributePronouns(actor).object}.`,
     (actor) =>
-      `${actor.snapshot.name} sits down for one moment to rest their legs and wakes several hours ` +
-      "later in exactly the same position, still holding a branch they apparently mistook for a weapon.",
+      `${actor.snapshot.name} sits down for one moment to rest ${getTributePronouns(actor).possessiveAdjective} legs and wakes several hours ` +
+      `later in exactly the same position, still holding a branch ${getTributePronouns(actor).subject} apparently mistook for a weapon.`,
   ],
 });
 
@@ -923,11 +923,11 @@ const COOKING_PROVISIONS_EVENT: EventDefinition = {
 
     return {
       text: choose(context.random, [
-        `${actor.snapshot.name} cooks their food over a small fire, eats every piece that looks ` +
+        `${actor.snapshot.name} cooks ${getTributePronouns(actor).possessiveAdjective} food over a small fire, eats every piece that looks ` +
           "remotely edible, and buries the embers before sleeping.",
-        `${actor.snapshot.name} carefully cooks their food, burns one side, drops another piece into ` +
+        `${actor.snapshot.name} carefully cooks ${getTributePronouns(actor).possessiveAdjective} food, burns one side, drops another piece into ` +
           "the fire, and declares the remaining portion a complete success.",
-        `${actor.snapshot.name} cooks their food slowly over hot stones, seasons it with herbs found ` +
+        `${actor.snapshot.name} cooks ${getTributePronouns(actor).possessiveAdjective} food slowly over hot stones, seasons it with herbs found ` +
           "nearby, and gives the meal a chef's kiss before chowing down.",
       ]),
       changes: createRestChanges(
@@ -1117,7 +1117,7 @@ const CRYING_TO_SLEEP_EVENT = createStaticSoloNightEvent({
   texts: [
     (actor) =>
       `${actor.snapshot.name} fluffs leaves into a pillow shape, then falls asleep crying as quietly ` +
-      "as possible, drying their cheeks with pillow-leaves.",
+      `as possible, drying ${getTributePronouns(actor).possessiveAdjective} cheeks with pillow-leaves.`,
   ],
 });
 
@@ -1167,7 +1167,7 @@ const NIGHTMARES_EVENT = createStaticSoloNightEvent({
       `${actor.snapshot.name} repeatedly wakes from nightmares, each time taking several panicked ` +
       "seconds to realize that the arena is real and somehow worse.",
     (actor) =>
-      `${actor.snapshot.name} dreams that they have escaped the arena, wakes smiling, and spends ` +
+      `${actor.snapshot.name} dreams that ${getTributePronouns(actor).subject} ${getTributePronouns(actor).havePresent} escaped the arena, wakes smiling, and spends ` +
       "the next hour deeply offended by reality, unable to get back to sleep.",
   ],
 });
@@ -1254,7 +1254,7 @@ const THINKING_ABOUT_VICTORY_EVENT = createStaticSoloNightEvent({
   texts: [
     (actor) =>
       `${actor.snapshot.name} lies awake imagining the final cannon, the cheering crowd, and the ` +
-      "extremely awkward interview that would presumably follow everything they have done.",
+      `extremely awkward interview that would presumably follow everything ${getTributePronouns(actor).subject} ${getTributePronouns(actor).havePresent} done.`,
     (actor) =>
       `${actor.snapshot.name} imagines returning home as victor, rehearses several possible victory ` +
       "speeches, and rejects all of them for not sounding cool enough.",
@@ -1289,7 +1289,7 @@ const LOOKING_AT_SKY_EVENT = createStaticSoloNightEvent({
       "constellations and wondering which lights are real and which were placed there by the Gamemakers.",
     (actor) =>
       `${actor.snapshot.name} lies beneath the stars and quietly names several constellations ` +
-      "incorrectly. There is nobody nearby to challenge them, so every answer becomes correct.",
+      `incorrectly. There is nobody nearby to challenge ${getTributePronouns(actor).object}, so every answer becomes correct.`,
   ],
 });
 
@@ -1443,7 +1443,7 @@ const QUIET_HUMMING_EVENT = createStaticSoloNightEvent({
   texts: [
     (actor) =>
       `${actor.snapshot.name} hums softly in the darkness, stopping whenever the forest makes a ` +
-      "noise and restarting when nothing immediately attacks them. They feel comforted.",
+      `noise and restarting when nothing immediately attacks ${getTributePronouns(actor).object}. The routine feels comforting.`,
   ],
 });
 

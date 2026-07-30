@@ -76,7 +76,7 @@ const CRATE_AVALANCHE_EVENT = createSoloFatalVarietyEvent({
   causeLabel: "Crushed by collapsing Cornucopia crates",
   getText: (actor) =>
     `${actor.snapshot.name} spots a golden shortsword at the top of a tower of supply crates. ` +
-    `${actor.snapshot.name} decides to climb after it, only to have the entire stack collapse directly onto ` +
+    `${getTributePronouns(actor).Subject} decides to climb after it, only to have the entire stack collapse directly onto ` +
     `${getTributePronouns(actor).object}. The only thing left was one hand still reaching out amongst the rubble.`,
 });
 
@@ -86,7 +86,7 @@ const SHIELD_SLED_EVENT = createSoloFatalVarietyEvent({
   causeLabel: "Killed in a shield-sled accident",
   tags: ["fatal", "environment", "weapon", "item"],
   getText: (actor) =>
-    `${actor.snapshot.name} sees the carnage around ${getTributePronouns(actor).subject} and decides ${getTributePronouns(actor).subject} needs to get out of there. ${getTributePronouns(actor).subject} grabs a shield and decides the sloped side ` +
+    `${actor.snapshot.name} sees the carnage around ${getTributePronouns(actor).object} and decides ${getTributePronouns(actor).subject} needs to get out of there. ${getTributePronouns(actor).Subject} grabs a shield and decides the sloped side ` +
     "of the Cornucopia looks remarkably sled-shaped. The ride is fast, " +
     "brief, and exhilarating right up until the shield launches " +
     `${actor.snapshot.name} into a rack of spears.`,
@@ -99,7 +99,7 @@ const LOADED_CROSSBOW_INSPECTION_EVENT = createSoloFatalVarietyEvent({
   tags: ["fatal", "environment", "weapon", "item"],
   getText: (actor) =>
     `${actor.snapshot.name} finds a crossbow and peers closely at it, ` +
-    "trying to figure out if it's already loaded. One accidental \"click\" later, turns out, it was.",
+    'trying to figure out if it\'s already loaded. One accidental "click" later, turns out, it was.',
 });
 
 const ARMFUL_OF_KNIVES_EVENT = createSoloFatalVarietyEvent({
@@ -112,7 +112,7 @@ const ARMFUL_OF_KNIVES_EVENT = createSoloFatalVarietyEvent({
     "tries to sprint away with all of them. A coil of rope catches " +
     `${getTributePronouns(actor).possessiveAdjective} ankle. ` +
     `${actor.snapshot.name} has just enough time to realize that fewer ` +
-    "knives would have been plenty.",
+    "knives would have been plenty before they get skewered by a half-dozen blades.",
 });
 
 const BACKPACK_WEAPON_RACK_SNARE_EVENT = createSoloFatalVarietyEvent({

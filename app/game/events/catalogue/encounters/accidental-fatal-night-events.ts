@@ -543,7 +543,7 @@ const FATAL_TREE_FALL_EVENT: EventDefinition = {
   resolve(context): EventResolution {
     const actor = requireSingleParticipant(context.participantsByRole, "actor");
     const text =
-      `${actor.snapshot.name} climbs into a tree without testing the branches. The first snaps beneath them, ` +
+      `${actor.snapshot.name} climbs into a tree without testing the branches. The first snaps beneath ${getTributePronouns(actor).object}, ` +
       `sending ${actor.snapshot.name} through several more branches like a very painful pinball machine. ` +
       "The final impact ends both the descent and the Games.";
 
@@ -601,7 +601,7 @@ const ROCK_THROWN_AT_NOISE_EVENT: EventDefinition = {
     const target = requireSingleParticipant(context.participantsByRole, "target");
     const text =
       `${actor.snapshot.name} hears footsteps approaching and hurls a rock into the darkness. A surprised ` +
-      `grunt is followed by a heavy collapse. When ${actor.snapshot.name} investigates, they discover ` +
+      `grunt is followed by a heavy collapse. When ${actor.snapshot.name} investigates, ${getTributePronouns(actor).subject} discovers ` +
       `${target.snapshot.name} lying motionless beneath a rapidly forming lump on the head.`;
 
     return {
@@ -637,7 +637,7 @@ const RETURNING_WATCHKEEPER_EVENT: EventDefinition = {
     const text =
       `${target.snapshot.name} returns from checking the perimeter and quietly sits beside the fire. ` +
       `${actor.snapshot.name} wakes, sees a silhouette leaning over the camp, and attacks with the ` +
-      `${weaponLabel} before recognizing them. Recognition arrives only after the fatal blow.`;
+      `${weaponLabel} before recognizing ${getTributePronouns(target).object}. Recognition arrives only after the fatal blow.`;
 
     return {
       text,
@@ -753,7 +753,7 @@ const OVERLOADED_SHELTER_EVENT: EventDefinition = {
       `${actor.snapshot.name} offers ${target.snapshot.name} space beneath the ${shelterLabel} and suggests ` +
         `adding branches and leaves for camouflage. In the middle of the night, the overloaded central ` +
         `support snaps and pierces ${target.snapshot.name}, Final Destination-style, before the entire ` +
-        `shelter collapses around them. ${actor.snapshot.name} quietly leaves the ruined camp.`,
+        `shelter collapses around ${targetPronouns.object}. ${actor.snapshot.name} quietly leaves the ruined camp.`,
     ]);
 
     return {
@@ -838,7 +838,7 @@ const BOTH_SWING_AT_ONCE_EVENT: EventDefinition = {
     const text =
       `${actor.snapshot.name} and ${target.snapshot.name} hear each other moving through the darkness. ` +
       `Both swing toward the sound at exactly the same moment. ${actor.snapshot.name}'s ` +
-      `${actorWeaponLabel} connects first, cleaving ${target.snapshot.name}'s head from their body ` +
+      `${actorWeaponLabel} connects first, cleaving ${target.snapshot.name}'s head from ${getTributePronouns(target).possessiveAdjective} body ` +
       "with a look of surprise still showing.";
 
     return {

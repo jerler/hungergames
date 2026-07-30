@@ -1,6 +1,7 @@
 import type {
   EventCategory,
   EventDefinition,
+  EventParticipantShape,
   EventRecoveryTarget,
   EventResolution,
   EventResolutionContext,
@@ -21,6 +22,7 @@ export interface AuthoredEventConfiguration {
   periods: readonly RoundReference["period"][];
   baseWeight: number;
 
+  participantShape?: EventParticipantShape;
   getWeightMultiplier?: EventWeightMultiplier;
 
   roles: readonly AuthoredRoleSpecification[];

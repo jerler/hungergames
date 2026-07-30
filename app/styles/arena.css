@@ -600,6 +600,11 @@
   --event-type-soft: rgb(219 98 98 / 9%);
 }
 
+.event-card[data-event-type="accidental-death"] {
+  --event-type-accent: rgb(207 126 79);
+  --event-type-soft: rgb(207 126 79 / 10%);
+}
+
 .event-card[data-event-type="survival"] {
   --event-type-accent: rgb(102 156 89);
   --event-type-soft: rgb(102 156 89 / 10%);

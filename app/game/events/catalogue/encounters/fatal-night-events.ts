@@ -416,7 +416,7 @@ const POISONED_SHARED_MEAL_EVENT: EventDefinition = {
         `Once ${targetPronouns.subject} ${targetPronouns.bePresent} out of sight, ${actor.snapshot.name} ` +
         `crushes ${poisonLabel} into ${target.snapshot.name}'s portion. The pair toast their truce before ` +
         `${target.snapshot.name} eats and dies before finishing the final bite.`,
-      `${actor.snapshot.name} decides to end the truce before ${target.snapshot.name} can betray them first. ` +
+      `${actor.snapshot.name} decides to end the truce before ${target.snapshot.name} can betray ${getTributePronouns(actor).object} first. ` +
         `${actor.snapshot.name} mixes ${poisonLabel} into ${target.snapshot.name}'s dinner and sits back ` +
         "for a meal and a show.",
     ]);
@@ -597,7 +597,7 @@ const CRY_FROM_RAVINE_EVENT: EventDefinition = {
     const text =
       `${actor.snapshot.name} hides beside a steep ravine and cries out for help. When ` +
       `${target.snapshot.name} cautiously approaches the edge, ${actor.snapshot.name} rises from hiding ` +
-      `and shoves them into the darkness. Several moments pass before ${actorPronouns.subject} hears ` +
+      `and shoves ${getTributePronouns(target).object} into the darkness. Several moments pass before ${actorPronouns.subject} hears ` +
       "the deadly impact.";
 
     return {
@@ -662,11 +662,11 @@ const ROLLED_INTO_FIRE_EVENT: EventDefinition = {
     const truce = requireStandardTruce(context.state, actor, target);
     const text = choose(context.random, [
       `${actor.snapshot.name} and ${target.snapshot.name} arrange themselves on opposite sides of the fire. ` +
-        `Once ${target.snapshot.name} falls asleep, ${actor.snapshot.name} rolls them directly into the flames ` +
+        `Once ${target.snapshot.name} falls asleep, ${actor.snapshot.name} rolls ${getTributePronouns(target).object} directly into the flames ` +
         "and uses the abandoned bedding to make the remaining side of camp significantly more comfortable.",
       `${actor.snapshot.name} and ${target.snapshot.name} go to sleep around a campfire. Once ` +
         `${target.snapshot.name} falls asleep, ${actor.snapshot.name} ends the truce early and rolls ` +
-        "them into the flames, enjoying the extra bedding left behind.",
+        `${getTributePronouns(target).object} into the flames, enjoying the extra bedding left behind.`,
     ]);
 
     return {
@@ -815,8 +815,8 @@ const SNORING_PROBLEM_EVENT: EventDefinition = {
     const truce = requireStandardTruce(context.state, actor, target);
     const text =
       `${target.snapshot.name} begins snoring loudly enough to announce the campsite to everyone within ` +
-      `several kilometres. ${actor.snapshot.name} tries shaking them awake, covering their mouth, and ` +
-      `reconsidering the entire alliance. ${actor.snapshot.name} finally cuts their losses and smothers ` +
+      `several kilometres. ${actor.snapshot.name} tries shaking ${getTributePronouns(target).object} awake, covering ${getTributePronouns(target).possessiveAdjective} mouth, and ` +
+      `reconsidering the entire alliance. ${actor.snapshot.name} finally cuts ${getTributePronouns(actor).possessiveAdjective} losses and smothers ` +
       `${target.snapshot.name}, enjoying an excellent night's sleep afterward.`;
 
     return {
@@ -963,7 +963,7 @@ const FAKE_EMERGENCY_EVENT: EventDefinition = {
     const shelter = requireSelectedRoleItem(context, "target");
     const text =
       `${actor.snapshot.name} races into ${target.snapshot.name}'s camp shouting that the forest is on fire. ` +
-      `When ${target.snapshot.name} bolts from the shelter, ${actor.snapshot.name} trips them, pins them ` +
+      `When ${target.snapshot.name} bolts from the shelter, ${actor.snapshot.name} trips ${getTributePronouns(target).object}, pins ${getTributePronouns(target).object} ` +
       "to the ground, and finishes the job with a twist of the neck. The forest remains disappointingly unburned.";
 
     return {

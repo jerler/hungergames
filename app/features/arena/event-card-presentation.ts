@@ -11,11 +11,22 @@ import type { StatusEffectId } from "~/game/statuses/status-schema";
 import type { GameChange, GameTribute, ResolvedEvent } from "~/game/types/game-state";
 
 export type EventVisualKind =
-  "combat" | "survival" | "hazard" | "relationship" | "theft" | "inventory" | "status" | "special";
+  | "combat"
+  | "accidental-death"
+  | "survival"
+  | "hazard"
+  | "relationship"
+  | "theft"
+  | "inventory"
+  | "status"
+  | "special";
 
 export const EVENT_VISUAL_PRESENTATIONS = {
   combat: {
     label: "Combat",
+  },
+  "accidental-death": {
+    label: "Accidental death",
   },
   survival: {
     label: "Survival",
@@ -279,67 +290,61 @@ function getPrimaryTributeId(
 
 function getEventVisualKind(event: ResolvedEvent): EventVisualKind {
   const definition = EVENT_DEFINITION_BY_ID.get(event.definitionId);
+
   const tags = new Set<string>(definition?.tags ?? []);
 
-  const hasChange = (type: GameChange["type"]) =>
-    event.changes.some((change) => change.type === type);
+  const eliminationChanges = event.changes.filter(
+    (
+      change,
+    ): change is Extract<
+      GameChange,
+      {
+        type: "eliminate-tribute";
+      }
+    > => change.type === "eliminate-tribute",
+  );
 
-  const isTheft =
-    event.definitionId.includes("theft") ||
-    event.definitionId.includes("steal") ||
-    event.changes.some((change) => change.type === "transfer-item" && change.reason === "theft");
+  /*
+   * Death is the strongest visible outcome.
+   *
+   * A credited killer is concrete evidence of combat.
+   * Explicit combat or ambush authoring tags cover
+   * combat deaths where attribution is intentionally
+   * omitted from the resolved change.
+   *
+   * A generic "fatal" or "weapon" tag is not enough:
+   * weapons can misfire and fatal hazards can be wholly
+   * environmental.
+   */
+  if (eliminationChanges.length > 0) {
+    const hasCreditedKiller = eliminationChanges.some(
+      (change) => change.killerTributeIds.length > 0,
+    );
 
-  if (isTheft) {
-    return "theft";
+    const isExplicitCombat = tags.has("combat") || tags.has("ambush");
+
+    return hasCreditedKiller || isExplicitCombat ? "combat" : "accidental-death";
   }
 
-  if (event.kind === "status-resolution") {
+  /*
+   * Status is the next strongest outcome. This is based
+   * on an actual applied or removed status rather than a
+   * loose catalogue tag.
+   */
+  const hasStatusChange = event.changes.some(
+    (change) => change.type === "apply-status" || change.type === "remove-status",
+  );
+
+  if (hasStatusChange) {
     return "status";
   }
 
-  if (
-    tags.has("romantic") ||
-    tags.has("truce") ||
-    tags.has("cooperative") ||
-    hasChange("form-truce") ||
-    hasChange("break-truce")
-  ) {
-    return "relationship";
-  }
-
-  if (
-    tags.has("fatal") ||
-    tags.has("combat") ||
-    tags.has("weapon") ||
-    tags.has("ambush") ||
-    hasChange("eliminate-tribute")
-  ) {
-    return "combat";
-  }
-
-  if (tags.has("environment") || definition?.category === "hazard") {
-    return "hazard";
-  }
-
-  if (
-    tags.has("item") ||
-    tags.has("tool") ||
-    tags.has("resource") ||
-    hasChange("acquire-item") ||
-    hasChange("transfer-item")
-  ) {
-    return "inventory";
-  }
-
-  if (tags.has("status") || hasChange("apply-status") || hasChange("remove-status")) {
-    return "status";
-  }
-
-  if (tags.has("survival") || definition?.category === "survival") {
-    return "survival";
-  }
-
-  return "special";
+  /*
+   * Everything else is part of the arena's general
+   * activity: survival moments, item changes, theft,
+   * relationships, preparation, and flavour events.
+   */
+  return "hazard";
 }
 
 export function createEventCardPresentation(

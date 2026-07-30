@@ -1,4 +1,8 @@
-import type { EventDefinition, ParticipantRoleDefinition } from "~/game/events/event-schema";
+import {
+  EVENT_PARTICIPANT_SHAPES,
+  type EventDefinition,
+  type ParticipantRoleDefinition,
+} from "~/game/events/event-schema";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { ITEM_TAGS, type ItemDefinitionId, type ItemTag } from "~/game/items/item-schema";
 import { validateEventRecoveryProfile } from "./validate-event-recovery-profile";
@@ -6,6 +10,8 @@ import { validateEventRecoveryProfile } from "./validate-event-recovery-profile"
 const EVENT_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 const EVENT_CATEGORIES = new Set(["fatal", "survival", "hazard"]);
+
+const EVENT_PARTICIPANT_SHAPE_SET = new Set(EVENT_PARTICIPANT_SHAPES);
 
 const EVENT_PERIODS = new Set(["day", "night"]);
 
@@ -287,6 +293,13 @@ export function validateEventDefinition(definition: EventDefinition): void {
     definition.safetyResolution !== "force-success"
   ) {
     throw new Error(`Event "${definition.id}" has invalid safety-resolution metadata.`);
+  }
+
+  if (
+    definition.participantShape !== undefined &&
+    !EVENT_PARTICIPANT_SHAPE_SET.has(definition.participantShape)
+  ) {
+    throw new Error(`Event "${definition.id}" has invalid participant-shape metadata.`);
   }
 
   if (!Number.isFinite(definition.baseWeight) || definition.baseWeight <= 0) {

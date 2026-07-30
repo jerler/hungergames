@@ -25,6 +25,10 @@ import type { SurvivalNeed } from "~/game/survival/survival-schema";
 
 export type EventCategory = "fatal" | "survival" | "hazard";
 
+export const EVENT_PARTICIPANT_SHAPES = ["solo", "pair", "trio", "group-four-plus"] as const;
+
+export type EventParticipantShape = (typeof EVENT_PARTICIPANT_SHAPES)[number];
+
 export type EventSafetyResolution = "force-success";
 
 export type EventTag =
@@ -238,6 +242,14 @@ export interface EventDefinition {
    * Only direct checked attacks use this in Phase 10.
    */
   safetyResolution?: EventSafetyResolution;
+
+  /**
+   * Optional authored override for participant-shape classification.
+   *
+   * Most definitions infer their shape by summing role counts. Use this only
+   * when those technical roles do not represent the event's meaningful cast.
+   */
+  participantShape?: EventParticipantShape;
 
   roles: readonly ParticipantRoleDefinition[];
 

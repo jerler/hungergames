@@ -1,6 +1,7 @@
 import type {
   EventCategory,
   EventDefinition,
+  EventParticipantShape,
   EventRecoveryTarget,
   EventTag,
 } from "~/game/events/event-schema";
@@ -48,6 +49,18 @@ export class EventBuilder {
   public weightMultiplier(getWeightMultiplier: EventWeightMultiplier): EventBuilder {
     return this.with({
       getWeightMultiplier,
+    });
+  }
+
+  /**
+   * Overrides the participant shape inferred from the compiled role counts.
+   *
+   * Most events should rely on inference. Use this only when technical roles
+   * do not represent the number of tributes meaningfully involved.
+   */
+  public participantShape(participantShape: EventParticipantShape): EventBuilder {
+    return this.with({
+      participantShape,
     });
   }
 

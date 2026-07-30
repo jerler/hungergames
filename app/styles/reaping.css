@@ -452,7 +452,6 @@
   cursor: pointer;
   font-size: clamp(1rem, calc(0.82rem + 0.65vw), 1.65rem);
   line-height: 1;
-  place-items: center;
   transition:
     color var(--transition-fast),
     transform var(--transition-fast);

@@ -78,12 +78,11 @@ const FATAL_EVENT_CASES = [
     tags: ["fatal", "hazard"],
 
     periods: ["day", "night"],
-
     weight: 2,
 
     causeLabel: "Fell",
 
-    expectedText: "Hazel loses their footing near a cliff and falls to their death.",
+    expectedText: "Hazel loses his footing near a cliff and falls to his death.",
   },
 ] as const;
 
@@ -125,6 +124,20 @@ function withStats(
       ...tribute.snapshot,
       name,
       stats,
+    },
+  };
+}
+
+function withPronouns(
+  tribute: GameTribute,
+  pronouns: GameTribute["snapshot"]["pronouns"],
+): GameTribute {
+  return {
+    ...tribute,
+
+    snapshot: {
+      ...tribute.snapshot,
+      pronouns,
     },
   };
 }
@@ -274,7 +287,9 @@ describe("environmental events", () => {
     ({ eventId, tags, periods, weight, causeLabel, expectedText }) => {
       const game = createTestGame();
 
-      const victim = withStats(game.tributes[0], BALANCED_STATS, "Hazel");
+      const victim = withPronouns(withStats(game.tributes[0], BALANCED_STATS, "Hazel"), "he");
+
+      const gameWithVictim = replaceTributes(game, [victim]);
 
       const definition = requireEvent(eventId);
 
@@ -295,7 +310,7 @@ describe("environmental events", () => {
 
       const resolution = resolveEvent(
         definition,
-        game,
+        gameWithVictim,
         {
           victim: [victim],
         },
@@ -316,6 +331,57 @@ describe("environmental events", () => {
           },
         ],
       });
+    },
+  );
+
+  it.each([
+    {
+      pronouns: "they",
+      possessiveAdjective: "their",
+    },
+    {
+      pronouns: "she",
+      possessiveAdjective: "her",
+    },
+    {
+      pronouns: "he",
+      possessiveAdjective: "his",
+    },
+    {
+      pronouns: "it",
+      possessiveAdjective: "its",
+    },
+  ] as const)(
+    "fallen-cliff renders the $pronouns pronoun set",
+    ({ pronouns, possessiveAdjective }) => {
+      const game = createTestGame();
+
+      const victim = withPronouns(withStats(game.tributes[0], BALANCED_STATS, "Hazel"), pronouns);
+
+      const gameWithVictim = replaceTributes(game, [victim]);
+
+      const definition = requireEvent("fallen-cliff");
+
+      const resolution = resolveEvent(
+        definition,
+        gameWithVictim,
+        {
+          victim: [victim],
+        },
+        [0.5],
+      );
+
+      const expectedText = `Hazel loses ${possessiveAdjective} footing near a cliff and falls to ${possessiveAdjective} death.`;
+
+      expect(resolution.text).toBe(expectedText);
+
+      expect(resolution.changes).toContainEqual(
+        expect.objectContaining({
+          type: "eliminate-tribute",
+          tributeId: victim.id,
+          summary: expectedText,
+        }),
+      );
     },
   );
 

@@ -34,7 +34,7 @@ export const HIGH_LUCK_EVENTS = [
     outcomes: {
       criticalFailure: result({
         text: ({ tribute }) =>
-          `${tribute.name} receives an arena message advising ${tribute.pronouns.object} to "believe in the feet they can become." ${tribute.pronouns.Subject} ${tribute.pronouns.bePresent} left deeply confused.`,
+          `${tribute.name} receives an arena message advising ${tribute.pronouns.object} to "believe in the feet ${tribute.pronouns.subject} can become." ${tribute.pronouns.Subject} ${tribute.pronouns.bePresent} left deeply confused.`,
         effects: [applyStatus("tribute", "disoriented", 1)],
       }),
 

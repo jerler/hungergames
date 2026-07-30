@@ -32,6 +32,12 @@ export function compileEvent(
     periods: [...configuration.periods],
     baseWeight: configuration.baseWeight,
 
+    ...(configuration.participantShape
+      ? {
+          participantShape: configuration.participantShape,
+        }
+      : {}),
+
     ...(selectionProfile
       ? {
           selectionProfile,

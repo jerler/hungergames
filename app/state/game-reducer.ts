@@ -1,6 +1,7 @@
 import { applyResolvedEvent } from "~/game/engine/apply-game-change";
 import { assertGameStateInvariantsInDevelopment } from "~/game/engine/game-invariants";
 import { resolveRound } from "~/game/engine/resolve-round";
+import { countEventEliminations, getRoundLethalityProfile } from "~/game/engine/round-lethality";
 import { getNextRound } from "~/game/engine/rounds";
 import { selectLivingTributes } from "~/game/selectors/game-selectors";
 import type { GameState } from "~/game/types/game-state";
@@ -96,7 +97,26 @@ function completeRound(state: GameState, now: string): GameState {
 
   const stateWithNightRestBookkeeping = applyMissingNightRestBookkeeping(state);
 
-  const stateWithAdvancedStatuses = advanceStatusDurations(stateWithNightRestBookkeeping);
+  const completedRound = stateWithNightRestBookkeeping.currentRound;
+
+  const primaryEliminationCount = countEventEliminations(stateWithNightRestBookkeeping.roundEvents);
+
+  const roundStartingLivingCount =
+    selectLivingTributes(stateWithNightRestBookkeeping).length + primaryEliminationCount;
+
+  const remainingStatusFatalityBudget =
+    completedRound === null
+      ? Number.POSITIVE_INFINITY
+      : Math.max(
+          0,
+          getRoundLethalityProfile(completedRound, roundStartingLivingCount).maxEliminations -
+            primaryEliminationCount,
+        );
+
+  const stateWithAdvancedStatuses = advanceStatusDurations(
+    stateWithNightRestBookkeeping,
+    remainingStatusFatalityBudget,
+  );
 
   const stateAfterRoundProcessing = expireTrucesAfterRound(stateWithAdvancedStatuses);
   const containedElimination = stateAfterRoundProcessing.roundEvents.some((event) =>

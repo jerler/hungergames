@@ -534,7 +534,7 @@ const CREATING_A_DIVERSION: EventDefinition = {
             `${actor.snapshot.name} searches the bushes for food before spotting ${target.snapshot.name} ` +
             "wandering dangerously close. Without a weapon, " +
             `${actor.snapshot.name} throws a stone into the brush behind ${target.snapshot.name} ` +
-            "and slips away while they investigate.",
+            "and slips away while the distraction holds.",
           changes: createSurvivalChanges([actor, target]),
         };
       case "exceptional-success":
@@ -1534,13 +1534,13 @@ const SNEAKING_A_NAP = createSoloCheckedEvent({
     success: {
       text: (actor) =>
         `${actor.snapshot.name} finds somewhere quiet to rest. Somehow no one discovers the snoring, ` +
-        "and the nap leaves them renewed.",
+        `and the nap leaves ${getTributePronouns(actor).object} renewed.`,
       effects: (context, actor) => reduceStatusSeverityChanges(context, actor, "exhausted", 2),
     },
     "exceptional-success": {
       text: (actor) =>
         `${actor.snapshot.name} finds somewhere quiet to rest. Somehow no one discovers the snoring, ` +
-        "and the nap leaves them remarkably well rested.",
+        `and the nap leaves ${getTributePronouns(actor).object} remarkably well rested.`,
       effects: (context, actor) => [
         ...removeStatusChanges(actor, "exhausted"),
         statusChange(context, actor, "well-rested"),

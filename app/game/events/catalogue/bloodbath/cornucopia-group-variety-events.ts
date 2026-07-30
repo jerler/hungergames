@@ -269,7 +269,7 @@ const TRIO_SUPPLY_NET_PINATA_EVENT = createCornucopiaGroupEvent({
       `${target.snapshot.name} yank the same hanging cargo net from ` +
       "different sides. The knot gives up and turns the net into a " +
       "supply piñata. Useful gear rains down. Each catches something; " +
-      `${target.snapshot.name} also catches a wooden crate lid with ` +
+      `${target.snapshot.name} also catches a wooden crate lid to ` +
       "the forehead."
     );
   },

@@ -403,7 +403,7 @@ const COLLECTING_FRUIT = createSoloCheckedEvent({
     success: {
       text: (actor) =>
         `${actor.snapshot.name} climbs a fruit tree and returns with ` +
-        "enough food to quiet their hunger.",
+        `enough food to quiet ${getTributePronouns(actor).possessiveAdjective} hunger.`,
       effects: (_context, actor) => [survivalNeedChange(actor, "food")],
     },
     "exceptional-success": {
@@ -583,7 +583,7 @@ const PRACTISING_WEAPONRY: EventDefinition = {
       text:
         `${actor.snapshot.name} spends the afternoon practising with ` +
         `${pronouns.possessiveAdjective} ${weaponLabel}, adjusting ` +
-        "their technique until they feel deadly accurate.",
+        `${pronouns.possessiveAdjective} technique to deadly accuracy.`,
       changes: [
         createItemUseChange(selection.owner, selection.item, "day-practising-weaponry"),
         statusChange(context, actor, "inspired"),

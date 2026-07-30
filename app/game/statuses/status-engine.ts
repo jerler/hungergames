@@ -168,8 +168,45 @@ function removeExpiredRecoveringStatuses(tribute: GameTribute): GameTribute {
   };
 }
 
-export function advanceStatusDurations(state: GameState): GameState {
+function willFatalStatusExpireAfterRound(status: StatusEffect, round: RoundReference): boolean {
+  if (
+    status.remainingRounds === null ||
+    isSameRound(status.appliedRound, round) ||
+    status.remainingRounds > 1
+  ) {
+    return false;
+  }
+
+  const definition = getStatusDefinition(status.definitionId);
+
+  return definition.duration.kind === "timed" && definition.duration.expiration === "fatal";
+}
+
+export function countPendingFatalStatusResolutions(
+  state: GameState,
+  round: RoundReference,
+): number {
+  const livingTributes = state.tributes.filter((tribute) => tribute.isAlive);
+
+  const fatalCandidateCount = livingTributes.filter((tribute) =>
+    tribute.statuses.some((status) => willFatalStatusExpireAfterRound(status, round)),
+  ).length;
+
+  return Math.min(fatalCandidateCount, Math.max(0, livingTributes.length - 1));
+}
+
+export function advanceStatusDurations(
+  state: GameState,
+  maxFatalityCount = Number.POSITIVE_INFINITY,
+): GameState {
   const completedRound = state.currentRound;
+
+  if (
+    maxFatalityCount !== Number.POSITIVE_INFINITY &&
+    (!Number.isInteger(maxFatalityCount) || maxFatalityCount < 0)
+  ) {
+    throw new Error("maxFatalityCount must be a nonnegative integer or positive infinity.");
+  }
 
   if (!completedRound) {
     return state;
@@ -212,7 +249,14 @@ export function advanceStatusDurations(state: GameState): GameState {
 
   const fatalCandidates = livingTributes.filter((tribute) => getFatalStatus(tribute) !== null);
 
-  const sparedTributeId = chooseSimultaneousFatalitySurvivor(fatalCandidates, livingTributes);
+  const survivorSafeFatalityLimit = Math.max(0, livingTributes.length - 1);
+
+  const effectiveMaxFatalityCount = Math.min(maxFatalityCount, survivorSafeFatalityLimit);
+
+  const sparedTributeId =
+    effectiveMaxFatalityCount >= Math.max(0, fatalCandidates.length - 1)
+      ? chooseSimultaneousFatalitySurvivor(fatalCandidates, livingTributes)
+      : null;
 
   const nextState: GameState = {
     ...state,
@@ -233,6 +277,7 @@ export function advanceStatusDurations(state: GameState): GameState {
   };
 
   let resolvedState = nextState;
+  let resolvedFatalityCount = 0;
 
   /*
    * Build and apply fatal status events one at a time.
@@ -243,6 +288,10 @@ export function advanceStatusDurations(state: GameState): GameState {
    */
   for (const candidate of fatalCandidates) {
     if (candidate.id === sparedTributeId) {
+      continue;
+    }
+
+    if (resolvedFatalityCount >= effectiveMaxFatalityCount) {
       continue;
     }
 
@@ -268,6 +317,8 @@ export function advanceStatusDurations(state: GameState): GameState {
     );
 
     resolvedState = applyAutomaticResolutionEvents(resolvedState, [event]);
+
+    resolvedFatalityCount += 1;
   }
 
   return resolvedState;

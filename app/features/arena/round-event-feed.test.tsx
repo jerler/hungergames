@@ -346,7 +346,7 @@ describe("RoundEventFeed", () => {
     expect(screen.getByText("Knife")).toBeInTheDocument();
     expect(screen.getAllByText("Katniss Everdeen").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Peeta Mellark").length).toBeGreaterThan(0);
-    expect(container.querySelector('[data-event-type="theft"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-event-type="hazard"]')).toBeInTheDocument();
     expect(container.querySelector('[data-transfer-kind="stolen"]')).toBeInTheDocument();
   });
 

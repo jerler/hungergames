@@ -343,7 +343,7 @@ export const ENVIRONMENTAL_EVENTS = [
       always(
         result({
           text: ({ victim }) =>
-            `${victim.name} loses their footing near a cliff and falls to their death.`,
+            `${victim.name} loses ${victim.pronouns.possessiveAdjective} footing near a cliff and falls to ${victim.pronouns.possessiveAdjective} death.`,
 
           effects: [
             eliminate("victim", {

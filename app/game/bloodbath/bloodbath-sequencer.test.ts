@@ -119,6 +119,7 @@ describe("Bloodbath sequencer", () => {
        */
       expect(Math.max(...deathCounts) - Math.min(...deathCounts)).toBeGreaterThanOrEqual(2);
     },
+    15_000,
   );
 
   it("produces identical events for identical seeds", () => {

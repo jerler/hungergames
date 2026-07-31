@@ -1,5 +1,5 @@
 import { EVENT_CATALOGUE } from "~/game/events/catalogue/index";
-import type { EventSelectionContext } from "~/game/events/event-schema";
+import type { EventDefinition, EventSelectionContext } from "~/game/events/event-schema";
 import { isEventDefinitionEligible } from "~/game/events/event-eligibility";
 import {
   selectEventParticipants,
@@ -206,10 +206,25 @@ function getCommittedItemOwnerIds(
   return ownerIds;
 }
 
+export interface SequenceRoundEventsOptions {
+  /**
+   * Narrow deterministic seam for selector integration tests.
+   * Runtime callers should omit this to use the authored catalogue.
+   */
+  definitions?: readonly EventDefinition[];
+
+  /**
+   * Overrides the calculated number of primary event slots.
+   * Forced lifecycle events still count toward this total.
+   */
+  targetEventCount?: number;
+}
+
 export function sequenceRoundEvents(
   state: GameState,
   round: RoundReference,
   committedItemInstanceIds: ReadonlySet<string> = new Set<string>(),
+  options: SequenceRoundEventsOptions = {},
 ): ResolvedEvent[] {
   if (round.day === 1 && round.period === "day") {
     return sequenceBloodbathEvents(state, round);
@@ -275,14 +290,20 @@ export function sequenceRoundEvents(
     return completeNightRestCoverage(state, round, [finaleEvent]);
   }
 
-  const eligibleDefinitions = EVENT_CATALOGUE.filter((definition) =>
+  const catalogue = options.definitions ?? EVENT_CATALOGUE;
+  const eligibleDefinitions = catalogue.filter((definition) =>
     isEventDefinitionEligible(definition, context),
   );
   const eligibleDefinitionIds = new Set(eligibleDefinitions.map((definition) => definition.id));
   const diagnosticPoolId = round.period === "night" ? ("night" as const) : ("later-day" as const);
   const captureSelectionDiagnostics = isEventSelectionDiagnosticsActive();
 
-  const baseTargetEventCount = getRoundEventTargetCount(livingTributes.length);
+  const baseTargetEventCount =
+    options.targetEventCount ?? getRoundEventTargetCount(livingTributes.length);
+
+  if (!Number.isInteger(baseTargetEventCount) || baseTargetEventCount <= 0) {
+    throw new Error("Round event target count must be a positive integer.");
+  }
 
   const unavailableItemInstanceIds = new Set(committedItemInstanceIds);
 
@@ -335,7 +356,7 @@ export function sequenceRoundEvents(
       shouldForceElimination(state);
 
     if (captureSelectionDiagnostics) {
-      for (const definition of EVENT_CATALOGUE) {
+      for (const definition of catalogue) {
         let rejectionReason: EventSelectionRejectionReason | null = null;
         const isEligible = eligibleDefinitionIds.has(definition.id);
 

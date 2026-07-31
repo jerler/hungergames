@@ -31,6 +31,11 @@ import { completeNightRestCoverage } from "~/game/survival/night-rest-coverage";
 import { countPendingFatalStatusResolutions } from "~/game/statuses/status-engine";
 import { canPreserveRemainingEventSlots } from "~/game/engine/ordinary-event-selection-policy";
 import {
+  createEventRepeatCycleState,
+  recordEventRepeatCycleSelection,
+  selectEventRepeatCycleCandidates,
+} from "~/game/engine/event-repeat-cycle";
+import {
   countEliminationChanges,
   getLethalCandidateWeightMultiplier,
   getRoundLethalityProfile,
@@ -283,7 +288,7 @@ export function sequenceRoundEvents(
   const unavailableTributeIds = getCommittedItemOwnerIds(state, unavailableItemInstanceIds);
 
   const events: ResolvedEvent[] = [];
-  const usedDefinitionIds = new Set<string>();
+  const repeatCycle = createEventRepeatCycleState(state.eventHistory);
 
   const lethalityProfile = getRoundLethalityProfile(round, livingTributes.length);
 
@@ -316,8 +321,6 @@ export function sequenceRoundEvents(
           !("safetyResolution" in definition && definition.safetyResolution === "force-success")
         ) {
           rejectionReason = "planner-stage-not-attempted";
-        } else if (usedDefinitionIds.has(definition.id)) {
-          rejectionReason = "already-used-definition";
         } else if (lethalityRejectedDefinitionIds.has(definition.id)) {
           rejectionReason = "fatality-target-overshoot";
         } else if (!hasEliminationBudget && isPotentiallyLethalDefinition(definition)) {
@@ -347,7 +350,6 @@ export function sequenceRoundEvents(
         : eligibleDefinitions
     ).filter(
       (definition) =>
-        !usedDefinitionIds.has(definition.id) &&
         !lethalityRejectedDefinitionIds.has(definition.id) &&
         (hasEliminationBudget || !isPotentiallyLethalDefinition(definition)),
     );
@@ -395,8 +397,19 @@ export function sequenceRoundEvents(
      */
     const plannerCandidates =
       coverageSafeCandidates.length > 0 ? coverageSafeCandidates : feasibleCandidates;
+    const repeatCycleSelection = selectEventRepeatCycleCandidates(plannerCandidates, repeatCycle);
+    const repeatCycleCandidateIds = new Set(
+      repeatCycleSelection.candidates.map((candidate) => candidate.definition.id),
+    );
+    const opportunityRejectionReasons = new Map<string, EventSelectionRejectionReason>();
 
-    let remainingCandidates = plannerCandidates.map((candidate) => ({
+    for (const candidate of plannerCandidates) {
+      if (!repeatCycleCandidateIds.has(candidate.definition.id)) {
+        opportunityRejectionReasons.set(candidate.definition.id, "already-used-definition");
+      }
+    }
+
+    let remainingCandidates = repeatCycleSelection.candidates.map((candidate) => ({
       ...candidate,
       effectiveWeight:
         candidate.effectiveWeight *
@@ -407,7 +420,6 @@ export function sequenceRoundEvents(
 
     let acceptedEvent = false;
     let acceptedDefinition: (typeof feasibleCandidates)[number]["definition"] | null = null;
-    const opportunityRejectionReasons = new Map<string, EventSelectionRejectionReason>();
 
     while (remainingCandidates.length > 0) {
       const selected = selectFeasibleEventCandidate(remainingCandidates, random);
@@ -473,7 +485,11 @@ export function sequenceRoundEvents(
       });
 
       plannedEliminationCount += eventEliminationCount;
-      usedDefinitionIds.add(selected.definition.id);
+      recordEventRepeatCycleSelection(
+        repeatCycle,
+        selected.definition.id,
+        repeatCycleSelection.resetsCycle,
+      );
 
       reserveEventCommitments(
         selection,
@@ -494,7 +510,7 @@ export function sequenceRoundEvents(
         feasibleDefinitions: feasibleCandidates.map((candidate) => candidate.definition),
         selectedDefinition: acceptedDefinition,
         plannerConsideredDefinitionIds: new Set(
-          plannerCandidates.map((candidate) => candidate.definition.id),
+          repeatCycleSelection.candidates.map((candidate) => candidate.definition.id),
         ),
         rejectionReasonsByDefinitionId: opportunityRejectionReasons,
       });

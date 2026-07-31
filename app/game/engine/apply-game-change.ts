@@ -733,20 +733,45 @@ export function applyGameChange(
     case "break-truce": {
       const truce = state.truces.find((candidate) => candidate.id === change.truceId);
 
-      if (!truce && event.kind === "aftermath" && change.reason === "accidental") {
-        /*
-         * Automatic death aftermath is derived from a snapshot taken
-         * around the primary event. If another primary change already
-         * ended the same truce, the generated accidental dissolution is
-         * stale and its intended result has already been achieved.
-         *
-         * Explicit breakup events remain strict and still throw below.
-         */
-        return state;
-      }
-
       if (!truce) {
-        throw new Error(`Cannot break missing truce "${change.truceId}".`);
+        const alreadyBrokenThisRound = state.eventHistory.some(
+          (historyEvent) =>
+            historyEvent.round.day === event.round.day &&
+            historyEvent.round.period === event.round.period &&
+            historyEvent.changes.some(
+              (historyChange) =>
+                historyChange.type === "break-truce" && historyChange.truceId === change.truceId,
+            ),
+        );
+
+        if (alreadyBrokenThisRound) {
+          /*
+           * Several events are planned from one round-start snapshot.
+           * A prior primary event or its automatic death aftermath may
+           * therefore dissolve a truce before a later planned breakup is
+           * revealed.
+           *
+           * The intended relationship state has already been achieved.
+           * Treat only that same-round duplicate as idempotent while
+           * preserving strict validation for genuinely missing truces.
+           */
+          return state;
+        }
+
+        if (event.kind === "aftermath" && change.reason === "accidental") {
+          /*
+           * Automatic death aftermath is derived from a snapshot taken
+           * around the primary event. If another primary change already
+           * ended the same truce without recording a visible breakup in
+           * this round, the generated accidental dissolution is stale.
+           */
+          return state;
+        }
+
+        throw new Error(
+          `Cannot break missing truce "${change.truceId}" from ` +
+            `${event.kind} event "${event.id}" with reason "${change.reason}".`,
+        );
       }
 
       if (truce.kind === "romantic" && change.reason !== "accidental") {

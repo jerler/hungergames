@@ -29,6 +29,7 @@ import { getCommittedItemInstanceIds } from "~/game/items/item-reservations";
 import { validateEventResolution } from "~/game/events/validation/validate-event-resolution";
 import { completeNightRestCoverage } from "~/game/survival/night-rest-coverage";
 import { countPendingFatalStatusResolutions } from "~/game/statuses/status-engine";
+import { canPreserveRemainingEventSlots } from "~/game/engine/ordinary-event-selection-policy";
 import {
   countEliminationChanges,
   getLethalCandidateWeightMultiplier,
@@ -375,7 +376,27 @@ export function sequenceRoundEvents(
       ]),
     );
 
-    let remainingCandidates = feasibleCandidates.map((candidate) => ({
+    const availableTributeCount = livingTributes.filter(
+      (tribute) => !unavailableTributeIds.has(tribute.id),
+    ).length;
+    const remainingEventSlotCount = targetEventCount - eventIndex - 1;
+    const coverageSafeCandidates = feasibleCandidates.filter((candidate) =>
+      canPreserveRemainingEventSlots({
+        selection: candidate.feasibilitySelection,
+        availableTributeCount,
+        remainingEventSlotCount,
+      }),
+    );
+
+    /*
+     * Prefer candidates that preserve enough participants for every remaining
+     * event slot. If no candidate can do so, retain the complete feasible pool
+     * so low-population and structurally unavoidable rounds still resolve.
+     */
+    const plannerCandidates =
+      coverageSafeCandidates.length > 0 ? coverageSafeCandidates : feasibleCandidates;
+
+    let remainingCandidates = plannerCandidates.map((candidate) => ({
       ...candidate,
       effectiveWeight:
         candidate.effectiveWeight *
@@ -473,7 +494,7 @@ export function sequenceRoundEvents(
         feasibleDefinitions: feasibleCandidates.map((candidate) => candidate.definition),
         selectedDefinition: acceptedDefinition,
         plannerConsideredDefinitionIds: new Set(
-          feasibleCandidates.map((candidate) => candidate.definition.id),
+          plannerCandidates.map((candidate) => candidate.definition.id),
         ),
         rejectionReasonsByDefinitionId: opportunityRejectionReasons,
       });

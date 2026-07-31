@@ -17,7 +17,11 @@ import {
 import type { EventResult } from "~/game/events/authoring/outcomes/outcome-schema";
 import type { StatCheckOutcome } from "~/game/events/event-outcomes";
 import { resolveLuckAdjustedStatCheck } from "~/game/events/event-resolution-helpers";
-import { requireSingleParticipant, type EventDefinition } from "~/game/events/event-schema";
+import {
+  requireSingleParticipant,
+  type EventDefinition,
+  type EventSelectionContext,
+} from "~/game/events/event-schema";
 import type { ItemDefinitionId } from "~/game/items/item-schema";
 import { getTributePronouns } from "~/game/tributes/pronouns";
 import type { GameTribute } from "~/game/types/game-state";
@@ -124,6 +128,14 @@ function getBrushfireIntro(tribute: GameTribute, itemId?: ItemDefinitionId): str
   }
 }
 
+const LATER_DAY_BROAD_ENVIRONMENTAL_FATALITY_MULTIPLIER = 0.6;
+
+function getBroadEnvironmentalFatalityWeightMultiplier({ round }: EventSelectionContext): number {
+  return round.period === "day" && round.day >= 2
+    ? LATER_DAY_BROAD_ENVIRONMENTAL_FATALITY_MULTIPLIER
+    : 1;
+}
+
 export const ENVIRONMENTAL_EVENTS = [
   /* Day Only */
 
@@ -136,6 +148,7 @@ export const ENVIRONMENTAL_EVENTS = [
     .tags("fatal", "hazard")
     .during("day")
     .weight(2)
+    .weightMultiplier(getBroadEnvironmentalFatalityWeightMultiplier)
     .resolve(
       always(
         result({
@@ -339,6 +352,7 @@ export const ENVIRONMENTAL_EVENTS = [
     .tags("fatal", "hazard")
     .during("day", "night")
     .weight(2)
+    .weightMultiplier(getBroadEnvironmentalFatalityWeightMultiplier)
     .resolve(
       always(
         result({

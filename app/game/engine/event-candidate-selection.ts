@@ -9,6 +9,7 @@ import {
 } from "~/game/events/participant-selection";
 import type { RoundReference } from "~/game/types/game-state";
 import { getEventSelectionRecoveryPriorityMultiplier } from "~/game/events/event-recovery-priority";
+import { getOrdinaryEventParticipantShapeMultiplier } from "~/game/engine/ordinary-event-selection-policy";
 import {
   diagnoseEventSelectionFeasibilityRejection,
   isEventSelectionDiagnosticsActive,
@@ -177,6 +178,7 @@ export function createFeasibleEventCandidates({
         feasibilitySelection,
         effectiveWeight:
           getEventDefinitionWeight(definition, context) *
+          getOrdinaryEventParticipantShapeMultiplier(definition, context.round) *
           getEventSelectionRecoveryPriorityMultiplier(definition, feasibilitySelection),
       },
     ];

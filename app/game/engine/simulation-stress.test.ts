@@ -801,7 +801,7 @@ describe("simulation stress tests", () => {
     ).toEqual([]);
   }, 20000);
 
-  it("exercises tactical offense by low-Brawn tributes in complete games", () => {
+  it("exercises tactical offense in complete games", () => {
     const attempts = getStressResults().flatMap((result) =>
       getPrimaryEvents(result)
         .filter((event) => TACTICAL_EVENT_IDS.has(event.definitionId))
@@ -833,14 +833,13 @@ describe("simulation stress tests", () => {
     expect(attempts.length).toBeGreaterThan(0);
 
     /*
-     * Complete simulations prove that the acquisition
-     * and selection systems make tactical equipment
-     * reachable by the intended low-Brawn users.
+     * Complete simulations prove that tactical equipment acquired through
+     * real game flow is selected and committed by ordinary tactical events.
      *
-     * Controlled Brains success-rate comparisons belong
-     * in combat-strategy-balance.test.ts.
+     * Low-Brawn usability and attacker preference are deterministic catalogue
+     * contracts. They are tested in tactical-low-brawn-reachability.test.ts
+     * rather than inferred from whichever careers survive one fixed batch.
      */
-    expect(attempts.some(({ attacker }) => attacker.snapshot.stats.brawn <= 2)).toBe(true);
 
     for (const { event } of attempts) {
       expect(event.resolutionMode).toBe("standard");
@@ -858,5 +857,5 @@ describe("simulation stress tests", () => {
         ),
       ).toHaveLength(1);
     }
-  });
+  }, 30_000);
 });

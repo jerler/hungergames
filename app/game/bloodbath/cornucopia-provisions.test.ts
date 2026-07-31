@@ -42,32 +42,43 @@ function getEliminatedIds(event: ResolvedEvent): Set<string> {
 }
 
 describe("Bloodbath Cornucopia provisions", () => {
-  it("awards every Cornucopia survivor and no fleeing tribute", () => {
+  it("awards provisions once on each surviving first appearance and never to fleeing tributes", () => {
     const game = createGame();
     const events = sequenceBloodbathEvents(game, DAY_ONE);
-
     const cornucopiaEvents = events.filter((event) => event.feedGroup === "bloodbath-cornucopia");
     const fleeEvents = events.filter((event) => event.feedGroup === "bloodbath-flee");
 
     expect(cornucopiaEvents.length).toBeGreaterThan(0);
     expect(fleeEvents.length).toBeGreaterThan(0);
 
-    let survivorCount = 0;
-    let deadEntrantCount = 0;
+    const seenCornucopiaTributeIds = new Set<string>();
+    const provisionCountByTributeId = new Map<string, number>();
     const provisionItemIds = new Set<string>();
+    let survivingFirstAppearanceCount = 0;
+    let fatalFirstAppearanceCount = 0;
+    let repeatedAppearanceCount = 0;
 
     for (const event of cornucopiaEvents) {
       const eliminatedIds = getEliminatedIds(event);
-      const survivors = event.participantTributeIds.filter(
-        (tributeId) => !eliminatedIds.has(tributeId),
-      );
 
-      if (survivors.length > 0) {
-        expect(event.text).not.toMatch(/pack of food and water from the Cornucopia/i);
-        expect(event.text).not.toMatch(/survivors each escape with a pack of food/i);
+      for (const change of event.changes) {
+        if (
+          change.type !== "acquire-item" ||
+          change.item.definitionId !== "cornucopia-provisions"
+        ) {
+          continue;
+        }
+
+        expect(provisionItemIds.has(change.item.id)).toBe(false);
+        provisionItemIds.add(change.item.id);
+        provisionCountByTributeId.set(
+          change.tributeId,
+          (provisionCountByTributeId.get(change.tributeId) ?? 0) + 1,
+        );
       }
 
       for (const tributeId of event.participantTributeIds) {
+        const isFirstAppearance = !seenCornucopiaTributeIds.has(tributeId);
         const provisionAcquisitions = event.changes.filter(
           (change) =>
             change.type === "acquire-item" &&
@@ -80,28 +91,36 @@ describe("Bloodbath Cornucopia provisions", () => {
             : [],
         );
 
-        if (eliminatedIds.has(tributeId)) {
-          deadEntrantCount += 1;
+        if (!isFirstAppearance) {
+          repeatedAppearanceCount += 1;
           expect(provisionAcquisitions).toEqual([]);
-          expect(satisfiedNeeds).not.toEqual(expect.arrayContaining(["food", "water"]));
+          expect(satisfiedNeeds).toEqual([]);
+          expect(provisionCountByTributeId.get(tributeId)).toBe(1);
           continue;
         }
 
-        survivorCount += 1;
+        seenCornucopiaTributeIds.add(tributeId);
+
+        if (eliminatedIds.has(tributeId)) {
+          fatalFirstAppearanceCount += 1;
+          expect(provisionAcquisitions).toEqual([]);
+          expect(satisfiedNeeds).toEqual([]);
+          continue;
+        }
+
+        survivingFirstAppearanceCount += 1;
         expect(provisionAcquisitions).toHaveLength(1);
         expect(satisfiedNeeds).toEqual(expect.arrayContaining(["food", "water"]));
-
-        const acquisition = provisionAcquisitions[0];
-
-        if (acquisition?.type === "acquire-item") {
-          expect(provisionItemIds.has(acquisition.item.id)).toBe(false);
-          provisionItemIds.add(acquisition.item.id);
-        }
       }
     }
 
-    expect(survivorCount).toBeGreaterThan(0);
-    expect(deadEntrantCount).toBeGreaterThan(0);
+    expect(survivingFirstAppearanceCount).toBeGreaterThan(0);
+    expect(fatalFirstAppearanceCount).toBeGreaterThan(0);
+    expect(repeatedAppearanceCount).toBeGreaterThan(0);
+
+    for (const count of provisionCountByTributeId.values()) {
+      expect(count).toBe(1);
+    }
 
     for (const event of fleeEvents) {
       expect(

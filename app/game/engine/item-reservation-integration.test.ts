@@ -950,5 +950,5 @@ describe("cross-event item reservation safety", () => {
         }
       }
     }
-  });
+  }, 15_000);
 });

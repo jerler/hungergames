@@ -5,8 +5,8 @@ import type { GameChange } from "~/game/types/game-state";
  * This is the sequencer's planning target, not a guaranteed
  * final death rate.
  *
- * It is slightly higher than the desired 45–50% observed
- * fatality rate because:
+ * It spans the desired 45–50% observed fatality range and retains a
+ * modest upper tail because:
  *
  * - some Cornucopia entrants flee their individual conflict;
  * - some conflict outcomes are nonfatal;
@@ -14,7 +14,8 @@ import type { GameChange } from "~/game/types/game-state";
  *   to reach the target;
  * - the sequencer never rerolls an outcome merely to add deaths.
  */
-const MIN_PLANNED_FATALITY_PROPORTION = 0.48;
+const HALF_GAME_MIN_PLANNED_FATALITY_PROPORTION = 0.45;
+const FULL_GAME_MIN_PLANNED_FATALITY_PROPORTION = 0.48;
 const MAX_PLANNED_FATALITY_PROPORTION = 0.54;
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -36,10 +37,14 @@ export function determineBloodbathFatalityTarget(
   }
 
   const centeredRandom = (random() + random()) / 2;
+  const minimumPlannedFatalityProportion =
+    startingTributeCount <= 12
+      ? HALF_GAME_MIN_PLANNED_FATALITY_PROPORTION
+      : FULL_GAME_MIN_PLANNED_FATALITY_PROPORTION;
 
   const plannedProportion =
-    MIN_PLANNED_FATALITY_PROPORTION +
-    centeredRandom * (MAX_PLANNED_FATALITY_PROPORTION - MIN_PLANNED_FATALITY_PROPORTION);
+    minimumPlannedFatalityProportion +
+    centeredRandom * (MAX_PLANNED_FATALITY_PROPORTION - minimumPlannedFatalityProportion);
 
   return clamp(
     Math.round(startingTributeCount * plannedProportion),

@@ -9,6 +9,7 @@ interface EventPresentationState {
 }
 
 interface PresentationDependencies {
+  repeatedParticipantTributeIds: ReadonlySet<string>;
   relationshipTributeIds: ReadonlySet<string>;
   referencedItemInstanceIds: ReadonlySet<string>;
   referencedStatusIds: ReadonlySet<string>;
@@ -29,6 +30,7 @@ function collectPresentationDependencies(
   state: EventPresentationState,
   events: readonly ResolvedEvent[],
 ): PresentationDependencies {
+  const participantAppearanceCounts = new Map<string, number>();
   const relationshipTributeIds = new Set<string>();
   const referencedItemInstanceIds = new Set<string>();
   const referencedStatusIds = new Set<string>();
@@ -45,6 +47,13 @@ function collectPresentationDependencies(
   }
 
   for (const event of events) {
+    for (const tributeId of event.participantTributeIds) {
+      participantAppearanceCounts.set(
+        tributeId,
+        (participantAppearanceCounts.get(tributeId) ?? 0) + 1,
+      );
+    }
+
     for (const change of event.changes) {
       switch (change.type) {
         case "form-truce":
@@ -74,7 +83,14 @@ function collectPresentationDependencies(
     }
   }
 
+  const repeatedParticipantTributeIds = new Set(
+    [...participantAppearanceCounts.entries()]
+      .filter(([, appearanceCount]) => appearanceCount > 1)
+      .map(([tributeId]) => tributeId),
+  );
+
   return {
+    repeatedParticipantTributeIds,
     relationshipTributeIds,
     referencedItemInstanceIds,
     referencedStatusIds,
@@ -85,6 +101,20 @@ function mustKeepCanonicalSlot(
   event: ResolvedEvent,
   dependencies: PresentationDependencies,
 ): boolean {
+  /*
+   * Repeated participation creates a direct narrative and state dependency:
+   * the tribute's first event must resolve before the later event that may
+   * eliminate them. Keep every event involving that tribute in its canonical
+   * slot while independent events continue to shuffle around those anchors.
+   */
+  if (
+    event.participantTributeIds.some((tributeId) =>
+      dependencies.repeatedParticipantTributeIds.has(tributeId),
+    )
+  ) {
+    return true;
+  }
+
   return event.changes.some((change) => {
     switch (change.type) {
       /*
@@ -168,8 +198,9 @@ function shuffleIndependentSlots(
  * 3. "Ran for the trees" events
  * 4. Any ungrouped opening aftermath
  *
- * Events that mutate relationships or depend on same-round instances keep
- * their canonical slots. Independent events shuffle around those anchors.
+ * Events that share a participant, mutate relationships, or depend on
+ * same-round instances keep their canonical slots. Independent events
+ * shuffle around those anchors.
  */
 export function shuffleRoundEventsForPresentation(
   state: EventPresentationState,

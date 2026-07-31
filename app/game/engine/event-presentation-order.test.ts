@@ -34,6 +34,7 @@ function createEvent(
   options: {
     feedGroup?: EventFeedGroup;
     definitionId?: string;
+    participantTributeIds?: readonly string[];
     changes?: readonly GameChange[];
   } = {},
 ): ResolvedEvent {
@@ -44,7 +45,7 @@ function createEvent(
     resolutionMode: "standard",
     feedGroup: options.feedGroup,
     round,
-    participantTributeIds: [`tribute-${id}`],
+    participantTributeIds: [...(options.participantTributeIds ?? [`tribute-${id}`])],
     text: `Event ${id}`,
     changes: [...(options.changes ?? [])],
   };
@@ -222,6 +223,54 @@ describe("event presentation order", () => {
 
     expect(shuffled[1]?.id).toBe("form-truce");
     expect(shuffled[3]?.id).toBe("future-member-death");
+  });
+
+  it("keeps repeated participant events ordered while independent events still vary", () => {
+    const events = [
+      createEvent("movable-a", DAY_ONE, {
+        feedGroup: "bloodbath-cornucopia",
+      }),
+      createEvent("first-appearance", DAY_ONE, {
+        feedGroup: "bloodbath-cornucopia",
+        participantTributeIds: ["repeat-survivor", "first-target"],
+      }),
+      createEvent("movable-b", DAY_ONE, {
+        feedGroup: "bloodbath-cornucopia",
+      }),
+      createEvent("second-appearance", DAY_ONE, {
+        feedGroup: "bloodbath-cornucopia",
+        participantTributeIds: ["repeat-survivor", "second-target"],
+        changes: [
+          {
+            type: "eliminate-tribute",
+            tributeId: "repeat-survivor",
+            causeId: "repeat-fatality",
+            causeLabel: "Repeat fatality",
+            summary: "Dies during a second Bloodbath appearance.",
+            killerTributeIds: ["second-target"],
+          },
+        ],
+      }),
+      createEvent("movable-c", DAY_ONE, {
+        feedGroup: "bloodbath-cornucopia",
+      }),
+    ];
+    const observedMovableOrders = new Set<string>();
+
+    for (let index = 0; index < 24; index += 1) {
+      const shuffled = shuffleRoundEventsForPresentation(
+        createState(`repeated-participant-seed-${index}`),
+        DAY_ONE,
+        events,
+      );
+
+      expect(shuffled[1]?.id).toBe("first-appearance");
+      expect(shuffled[3]?.id).toBe("second-appearance");
+
+      observedMovableOrders.add([shuffled[0]?.id, shuffled[2]?.id, shuffled[4]?.id].join(","));
+    }
+
+    expect(observedMovableOrders.size).toBeGreaterThan(1);
   });
 
   it("does not mutate the sequenced array", () => {

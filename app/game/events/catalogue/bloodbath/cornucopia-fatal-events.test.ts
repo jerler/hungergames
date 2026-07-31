@@ -303,17 +303,28 @@ describe("authored fatal Bloodbath events", () => {
     expect(selectedIds.size).toBeGreaterThan(0);
   });
 
-  it("grants normal provisions to survivors of authored sequenced events", () => {
+  it("ensures authored-event survivors received provisions through their first appearance", () => {
     const authoredIds = new Set(
       CORNUCOPIA_FATAL_BLOODBATH_EVENTS.map((definition) => definition.id),
     );
     let inspectedSurvivorCount = 0;
+    let inspectedRepeatedSurvivorCount = 0;
 
     for (let index = 0; index < 100; index += 1) {
       const state = createTestGame(`fatal-provisions-${index}`);
       const events = sequenceBloodbathEvents(state, DAY_ONE);
+      const provisionedTributeIds = new Set<string>();
 
       for (const event of events) {
+        for (const change of event.changes) {
+          if (
+            change.type === "acquire-item" &&
+            change.item.definitionId === "cornucopia-provisions"
+          ) {
+            provisionedTributeIds.add(change.tributeId);
+          }
+        }
+
         if (!authoredIds.has(event.definitionId)) {
           continue;
         }
@@ -328,18 +339,24 @@ describe("authored fatal Bloodbath events", () => {
           }
 
           inspectedSurvivorCount += 1;
-          expect(
-            event.changes.some(
-              (change) =>
-                change.type === "acquire-item" &&
-                change.tributeId === tributeId &&
-                change.item.definitionId === "cornucopia-provisions",
-            ),
-          ).toBe(true);
+
+          const receivesProvisionsInThisEvent = event.changes.some(
+            (change) =>
+              change.type === "acquire-item" &&
+              change.tributeId === tributeId &&
+              change.item.definitionId === "cornucopia-provisions",
+          );
+
+          if (!receivesProvisionsInThisEvent) {
+            inspectedRepeatedSurvivorCount += 1;
+          }
+
+          expect(provisionedTributeIds.has(tributeId)).toBe(true);
         }
       }
     }
 
     expect(inspectedSurvivorCount).toBeGreaterThan(0);
+    expect(inspectedRepeatedSurvivorCount).toBeGreaterThan(0);
   });
 });

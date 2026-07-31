@@ -45,12 +45,12 @@ describe("resolveRound", () => {
     expect(resolveRound(state, round)).toEqual(resolveRound(state, round));
   });
 
-  it("only selects living tributes once within a round", () => {
+  it("only selects living tributes once within an ordinary round", () => {
     const state = createTestGame();
 
     const events = resolveRound(state, {
       day: 1,
-      period: "day",
+      period: "night",
     });
 
     const participantIds = events.flatMap((event) => event.participantTributeIds);

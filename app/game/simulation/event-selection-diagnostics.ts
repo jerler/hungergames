@@ -20,6 +20,7 @@ export type EventSelectionDiagnosticPoolId = (typeof EVENT_SELECTION_DIAGNOSTIC_
 export const EVENT_SELECTION_DIAGNOSTIC_STAGES = [
   "ordinary",
   "cornucopia-fatal",
+  "cornucopia-repeat-fatal",
   "cornucopia-post-target",
   "flee",
 ] as const;

@@ -17,13 +17,17 @@ describe("Bloodbath fatality planning", () => {
   });
 
   it("plans approximately half the starting roster", () => {
+    const observedHalfGameTargets = new Set<number>();
+
     for (let index = 0; index < 1_000; index += 1) {
       const halfGameTarget = determineBloodbathFatalityTarget(
         12,
         createSeededRandom(`half-${index}`),
       );
 
-      expect(halfGameTarget).toBe(6);
+      observedHalfGameTargets.add(halfGameTarget);
+      expect(halfGameTarget).toBeGreaterThanOrEqual(5);
+      expect(halfGameTarget).toBeLessThanOrEqual(6);
 
       const fullGameTarget = determineBloodbathFatalityTarget(
         24,
@@ -39,6 +43,8 @@ describe("Bloodbath fatality planning", () => {
 
       expect(fullGameTarget).toBeLessThanOrEqual(13);
     }
+
+    expect(observedHalfGameTargets).toEqual(new Set([5, 6]));
   });
 
   it("counts immediate flee eliminations toward the shared target", () => {

@@ -256,6 +256,61 @@ function getDefinitionParticipantCount(definition: EventDefinition): number {
   return definition.roles.reduce((total, role) => total + role.count, 0);
 }
 
+/*
+ * Reserve enough of the fatality target for a later pair-only pass to make
+ * survivor reuse meaningful, while guaranteeing enough first-pass survivors
+ * remain even if the ordinary planner overshoots its soft target by one.
+ */
+function getRequestedSupplementalFatalityCount(
+  cornucopiaTributeCount: number,
+  fatalityTarget: number,
+): number {
+  /*
+   * One extra pair fatality is enough to materially change Half Game shape.
+   * Full Games receive two. Keeping this deliberately small limits repeated
+   * protagonists and keeps the 500-game balance samples inexpensive.
+   */
+  const desiredCount = cornucopiaTributeCount >= 14 ? 2 : 1;
+  const survivorSafeCount = Math.max(0, cornucopiaTributeCount - fatalityTarget - 1);
+
+  return Math.min(desiredCount, fatalityTarget, survivorSafeCount);
+}
+
+/*
+ * These definitions are authored through either createPairFatalEvent without
+ * selected items/additional changes, or an equivalent direct definition.
+ * Their resolutions contain one elimination plus kill/survival statistics.
+ *
+ * Keeping this list explicit avoids repeatedly resolving item-, status-, and
+ * truce-bearing definitions merely to reject them during large simulations.
+ * isSafeSupplementalFatalEvent remains the runtime assertion protecting this
+ * catalogue contract.
+ */
+const SAFE_SUPPLEMENTAL_FATAL_DEFINITION_IDS = new Set([
+  "cornucopia-fatal-thrown-knife-head",
+  "cornucopia-fatal-thrown-knife-chest",
+  "cornucopia-fatal-fistfight-strangulation",
+  "cornucopia-fatal-head-against-rock",
+  "cornucopia-fatal-silent-neck-break",
+  "cornucopia-fatal-cherry-bomb-attack",
+  "cornucopia-fatal-killed-while-fleeing",
+  "cornucopia-fatal-improvised-branch-stabbing",
+  "cornucopia-fatal-discovering-hidden-tribute",
+]);
+
+function isSafeSupplementalFatalEvent(event: ResolvedEvent): boolean {
+  const eliminationCount = countPlannedEliminations(event.changes);
+
+  return (
+    eliminationCount === 1 &&
+    event.participantTributeIds.length === 2 &&
+    new Set(event.participantTributeIds).size === 2 &&
+    event.changes.every(
+      (change) => change.type === "eliminate-tribute" || change.type === "increment-statistic",
+    )
+  );
+}
+
 function collectBloodbathDiagnosticFeasibleDefinitions({
   state,
   round,
@@ -614,6 +669,126 @@ function selectAuthoredFatalBloodbathEvent(
   return finishSelection(null);
 }
 
+function selectSupplementalFatalBloodbathEvent(
+  state: GameState,
+  round: RoundReference,
+  livingTributes: readonly GameTribute[],
+  availableTributes: readonly GameTribute[],
+  fatalityDeficit: number,
+  eventIndex: number,
+  usedDefinitionIds: ReadonlySet<string>,
+  random: RandomSource,
+  unavailableItemInstanceIds: ReadonlySet<string>,
+): ResolvedEvent | null {
+  /*
+   * This pass deliberately stays inside the existing static round model.
+   *
+   * A repeated event is accepted only after it has been fully resolved and
+   * proven to contain exactly one death plus statistic changes. It may not
+   * acquire, use, consume, loot, or transfer items; alter statuses or needs;
+   * or form/break relationships. Consequently it has no dependency on state
+   * produced by the tribute's first event and replays identically later.
+   */
+  const context: EventSelectionContext = {
+    state,
+    round,
+    livingTributes: availableTributes,
+  };
+  const candidateProfiles = getBloodbathFatalSelectionProfiles().filter(
+    (profile) =>
+      profile.minImmediateEliminations === 1 &&
+      profile.maxImmediateEliminations === 1 &&
+      getDefinitionParticipantCount(profile.definition) === 2 &&
+      SAFE_SUPPLEMENTAL_FATAL_DEFINITION_IDS.has(profile.definition.id) &&
+      !usedDefinitionIds.has(profile.definition.id) &&
+      isEventDefinitionEligible(profile.definition, context),
+  );
+  const diagnosticFeasibleDefinitions = collectBloodbathDiagnosticFeasibleDefinitions({
+    state,
+    round,
+    remainingTributes: availableTributes,
+    definitions: candidateProfiles.map((profile) => profile.definition),
+    usedDefinitionIds,
+    poolId: "bloodbath-cornucopia",
+    stage: "cornucopia-repeat-fatal",
+    diagnosticKey: ["repeat-fatal", availableTributes.length, fatalityDeficit].join(":"),
+  });
+  const plannerConsideredDefinitionIds = new Set(
+    candidateProfiles.map((profile) => profile.definition.id),
+  );
+  const rejectionReasonsByDefinitionId = new Map<string, EventSelectionRejectionReason>();
+
+  const finishSelection = (
+    event: ResolvedEvent | null,
+    definition: EventDefinition | null,
+  ): ResolvedEvent | null => {
+    recordEventSelectionOpportunity({
+      poolId: "bloodbath-cornucopia",
+      stage: "cornucopia-repeat-fatal",
+      feasibleDefinitions: diagnosticFeasibleDefinitions,
+      selectedDefinition: definition,
+      plannerConsideredDefinitionIds,
+      rejectionReasonsByDefinitionId,
+    });
+
+    return event;
+  };
+
+  let remainingProfiles = [...candidateProfiles];
+
+  while (remainingProfiles.length > 0) {
+    const profile = selectWeightedItem(
+      remainingProfiles,
+      (candidate) => getBloodbathFatalProfileWeight(candidate, context),
+      random,
+    );
+    const selection = selectEventParticipants(
+      profile.definition,
+      context,
+      random,
+      new Set<string>(),
+      new Set<string>(),
+    );
+
+    if (!selection) {
+      rejectionReasonsByDefinitionId.set(profile.definition.id, "participant-or-item-infeasible");
+      remainingProfiles = remainingProfiles.filter(
+        (candidate) => candidate.definition.id !== profile.definition.id,
+      );
+      continue;
+    }
+
+    /*
+     * Candidate resolution receives a private reservation snapshot. Rejected
+     * item-bearing outcomes therefore cannot reserve anything in the real
+     * Bloodbath plan.
+     */
+    const candidateEvent = resolveBloodbathEvent({
+      state,
+      round,
+      livingTributes,
+      definition: profile.definition,
+      participantsByRole: selection.participantsByRole,
+      eventIndex,
+      feedGroup: "bloodbath-cornucopia",
+      random,
+      unavailableItemInstanceIds: new Set(unavailableItemInstanceIds),
+    });
+
+    if (!isSafeSupplementalFatalEvent(candidateEvent)) {
+      rejectionReasonsByDefinitionId.set(profile.definition.id, "participant-or-item-infeasible");
+      remainingProfiles = remainingProfiles.filter(
+        (candidate) => candidate.definition.id !== profile.definition.id,
+      );
+      continue;
+    }
+
+    return finishSelection(candidateEvent, profile.definition);
+  }
+
+  return finishSelection(null, null);
+}
+
 const RARE_CORNUCOPIA_BONUS_ITEM_CHANCE = 0.1;
 
 function normalizeCornucopiaAcquisitions(
@@ -903,10 +1078,15 @@ function sequenceCornucopiaEvents(
   let postTargetSoloEventCount = 0;
 
   /*
-   * determineBloodbathFatalityTarget already supplies a seeded,
-   * intentionally soft target. Do not reduce it a second time here.
+   * The ordinary unique-participant pass intentionally leaves a small,
+   * survivor-safe portion of the target for pair fatalities after every
+   * Cornucopia entrant has received a first event.
    */
-  const softFatalityTarget = fatalityTarget;
+  const requestedSupplementalFatalityCount = getRequestedSupplementalFatalityCount(
+    cornucopiaTributes.length,
+    fatalityTarget,
+  );
+  const softFatalityTarget = Math.max(0, fatalityTarget - requestedSupplementalFatalityCount);
 
   /*
    * Reserve a seeded one-to-four-person group for acquisition and
@@ -1077,6 +1257,69 @@ function sequenceCornucopiaEvents(
     usedDefinitionIds.add(definition.id);
     events.push(event);
 
+    eventIndex += 1;
+  }
+
+  /*
+   * Every entrant has now received one ordinary Cornucopia event. Survivors
+   * who did not form a truce may receive one additional, stateless pair
+   * fatality. Both participants are removed from this repeat pool afterward,
+   * enforcing the hard two-appearance cap without changing round replay.
+   */
+  const firstPassEliminatedTributeIds = new Set(
+    events.flatMap((event) =>
+      event.changes.flatMap((change) =>
+        change.type === "eliminate-tribute" ? [change.tributeId] : [],
+      ),
+    ),
+  );
+  const firstPassTruceTributeIds = new Set(
+    events.flatMap((event) =>
+      event.changes.flatMap((change) =>
+        change.type === "form-truce" ? [...change.truce.tributeIds] : [],
+      ),
+    ),
+  );
+  const repeatEligibleTributes = shuffleItems(
+    cornucopiaTributes.filter(
+      (tribute) =>
+        !firstPassEliminatedTributeIds.has(tribute.id) && !firstPassTruceTributeIds.has(tribute.id),
+    ),
+    random,
+  );
+
+  while (plannedEliminationCount < fatalityTarget && repeatEligibleTributes.length >= 2) {
+    const supplementalEvent = selectSupplementalFatalBloodbathEvent(
+      state,
+      round,
+      livingTributes,
+      repeatEligibleTributes,
+      fatalityTarget - plannedEliminationCount,
+      eventIndex,
+      usedDefinitionIds,
+      random,
+      unavailableItemInstanceIds,
+    );
+
+    if (!supplementalEvent) {
+      break;
+    }
+
+    removeSelectedBloodbathParticipants(
+      repeatEligibleTributes,
+      supplementalEvent.participantTributeIds,
+      supplementalEvent.definitionId,
+    );
+
+    if (usedDefinitionIds.has(supplementalEvent.definitionId)) {
+      throw new Error(
+        `Bloodbath event definition "${supplementalEvent.definitionId}" was selected more than once.`,
+      );
+    }
+
+    usedDefinitionIds.add(supplementalEvent.definitionId);
+    events.push(supplementalEvent);
+    plannedEliminationCount += countPlannedEliminations(supplementalEvent.changes);
     eventIndex += 1;
   }
 
@@ -1303,22 +1546,53 @@ function assertUniqueEventDefinitions(events: readonly ResolvedEvent[]): void {
 
 function assertParticipantCoverage(
   livingTributes: readonly GameTribute[],
+  cornucopiaTributeIds: ReadonlySet<string>,
   events: readonly ResolvedEvent[],
 ): void {
-  const participantIds = events.flatMap((event) => event.participantTributeIds);
-
-  if (participantIds.length !== livingTributes.length) {
-    throw new Error("Bloodbath sequencing did not cover every living tribute exactly once.");
-  }
-
-  if (new Set(participantIds).size !== participantIds.length) {
-    throw new Error("A tribute was assigned to more than one Bloodbath event.");
-  }
-
   const livingTributeIds = new Set(livingTributes.map((tribute) => tribute.id));
+  const appearanceCounts = new Map<string, number>();
+  const eliminatedTributeIds = new Set<string>();
 
-  if (participantIds.some((tributeId) => !livingTributeIds.has(tributeId))) {
-    throw new Error("A Bloodbath event references a tribute outside the starting roster.");
+  for (const event of events) {
+    for (const tributeId of event.participantTributeIds) {
+      if (!livingTributeIds.has(tributeId)) {
+        throw new Error("A Bloodbath event references a tribute outside the starting roster.");
+      }
+
+      if (eliminatedTributeIds.has(tributeId)) {
+        throw new Error(`Dead tribute "${tributeId}" was assigned to a later Bloodbath event.`);
+      }
+
+      const nextAppearanceCount = (appearanceCounts.get(tributeId) ?? 0) + 1;
+
+      if (nextAppearanceCount > 2) {
+        throw new Error(`Tribute "${tributeId}" appeared in more than two Bloodbath events.`);
+      }
+
+      if (nextAppearanceCount > 1 && !cornucopiaTributeIds.has(tributeId)) {
+        throw new Error(
+          `Fleeing tribute "${tributeId}" appeared in more than one Bloodbath event.`,
+        );
+      }
+
+      appearanceCounts.set(tributeId, nextAppearanceCount);
+    }
+
+    for (const change of event.changes) {
+      if (change.type === "eliminate-tribute") {
+        eliminatedTributeIds.add(change.tributeId);
+      }
+    }
+  }
+
+  const uncoveredTributeIds = livingTributes
+    .map((tribute) => tribute.id)
+    .filter((tributeId) => !appearanceCounts.has(tributeId));
+
+  if (uncoveredTributeIds.length > 0) {
+    throw new Error(
+      `Bloodbath sequencing did not cover every starting tribute: ${uncoveredTributeIds.join(", ")}.`,
+    );
   }
 }
 
@@ -1421,7 +1695,11 @@ export function sequenceBloodbathEvents(state: GameState, round: RoundReference)
    */
   const events = [...cornucopiaSequence.events, ...fleeEvents];
 
-  assertParticipantCoverage(livingTributes, events);
+  assertParticipantCoverage(
+    livingTributes,
+    new Set(cornucopiaTributes.map((tribute) => tribute.id)),
+    events,
+  );
   assertUniqueEventDefinitions(events);
 
   return events;

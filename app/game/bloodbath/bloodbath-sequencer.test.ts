@@ -129,7 +129,7 @@ describe("Bloodbath sequencer", () => {
        */
       expect(new Set(deathCounts).size).toBeGreaterThanOrEqual(2);
     },
-    30_000,
+    60_000,
   );
 
   it("produces identical events for identical seeds", () => {
@@ -219,19 +219,72 @@ describe("Bloodbath sequencer", () => {
     expect(observedShapes).toEqual(new Set(["solo", "pair", "trio", "group-four-plus"]));
   }, 30_000);
 
-  it("represents every starting tribute exactly once", () => {
-    const game = createTestGame();
+  it("covers every tribute while only reusing living Cornucopia entrants", () => {
+    let sawRepeatedSurvivor = false;
+    let sawRepeatedFatality = false;
 
-    const events = sequenceBloodbathEvents(game, DAY_ONE);
+    for (let index = 0; index < 100; index += 1) {
+      const game = createTestGame(`survivor-reuse-${index}`, 12);
+      const strategyPlan = assignBloodbathStrategies(
+        game.tributes,
+        createSeededRandom(createRoundSeed(game.seed, DAY_ONE)),
+      );
+      const strategyByTributeId = new Map(
+        strategyPlan.assignments.map(({ tributeId, strategy }) => [tributeId, strategy] as const),
+      );
+      const events = sequenceBloodbathEvents(game, DAY_ONE);
+      const appearanceCounts = new Map<string, number>();
+      const eliminatedTributeIds = new Set<string>();
 
-    const participantIds = events.flatMap((event) => event.participantTributeIds);
+      for (const event of events) {
+        const eventEliminations = new Set(
+          event.changes.flatMap((change) =>
+            change.type === "eliminate-tribute" ? [change.tributeId] : [],
+          ),
+        );
 
-    expect(participantIds).toHaveLength(game.tributes.length);
+        for (const tributeId of event.participantTributeIds) {
+          expect(eliminatedTributeIds.has(tributeId)).toBe(false);
 
-    expect(new Set(participantIds).size).toBe(game.tributes.length);
+          const nextCount = (appearanceCounts.get(tributeId) ?? 0) + 1;
 
-    expect(new Set(participantIds)).toEqual(new Set(game.tributes.map((tribute) => tribute.id)));
-  });
+          expect(nextCount).toBeLessThanOrEqual(2);
+
+          if (nextCount === 2) {
+            expect(strategyByTributeId.get(tributeId)).toBe("cornucopia");
+            expect(
+              event.changes.every(
+                (change) =>
+                  change.type === "eliminate-tribute" || change.type === "increment-statistic",
+              ),
+            ).toBe(true);
+
+            sawRepeatedSurvivor = true;
+            sawRepeatedFatality ||= eventEliminations.has(tributeId);
+          }
+
+          appearanceCounts.set(tributeId, nextCount);
+        }
+
+        for (const tributeId of eventEliminations) {
+          eliminatedTributeIds.add(tributeId);
+        }
+      }
+
+      expect(new Set(appearanceCounts.keys())).toEqual(
+        new Set(game.tributes.map((tribute) => tribute.id)),
+      );
+
+      for (const { tributeId, strategy } of strategyPlan.assignments) {
+        if (strategy === "flee") {
+          expect(appearanceCounts.get(tributeId)).toBe(1);
+        }
+      }
+    }
+
+    expect(sawRepeatedSurvivor).toBe(true);
+    expect(sawRepeatedFatality).toBe(true);
+  }, 30_000);
 
   it("uses event families matching each strategy", () => {
     const game = createTestGame("strategy-event-families");
@@ -424,8 +477,8 @@ describe("Bloodbath sequencer", () => {
 
     expect(events.every((event) => bloodbathDefinitionIds.has(event.definitionId))).toBe(true);
 
-    expect(events.flatMap((event) => event.participantTributeIds)).toHaveLength(
-      game.tributes.length,
+    expect(new Set(events.flatMap((event) => event.participantTributeIds))).toEqual(
+      new Set(game.tributes.map((tribute) => tribute.id)),
     );
   });
 

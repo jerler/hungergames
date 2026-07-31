@@ -12,253 +12,295 @@ This report is generated from deterministic complete-game simulations. It is a d
 
 Overall result: **PASS**
 
-| Check                                               | Result |                     Actual | Expected                               |
-| --------------------------------------------------- | ------ | -------------------------: | -------------------------------------- |
-| Half Games complete                                 | PASS   |                     100.0% | 100%                                   |
-| Full Games complete                                 | PASS   |                     100.0% | 100%                                   |
-| Half Game average length                            | PASS   |                       4.21 | greater than 1 and less than 50 rounds |
-| Full Game average length                            | PASS   |                       4.60 | greater than 1 and less than 50 rounds |
-| Day 1 elimination share                             | PASS   |                      51.0% | greater than 50% and no more than 100% |
-| Direct combat exercises success and failure         | PASS   | 74 successes / 36 failures | at least one of each                   |
-| Tactical offense is exercised                       | PASS   |                          2 | at least one attempt                   |
-| Items are acquired                                  | PASS   |                       1916 | at least one acquisition               |
-| Limited-use items are consumed                      | PASS   |                        617 | at least one consumed use              |
-| Theft transfers occur                               | PASS   |                         48 | at least one transfer                  |
-| Death-loot transfers occur                          | PASS   |                         37 | at least one transfer                  |
-| Unsupported sponsor acquisitions remain absent      | PASS   |                          0 | 0                                      |
-| Status mechanics are exercised                      | PASS   |                       3945 | at least one application               |
-| Night-rest preparation is exercised                 | PASS   |                       4640 | at least one event                     |
-| Event family: combat                                | PASS   |                        110 | at least one event                     |
-| Event family: tactical                              | PASS   |                          2 | at least one event                     |
-| Event family: theft                                 | PASS   |                         93 | at least one event                     |
-| Event family: environmental                         | PASS   |                       1351 | at least one event                     |
-| Event family: survival                              | PASS   |                        595 | at least one event                     |
-| Event family: hunting                               | PASS   |                         46 | at least one event                     |
-| Event family: foraging                              | PASS   |                        128 | at least one event                     |
-| Event family: item-use                              | PASS   |                         13 | at least one event                     |
-| Event family: high-luck                             | PASS   |                        168 | at least one event                     |
-| Event family: standard-formation                    | PASS   |                        123 | at least one event                     |
-| Event family: standard-interaction                  | PASS   |                          6 | at least one event                     |
-| Event family: romantic                              | PASS   |                          5 | at least one event                     |
-| Event family: Bloodbath — cornucopia-acquisition    | PASS   |                        269 | at least one event                     |
-| Event family: Bloodbath — cornucopia-pair-conflict  | PASS   |                        135 | at least one event                     |
-| Event family: Bloodbath — cornucopia-group-conflict | PASS   |                       1018 | at least one event                     |
-| Event family: Bloodbath — flee                      | PASS   |                       1207 | at least one event                     |
+| Check | Result | Actual | Expected |
+| --- | --- | ---: | --- |
+| Half Games complete | PASS | 100.0% | 100% |
+| Full Games complete | PASS | 100.0% | 100% |
+| Half Game average length | PASS | 11.30 | greater than 1 and less than 50 rounds |
+| Full Game average length | PASS | 17.05 | greater than 1 and less than 50 rounds |
+| Day 1 elimination share | PASS | 53.4% | at least 45% and no more than 60% |
+| Direct combat exercises success and failure | PASS | 328 successes / 128 failures | at least one of each |
+| Tactical offense is exercised | PASS | 3 | at least one attempt |
+| Items are acquired | PASS | 2616 | at least one acquisition |
+| Remaining limited-use items are consumed | PASS | 20 | at least one consumed use |
+| Theft transfers occur | PASS | 153 | at least one transfer |
+| Death-loot transfers occur | PASS | 928 | at least one transfer |
+| Unsupported sponsor acquisitions remain absent | PASS | 0 | 0 |
+| Status mechanics are exercised | PASS | 12487 | at least one application |
+| Event-driven night rest is exercised | PASS | 9821 | at least one recorded rest outcome |
+| All night-rest qualities are exercised | PASS | 75 comfortable / 1899 sheltered / 7847 unsheltered | at least one of each |
+| Morning rest resolution is exercised | PASS | 9310 | at least one resolution |
+| Both morning rest consequences are exercised | PASS | 7687 exhausted / 1882 well-rested | at least one of each |
+| Protected and unsheltered rest both remain meaningful | PASS | 20.1% | protected rest between 10% and 95% |
+| Hunger and thirst occur sometimes | PASS | 144 hungry / 159 thirsty | at least one application of each across the deterministic batch |
+| Deprivation statuses never occur before eligibility | PASS | 0 premature hungry / 0 premature thirsty | 0 premature applications |
+| Eligibility does not guarantee a deprivation event | PASS | 144/4699 hunger; 159/4744 thirst | applications lower than tribute-round eligibility opportunities |
+| Hunger and thirst do not dominate later play | PASS | 2.9% | greater than 0% and no more than 20% of primary events |
+| Hunger and thirst can both be resolved | PASS | 35 hunger / 33 thirst | at least one resolution of each |
+| Authored resource theft exercises attempts and successes | PASS | 26/48 food; 20/43 water | at least one attempt and success for each need |
+| Legacy food and water inventory remains absent | PASS | 0 | 0 acquisitions |
+| No automatic starvation or dehydration deaths occur | PASS | 0 | 0 fatalities |
+| Event family: cornucopia-provisions | PASS | 432 | at least one event |
+| Event family: deprivation | PASS | 303 | at least one event |
+| Event family: day-authored-01-15 | PASS | 588 | at least one event |
+| Event family: day-authored-16-33 | PASS | 883 | at least one event |
+| Event family: day-weapon-crafting | PASS | 259 | at least one event |
+| Event family: food-theft | PASS | 48 | at least one event |
+| Event family: water-theft | PASS | 43 | at least one event |
+| Event family: combat | PASS | 456 | at least one event |
+| Event family: tactical | PASS | 3 | at least one event |
+| Event family: theft | PASS | 148 | at least one event |
+| Event family: environmental | PASS | 1358 | at least one event |
+| Event family: survival | PASS | 524 | at least one event |
+| Event family: night-accidental-fatal | PASS | 273 | at least one event |
+| Event family: night-fatal | PASS | 392 | at least one event |
+| Event family: night | PASS | 1382 | at least one event |
+| Event family: hunting | PASS | 38 | at least one event |
+| Event family: foraging | PASS | 108 | at least one event |
+| Event family: item-use | PASS | 11 | at least one event |
+| Event family: high-luck | PASS | 31 | at least one event |
+| Event family: standard-formation | PASS | 103 | at least one event |
+| Event family: standard-interaction | PASS | 38 | at least one event |
+| Event family: Bloodbath — cornucopia-acquisition | PASS | 101 | at least one event |
+| Event family: Bloodbath — cornucopia-flavour-acquisition | PASS | 52 | at least one event |
+| Event family: Bloodbath — cornucopia-fatal-authored | PASS | 1869 | at least one event |
+| Event family: Bloodbath — cornucopia-pair-conflict | PASS | 18 | at least one event |
+| Event family: Bloodbath — cornucopia-group-conflict | PASS | 8 | at least one event |
+| Event family: Bloodbath — cornucopia-nonfatal-interaction | PASS | 125 | at least one event |
+| Event family: Bloodbath — flee | PASS | 632 | at least one event |
 
 ## Game length
 
-| Size      | Games | Completion | Average | Median |  P90 | Minimum | Maximum | Avg. primary events | Avg. eliminations |
-| --------- | ----: | ---------: | ------: | -----: | ---: | ------: | ------: | ------------------: | ----------------: |
-| Half Game |   200 |     100.0% |    4.21 |   4.00 | 5.00 |       4 |       7 |               13.34 |             11.00 |
-| Full Game |   100 |     100.0% |    4.60 |   4.00 | 5.00 |       4 |       8 |               26.04 |             23.00 |
+| Size | Games | Completion | Average | Median | P90 | Minimum | Maximum | Avg. primary events | Avg. eliminations |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Half Game | 200 | 100.0% | 11.30 | 11.00 | 14.00 | 7 | 16 | 23.93 | 10.99 |
+| Full Game | 100 | 100.0% | 17.05 | 17.00 | 20.00 | 12 | 22 | 56.53 | 22.97 |
 
 ## Victory and eliminations
 
-- Sole victories: 300 (100.0%)
-- Joint victories: 0 (0.0%)
-- Total eliminations: 4500
-- Day 1 eliminations: 2297 (51.0%)
+- Sole victories: 296 (98.7%)
+- Joint victories: 4 (1.3%)
+- Total eliminations: 4496
+- Day 1 eliminations: 2401 (53.4%)
 
 | Elimination source | Count |
-| ------------------ | ----: |
-| bloodbath          |  2297 |
-| survival-need      |  1475 |
-| other              |   497 |
-| status             |   156 |
-| direct-combat      |    74 |
-| tactical-immediate |     1 |
+| --- | ---: |
+| bloodbath | 2401 |
+| other | 1502 |
+| direct-combat | 328 |
+| status | 264 |
+| tactical-immediate | 1 |
 
 ## Combat
 
-- Direct attacks: 110
-- Direct successes: 74
-- Direct failures: 36
-- Direct success rate: 67.3%
-- Tactical attempts: 2
-- Tactical connections: 2
+- Direct attacks: 456
+- Direct successes: 328
+- Direct failures: 128
+- Direct success rate: 71.9%
+- Tactical attempts: 3
+- Tactical connections: 3
 - Tactical connection rate: 100.0%
-- Low-Brawn tactical attempts: 0
-- Delayed attributed fatalities: 0
-- Safety resolutions: 65
+- Low-Brawn tactical attempts: 2
+- Delayed attributed fatalities: 34
+- Safety resolutions: 662
 
 ## Preparation
 
-- Total preparation events: 7691
-- Borrowed-item preparation events: 45
+- Total preparation events: 15922
+- Borrowed-item preparation events: 0
 
-| Mechanic                | Events |
-| ----------------------- | -----: |
-| night-rest-preparation  |   4640 |
-| morning-rest-resolution |   2489 |
-| hydration-consumption   |    466 |
-| food-consumption        |     60 |
-| camouflage-preparation  |     34 |
-| medical-treatment       |      2 |
+| Mechanic | Events |
+| --- | ---: |
+| morning-rest-resolution | 9310 |
+| night-rest-preparation | 6607 |
+| camouflage-preparation | 4 |
+| medical-treatment | 1 |
 
 ### Rest quality
 
-- Comfortable: 151
-- Sheltered: 2340
-- Unsheltered: 2149
+- Total recorded outcomes: 9821
+- Comfortable: 75 (0.8%)
+- Sheltered: 1899 (19.3%)
+- Unsheltered: 7847 (79.9%)
 
 ### Camouflage
 
-- Successful: 19
-- Unsuccessful: 15
-- Harmful failures: 3
+- Successful: 4
+- Unsuccessful: 0
+- Harmful failures: 0
+
+## Food, water, and deprivation
+
+- Food satisfaction events: 2068
+- Water satisfaction events: 1934
+- Hunger eligibility opportunities: 4699
+- Thirst eligibility opportunities: 4744
+- Hungry applications: 144
+- Thirsty applications: 159
+- Hunger resolutions: 35
+- Thirst resolutions: 33
+- Food theft: 26/48 successes
+- Water theft: 20/43 successes
+- Deprivation primary-event rate: 2.9%
+- Legacy food/water acquisitions: 0
+- Automatic deprivation fatalities: 0
 
 ## Statuses
 
-- Total applications: 3945
-- Dehydration deaths: 1475
-- Starvation deaths: 0
+- Total applications: 12487
 
 ### Applications
 
-| Status      | Applications |
-| ----------- | -----------: |
-| Exhausted   |         2055 |
-| Hidden      |          604 |
-| Bleeding    |          269 |
-| Injured     |          215 |
-| Inspired    |          187 |
-| Disoriented |          170 |
-| Poisoned    |          142 |
-| Well Rested |           79 |
-| Dehydrated  |           73 |
-| Burned      |           45 |
-| Alert       |           43 |
-| Hunted      |           41 |
-| Lucky       |           15 |
-| Well Fed    |            7 |
+| Status | Applications |
+| --- | ---: |
+| Exhausted | 7687 |
+| Well Rested | 1882 |
+| Hidden | 724 |
+| Injured | 484 |
+| Alert | 283 |
+| Bleeding | 247 |
+| Hunted | 213 |
+| Disoriented | 209 |
+| Inspired | 203 |
+| Thirsty | 159 |
+| Hungry | 144 |
+| Well Fed | 113 |
+| Poisoned | 96 |
+| Burned | 43 |
 
 ### Status fatalities
 
-| Status   | Fatalities |
-| -------- | ---------: |
-| Poisoned |         81 |
-| Bleeding |         75 |
+| Status | Fatalities |
+| --- | ---: |
+| Bleeding | 188 |
+| Poisoned | 76 |
 
 ## Inventory
 
-- Total acquisitions: 1916
-- Average acquisitions per game: 6.39
-- Total consumed uses: 617
-- Average consumed uses per game: 2.06
-- Total transfers: 192
-- Average transfers per game: 0.64
-- Distinct item definitions acquired: 66
-- Never acquired: chicken, fish, kindling
+- Total acquisitions: 2616
+- Average acquisitions per game: 8.72
+- Total consumed uses: 20
+- Average consumed uses per game: 0.07
+- Total transfers: 1218
+- Average transfers per game: 4.06
+- Distinct item definitions acquired: 53
+- Never acquired: poison-mushrooms, energy-drink, med-kit, antidote, matches, camouflage-net, reinforced-armour
 
 ### Acquisition sources
 
-| Source           | Acquisitions |
-| ---------------- | -----------: |
-| cornucopia       |         1072 |
-| natural-foraging |          844 |
+| Source | Acquisitions |
+| --- | ---: |
+| cornucopia | 2378 |
+| crafted | 167 |
+| natural-foraging | 71 |
 
 ### Transfer sources
 
-| Source     | Transfers |
-| ---------- | --------: |
-| other      |       107 |
-| theft      |        48 |
-| death-loot |        37 |
+| Source | Transfers |
+| --- | ---: |
+| death-loot | 928 |
+| theft | 153 |
+| other | 137 |
 
 ### Most acquired items
 
-| Item           | Acquisitions |
-| -------------- | -----------: |
-| Wild fruit     |          409 |
-| Fresh water    |          361 |
-| Knife          |           47 |
-| Rapier         |           46 |
-| Crossbow       |           44 |
-| Longbow        |           41 |
-| Spear          |           40 |
-| Short sword    |           38 |
-| Trident        |           38 |
-| Bow and arrows |           36 |
-| Pike           |           36 |
-| Warhammer      |           35 |
-| Club           |           33 |
-| Axe            |           30 |
-| Eggs           |           30 |
+| Item | Acquisitions |
+| --- | ---: |
+| Cornucopia provisions | 1650 |
+| Knife | 153 |
+| Bow and arrows | 112 |
+| Spear | 82 |
+| Club | 78 |
+| Hand axe | 68 |
+| Rapier | 66 |
+| Dry kindling | 58 |
+| Short sword | 51 |
+| Trident | 37 |
+| Longsword | 34 |
+| Axe | 31 |
+| Pike | 29 |
+| Crossbow | 27 |
+| Greatsword | 25 |
 
 ### Most consumed items
 
-| Item             | Uses consumed |
-| ---------------- | ------------: |
-| Fresh water      |           323 |
-| Wild fruit       |            56 |
-| Lighter          |            54 |
-| Bottled water    |            52 |
-| Soup             |            20 |
-| Camouflage paint |            19 |
-| Energy drink     |            15 |
-| Hot chocolate    |            15 |
-| Coca-Cola        |            14 |
-| Coffee           |            14 |
-| Herbal tea       |            13 |
-| Matches          |            11 |
-| Eggs             |             3 |
-| Arena map        |             2 |
-| Trap kit         |             2 |
+| Item | Uses consumed |
+| --- | ---: |
+| Dry kindling | 10 |
+| Camouflage paint | 4 |
+| Fishing gear | 2 |
+| Bandages | 1 |
+| Firebomb | 1 |
+| Lighter | 1 |
+| Poison vial | 1 |
 
 ## Event-family coverage
 
-| Family                                | Events | Games represented | Events per game |
-| ------------------------------------- | -----: | ----------------: | --------------: |
-| combat                                |    110 |                87 |            0.37 |
-| tactical                              |      2 |                 2 |            0.01 |
-| theft                                 |     93 |                80 |            0.31 |
-| environmental                         |   1351 |               300 |            4.50 |
-| survival                              |    595 |               261 |            1.98 |
-| hunting                               |     46 |                44 |            0.15 |
-| foraging                              |    128 |               109 |            0.43 |
-| item-use                              |     13 |                13 |            0.04 |
-| high-luck                             |    168 |               129 |            0.56 |
-| standard-formation                    |    123 |                95 |            0.41 |
-| standard-interaction                  |      6 |                 6 |            0.02 |
-| standard-dissolution                  |      3 |                 3 |            0.01 |
-| romantic                              |      5 |                 5 |            0.02 |
-| Bloodbath — cornucopia-acquisition    |    269 |               166 |            0.90 |
-| Bloodbath — cornucopia-pair-conflict  |    135 |               130 |            0.45 |
-| Bloodbath — cornucopia-group-conflict |   1018 |               300 |            3.39 |
-| Bloodbath — flee                      |   1207 |               300 |            4.02 |
+| Family | Events | Games represented | Events per game |
+| --- | ---: | ---: | ---: |
+| cornucopia-provisions | 432 | 257 | 1.44 |
+| deprivation | 303 | 206 | 1.01 |
+| day-authored-01-15 | 588 | 245 | 1.96 |
+| day-authored-16-33 | 883 | 286 | 2.94 |
+| day-weapon-crafting | 259 | 186 | 0.86 |
+| food-theft | 48 | 48 | 0.16 |
+| water-theft | 43 | 43 | 0.14 |
+| combat | 456 | 215 | 1.52 |
+| tactical | 3 | 3 | 0.01 |
+| theft | 148 | 146 | 0.49 |
+| environmental | 1358 | 299 | 4.53 |
+| survival | 524 | 255 | 1.75 |
+| night-accidental-fatal | 273 | 177 | 0.91 |
+| night-fatal | 392 | 217 | 1.31 |
+| night | 1382 | 291 | 4.61 |
+| hunting | 38 | 38 | 0.13 |
+| foraging | 108 | 93 | 0.36 |
+| item-use | 11 | 11 | 0.04 |
+| high-luck | 31 | 31 | 0.10 |
+| standard-formation | 103 | 76 | 0.34 |
+| standard-interaction | 38 | 33 | 0.13 |
+| standard-dissolution | 183 | 156 | 0.61 |
+| romantic | 21 | 19 | 0.07 |
+| Bloodbath — cornucopia-acquisition | 101 | 99 | 0.34 |
+| Bloodbath — cornucopia-flavour-acquisition | 52 | 51 | 0.17 |
+| Bloodbath — cornucopia-fatal-authored | 1869 | 300 | 6.23 |
+| Bloodbath — cornucopia-pair-conflict | 18 | 17 | 0.06 |
+| Bloodbath — cornucopia-group-conflict | 8 | 8 | 0.03 |
+| Bloodbath — cornucopia-nonfatal-interaction | 125 | 124 | 0.42 |
+| Bloodbath — flee | 632 | 300 | 2.11 |
 
 ## Victor stat balance
 
-- Average victor Brains: 3.11
-- Average victor Brawn: 2.88
-- Average victor Luck: 3.59
+- Average victor Brains: 3.33
+- Average victor Brawn: 3.30
+- Average victor Luck: 3.19
 
 ### Brains
 
 | Value | Appearances | Victories | Victory rate |
-| ----: | ----------: | --------: | -----------: |
-|     1 |         604 |        46 |         7.6% |
-|     2 |         778 |        50 |         6.4% |
-|     3 |        1554 |        77 |         5.0% |
-|     4 |        1267 |        79 |         6.2% |
-|     5 |         597 |        48 |         8.0% |
+| ---: | ---: | ---: | ---: |
+| 1 | 586 | 31 | 5.3% |
+| 2 | 824 | 41 | 5.0% |
+| 3 | 1517 | 78 | 5.1% |
+| 4 | 1295 | 106 | 8.2% |
+| 5 | 578 | 48 | 8.3% |
 
 ### Brawn
 
 | Value | Appearances | Victories | Victory rate |
-| ----: | ----------: | --------: | -----------: |
-|     1 |         929 |        64 |         6.9% |
-|     2 |        1154 |        71 |         6.2% |
-|     3 |         878 |        55 |         6.3% |
-|     4 |        1062 |        56 |         5.3% |
-|     5 |         777 |        54 |         6.9% |
+| ---: | ---: | ---: | ---: |
+| 1 | 905 | 45 | 5.0% |
+| 2 | 1118 | 58 | 5.2% |
+| 3 | 879 | 52 | 5.9% |
+| 4 | 1089 | 59 | 5.4% |
+| 5 | 809 | 90 | 11.1% |
 
 ### Luck
 
 | Value | Appearances | Victories | Victory rate |
-| ----: | ----------: | --------: | -----------: |
-|     1 |         685 |        27 |         3.9% |
-|     2 |        1110 |        41 |         3.7% |
-|     3 |        1355 |        69 |         5.1% |
-|     4 |         688 |        54 |         7.8% |
-|     5 |         962 |       109 |        11.3% |
+| ---: | ---: | ---: | ---: |
+| 1 | 664 | 35 | 5.3% |
+| 2 | 1091 | 62 | 5.7% |
+| 3 | 1416 | 89 | 6.3% |
+| 4 | 720 | 47 | 6.5% |
+| 5 | 909 | 71 | 7.8% |

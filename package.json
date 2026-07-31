@@ -21,7 +21,9 @@
     "event-distribution": "tsx scripts/generate-event-distribution-report.ts",
     "ready": "npm run format && npm run typecheck && npm run lint && npm run test && npm run test:e2e && npm run build",
     "validate:release": "npm run format:check && npm run typecheck && npm run lint && npm run test && npm run test:e2e",
-    "check": "npm run validate:release"
+    "check": "npm run validate:release",
+    "phase7:validate": "tsx scripts/run-phase-7-validation.ts",
+    "phase7:full": "bash scripts/validate-phase-7.sh"
   },
   "dependencies": {
     "@react-router/node": "8.0.0",

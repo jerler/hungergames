@@ -1,0 +1,11 @@
+step	seconds
+Formatting	4
+Typechecking	5
+Linting	5
+Complete unit suite	42
+Bloodbath tests	29
+Catalogue tests	6
+Simulation stress tests	23
+Balance report	10
+Distribution report	17
+Phase 7 multi-seed validation	16

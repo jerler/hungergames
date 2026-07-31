@@ -17,11 +17,13 @@ import {
   type EventDefinition,
   type EventResolution,
 } from "~/game/events/event-schema";
+import { getActiveTruceForTribute, getLivingTruceMembers } from "~/game/truces/truce-engine";
 import {
-  canStandardTruceEnd,
-  getActiveTruceForTribute,
-  getLivingTruceMembers,
-} from "~/game/truces/truce-engine";
+  canStandardTruceVoluntarilyEnd,
+  getStandardTruceBreakupAgeMultiplier,
+  getStandardTruceBreakupEventMultiplier,
+  isStandardTruceOversized,
+} from "~/game/truces/truce-lifecycle";
 import { TRUCE_GROUP_SIZE_WEIGHTS, type TruceGroupSize } from "~/game/truces/truce-selection";
 import { getTributePronouns } from "~/game/tributes/pronouns";
 import type {
@@ -205,16 +207,28 @@ function createBetrayalEvent(groupSize: TruceGroupSize, groupSizeWeight: number)
         id: "betrayer",
         count: 1,
 
-        isEligible: (tribute, { state }) => {
+        isEligible: (tribute, { state, round }) => {
           const truce = getActiveTruceForTribute(state, tribute.id);
 
-          if (!isStandardTruceOfSize(truce, groupSize)) {
+          if (
+            !isStandardTruceOfSize(truce, groupSize) ||
+            isStandardTruceOversized(state, truce) ||
+            !canStandardTruceVoluntarilyEnd(truce, round)
+          ) {
             return false;
           }
 
           return getLivingTruceMembers(state, truce).some(
             (member) => member.id !== tribute.id && member.inventory.length > 0,
           );
+        },
+
+        getWeight: (tribute, { state, round }) => {
+          const truce = getActiveTruceForTribute(state, tribute.id);
+
+          return isStandardTruceOfSize(truce, groupSize)
+            ? getStandardTruceBreakupAgeMultiplier(truce, round)
+            : 0;
         },
       },
       {
@@ -236,12 +250,20 @@ function createBetrayalEvent(groupSize: TruceGroupSize, groupSizeWeight: number)
     ],
 
     isEligible: ({ state, round }) =>
-      canStandardTruceEnd(state, round) &&
       state.truces.some(
         (truce) =>
           isStandardTruceOfSize(truce, groupSize) &&
+          !isStandardTruceOversized(state, truce) &&
+          canStandardTruceVoluntarilyEnd(truce, round) &&
           getLivingTruceMembers(state, truce).some((member) => member.inventory.length > 0),
       ),
+
+    getWeightMultiplier: ({ state, round }) =>
+      getStandardTruceBreakupEventMultiplier({
+        state,
+        round,
+        groupSize,
+      }),
 
     resolve({ state, eventId, round, random, participantsByRole }): EventResolution {
       const betrayer = requireSingleParticipant(participantsByRole, "betrayer");

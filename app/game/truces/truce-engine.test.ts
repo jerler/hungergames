@@ -5,10 +5,8 @@ import { createInitialGameState } from "~/game/engine/create-initial-game-state"
 import {
   areTributesInSameTruce,
   createTruceInstance,
-  expireTrucesAfterRound,
   getActiveTruceForTribute,
   getTruceFormationPopulationMultiplier,
-  STANDARD_TRUCE_EXPIRY_ROUND,
 } from "~/game/truces/truce-engine";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
@@ -364,85 +362,36 @@ describe("truce engine", () => {
     ).toBe(true);
   });
 
-  it("keeps standard truces until Day 4 or fewer than six tributes remain", () => {
-    const game = createGame();
-    const truce = createTruceInstance(
-      "form-event",
-      [game.tributes[0].id, game.tributes[1].id],
-      DAY_ONE,
-      STANDARD_TRUCE_EXPIRY_ROUND,
-    );
-
-    expect(truce.expiresAfterRound).toEqual({
-      day: 4,
-      period: "day",
-    });
-
-    const formedState = applyResolvedEvent(
-      game,
-      createEvent("form-event", [{ type: "form-truce", truce }], truce.tributeIds),
-    );
-
-    expect(
-      expireTrucesAfterRound({
-        ...formedState,
-        currentRound: { day: 3, period: "night" },
-        roundEvents: [],
-        revealedEventCount: 0,
-      }).truces,
-    ).toEqual([truce]);
-
-    expect(
-      expireTrucesAfterRound({
-        ...formedState,
-        currentRound: { day: 4, period: "day" },
-        roundEvents: [],
-        revealedEventCount: 0,
-      }).truces,
-    ).toEqual([]);
-
-    expect(
-      expireTrucesAfterRound({
-        ...formedState,
-        currentRound: { day: 2, period: "day" },
-        tributes: formedState.tributes.map((tribute, index) => ({
-          ...tribute,
-          isAlive: index < 5,
-        })),
-        roundEvents: [],
-        revealedEventCount: 0,
-      }).truces,
-    ).toEqual([]);
-  });
-
-  it("makes formation less likely as the population falls", () => {
+  it("makes formation much less likely after the first three days", () => {
     const game = createGame();
 
-    const earlyMultiplier = getTruceFormationPopulationMultiplier(game);
+    expect(
+      getTruceFormationPopulationMultiplier(game, {
+        day: 1,
+        period: "day",
+      }),
+    ).toBe(1);
 
-    const fourRemaining = {
-      ...game,
+    expect(
+      getTruceFormationPopulationMultiplier(game, {
+        day: 3,
+        period: "night",
+      }),
+    ).toBe(0.65);
 
-      tributes: game.tributes.map((tribute, index) => ({
-        ...tribute,
-        isAlive: index < 4,
-      })),
-    };
+    expect(
+      getTruceFormationPopulationMultiplier(game, {
+        day: 4,
+        period: "day",
+      }),
+    ).toBe(0.15);
 
-    const lateMultiplier = getTruceFormationPopulationMultiplier(fourRemaining);
-
-    const threeRemaining = {
-      ...game,
-
-      tributes: game.tributes.map((tribute, index) => ({
-        ...tribute,
-        isAlive: index < 3,
-      })),
-    };
-
-    expect(earlyMultiplier).toBeGreaterThan(lateMultiplier);
-
-    expect(getTruceFormationPopulationMultiplier(threeRemaining)).toBe(0);
+    expect(
+      getTruceFormationPopulationMultiplier(game, {
+        day: 8,
+        period: "night",
+      }),
+    ).toBe(0.05);
   });
 
   it("transfers an item without changing its identity or uses", () => {

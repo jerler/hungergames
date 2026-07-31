@@ -5,18 +5,19 @@ import {
 } from "~/game/events/event-schema";
 import { createNightRestChanges, createSurvivalChanges } from "~/game/events/event-change-builders";
 import {
-  canStandardTrucePersist,
   createTruceInstance,
   getActiveTruceForTribute,
   getTruceFormationPopulationMultiplier,
   STANDARD_TRUCE_EXPIRY_ROUND,
 } from "~/game/truces/truce-engine";
+import { canFormStandardTruce } from "~/game/truces/truce-lifecycle";
 import {
   getAverageDistrictAffinityWeight,
   getDeprivationTruceMultiplier,
   TRUCE_GROUP_SIZE_WEIGHTS,
   type TruceGroupSize,
 } from "~/game/truces/truce-selection";
+
 const FORMATION_BASE_WEIGHT = 7;
 
 type FormationTheme = "travel-together" | "keep-watch";
@@ -34,7 +35,7 @@ function formatNameList(names: readonly string[]): string {
     return `${names[0]} and ${names[1]}`;
   }
 
-  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+  return `${names.slice(0, -1).join(", ")}, and ` + names[names.length - 1];
 }
 
 function createFormationEvent(
@@ -48,37 +49,21 @@ function createFormationEvent(
   return {
     id: eventId,
     category: "survival",
-
     tags: ["survival", "truce", "cooperative"],
-
     periods: travelsTogether ? ["day"] : ["night"],
-
-    /*
-     * The weights for all sizes total
-     * seven in each period, preserving
-     * the original temporary-truce
-     * event's overall early-game weight.
-     */
     baseWeight: FORMATION_BASE_WEIGHT * (groupSizeWeight / 100),
-
     roles: [
       {
         id: "tributes",
         count: groupSize,
-
         isEligible: (tribute, { state }) => !getActiveTruceForTribute(state, tribute.id),
-
         getWeight: (tribute, { participantsByRole }) =>
           getAverageDistrictAffinityWeight(tribute, participantsByRole.tributes ?? []) *
           getDeprivationTruceMultiplier(tribute),
       },
     ],
-
-    isEligible: ({ state, round, livingTributes }) => {
-      if (!canStandardTrucePersist(state, round)) {
-        return false;
-      }
-      if (livingTributes.length <= 3) {
+    isEligible: ({ state, livingTributes }) => {
+      if (!canFormStandardTruce(groupSize, livingTributes.length)) {
         return false;
       }
 
@@ -88,9 +73,7 @@ function createFormationEvent(
 
       return availableTributes.length >= groupSize;
     },
-
     getWeightMultiplier: ({ state, round }) => getTruceFormationPopulationMultiplier(state, round),
-
     resolve({ eventId: resolvedEventId, round, participantsByRole }): EventResolution {
       const tributes = requireParticipants(participantsByRole, "tributes");
 
@@ -101,29 +84,24 @@ function createFormationEvent(
       }
 
       const names = tributes.map((tribute) => tribute.snapshot.name);
-
       const truce = createTruceInstance(
         resolvedEventId,
         tributes.map((tribute) => tribute.id),
         round,
         STANDARD_TRUCE_EXPIRY_ROUND,
       );
-
       const text = travelsTogether
         ? `${formatNameList(names)} decide that travelling alone is too dangerous and agree to watch one another's backs as they cross the arena.`
         : `${formatNameList(names)} agree to sleep in shifts, sharing warmth while one tribute keeps watch and the others rest.`;
 
       return {
         text,
-
         changes: [
           {
             type: "form-truce",
             truce,
           },
-
           ...(travelsTogether ? [] : createNightRestChanges(tributes, round, "sheltered")),
-
           ...createSurvivalChanges(tributes),
         ],
       };
@@ -140,11 +118,6 @@ const STANDARD_NIGHT_FORMATION_EVENTS = TRUCE_GROUP_SIZE_WEIGHTS.map(({ size, we
 );
 
 export const STANDARD_FORMATION_EVENTS = [
-  /* Day Only */
-
   ...STANDARD_DAY_FORMATION_EVENTS,
-
-  /* Night Only */
-
   ...STANDARD_NIGHT_FORMATION_EVENTS,
 ] satisfies readonly EventDefinition[];

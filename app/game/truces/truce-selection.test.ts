@@ -318,24 +318,42 @@ describe("truce selection", () => {
     expect(selection?.participantTributeIds).toEqual([firstTribute.id, partner.id]);
   });
 
-  it("reduces formation weight as the population falls", () => {
+  it("reduces formation weight after the first three arena days", () => {
     const game = createGame();
 
-    const withLivingCount = (livingCount: number): GameState => ({
-      ...game,
+    expect(
+      getTruceFormationPopulationMultiplier(game, {
+        day: 1,
+        period: "day",
+      }),
+    ).toBe(1);
 
-      tributes: game.tributes.map((tribute, index) => ({
-        ...tribute,
-        isAlive: index < livingCount,
-      })),
-    });
+    expect(
+      getTruceFormationPopulationMultiplier(game, {
+        day: 2,
+        period: "night",
+      }),
+    ).toBe(0.9);
 
-    expect(getTruceFormationPopulationMultiplier(withLivingCount(12))).toBe(1);
+    expect(
+      getTruceFormationPopulationMultiplier(game, {
+        day: 3,
+        period: "day",
+      }),
+    ).toBe(0.65);
 
-    expect(getTruceFormationPopulationMultiplier(withLivingCount(8))).toBe(0.65);
+    expect(
+      getTruceFormationPopulationMultiplier(game, {
+        day: 4,
+        period: "night",
+      }),
+    ).toBe(0.15);
 
-    expect(getTruceFormationPopulationMultiplier(withLivingCount(5))).toBe(0);
-
-    expect(getTruceFormationPopulationMultiplier(withLivingCount(3))).toBe(0);
+    expect(
+      getTruceFormationPopulationMultiplier(game, {
+        day: 7,
+        period: "day",
+      }),
+    ).toBe(0.05);
   });
 });

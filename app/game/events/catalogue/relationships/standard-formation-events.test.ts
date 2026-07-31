@@ -178,16 +178,14 @@ describe("truce formation events", () => {
     expect(event.periods).toEqual(["night"]);
   });
 
-  it("does not form a group when too few unaligned tributes remain", () => {
+  it("does not form a legal-sized group when too few unaligned tributes remain", () => {
     const game = createGame();
 
     const existingTruce = {
       id: "existing-truce",
       kind: "standard",
       tributeIds: game.tributes.slice(0, 4).map((tribute) => tribute.id),
-
       createdRound: DAY_ONE,
-
       expiresAfterRound: {
         day: 4,
         period: "day",
@@ -196,29 +194,29 @@ describe("truce formation events", () => {
 
     const state = {
       ...game,
-
       truces: [existingTruce],
     };
 
-    const event = requireEvent("travel-together-truce-6");
+    /*
+     * Three of twelve is exactly 25%, so this group is legal under
+     * the 30% cap while enough unaligned tributes remain.
+     */
+    const event = requireEvent("travel-together-truce-3");
 
     expect(
       event.isEligible?.({
         state,
         round: DAY_ONE,
-
         livingTributes: game.tributes,
       }),
     ).toBe(true);
 
     const mostlyAlignedState = {
       ...game,
-
       truces: [
         {
           ...existingTruce,
-
-          tributeIds: game.tributes.slice(0, 7).map((tribute) => tribute.id),
+          tributeIds: game.tributes.slice(0, 10).map((tribute) => tribute.id),
         },
       ],
     };
@@ -226,9 +224,7 @@ describe("truce formation events", () => {
     expect(
       event.isEligible?.({
         state: mostlyAlignedState,
-
         round: DAY_ONE,
-
         livingTributes: game.tributes,
       }),
     ).toBe(false);

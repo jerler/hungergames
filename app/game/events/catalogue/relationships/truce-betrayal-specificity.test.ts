@@ -30,8 +30,20 @@ function createContext(
   firstTribute: GameTribute,
   secondTribute: GameTribute,
 ): EventSelectionContext {
+  const additionalTributes = Array.from({ length: 5 }, (_, index) =>
+    createAuthoringTestTribute({
+      id: `bystander-${index + 1}`,
+      name: `Bystander ${index + 1}`,
+    }),
+  );
+
+  /*
+   * A two-person truce among seven living tributes represents 28.6%
+   * of the field. It is therefore eligible for an ordinary betrayal
+   * rather than being routed through forced oversized separation.
+   */
   const state = {
-    ...createAuthoringTestGame([firstTribute, secondTribute]),
+    ...createAuthoringTestGame([firstTribute, secondTribute, ...additionalTributes]),
     currentRound: DAY_ROUND,
     truces: [
       {

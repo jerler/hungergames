@@ -62,7 +62,7 @@ describe("night-sharing-shelter", () => {
     ).toBe(true);
   });
 
-  it("cannot form a standard truce on or after Day 4", () => {
+  it("may still form a standard truce on or after Day 4", () => {
     const game = createGame();
 
     expect(
@@ -70,25 +70,39 @@ describe("night-sharing-shelter", () => {
         day: 4,
         period: "night",
       }),
-    ).toBe(false);
+    ).toBe(true);
+
+    expect(
+      isEligible(game, {
+        day: 7,
+        period: "night",
+      }),
+    ).toBe(true);
   });
 
-  it("cannot form a standard truce with fewer than six living tributes", () => {
+  it("obeys the 30% population cap for a two-person truce", () => {
     const game = createGame();
 
-    const lateGame = {
+    const withLivingCount = (livingCount: number): GameState => ({
       ...game,
       tributes: game.tributes.map((tribute, index) => ({
         ...tribute,
-        isAlive: index < 5,
+        isAlive: index < livingCount,
       })),
-    };
+    });
 
     expect(
-      isEligible(lateGame, {
+      isEligible(withLivingCount(6), {
         day: 2,
         period: "night",
       }),
     ).toBe(false);
+
+    expect(
+      isEligible(withLivingCount(7), {
+        day: 2,
+        period: "night",
+      }),
+    ).toBe(true);
   });
 });

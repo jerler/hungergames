@@ -7,7 +7,6 @@ import { selectLivingTributes } from "~/game/selectors/game-selectors";
 import type { GameState } from "~/game/types/game-state";
 import type { GameAction } from "~/state/game-actions";
 import { advanceStatusDurations } from "~/game/statuses/status-engine";
-import { expireTrucesAfterRound } from "~/game/truces/truce-engine";
 import { createSoleVictoryOutcome } from "~/game/victory/victory-outcome";
 import { loadGameState } from "~/game/persistence/game-state-loader";
 import { applyMissingNightRestBookkeeping } from "~/game/survival/night-rest-coverage";
@@ -82,7 +81,7 @@ function completeRound(state: GameState, now: string): GameState {
    * An explicit victory declaration ends
    * the Games immediately.
    *
-   * Do not advance statuses or expire truces
+   * Do not perform round-end status processing
    * after the Capitol has already declared
    * the living finalists victorious.
    */
@@ -118,19 +117,18 @@ function completeRound(state: GameState, now: string): GameState {
     remainingStatusFatalityBudget,
   );
 
-  const stateAfterRoundProcessing = expireTrucesAfterRound(stateWithAdvancedStatuses);
-  const containedElimination = stateAfterRoundProcessing.roundEvents.some((event) =>
+  const containedElimination = stateWithAdvancedStatuses.roundEvents.some((event) =>
     event.changes.some((change) => change.type === "eliminate-tribute"),
   );
 
-  const containedSafetyResolution = stateAfterRoundProcessing.roundEvents.some(
+  const containedSafetyResolution = stateWithAdvancedStatuses.roundEvents.some(
     (event) => event.resolutionMode === "safety",
   );
 
-  const victoryOutcome = deriveVictoryOutcome(stateAfterRoundProcessing);
+  const victoryOutcome = deriveVictoryOutcome(stateWithAdvancedStatuses);
 
   return finalizeState({
-    ...stateAfterRoundProcessing,
+    ...stateWithAdvancedStatuses,
 
     phase: victoryOutcome ? "victory" : "round-complete",
 

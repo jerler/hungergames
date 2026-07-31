@@ -30,6 +30,7 @@ import { validateEventResolution } from "~/game/events/validation/validate-event
 import { completeNightRestCoverage } from "~/game/survival/night-rest-coverage";
 import { countPendingFatalStatusResolutions } from "~/game/statuses/status-engine";
 import { canPreserveRemainingEventSlots } from "~/game/engine/ordinary-event-selection-policy";
+import { createForcedStandardTruceSeparationEvents } from "~/game/truces/forced-truce-separation";
 import {
   createEventRepeatCycleState,
   recordEventRepeatCycleSelection,
@@ -281,14 +282,32 @@ export function sequenceRoundEvents(
   const diagnosticPoolId = round.period === "night" ? ("night" as const) : ("later-day" as const);
   const captureSelectionDiagnostics = isEventSelectionDiagnosticsActive();
 
-  const targetEventCount = getRoundEventTargetCount(livingTributes.length);
+  const baseTargetEventCount = getRoundEventTargetCount(livingTributes.length);
 
   const unavailableItemInstanceIds = new Set(committedItemInstanceIds);
 
   const unavailableTributeIds = getCommittedItemOwnerIds(state, unavailableItemInstanceIds);
 
-  const events: ResolvedEvent[] = [];
+  const forcedTruceSeparationEvents = createForcedStandardTruceSeparationEvents(state, round);
+  const targetEventCount = Math.max(baseTargetEventCount, forcedTruceSeparationEvents.length);
+  const events: ResolvedEvent[] = [...forcedTruceSeparationEvents];
   const repeatCycle = createEventRepeatCycleState(state.eventHistory);
+
+  for (const forcedEvent of forcedTruceSeparationEvents) {
+    recordEventRepeatCycleSelection(
+      repeatCycle,
+      forcedEvent.definitionId,
+      repeatCycle.usedDefinitionIds.has(forcedEvent.definitionId),
+    );
+
+    for (const tributeId of forcedEvent.participantTributeIds) {
+      unavailableTributeIds.add(tributeId);
+    }
+
+    for (const itemInstanceId of getCommittedItemInstanceIds(forcedEvent.changes)) {
+      unavailableItemInstanceIds.add(itemInstanceId);
+    }
+  }
 
   const lethalityProfile = getRoundLethalityProfile(round, livingTributes.length);
 
@@ -302,7 +321,7 @@ export function sequenceRoundEvents(
 
   let feasibilitySelectionsByDefinitionId = new Map<string, ParticipantSelection>();
 
-  for (let eventIndex = 0; eventIndex < targetEventCount; eventIndex += 1) {
+  for (let eventIndex = events.length; eventIndex < targetEventCount; eventIndex += 1) {
     const hasEliminationBudget = plannedEliminationCount < lethalityProfile.maxEliminations;
 
     const isSafetyResolution =

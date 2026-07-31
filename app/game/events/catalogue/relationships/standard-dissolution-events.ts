@@ -4,7 +4,13 @@ import {
   type EventResolution,
 } from "~/game/events/event-schema";
 import { createSurvivalChanges } from "~/game/events/event-change-builders";
-import { canStandardTruceEnd, getActiveTruceForTribute } from "~/game/truces/truce-engine";
+import { getActiveTruceForTribute } from "~/game/truces/truce-engine";
+import {
+  canStandardTruceVoluntarilyEnd,
+  getStandardTruceBreakupAgeMultiplier,
+  getStandardTruceBreakupEventMultiplier,
+  isStandardTruceOversized,
+} from "~/game/truces/truce-lifecycle";
 import { createEvenTruceInventoryRedistributionChanges } from "~/game/truces/truce-inventory";
 import { TRUCE_GROUP_SIZE_WEIGHTS, type TruceGroupSize } from "~/game/truces/truce-selection";
 import type { Truce } from "~/game/types/game-state";
@@ -26,24 +32,22 @@ function isStandardTruceOfSize(truce: Truce | null, size: TruceGroupSize): truce
 function createAmicableSeparationEvent(size: TruceGroupSize, sizeWeight: number): EventDefinition {
   return {
     id: `amicable-truce-separation-${size}`,
-
     category: "survival",
-
     tags: ["survival", "truce", "cooperative", "item"],
-
     periods: ["day", "night"],
-
     baseWeight: AMICABLE_SEPARATION_TOTAL_WEIGHT * (sizeWeight / 100),
-
     roles: [
       {
         id: "members",
         count: size,
-
-        isEligible: (tribute, { state, participantsByRole }) => {
+        isEligible: (tribute, { state, round, participantsByRole }) => {
           const truce = getActiveTruceForTribute(state, tribute.id);
 
-          if (!isStandardTruceOfSize(truce, size)) {
+          if (
+            !isStandardTruceOfSize(truce, size) ||
+            isStandardTruceOversized(state, truce) ||
+            !canStandardTruceVoluntarilyEnd(truce, round)
+          ) {
             return false;
           }
 
@@ -57,32 +61,51 @@ function createAmicableSeparationEvent(size: TruceGroupSize, sizeWeight: number)
             truce.tributeIds.includes(selectedMember.id),
           );
         },
+        getWeight: (tribute, { state, round, participantsByRole }) => {
+          if ((participantsByRole.members ?? []).length > 0) {
+            return 1;
+          }
+
+          const truce = getActiveTruceForTribute(state, tribute.id);
+
+          return isStandardTruceOfSize(truce, size)
+            ? getStandardTruceBreakupAgeMultiplier(truce, round)
+            : 0;
+        },
       },
     ],
-
     isEligible: ({ state, round }) =>
-      canStandardTruceEnd(state, round) &&
-      state.truces.some((truce) => isStandardTruceOfSize(truce, size)),
-
+      state.truces.some(
+        (truce) =>
+          isStandardTruceOfSize(truce, size) &&
+          !isStandardTruceOversized(state, truce) &&
+          canStandardTruceVoluntarilyEnd(truce, round),
+      ),
+    getWeightMultiplier: ({ state, round }) =>
+      getStandardTruceBreakupEventMultiplier({
+        state,
+        round,
+        groupSize: size,
+      }),
     resolve({ state, random, participantsByRole }): EventResolution {
       const members = requireParticipants(participantsByRole, "members");
 
       if (members.length !== size) {
         throw new Error(
-          `Amicable separation expected ${size} ` + `members but received ${members.length}.`,
+          `Amicable separation expected ${size} members but received ${members.length}.`,
         );
       }
 
       const truce = getActiveTruceForTribute(state, members[0].id);
 
       if (!isStandardTruceOfSize(truce, size)) {
-        throw new Error("Amicable separation could not resolve " + "its active standard truce.");
+        throw new Error("Amicable separation could not resolve its active standard truce.");
       }
 
       const hasEveryMember = members.every((member) => truce.tributeIds.includes(member.id));
 
       if (!hasEveryMember) {
-        throw new Error(`Amicable separation selected tributes ` + `from different truces.`);
+        throw new Error("Amicable separation selected tributes from different truces.");
       }
 
       const redistributionChanges = createEvenTruceInventoryRedistributionChanges(
@@ -91,25 +114,19 @@ function createAmicableSeparationEvent(size: TruceGroupSize, sizeWeight: number)
         random,
         "amicable-truce-separation",
       );
-
       const names = members.map((member) => member.snapshot.name);
 
       return {
         text:
-          `${formatNameList(names)} decide ` +
-          `their temporary partnership has run ` +
-          `its course. They divide their remaining ` +
-          `gear evenly and part ways peacefully.`,
-
+          `${formatNameList(names)} decide their temporary partnership has run ` +
+          "its course. They divide their remaining gear evenly and part ways peacefully.",
         changes: [
           ...redistributionChanges,
-
           {
             type: "break-truce",
             truceId: truce.id,
             reason: "amicable",
           },
-
           ...createSurvivalChanges(members),
         ],
       };
@@ -117,10 +134,6 @@ function createAmicableSeparationEvent(size: TruceGroupSize, sizeWeight: number)
   };
 }
 
-export const STANDARD_DISSOLUTION_EVENTS = [
-  /* Day and Night */
-
-  ...TRUCE_GROUP_SIZE_WEIGHTS.map(({ size, weight }) =>
-    createAmicableSeparationEvent(size, weight),
-  ),
-] satisfies readonly EventDefinition[];
+export const STANDARD_DISSOLUTION_EVENTS = TRUCE_GROUP_SIZE_WEIGHTS.map(({ size, weight }) =>
+  createAmicableSeparationEvent(size, weight),
+) satisfies readonly EventDefinition[];

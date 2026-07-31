@@ -203,81 +203,89 @@ describe("truce balance", () => {
     expect(counts.get(4) ?? 0).toBeGreaterThan(counts.get(5) ?? 0);
   });
 
-  it("makes new truce formation progressively rarer as the population falls", () => {
-    const game = createGame("population-balance");
+  it("makes new truce formation progressively rarer after the opening days", () => {
+    const game = createGame("formation-timing-balance");
 
-    const populations = [24, 16, 8, 4, 3] as const;
+    const roundCases = [
+      {
+        round: { day: 1, period: "day" },
+        multiplier: 1,
+      },
+      {
+        round: { day: 2, period: "day" },
+        multiplier: 0.9,
+      },
+      {
+        round: { day: 3, period: "day" },
+        multiplier: 0.65,
+      },
+      {
+        round: { day: 4, period: "day" },
+        multiplier: 0.15,
+      },
+      {
+        round: { day: 5, period: "day" },
+        multiplier: 0.05,
+      },
+    ] as const;
 
-    const multipliers = populations.map((livingCount) =>
-      getTruceFormationPopulationMultiplier(withLivingTributeCount(game, livingCount)),
+    const multipliers = roundCases.map(({ round }) =>
+      getTruceFormationPopulationMultiplier(game, round),
     );
 
-    expect(multipliers).toEqual([1, 0.65, 0.25, 0, 0]);
+    expect(multipliers).toEqual([1, 0.9, 0.65, 0.15, 0.05]);
 
-    const observedRates = multipliers.map((multiplier, index) =>
-      sampleFormationRate(multiplier, `formation-population-${populations[index]}`),
+    const observedRates = roundCases.map(({ multiplier, round }) =>
+      sampleFormationRate(multiplier, `formation-day-${round.day}`),
     );
 
-    expect(observedRates[0]).toBeGreaterThan(observedRates[1]);
-
-    expect(observedRates[1]).toBeGreaterThan(observedRates[2]);
-
-    expect(observedRates[2]).toBeGreaterThan(observedRates[3]);
-
-    expect(observedRates[3]).toBe(0);
-
-    expect(observedRates[4]).toBe(0);
+    for (let index = 1; index < observedRates.length; index += 1) {
+      expect(observedRates[index - 1]).toBeGreaterThan(observedRates[index]);
+    }
 
     for (let index = 0; index < multipliers.length; index += 1) {
       const multiplier = multipliers[index];
-
       const expectedRate = multiplier / (multiplier + 1);
 
       expect(Math.abs(observedRates[index] - expectedRate)).toBeLessThan(0.01);
     }
   });
 
-  it("applies the population multiplier to every playable truce formation event", () => {
+  it("applies the timing multiplier to every playable truce formation event", () => {
     const game = createGame("formation-event-weighting");
+    const state = withLivingTributeCount(game, 24);
 
-    const populationCases = [
+    const roundCases = [
       {
-        livingCount: 24,
+        round: { day: 1, period: "day" },
         multiplier: 1,
       },
       {
-        livingCount: 16,
+        round: { day: 2, period: "day" },
+        multiplier: 0.9,
+      },
+      {
+        round: { day: 3, period: "day" },
         multiplier: 0.65,
       },
       {
-        livingCount: 8,
-        multiplier: 0.25,
+        round: { day: 4, period: "day" },
+        multiplier: 0.15,
       },
       {
-        livingCount: 4,
-        multiplier: 0,
-      },
-      {
-        livingCount: 3,
-        multiplier: 0,
+        round: { day: 5, period: "day" },
+        multiplier: 0.05,
       },
     ] as const;
 
-    for (const { livingCount, multiplier } of populationCases) {
-      const state = withLivingTributeCount(game, livingCount);
-
+    for (const { round, multiplier } of roundCases) {
       const context = {
         state,
-
-        round: {
-          day: 1,
-          period: "day",
-        } as const,
-
+        round,
         livingTributes: state.tributes.filter((tribute) => tribute.isAlive),
       };
 
-      expect(getTruceFormationPopulationMultiplier(state)).toBe(multiplier);
+      expect(getTruceFormationPopulationMultiplier(state, round)).toBe(multiplier);
 
       for (const definition of STANDARD_FORMATION_EVENTS) {
         const specificityMultiplier = getEventDefinitionSpecificityMultiplier(definition);

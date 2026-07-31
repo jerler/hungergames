@@ -235,11 +235,15 @@ describe("truce conflict events", () => {
 
     const definition = requireConflictEvent("truce-betrayal-3");
 
+    /*
+     * The truce formed on Day 1. Night 1 is the earliest round in which
+     * a voluntary betrayal is legal, though its lifecycle weight is tiny.
+     */
     const selection = selectEventParticipants(
       definition,
       {
         state,
-        round: DAY_ONE,
+        round: NIGHT_ONE,
         livingTributes: state.tributes,
       },
       createSequenceRandom([0, 0, 0]),

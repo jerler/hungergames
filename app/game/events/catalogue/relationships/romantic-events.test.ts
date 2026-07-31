@@ -21,7 +21,7 @@ import type {
   ParticipantsByRole,
 } from "~/game/events/event-schema";
 import { selectEventParticipants } from "~/game/events/participant-selection";
-import { createTruceInstance, expireTrucesAfterRound } from "~/game/truces/truce-engine";
+import { createTruceInstance } from "~/game/truces/truce-engine";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
 import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
@@ -606,31 +606,6 @@ describe("romantic events", () => {
     expect(betrayal.isEligible?.(context)).toBe(false);
 
     expect(standardProtection.isEligible?.(context)).toBe(false);
-  });
-
-  it("does not expire a romantic truce", () => {
-    const { state } = createRomanticTruceState();
-
-    const nextState = expireTrucesAfterRound({
-      ...state,
-
-      currentRound: {
-        day: 20,
-        period: "night",
-      },
-    });
-
-    expect(nextState.truces).toHaveLength(1);
-
-    expect(nextState.truces[0]).toMatchObject({
-      kind: "romantic",
-
-      expiresAfterRound: null,
-    });
-
-    expect(nextState.eventHistory.some((event) => event.definitionId === "truce-expired")).toBe(
-      false,
-    );
   });
 
   it("selects a protection target from the protector's romantic truce", () => {

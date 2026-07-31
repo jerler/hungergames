@@ -240,7 +240,7 @@ function resolveBloodbathEvent({
   };
 }
 
-interface BloodbathAcquisitionSelection {
+export interface BloodbathAcquisitionSelection {
   definition: EventDefinition;
 
   participantsByRole: ParticipantsByRole;
@@ -429,7 +429,7 @@ function removeSelectedBloodbathParticipants(
   }
 }
 
-function getBloodbathFatalSelectionProfiles(): BloodbathFatalSelectionProfile[] {
+export function getBloodbathFatalSelectionProfiles(): BloodbathFatalSelectionProfile[] {
   const rawProfiles: BloodbathFatalSelectionProfile[] = [
     ...CORNUCOPIA_FATAL_TARGET_PROFILES,
     ...CORNUCOPIA_PAIR_CONFLICT_EVENTS.map((definition) => ({
@@ -453,7 +453,7 @@ function getBloodbathFatalSelectionProfiles(): BloodbathFatalSelectionProfile[] 
   return [...new Map(rawProfiles.map((profile) => [profile.definition.id, profile])).values()];
 }
 
-function selectAuthoredFatalBloodbathEvent(
+export function selectAuthoredFatalBloodbathEvent(
   state: GameState,
   round: RoundReference,
   remainingTributes: GameTribute[],
@@ -461,6 +461,7 @@ function selectAuthoredFatalBloodbathEvent(
   reservedPostTargetCount: number,
   usedDefinitionIds: ReadonlySet<string>,
   random: RandomSource,
+  providedFatalSelectionProfiles: readonly BloodbathFatalSelectionProfile[] = getBloodbathFatalSelectionProfiles(),
 ): BloodbathAcquisitionSelection | null {
   /*
    * Phase 3: unified Cornucopia fatal candidate pool.
@@ -475,7 +476,16 @@ function selectAuthoredFatalBloodbathEvent(
     livingTributes: remainingTributes,
   };
 
-  const fatalSelectionProfiles = getBloodbathFatalSelectionProfiles();
+  /*
+   * The production catalogue remains the default. Tests may inject a tiny
+   * controlled profile set so planner behaviour can be proved without copying
+   * the selector or depending on unrelated authored events.
+   */
+  const fatalSelectionProfiles = [
+    ...new Map(
+      providedFatalSelectionProfiles.map((profile) => [profile.definition.id, profile]),
+    ).values(),
+  ];
 
   const availableFatalParticipants = Math.max(
     0,
@@ -902,25 +912,13 @@ function normalizeCornucopiaAcquisitions(
   };
 }
 
-function selectPostTargetCornucopiaEvent(
-  state: GameState,
-  round: RoundReference,
-  remainingTributes: GameTribute[],
-  usedDefinitionIds: ReadonlySet<string>,
-  selectedEventCount: number,
-  selectedSoloEventCount: number,
-  random: RandomSource,
-): BloodbathAcquisitionSelection {
-  const context: EventSelectionContext = {
-    state,
-    round,
-    livingTributes: remainingTributes,
-  };
+export function getBloodbathPostTargetDefinitions(): EventDefinition[] {
   const weaponAcquisitionDefinitions = [
     ...CORNUCOPIA_ACQUISITION_EVENTS,
     ...CORNUCOPIA_FLAVOUR_ACQUISITION_EVENTS,
   ].filter((definition) => (definition.tags as readonly string[]).includes("weapon"));
-  const uniquePostTargetDefinitions = [
+
+  return [
     ...new Map(
       [
         ...CORNUCOPIA_NONFATAL_QUARTET_EVENTS,
@@ -929,6 +927,26 @@ function selectPostTargetCornucopiaEvent(
         ...weaponAcquisitionDefinitions,
       ].map((definition) => [definition.id, definition]),
     ).values(),
+  ];
+}
+
+export function selectPostTargetCornucopiaEvent(
+  state: GameState,
+  round: RoundReference,
+  remainingTributes: GameTribute[],
+  usedDefinitionIds: ReadonlySet<string>,
+  selectedEventCount: number,
+  selectedSoloEventCount: number,
+  random: RandomSource,
+  providedDefinitions: readonly EventDefinition[] = getBloodbathPostTargetDefinitions(),
+): BloodbathAcquisitionSelection {
+  const context: EventSelectionContext = {
+    state,
+    round,
+    livingTributes: remainingTributes,
+  };
+  const uniquePostTargetDefinitions = [
+    ...new Map(providedDefinitions.map((definition) => [definition.id, definition])).values(),
   ];
   const hardFeasibleDefinitions = uniquePostTargetDefinitions.filter(
     (definition) =>
@@ -1330,13 +1348,14 @@ function sequenceCornucopiaEvents(
   };
 }
 
-function selectFleeBloodbathEvent(
+export function selectFleeBloodbathEvent(
   state: GameState,
   round: RoundReference,
   remainingTributes: GameTribute[],
   usedDefinitionIds: ReadonlySet<string>,
   random: RandomSource,
   recordDiagnostics: boolean,
+  providedDefinitions: readonly EventDefinition[] = FLEE_EVENTS,
 ): BloodbathAcquisitionSelection | null {
   const context: EventSelectionContext = {
     state,
@@ -1344,7 +1363,7 @@ function selectFleeBloodbathEvent(
     livingTributes: remainingTributes,
   };
   const uniqueDefinitions = [
-    ...new Map(FLEE_EVENTS.map((definition) => [definition.id, definition])).values(),
+    ...new Map(providedDefinitions.map((definition) => [definition.id, definition])).values(),
   ];
   const hardFeasibleDefinitions = uniqueDefinitions.filter(
     (definition) =>

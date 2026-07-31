@@ -40,9 +40,19 @@ export function createForcedStandardTruceSeparationEvents(
         ":",
       ),
     );
+    /*
+     * A legacy or round-start snapshot may still reference a member who has
+     * already died. The visible separation and its redistribution involve only
+     * the living members, while the breakup change still targets the original
+     * persisted truce ID.
+     */
+    const livingTruce: Truce = {
+      ...truce,
+      tributeIds: members.map((member) => member.id),
+    };
     const redistributionChanges = createEvenTruceInventoryRedistributionChanges(
       state,
-      truce,
+      livingTruce,
       random,
       "forced-oversized-truce-separation",
     );

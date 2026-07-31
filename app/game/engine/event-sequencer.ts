@@ -291,6 +291,7 @@ export function sequenceRoundEvents(
   const forcedTruceSeparationEvents = createForcedStandardTruceSeparationEvents(state, round);
   const targetEventCount = Math.max(baseTargetEventCount, forcedTruceSeparationEvents.length);
   const events: ResolvedEvent[] = [...forcedTruceSeparationEvents];
+  const ordinaryEventStartIndex = forcedTruceSeparationEvents.length;
   const repeatCycle = createEventRepeatCycleState(state.eventHistory);
 
   for (const forcedEvent of forcedTruceSeparationEvents) {
@@ -324,8 +325,14 @@ export function sequenceRoundEvents(
   for (let eventIndex = events.length; eventIndex < targetEventCount; eventIndex += 1) {
     const hasEliminationBudget = plannedEliminationCount < lethalityProfile.maxEliminations;
 
+    /*
+     * Forced lifecycle events occupy the beginning of the resolved event list,
+     * but they must not consume the ordinary selector's one safety opportunity.
+     */
     const isSafetyResolution =
-      eventIndex === 0 && hasEliminationBudget && shouldForceElimination(state);
+      eventIndex === ordinaryEventStartIndex &&
+      hasEliminationBudget &&
+      shouldForceElimination(state);
 
     if (captureSelectionDiagnostics) {
       for (const definition of EVENT_CATALOGUE) {

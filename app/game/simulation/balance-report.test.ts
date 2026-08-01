@@ -52,7 +52,7 @@ describe("balance report", () => {
     expect(report).toContain("## Victor stat balance");
   });
 
-  it("treats deliberately rare romantic events as informational", () => {
+  it("treats deliberately rare event families as informational", () => {
     const metrics = collectBalanceMetrics(
       simulateGameBatch([
         {
@@ -67,30 +67,33 @@ describe("balance report", () => {
         },
       ]),
     );
-    const romanticFamily = metrics.eventFamilies.find(
-      (family) => family.id === "ordinary:romantic",
-    );
+    const informationalFamilyIds = ["ordinary:romantic", "ordinary:low-brains"] as const;
 
-    expect(romanticFamily).toBeDefined();
+    for (const familyId of informationalFamilyIds) {
+      const family = metrics.eventFamilies.find((candidate) => candidate.id === familyId);
 
-    const metricsWithoutRomanticSelections = {
-      ...metrics,
-      eventFamilies: metrics.eventFamilies.map((family) =>
-        family.id === "ordinary:romantic"
-          ? {
-              ...family,
-              eventCount: 0,
-              gamesWithEvent: 0,
-              eventsPerGame: 0,
-            }
-          : family,
-      ),
-    };
+      expect(family, familyId).toBeDefined();
 
-    expect(
-      evaluateBalanceGuardrails(metricsWithoutRomanticSelections).find(
-        (guardrail) => guardrail.id === "family:ordinary:romantic",
-      ),
-    ).toBeUndefined();
+      const metricsWithoutSelections = {
+        ...metrics,
+        eventFamilies: metrics.eventFamilies.map((candidate) =>
+          candidate.id === familyId
+            ? {
+                ...candidate,
+                eventCount: 0,
+                gamesWithEvent: 0,
+                eventsPerGame: 0,
+              }
+            : candidate,
+        ),
+      };
+
+      expect(
+        evaluateBalanceGuardrails(metricsWithoutSelections).find(
+          (guardrail) => guardrail.id === `family:${familyId}`,
+        ),
+        familyId,
+      ).toBeUndefined();
+    }
   });
 });

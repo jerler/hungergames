@@ -189,25 +189,21 @@ export const ORDINARY_EVENT_CATALOGUE_FAMILIES = [
   {
     name: "high-brains",
     events: HIGH_BRAINS_EVENTS,
-    allowEmpty: true,
   },
 
   {
     name: "low-brains",
     events: LOW_BRAINS_EVENTS,
-    allowEmpty: true,
   },
 
   {
     name: "high-brawn",
     events: HIGH_BRAWN_EVENTS,
-    allowEmpty: true,
   },
 
   {
     name: "low-brawn",
     events: LOW_BRAWN_EVENTS,
-    allowEmpty: true,
   },
 
   {
@@ -224,7 +220,6 @@ export const ORDINARY_EVENT_CATALOGUE_FAMILIES = [
   {
     name: "mixed-stats",
     events: MIXED_STAT_GATED_EVENTS,
-    allowEmpty: true,
   },
 
   {

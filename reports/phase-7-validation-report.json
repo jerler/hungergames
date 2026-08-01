@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01T15:23:33.945Z",
+  "generatedAt": "2026-08-01T17:02:09.339Z",
   "configuration": {
     "seedGroups": [
       {
@@ -28,88 +28,88 @@
     {
       "id": "alpha",
       "games": 90,
-      "elapsedMs": 4710.7394,
-      "averageGameMs": 52.341548888888894,
+      "elapsedMs": 4661.087,
+      "averageGameMs": 51.78985555555556,
       "halfGame": {
-        "cornucopiaNonSolo": 0.7272727272727273,
-        "fleeingNonSolo": 0.5714285714285714,
-        "laterDayNonSolo": 0.3227990970654628
+        "cornucopiaNonSolo": 0.7386018237082067,
+        "fleeingNonSolo": 0.5660377358490566,
+        "laterDayNonSolo": 0.42823529411764705
       },
       "fullGame": {
-        "cornucopiaNonSolo": 0.8646153846153846,
-        "fleeingNonSolo": 0.6666666666666666,
-        "laterDayNonSolo": 0.39429530201342283
+        "cornucopiaNonSolo": 0.8637770897832817,
+        "fleeingNonSolo": 0.6829268292682927,
+        "laterDayNonSolo": 0.4573055028462998
       },
       "invariantFailures": 0
     },
     {
       "id": "beta",
       "games": 90,
-      "elapsedMs": 4474.6333,
-      "averageGameMs": 49.71814777777778,
+      "elapsedMs": 4505.217299999999,
+      "averageGameMs": 50.05796999999999,
       "halfGame": {
-        "cornucopiaNonSolo": 0.7151702786377709,
-        "fleeingNonSolo": 0.5794392523364486,
-        "laterDayNonSolo": 0.33190578158458245
+        "cornucopiaNonSolo": 0.7155963302752294,
+        "fleeingNonSolo": 0.5849056603773585,
+        "laterDayNonSolo": 0.41626794258373206
       },
       "fullGame": {
-        "cornucopiaNonSolo": 0.8664596273291926,
+        "cornucopiaNonSolo": 0.8654434250764526,
         "fleeingNonSolo": 0.7058823529411765,
-        "laterDayNonSolo": 0.40955631399317405
+        "laterDayNonSolo": 0.46616541353383456
       },
       "invariantFailures": 0
     },
     {
       "id": "gamma",
       "games": 90,
-      "elapsedMs": 4303.7983,
-      "averageGameMs": 47.81998111111112,
+      "elapsedMs": 4409.621299999999,
+      "averageGameMs": 48.99579222222221,
       "halfGame": {
-        "cornucopiaNonSolo": 0.75,
-        "fleeingNonSolo": 0.5980392156862745,
-        "laterDayNonSolo": 0.29227557411273486
+        "cornucopiaNonSolo": 0.7414330218068536,
+        "fleeingNonSolo": 0.5631067961165048,
+        "laterDayNonSolo": 0.3788235294117647
       },
       "fullGame": {
-        "cornucopiaNonSolo": 0.8629283489096573,
+        "cornucopiaNonSolo": 0.8625,
         "fleeingNonSolo": 0.8311688311688312,
-        "laterDayNonSolo": 0.4365217391304348
+        "laterDayNonSolo": 0.49063670411985016
       },
       "invariantFailures": 0
     }
   ],
   "aggregate": {
     "games": 270,
-    "averageOpeningEliminationRate": 0.5016975308641975,
-    "minimumOpeningEliminationRate": 0.4583333333333333,
+    "averageOpeningEliminationRate": 0.5015432098765433,
+    "minimumOpeningEliminationRate": 0.4166666666666667,
     "maximumOpeningEliminationRate": 0.5416666666666666,
-    "performanceRatio": 1.0945539431994291,
+    "performanceRatio": 1.0570265977262043,
     "comparisons": [
       {
         "gameSize": "half-game",
         "cornucopiaNonSolo": {
           "phase1": 0.439,
-          "current": 0.7307297019527236,
-          "delta": 0.2917297019527236
+          "current": 0.7318321392016377,
+          "delta": 0.2928321392016377
         },
         "fleeingNonSolo": {
           "phase1": 0.052,
-          "current": 0.5828025477707006,
-          "delta": 0.5308025477707006
+          "current": 0.5714285714285714,
+          "delta": 0.5194285714285714
         },
         "laterDayNonSolo": {
           "phase1": 0.226,
-          "current": 0.31533477321814257,
-          "delta": 0.08933477321814257
+          "current": 0.4077287066246057,
+          "delta": 0.1817287066246057
         },
         "cornucopiaTopFive": {
           "phase1": 0.592,
-          "current": 0.32168550873586843,
-          "delta": -0.27031449126413154
+          "current": 0.3132036847492323,
+          "delta": -0.27879631525076765
         },
         "cornucopiaTopTen": {
           "phase1": 0.817,
-          "current": 0.47070914696813976,
-          "delta": -0.3462908530318602
+          "current": 0.4626407369498465,
+          "delta": -0.3543592630501535
         },
         "cornucopiaMedianOverlap": {
           "phase1": 2,
@@ -121,28 +121,28 @@
         "gameSize": "full-game",
         "cornucopiaNonSolo": {
           "phase1": 0.589,
-          "current": 0.8646694214876033,
-          "delta": 0.2756694214876033
+          "current": 0.8639175257731959,
+          "delta": 0.27491752577319595
         },
         "fleeingNonSolo": {
           "phase1": 0.073,
-          "current": 0.7317073170731707,
-          "delta": 0.6587073170731708
+          "current": 0.7377049180327869,
+          "delta": 0.664704918032787
         },
         "laterDayNonSolo": {
           "phase1": 0.295,
-          "current": 0.41320432555492315,
-          "delta": 0.11820432555492316
+          "current": 0.4714375392341494,
+          "delta": 0.1764375392341494
         },
         "cornucopiaTopFive": {
           "phase1": 0.495,
-          "current": 0.22107438016528927,
-          "delta": -0.27392561983471075
+          "current": 0.2134020618556701,
+          "delta": -0.2815979381443299
         },
         "cornucopiaTopTen": {
           "phase1": 0.683,
-          "current": 0.4152892561983471,
-          "delta": -0.26771074380165294
+          "current": 0.4072164948453608,
+          "delta": -0.27578350515463923
         },
         "cornucopiaMedianOverlap": {
           "phase1": 5,
@@ -170,14 +170,14 @@
         "id": "half-game-length",
         "label": "Half Game average length",
         "passed": true,
-        "actual": "11.18",
+        "actual": "10.26",
         "expected": "greater than 1 and less than 50 rounds"
       },
       {
         "id": "full-game-length",
         "label": "Full Game average length",
         "passed": true,
-        "actual": "16.73",
+        "actual": "15.01",
         "expected": "greater than 1 and less than 50 rounds"
       },
       {
@@ -191,7 +191,7 @@
         "id": "direct-combat-outcomes",
         "label": "Direct combat exercises success and failure",
         "passed": true,
-        "actual": "249 successes / 97 failures",
+        "actual": "171 successes / 85 failures",
         "expected": "at least one of each"
       },
       {
@@ -205,28 +205,28 @@
         "id": "item-acquisition",
         "label": "Items are acquired",
         "passed": true,
-        "actual": "2335",
+        "actual": "2282",
         "expected": "at least one acquisition"
       },
       {
         "id": "item-consumption",
         "label": "Remaining limited-use items are consumed",
         "passed": true,
-        "actual": "15",
+        "actual": "22",
         "expected": "at least one consumed use"
       },
       {
         "id": "theft-transfers",
         "label": "Theft transfers occur",
         "passed": true,
-        "actual": "102",
+        "actual": "100",
         "expected": "at least one transfer"
       },
       {
         "id": "death-loot-transfers",
         "label": "Death-loot transfers occur",
         "passed": true,
-        "actual": "958",
+        "actual": "815",
         "expected": "at least one transfer"
       },
       {
@@ -240,49 +240,49 @@
         "id": "status-applications",
         "label": "Status mechanics are exercised",
         "passed": true,
-        "actual": "11175",
+        "actual": "10012",
         "expected": "at least one application"
       },
       {
         "id": "event-driven-night-rest",
         "label": "Event-driven night rest is exercised",
         "passed": true,
-        "actual": "8653",
+        "actual": "7884",
         "expected": "at least one recorded rest outcome"
       },
       {
         "id": "night-rest-quality-coverage",
         "label": "All night-rest qualities are exercised",
         "passed": true,
-        "actual": "246 comfortable / 1565 sheltered / 6842 unsheltered",
+        "actual": "196 comfortable / 1314 sheltered / 6374 unsheltered",
         "expected": "at least one of each"
       },
       {
         "id": "morning-rest-resolution",
         "label": "Morning rest resolution is exercised",
         "passed": true,
-        "actual": "8210",
+        "actual": "7513",
         "expected": "at least one resolution"
       },
       {
         "id": "morning-rest-consequences",
         "label": "Both morning rest consequences are exercised",
         "passed": true,
-        "actual": "6725 exhausted / 1727 well-rested",
+        "actual": "6277 exhausted / 1460 well-rested",
         "expected": "at least one of each"
       },
       {
         "id": "night-rest-balance",
         "label": "Protected and unsheltered rest both remain meaningful",
         "passed": true,
-        "actual": "20.9%",
+        "actual": "19.2%",
         "expected": "protected rest between 10% and 95%"
       },
       {
         "id": "deprivation-events-occur",
         "label": "Hunger and thirst occur sometimes",
         "passed": true,
-        "actual": "114 hungry / 117 thirsty",
+        "actual": "81 hungry / 93 thirsty",
         "expected": "at least one application of each across the deterministic batch"
       },
       {
@@ -296,28 +296,28 @@
         "id": "deprivation-remains-optional",
         "label": "Eligibility does not guarantee a deprivation event",
         "passed": true,
-        "actual": "114/3929 hunger; 117/3990 thirst",
+        "actual": "81/3377 hunger; 93/3329 thirst",
         "expected": "applications lower than tribute-round eligibility opportunities"
       },
       {
         "id": "deprivation-balance",
         "label": "Hunger and thirst do not dominate later play",
         "passed": true,
-        "actual": "2.5%",
+        "actual": "2.0%",
         "expected": "greater than 0% and no more than 20% of primary events"
       },
       {
         "id": "deprivation-resolutions",
         "label": "Hunger and thirst can both be resolved",
         "passed": true,
-        "actual": "40 hunger / 71 thirst",
+        "actual": "24 hunger / 42 thirst",
         "expected": "at least one resolution of each"
       },
       {
         "id": "resource-theft-outcomes",
         "label": "Authored resource theft exercises attempts and successes",
         "passed": true,
-        "actual": "16/23 food; 12/26 water",
+        "actual": "17/33 food; 12/20 water",
         "expected": "at least one attempt and success for each need"
       },
       {
@@ -338,63 +338,63 @@
         "id": "family:ordinary:cornucopia-provisions",
         "label": "Event family: cornucopia-provisions",
         "passed": true,
-        "actual": "355",
+        "actual": "311",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:deprivation",
         "label": "Event family: deprivation",
         "passed": true,
-        "actual": "231",
+        "actual": "174",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:status-specific",
         "label": "Event family: status-specific",
         "passed": true,
-        "actual": "546",
+        "actual": "360",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:day-authored-01-15",
         "label": "Event family: day-authored-01-15",
         "passed": true,
-        "actual": "522",
+        "actual": "376",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:day-authored-16-33",
         "label": "Event family: day-authored-16-33",
         "passed": true,
-        "actual": "711",
+        "actual": "498",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:day-weapon-crafting",
         "label": "Event family: day-weapon-crafting",
         "passed": true,
-        "actual": "169",
+        "actual": "130",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:food-theft",
         "label": "Event family: food-theft",
         "passed": true,
-        "actual": "23",
+        "actual": "33",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:water-theft",
         "label": "Event family: water-theft",
         "passed": true,
-        "actual": "26",
+        "actual": "20",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:combat",
         "label": "Event family: combat",
         "passed": true,
-        "actual": "346",
+        "actual": "256",
         "expected": "at least one event"
       },
       {
@@ -408,84 +408,112 @@
         "id": "family:ordinary:theft",
         "label": "Event family: theft",
         "passed": true,
-        "actual": "108",
+        "actual": "106",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:environmental",
         "label": "Event family: environmental",
         "passed": true,
-        "actual": "1134",
+        "actual": "834",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:survival",
         "label": "Event family: survival",
         "passed": true,
-        "actual": "451",
+        "actual": "345",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:night-accidental-fatal",
         "label": "Event family: night-accidental-fatal",
         "passed": true,
-        "actual": "190",
+        "actual": "151",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:night-fatal",
         "label": "Event family: night-fatal",
         "passed": true,
-        "actual": "313",
+        "actual": "176",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:night",
         "label": "Event family: night",
         "passed": true,
-        "actual": "1118",
+        "actual": "1002",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:hunting",
         "label": "Event family: hunting",
         "passed": true,
-        "actual": "27",
+        "actual": "29",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:foraging",
         "label": "Event family: foraging",
         "passed": true,
-        "actual": "107",
+        "actual": "69",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:item-use",
         "label": "Event family: item-use",
         "passed": true,
-        "actual": "7",
+        "actual": "2",
+        "expected": "at least one event"
+      },
+      {
+        "id": "family:ordinary:high-brains",
+        "label": "Event family: high-brains",
+        "passed": true,
+        "actual": "2",
+        "expected": "at least one event"
+      },
+      {
+        "id": "family:ordinary:high-brawn",
+        "label": "Event family: high-brawn",
+        "passed": true,
+        "actual": "121",
+        "expected": "at least one event"
+      },
+      {
+        "id": "family:ordinary:low-brawn",
+        "label": "Event family: low-brawn",
+        "passed": true,
+        "actual": "559",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:high-luck",
         "label": "Event family: high-luck",
         "passed": true,
-        "actual": "34",
+        "actual": "23",
+        "expected": "at least one event"
+      },
+      {
+        "id": "family:ordinary:mixed-stats",
+        "label": "Event family: mixed-stats",
+        "passed": true,
+        "actual": "217",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:standard-formation",
         "label": "Event family: standard-formation",
         "passed": true,
-        "actual": "86",
+        "actual": "66",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:standard-interaction",
         "label": "Event family: standard-interaction",
         "passed": true,
-        "actual": "28",
+        "actual": "26",
         "expected": "at least one event"
       },
       {
@@ -499,42 +527,42 @@
         "id": "family:bloodbath:cornucopia-flavour-acquisition",
         "label": "Event family: Bloodbath — cornucopia-flavour-acquisition",
         "passed": true,
-        "actual": "26",
+        "actual": "29",
         "expected": "at least one event"
       },
       {
         "id": "family:bloodbath:cornucopia-fatal-authored",
         "label": "Event family: Bloodbath — cornucopia-fatal-authored",
         "passed": true,
-        "actual": "1644",
+        "actual": "1654",
         "expected": "at least one event"
       },
       {
         "id": "family:bloodbath:cornucopia-pair-conflict",
         "label": "Event family: Bloodbath — cornucopia-pair-conflict",
         "passed": true,
-        "actual": "27",
+        "actual": "22",
         "expected": "at least one event"
       },
       {
         "id": "family:bloodbath:cornucopia-group-conflict",
         "label": "Event family: Bloodbath — cornucopia-group-conflict",
         "passed": true,
-        "actual": "17",
+        "actual": "14",
         "expected": "at least one event"
       },
       {
         "id": "family:bloodbath:cornucopia-nonfatal-interaction",
         "label": "Event family: Bloodbath — cornucopia-nonfatal-interaction",
         "passed": true,
-        "actual": "119",
+        "actual": "120",
         "expected": "at least one event"
       },
       {
         "id": "family:bloodbath:flee",
         "label": "Event family: Bloodbath — flee",
         "passed": true,
-        "actual": "560",
+        "actual": "559",
         "expected": "at least one event"
       }
     ],
@@ -546,29 +574,29 @@
         "gameSize": "half-game",
         "poolId": "bloodbath-cornucopia",
         "participantShape": "all",
-        "actual": "73.1%",
+        "actual": "73.2%",
         "expected": "at least 62.1%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "cornucopia-fatal-supply-net-counterweight: 79 selections (8.1%)",
-            "cornucopia-fatal-double-cherry-bomb: 66 selections (6.8%)",
-            "cornucopia-fatal-weapon-rack-chain-reaction: 65 selections (6.7%)",
-            "cornucopia-fatal-three-way-fight: 61 selections (6.3%)",
-            "cornucopia-fatal-head-against-rock: 42 selections (4.3%)"
+            "cornucopia-fatal-supply-net-counterweight: 72 selections (7.4%)",
+            "cornucopia-fatal-double-cherry-bomb: 71 selections (7.3%)",
+            "cornucopia-fatal-weapon-rack-chain-reaction: 67 selections (6.9%)",
+            "cornucopia-fatal-three-way-fight: 56 selections (5.7%)",
+            "cornucopia-fatal-head-against-rock: 40 selections (4.1%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "cornucopia-fatal-thrown-knife-chest: 372 feasible / 22 selected",
-            "cornucopia-fatal-killed-while-fleeing: 367 feasible / 18 selected",
-            "cornucopia-fatal-thrown-knife-head: 374 feasible / 28 selected",
-            "cornucopia-fatal-discovering-hidden-tribute: 368 feasible / 22 selected",
-            "cornucopia-fatal-fistfight-strangulation: 374 feasible / 29 selected"
+            "cornucopia-fatal-improvised-branch-stabbing: 397 feasible / 23 selected",
+            "cornucopia-fatal-discovering-hidden-tribute: 388 feasible / 20 selected",
+            "cornucopia-fatal-cherry-bomb-attack: 388 feasible / 22 selected",
+            "cornucopia-fatal-silent-neck-break: 389 feasible / 26 selected",
+            "cornucopia-fatal-thrown-knife-head: 391 feasible / 29 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 9559",
-            "weighted-not-selected: 8448",
-            "fatality-target-stranded: 5826",
-            "reservation-blocked: 4218",
-            "fatality-survivor-budget: 3146"
+            "definition-ineligible: 9599",
+            "weighted-not-selected: 9086",
+            "fatality-target-stranded: 5860",
+            "reservation-blocked: 4169",
+            "fatality-survivor-budget: 3195"
           ]
         }
       },
@@ -579,29 +607,29 @@
         "gameSize": "half-game",
         "poolId": "bloodbath-cornucopia",
         "participantShape": "all",
-        "actual": "43.9%",
+        "actual": "40.0%",
         "expected": "no definition above 50.0%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "cornucopia-fatal-supply-net-counterweight: 79 selections (8.1%)",
-            "cornucopia-fatal-double-cherry-bomb: 66 selections (6.8%)",
-            "cornucopia-fatal-weapon-rack-chain-reaction: 65 selections (6.7%)",
-            "cornucopia-fatal-three-way-fight: 61 selections (6.3%)",
-            "cornucopia-fatal-head-against-rock: 42 selections (4.3%)"
+            "cornucopia-fatal-supply-net-counterweight: 72 selections (7.4%)",
+            "cornucopia-fatal-double-cherry-bomb: 71 selections (7.3%)",
+            "cornucopia-fatal-weapon-rack-chain-reaction: 67 selections (6.9%)",
+            "cornucopia-fatal-three-way-fight: 56 selections (5.7%)",
+            "cornucopia-fatal-head-against-rock: 40 selections (4.1%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "cornucopia-fatal-thrown-knife-chest: 372 feasible / 22 selected",
-            "cornucopia-fatal-killed-while-fleeing: 367 feasible / 18 selected",
-            "cornucopia-fatal-thrown-knife-head: 374 feasible / 28 selected",
-            "cornucopia-fatal-discovering-hidden-tribute: 368 feasible / 22 selected",
-            "cornucopia-fatal-fistfight-strangulation: 374 feasible / 29 selected"
+            "cornucopia-fatal-improvised-branch-stabbing: 397 feasible / 23 selected",
+            "cornucopia-fatal-discovering-hidden-tribute: 388 feasible / 20 selected",
+            "cornucopia-fatal-cherry-bomb-attack: 388 feasible / 22 selected",
+            "cornucopia-fatal-silent-neck-break: 389 feasible / 26 selected",
+            "cornucopia-fatal-thrown-knife-head: 391 feasible / 29 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 9559",
-            "weighted-not-selected: 8448",
-            "fatality-target-stranded: 5826",
-            "reservation-blocked: 4218",
-            "fatality-survivor-budget: 3146"
+            "definition-ineligible: 9599",
+            "weighted-not-selected: 9086",
+            "fatality-target-stranded: 5860",
+            "reservation-blocked: 4169",
+            "fatality-survivor-budget: 3195"
           ]
         }
       },
@@ -612,29 +640,29 @@
         "gameSize": "half-game",
         "poolId": "bloodbath-cornucopia",
         "participantShape": "all",
-        "actual": "32.2%",
+        "actual": "31.3%",
         "expected": "no more than 38.5%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "cornucopia-fatal-supply-net-counterweight: 79 selections (8.1%)",
-            "cornucopia-fatal-double-cherry-bomb: 66 selections (6.8%)",
-            "cornucopia-fatal-weapon-rack-chain-reaction: 65 selections (6.7%)",
-            "cornucopia-fatal-three-way-fight: 61 selections (6.3%)",
-            "cornucopia-fatal-head-against-rock: 42 selections (4.3%)"
+            "cornucopia-fatal-supply-net-counterweight: 72 selections (7.4%)",
+            "cornucopia-fatal-double-cherry-bomb: 71 selections (7.3%)",
+            "cornucopia-fatal-weapon-rack-chain-reaction: 67 selections (6.9%)",
+            "cornucopia-fatal-three-way-fight: 56 selections (5.7%)",
+            "cornucopia-fatal-head-against-rock: 40 selections (4.1%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "cornucopia-fatal-thrown-knife-chest: 372 feasible / 22 selected",
-            "cornucopia-fatal-killed-while-fleeing: 367 feasible / 18 selected",
-            "cornucopia-fatal-thrown-knife-head: 374 feasible / 28 selected",
-            "cornucopia-fatal-discovering-hidden-tribute: 368 feasible / 22 selected",
-            "cornucopia-fatal-fistfight-strangulation: 374 feasible / 29 selected"
+            "cornucopia-fatal-improvised-branch-stabbing: 397 feasible / 23 selected",
+            "cornucopia-fatal-discovering-hidden-tribute: 388 feasible / 20 selected",
+            "cornucopia-fatal-cherry-bomb-attack: 388 feasible / 22 selected",
+            "cornucopia-fatal-silent-neck-break: 389 feasible / 26 selected",
+            "cornucopia-fatal-thrown-knife-head: 391 feasible / 29 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 9559",
-            "weighted-not-selected: 8448",
-            "fatality-target-stranded: 5826",
-            "reservation-blocked: 4218",
-            "fatality-survivor-budget: 3146"
+            "definition-ineligible: 9599",
+            "weighted-not-selected: 9086",
+            "fatality-target-stranded: 5860",
+            "reservation-blocked: 4169",
+            "fatality-survivor-budget: 3195"
           ]
         }
       },
@@ -645,29 +673,29 @@
         "gameSize": "half-game",
         "poolId": "bloodbath-cornucopia",
         "participantShape": "all",
-        "actual": "1.07",
+        "actual": "1.01",
         "expected": "no more than 2.19",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "cornucopia-fatal-supply-net-counterweight: 79 selections (8.1%)",
-            "cornucopia-fatal-double-cherry-bomb: 66 selections (6.8%)",
-            "cornucopia-fatal-weapon-rack-chain-reaction: 65 selections (6.7%)",
-            "cornucopia-fatal-three-way-fight: 61 selections (6.3%)",
-            "cornucopia-fatal-head-against-rock: 42 selections (4.3%)"
+            "cornucopia-fatal-supply-net-counterweight: 72 selections (7.4%)",
+            "cornucopia-fatal-double-cherry-bomb: 71 selections (7.3%)",
+            "cornucopia-fatal-weapon-rack-chain-reaction: 67 selections (6.9%)",
+            "cornucopia-fatal-three-way-fight: 56 selections (5.7%)",
+            "cornucopia-fatal-head-against-rock: 40 selections (4.1%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "cornucopia-fatal-thrown-knife-chest: 372 feasible / 22 selected",
-            "cornucopia-fatal-killed-while-fleeing: 367 feasible / 18 selected",
-            "cornucopia-fatal-thrown-knife-head: 374 feasible / 28 selected",
-            "cornucopia-fatal-discovering-hidden-tribute: 368 feasible / 22 selected",
-            "cornucopia-fatal-fistfight-strangulation: 374 feasible / 29 selected"
+            "cornucopia-fatal-improvised-branch-stabbing: 397 feasible / 23 selected",
+            "cornucopia-fatal-discovering-hidden-tribute: 388 feasible / 20 selected",
+            "cornucopia-fatal-cherry-bomb-attack: 388 feasible / 22 selected",
+            "cornucopia-fatal-silent-neck-break: 389 feasible / 26 selected",
+            "cornucopia-fatal-thrown-knife-head: 391 feasible / 29 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 9559",
-            "weighted-not-selected: 8448",
-            "fatality-target-stranded: 5826",
-            "reservation-blocked: 4218",
-            "fatality-survivor-budget: 3146"
+            "definition-ineligible: 9599",
+            "weighted-not-selected: 9086",
+            "fatality-target-stranded: 5860",
+            "reservation-blocked: 4169",
+            "fatality-survivor-budget: 3195"
           ]
         }
       },
@@ -678,29 +706,29 @@
         "gameSize": "half-game",
         "poolId": "bloodbath-cornucopia",
         "participantShape": "all",
-        "actual": "0.0% (0/29)",
+        "actual": "0.0% (0/30)",
         "expected": "no more than 20.0% of frequently feasible definitions ignored",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "cornucopia-fatal-supply-net-counterweight: 79 selections (8.1%)",
-            "cornucopia-fatal-double-cherry-bomb: 66 selections (6.8%)",
-            "cornucopia-fatal-weapon-rack-chain-reaction: 65 selections (6.7%)",
-            "cornucopia-fatal-three-way-fight: 61 selections (6.3%)",
-            "cornucopia-fatal-head-against-rock: 42 selections (4.3%)"
+            "cornucopia-fatal-supply-net-counterweight: 72 selections (7.4%)",
+            "cornucopia-fatal-double-cherry-bomb: 71 selections (7.3%)",
+            "cornucopia-fatal-weapon-rack-chain-reaction: 67 selections (6.9%)",
+            "cornucopia-fatal-three-way-fight: 56 selections (5.7%)",
+            "cornucopia-fatal-head-against-rock: 40 selections (4.1%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "cornucopia-fatal-thrown-knife-chest: 372 feasible / 22 selected",
-            "cornucopia-fatal-killed-while-fleeing: 367 feasible / 18 selected",
-            "cornucopia-fatal-thrown-knife-head: 374 feasible / 28 selected",
-            "cornucopia-fatal-discovering-hidden-tribute: 368 feasible / 22 selected",
-            "cornucopia-fatal-fistfight-strangulation: 374 feasible / 29 selected"
+            "cornucopia-fatal-improvised-branch-stabbing: 397 feasible / 23 selected",
+            "cornucopia-fatal-discovering-hidden-tribute: 388 feasible / 20 selected",
+            "cornucopia-fatal-cherry-bomb-attack: 388 feasible / 22 selected",
+            "cornucopia-fatal-silent-neck-break: 389 feasible / 26 selected",
+            "cornucopia-fatal-thrown-knife-head: 391 feasible / 29 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 9559",
-            "weighted-not-selected: 8448",
-            "fatality-target-stranded: 5826",
-            "reservation-blocked: 4218",
-            "fatality-survivor-budget: 3146"
+            "definition-ineligible: 9599",
+            "weighted-not-selected: 9086",
+            "fatality-target-stranded: 5860",
+            "reservation-blocked: 4169",
+            "fatality-survivor-budget: 3195"
           ]
         }
       },
@@ -711,27 +739,28 @@
         "gameSize": "half-game",
         "poolId": "bloodbath-flee",
         "participantShape": "all",
-        "actual": "58.3%",
+        "actual": "57.1%",
         "expected": "at least 56.7%",
         "diagnostics": {
           "mostSelectedDefinitions": [
             "bloodbath-flee-pair-ravine-route-argument: 22 selections (7.0%)",
-            "bloodbath-flee-pair-fallen-log-cooperation: 21 selections (6.7%)",
-            "bloodbath-flee-break-away-crowd: 20 selections (6.4%)",
-            "bloodbath-flee-run-from-cornucopia: 20 selections (6.4%)",
-            "bloodbath-flee-tall-grass: 20 selections (6.4%)"
+            "bloodbath-flee-run-from-cornucopia: 20 selections (6.3%)",
+            "bloodbath-flee-tall-grass: 20 selections (6.3%)",
+            "bloodbath-flee-pair-fallen-log-cooperation: 19 selections (6.0%)",
+            "bloodbath-flee-break-away-crowd: 18 selections (5.7%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "bloodbath-flee-cross-fallen-tree: 314 feasible / 1 selected",
-            "bloodbath-flee-escape-stampede: 314 feasible / 4 selected",
-            "bloodbath-flee-leap-across-creek: 311 feasible / 4 selected",
-            "bloodbath-flee-emergency-foraging: 311 feasible / 8 selected",
-            "bloodbath-flee-territorial-goose: 309 feasible / 9 selected"
+            "bloodbath-flee-leap-across-creek: 315 feasible / 1 selected",
+            "bloodbath-flee-cross-fallen-tree: 313 feasible / 3 selected",
+            "bloodbath-flee-escape-stampede: 313 feasible / 7 selected",
+            "bloodbath-flee-emergency-foraging: 312 feasible / 8 selected",
+            "bloodbath-flee-territorial-goose: 310 feasible / 8 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 6732",
-            "definition-ineligible: 2535",
-            "already-used-definition: 153"
+            "weighted-not-selected: 6949",
+            "definition-ineligible: 2642",
+            "already-used-definition: 155",
+            "participant-or-item-infeasible: 19"
           ]
         }
       },
@@ -742,27 +771,28 @@
         "gameSize": "half-game",
         "poolId": "bloodbath-flee",
         "participantShape": "pair",
-        "actual": "145",
+        "actual": "139",
         "expected": "at least one selection",
         "diagnostics": {
           "mostSelectedDefinitions": [
             "bloodbath-flee-pair-ravine-route-argument: 22 selections (7.0%)",
-            "bloodbath-flee-pair-fallen-log-cooperation: 21 selections (6.7%)",
-            "bloodbath-flee-break-away-crowd: 20 selections (6.4%)",
-            "bloodbath-flee-run-from-cornucopia: 20 selections (6.4%)",
-            "bloodbath-flee-tall-grass: 20 selections (6.4%)"
+            "bloodbath-flee-run-from-cornucopia: 20 selections (6.3%)",
+            "bloodbath-flee-tall-grass: 20 selections (6.3%)",
+            "bloodbath-flee-pair-fallen-log-cooperation: 19 selections (6.0%)",
+            "bloodbath-flee-break-away-crowd: 18 selections (5.7%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "bloodbath-flee-cross-fallen-tree: 314 feasible / 1 selected",
-            "bloodbath-flee-escape-stampede: 314 feasible / 4 selected",
-            "bloodbath-flee-leap-across-creek: 311 feasible / 4 selected",
-            "bloodbath-flee-emergency-foraging: 311 feasible / 8 selected",
-            "bloodbath-flee-territorial-goose: 309 feasible / 9 selected"
+            "bloodbath-flee-leap-across-creek: 315 feasible / 1 selected",
+            "bloodbath-flee-cross-fallen-tree: 313 feasible / 3 selected",
+            "bloodbath-flee-escape-stampede: 313 feasible / 7 selected",
+            "bloodbath-flee-emergency-foraging: 312 feasible / 8 selected",
+            "bloodbath-flee-territorial-goose: 310 feasible / 8 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 6732",
-            "definition-ineligible: 2535",
-            "already-used-definition: 153"
+            "weighted-not-selected: 6949",
+            "definition-ineligible: 2642",
+            "already-used-definition: 155",
+            "participant-or-item-infeasible: 19"
           ]
         }
       },
@@ -773,27 +803,28 @@
         "gameSize": "half-game",
         "poolId": "bloodbath-flee",
         "participantShape": "trio",
-        "actual": "34",
+        "actual": "38",
         "expected": "at least one selection",
         "diagnostics": {
           "mostSelectedDefinitions": [
             "bloodbath-flee-pair-ravine-route-argument: 22 selections (7.0%)",
-            "bloodbath-flee-pair-fallen-log-cooperation: 21 selections (6.7%)",
-            "bloodbath-flee-break-away-crowd: 20 selections (6.4%)",
-            "bloodbath-flee-run-from-cornucopia: 20 selections (6.4%)",
-            "bloodbath-flee-tall-grass: 20 selections (6.4%)"
+            "bloodbath-flee-run-from-cornucopia: 20 selections (6.3%)",
+            "bloodbath-flee-tall-grass: 20 selections (6.3%)",
+            "bloodbath-flee-pair-fallen-log-cooperation: 19 selections (6.0%)",
+            "bloodbath-flee-break-away-crowd: 18 selections (5.7%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "bloodbath-flee-cross-fallen-tree: 314 feasible / 1 selected",
-            "bloodbath-flee-escape-stampede: 314 feasible / 4 selected",
-            "bloodbath-flee-leap-across-creek: 311 feasible / 4 selected",
-            "bloodbath-flee-emergency-foraging: 311 feasible / 8 selected",
-            "bloodbath-flee-territorial-goose: 309 feasible / 9 selected"
+            "bloodbath-flee-leap-across-creek: 315 feasible / 1 selected",
+            "bloodbath-flee-cross-fallen-tree: 313 feasible / 3 selected",
+            "bloodbath-flee-escape-stampede: 313 feasible / 7 selected",
+            "bloodbath-flee-emergency-foraging: 312 feasible / 8 selected",
+            "bloodbath-flee-territorial-goose: 310 feasible / 8 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 6732",
-            "definition-ineligible: 2535",
-            "already-used-definition: 153"
+            "weighted-not-selected: 6949",
+            "definition-ineligible: 2642",
+            "already-used-definition: 155",
+            "participant-or-item-infeasible: 19"
           ]
         }
       },
@@ -804,27 +835,28 @@
         "gameSize": "half-game",
         "poolId": "bloodbath-flee",
         "participantShape": "group-four-plus",
-        "actual": "4",
+        "actual": "3",
         "expected": "at least one selection",
         "diagnostics": {
           "mostSelectedDefinitions": [
             "bloodbath-flee-pair-ravine-route-argument: 22 selections (7.0%)",
-            "bloodbath-flee-pair-fallen-log-cooperation: 21 selections (6.7%)",
-            "bloodbath-flee-break-away-crowd: 20 selections (6.4%)",
-            "bloodbath-flee-run-from-cornucopia: 20 selections (6.4%)",
-            "bloodbath-flee-tall-grass: 20 selections (6.4%)"
+            "bloodbath-flee-run-from-cornucopia: 20 selections (6.3%)",
+            "bloodbath-flee-tall-grass: 20 selections (6.3%)",
+            "bloodbath-flee-pair-fallen-log-cooperation: 19 selections (6.0%)",
+            "bloodbath-flee-break-away-crowd: 18 selections (5.7%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "bloodbath-flee-cross-fallen-tree: 314 feasible / 1 selected",
-            "bloodbath-flee-escape-stampede: 314 feasible / 4 selected",
-            "bloodbath-flee-leap-across-creek: 311 feasible / 4 selected",
-            "bloodbath-flee-emergency-foraging: 311 feasible / 8 selected",
-            "bloodbath-flee-territorial-goose: 309 feasible / 9 selected"
+            "bloodbath-flee-leap-across-creek: 315 feasible / 1 selected",
+            "bloodbath-flee-cross-fallen-tree: 313 feasible / 3 selected",
+            "bloodbath-flee-escape-stampede: 313 feasible / 7 selected",
+            "bloodbath-flee-emergency-foraging: 312 feasible / 8 selected",
+            "bloodbath-flee-territorial-goose: 310 feasible / 8 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 6732",
-            "definition-ineligible: 2535",
-            "already-used-definition: 153"
+            "weighted-not-selected: 6949",
+            "definition-ineligible: 2642",
+            "already-used-definition: 155",
+            "participant-or-item-infeasible: 19"
           ]
         }
       },
@@ -835,27 +867,28 @@
         "gameSize": "half-game",
         "poolId": "bloodbath-flee",
         "participantShape": "solo",
-        "actual": "15.3%",
+        "actual": "14.8%",
         "expected": "no more than 33.8% of solo fleeing selections",
         "diagnostics": {
           "mostSelectedDefinitions": [
             "bloodbath-flee-pair-ravine-route-argument: 22 selections (7.0%)",
-            "bloodbath-flee-pair-fallen-log-cooperation: 21 selections (6.7%)",
-            "bloodbath-flee-break-away-crowd: 20 selections (6.4%)",
-            "bloodbath-flee-run-from-cornucopia: 20 selections (6.4%)",
-            "bloodbath-flee-tall-grass: 20 selections (6.4%)"
+            "bloodbath-flee-run-from-cornucopia: 20 selections (6.3%)",
+            "bloodbath-flee-tall-grass: 20 selections (6.3%)",
+            "bloodbath-flee-pair-fallen-log-cooperation: 19 selections (6.0%)",
+            "bloodbath-flee-break-away-crowd: 18 selections (5.7%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "bloodbath-flee-cross-fallen-tree: 314 feasible / 1 selected",
-            "bloodbath-flee-escape-stampede: 314 feasible / 4 selected",
-            "bloodbath-flee-leap-across-creek: 311 feasible / 4 selected",
-            "bloodbath-flee-emergency-foraging: 311 feasible / 8 selected",
-            "bloodbath-flee-territorial-goose: 309 feasible / 9 selected"
+            "bloodbath-flee-leap-across-creek: 315 feasible / 1 selected",
+            "bloodbath-flee-cross-fallen-tree: 313 feasible / 3 selected",
+            "bloodbath-flee-escape-stampede: 313 feasible / 7 selected",
+            "bloodbath-flee-emergency-foraging: 312 feasible / 8 selected",
+            "bloodbath-flee-territorial-goose: 310 feasible / 8 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 6732",
-            "definition-ineligible: 2535",
-            "already-used-definition: 153"
+            "weighted-not-selected: 6949",
+            "definition-ineligible: 2642",
+            "already-used-definition: 155",
+            "participant-or-item-infeasible: 19"
           ]
         }
       },
@@ -866,27 +899,28 @@
         "gameSize": "half-game",
         "poolId": "bloodbath-flee",
         "participantShape": "all",
-        "actual": "3.2%",
+        "actual": "5.1%",
         "expected": "0.0%–10.0%",
         "diagnostics": {
           "mostSelectedDefinitions": [
             "bloodbath-flee-pair-ravine-route-argument: 22 selections (7.0%)",
-            "bloodbath-flee-pair-fallen-log-cooperation: 21 selections (6.7%)",
-            "bloodbath-flee-break-away-crowd: 20 selections (6.4%)",
-            "bloodbath-flee-run-from-cornucopia: 20 selections (6.4%)",
-            "bloodbath-flee-tall-grass: 20 selections (6.4%)"
+            "bloodbath-flee-run-from-cornucopia: 20 selections (6.3%)",
+            "bloodbath-flee-tall-grass: 20 selections (6.3%)",
+            "bloodbath-flee-pair-fallen-log-cooperation: 19 selections (6.0%)",
+            "bloodbath-flee-break-away-crowd: 18 selections (5.7%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "bloodbath-flee-cross-fallen-tree: 314 feasible / 1 selected",
-            "bloodbath-flee-escape-stampede: 314 feasible / 4 selected",
-            "bloodbath-flee-leap-across-creek: 311 feasible / 4 selected",
-            "bloodbath-flee-emergency-foraging: 311 feasible / 8 selected",
-            "bloodbath-flee-territorial-goose: 309 feasible / 9 selected"
+            "bloodbath-flee-leap-across-creek: 315 feasible / 1 selected",
+            "bloodbath-flee-cross-fallen-tree: 313 feasible / 3 selected",
+            "bloodbath-flee-escape-stampede: 313 feasible / 7 selected",
+            "bloodbath-flee-emergency-foraging: 312 feasible / 8 selected",
+            "bloodbath-flee-territorial-goose: 310 feasible / 8 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 6732",
-            "definition-ineligible: 2535",
-            "already-used-definition: 153"
+            "weighted-not-selected: 6949",
+            "definition-ineligible: 2642",
+            "already-used-definition: 155",
+            "participant-or-item-infeasible: 19"
           ]
         }
       },
@@ -897,29 +931,29 @@
         "gameSize": "half-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "31.5%",
+        "actual": "40.8%",
         "expected": "at least 20.0%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 124 selections (8.9%)",
-            "status-microsleep-worst-time: 78 selections (5.6%)",
-            "fallen-cliff: 70 selections (5.0%)",
-            "day-theft-while-distracted: 44 selections (3.2%)",
-            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
+            "river-current: 69 selections (5.4%)",
+            "high-brawn-sack-of-potatoes: 60 selections (4.7%)",
+            "low-brawn-rock-and-a-hard-place: 56 selections (4.4%)",
+            "low-brawn-bridge-over-troubled-water: 50 selections (3.9%)",
+            "mixed-stat-kowabunga: 46 selections (3.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1376 feasible / 70 selected",
-            "river-current: 1357 feasible / 124 selected",
-            "day-picking-flowers: 1230 feasible / 6 selected",
-            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
-            "day-questioning-sanity: 1230 feasible / 8 selected"
+            "fallen-cliff: 1261 feasible / 37 selected",
+            "river-current: 1247 feasible / 69 selected",
+            "day-accidental-self-injury: 1178 feasible / 2 selected",
+            "day-discovering-cave-shelter: 1178 feasible / 2 selected",
+            "day-questioning-sanity: 1178 feasible / 5 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 157639",
-            "participant-or-item-infeasible: 63766",
-            "weighted-not-selected: 51172",
-            "planner-stage-not-attempted: 11609",
-            "already-used-definition: 4438"
+            "definition-ineligible: 161102",
+            "participant-or-item-infeasible: 70431",
+            "weighted-not-selected: 59120",
+            "planner-stage-not-attempted: 7518",
+            "already-used-definition: 3895"
           ]
         }
       },
@@ -930,29 +964,29 @@
         "gameSize": "half-game",
         "poolId": "later-day",
         "participantShape": "pair",
-        "actual": "30.7%",
+        "actual": "39.9%",
         "expected": "at least 21.6%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 124 selections (8.9%)",
-            "status-microsleep-worst-time: 78 selections (5.6%)",
-            "fallen-cliff: 70 selections (5.0%)",
-            "day-theft-while-distracted: 44 selections (3.2%)",
-            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
+            "river-current: 69 selections (5.4%)",
+            "high-brawn-sack-of-potatoes: 60 selections (4.7%)",
+            "low-brawn-rock-and-a-hard-place: 56 selections (4.4%)",
+            "low-brawn-bridge-over-troubled-water: 50 selections (3.9%)",
+            "mixed-stat-kowabunga: 46 selections (3.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1376 feasible / 70 selected",
-            "river-current: 1357 feasible / 124 selected",
-            "day-picking-flowers: 1230 feasible / 6 selected",
-            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
-            "day-questioning-sanity: 1230 feasible / 8 selected"
+            "fallen-cliff: 1261 feasible / 37 selected",
+            "river-current: 1247 feasible / 69 selected",
+            "day-accidental-self-injury: 1178 feasible / 2 selected",
+            "day-discovering-cave-shelter: 1178 feasible / 2 selected",
+            "day-questioning-sanity: 1178 feasible / 5 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 157639",
-            "participant-or-item-infeasible: 63766",
-            "weighted-not-selected: 51172",
-            "planner-stage-not-attempted: 11609",
-            "already-used-definition: 4438"
+            "definition-ineligible: 161102",
+            "participant-or-item-infeasible: 70431",
+            "weighted-not-selected: 59120",
+            "planner-stage-not-attempted: 7518",
+            "already-used-definition: 3895"
           ]
         }
       },
@@ -967,25 +1001,25 @@
         "expected": "at least one selection",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 124 selections (8.9%)",
-            "status-microsleep-worst-time: 78 selections (5.6%)",
-            "fallen-cliff: 70 selections (5.0%)",
-            "day-theft-while-distracted: 44 selections (3.2%)",
-            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
+            "river-current: 69 selections (5.4%)",
+            "high-brawn-sack-of-potatoes: 60 selections (4.7%)",
+            "low-brawn-rock-and-a-hard-place: 56 selections (4.4%)",
+            "low-brawn-bridge-over-troubled-water: 50 selections (3.9%)",
+            "mixed-stat-kowabunga: 46 selections (3.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1376 feasible / 70 selected",
-            "river-current: 1357 feasible / 124 selected",
-            "day-picking-flowers: 1230 feasible / 6 selected",
-            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
-            "day-questioning-sanity: 1230 feasible / 8 selected"
+            "fallen-cliff: 1261 feasible / 37 selected",
+            "river-current: 1247 feasible / 69 selected",
+            "day-accidental-self-injury: 1178 feasible / 2 selected",
+            "day-discovering-cave-shelter: 1178 feasible / 2 selected",
+            "day-questioning-sanity: 1178 feasible / 5 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 157639",
-            "participant-or-item-infeasible: 63766",
-            "weighted-not-selected: 51172",
-            "planner-stage-not-attempted: 11609",
-            "already-used-definition: 4438"
+            "definition-ineligible: 161102",
+            "participant-or-item-infeasible: 70431",
+            "weighted-not-selected: 59120",
+            "planner-stage-not-attempted: 7518",
+            "already-used-definition: 3895"
           ]
         }
       },
@@ -1000,25 +1034,25 @@
         "expected": "informational; accepted baseline had no selections",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 124 selections (8.9%)",
-            "status-microsleep-worst-time: 78 selections (5.6%)",
-            "fallen-cliff: 70 selections (5.0%)",
-            "day-theft-while-distracted: 44 selections (3.2%)",
-            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
+            "river-current: 69 selections (5.4%)",
+            "high-brawn-sack-of-potatoes: 60 selections (4.7%)",
+            "low-brawn-rock-and-a-hard-place: 56 selections (4.4%)",
+            "low-brawn-bridge-over-troubled-water: 50 selections (3.9%)",
+            "mixed-stat-kowabunga: 46 selections (3.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1376 feasible / 70 selected",
-            "river-current: 1357 feasible / 124 selected",
-            "day-picking-flowers: 1230 feasible / 6 selected",
-            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
-            "day-questioning-sanity: 1230 feasible / 8 selected"
+            "fallen-cliff: 1261 feasible / 37 selected",
+            "river-current: 1247 feasible / 69 selected",
+            "day-accidental-self-injury: 1178 feasible / 2 selected",
+            "day-discovering-cave-shelter: 1178 feasible / 2 selected",
+            "day-questioning-sanity: 1178 feasible / 5 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 157639",
-            "participant-or-item-infeasible: 63766",
-            "weighted-not-selected: 51172",
-            "planner-stage-not-attempted: 11609",
-            "already-used-definition: 4438"
+            "definition-ineligible: 161102",
+            "participant-or-item-infeasible: 70431",
+            "weighted-not-selected: 59120",
+            "planner-stage-not-attempted: 7518",
+            "already-used-definition: 3895"
           ]
         }
       },
@@ -1029,29 +1063,29 @@
         "gameSize": "half-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "20.2%",
+        "actual": "16.3%",
         "expected": "at least 8.2%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 124 selections (8.9%)",
-            "status-microsleep-worst-time: 78 selections (5.6%)",
-            "fallen-cliff: 70 selections (5.0%)",
-            "day-theft-while-distracted: 44 selections (3.2%)",
-            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
+            "river-current: 69 selections (5.4%)",
+            "high-brawn-sack-of-potatoes: 60 selections (4.7%)",
+            "low-brawn-rock-and-a-hard-place: 56 selections (4.4%)",
+            "low-brawn-bridge-over-troubled-water: 50 selections (3.9%)",
+            "mixed-stat-kowabunga: 46 selections (3.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1376 feasible / 70 selected",
-            "river-current: 1357 feasible / 124 selected",
-            "day-picking-flowers: 1230 feasible / 6 selected",
-            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
-            "day-questioning-sanity: 1230 feasible / 8 selected"
+            "fallen-cliff: 1261 feasible / 37 selected",
+            "river-current: 1247 feasible / 69 selected",
+            "day-accidental-self-injury: 1178 feasible / 2 selected",
+            "day-discovering-cave-shelter: 1178 feasible / 2 selected",
+            "day-questioning-sanity: 1178 feasible / 5 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 157639",
-            "participant-or-item-infeasible: 63766",
-            "weighted-not-selected: 51172",
-            "planner-stage-not-attempted: 11609",
-            "already-used-definition: 4438"
+            "definition-ineligible: 161102",
+            "participant-or-item-infeasible: 70431",
+            "weighted-not-selected: 59120",
+            "planner-stage-not-attempted: 7518",
+            "already-used-definition: 3895"
           ]
         }
       },
@@ -1062,29 +1096,29 @@
         "gameSize": "half-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "1.9%",
+        "actual": "0.9%",
         "expected": "at least 0.3%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 124 selections (8.9%)",
-            "status-microsleep-worst-time: 78 selections (5.6%)",
-            "fallen-cliff: 70 selections (5.0%)",
-            "day-theft-while-distracted: 44 selections (3.2%)",
-            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
+            "river-current: 69 selections (5.4%)",
+            "high-brawn-sack-of-potatoes: 60 selections (4.7%)",
+            "low-brawn-rock-and-a-hard-place: 56 selections (4.4%)",
+            "low-brawn-bridge-over-troubled-water: 50 selections (3.9%)",
+            "mixed-stat-kowabunga: 46 selections (3.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1376 feasible / 70 selected",
-            "river-current: 1357 feasible / 124 selected",
-            "day-picking-flowers: 1230 feasible / 6 selected",
-            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
-            "day-questioning-sanity: 1230 feasible / 8 selected"
+            "fallen-cliff: 1261 feasible / 37 selected",
+            "river-current: 1247 feasible / 69 selected",
+            "day-accidental-self-injury: 1178 feasible / 2 selected",
+            "day-discovering-cave-shelter: 1178 feasible / 2 selected",
+            "day-questioning-sanity: 1178 feasible / 5 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 157639",
-            "participant-or-item-infeasible: 63766",
-            "weighted-not-selected: 51172",
-            "planner-stage-not-attempted: 11609",
-            "already-used-definition: 4438"
+            "definition-ineligible: 161102",
+            "participant-or-item-infeasible: 70431",
+            "weighted-not-selected: 59120",
+            "planner-stage-not-attempted: 7518",
+            "already-used-definition: 3895"
           ]
         }
       },
@@ -1095,29 +1129,29 @@
         "gameSize": "half-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "63.9% across 194 environmental fatalities",
+        "actual": "65.1% across 106 environmental fatalities",
         "expected": "no definition above 68.2%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 124 selections (8.9%)",
-            "status-microsleep-worst-time: 78 selections (5.6%)",
-            "fallen-cliff: 70 selections (5.0%)",
-            "day-theft-while-distracted: 44 selections (3.2%)",
-            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
+            "river-current: 69 selections (5.4%)",
+            "high-brawn-sack-of-potatoes: 60 selections (4.7%)",
+            "low-brawn-rock-and-a-hard-place: 56 selections (4.4%)",
+            "low-brawn-bridge-over-troubled-water: 50 selections (3.9%)",
+            "mixed-stat-kowabunga: 46 selections (3.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1376 feasible / 70 selected",
-            "river-current: 1357 feasible / 124 selected",
-            "day-picking-flowers: 1230 feasible / 6 selected",
-            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
-            "day-questioning-sanity: 1230 feasible / 8 selected"
+            "fallen-cliff: 1261 feasible / 37 selected",
+            "river-current: 1247 feasible / 69 selected",
+            "day-accidental-self-injury: 1178 feasible / 2 selected",
+            "day-discovering-cave-shelter: 1178 feasible / 2 selected",
+            "day-questioning-sanity: 1178 feasible / 5 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 157639",
-            "participant-or-item-infeasible: 63766",
-            "weighted-not-selected: 51172",
-            "planner-stage-not-attempted: 11609",
-            "already-used-definition: 4438"
+            "definition-ineligible: 161102",
+            "participant-or-item-infeasible: 70431",
+            "weighted-not-selected: 59120",
+            "planner-stage-not-attempted: 7518",
+            "already-used-definition: 3895"
           ]
         }
       },
@@ -1128,29 +1162,29 @@
         "gameSize": "full-game",
         "poolId": "bloodbath-cornucopia",
         "participantShape": "all",
-        "actual": "86.5%",
+        "actual": "86.4%",
         "expected": "at least 75.0%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "cornucopia-fatal-cherry-bomb-attack: 45 selections (4.6%)",
-            "cornucopia-fatal-killed-while-fleeing: 45 selections (4.6%)",
-            "cornucopia-fatal-improvised-branch-stabbing: 43 selections (4.4%)",
-            "cornucopia-fatal-thrown-knife-chest: 41 selections (4.2%)",
-            "cornucopia-fatal-fistfight-strangulation: 40 selections (4.1%)"
+            "cornucopia-fatal-killed-while-fleeing: 43 selections (4.4%)",
+            "cornucopia-fatal-fistfight-strangulation: 42 selections (4.3%)",
+            "cornucopia-fatal-cherry-bomb-attack: 41 selections (4.2%)",
+            "cornucopia-fatal-supply-net-counterweight: 41 selections (4.2%)",
+            "cornucopia-fatal-thrown-knife-head: 40 selections (4.1%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "cornucopia-fatal-thrown-knife-head: 687 feasible / 35 selected",
-            "cornucopia-fatal-fistfight-strangulation: 683 feasible / 40 selected",
-            "cornucopia-fatal-discovering-hidden-tribute: 665 feasible / 35 selected",
-            "cornucopia-fatal-head-against-rock: 654 feasible / 36 selected",
-            "cornucopia-fatal-silent-neck-break: 654 feasible / 38 selected"
+            "cornucopia-fatal-discovering-hidden-tribute: 681 feasible / 32 selected",
+            "cornucopia-fatal-head-against-rock: 669 feasible / 33 selected",
+            "cornucopia-fatal-thrown-knife-head: 674 feasible / 40 selected",
+            "cornucopia-fatal-silent-neck-break: 671 feasible / 38 selected",
+            "cornucopia-fatal-improvised-branch-stabbing: 664 feasible / 39 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 16789",
-            "definition-ineligible: 9502",
-            "already-used-definition: 2547",
-            "fatality-target-stranded: 2290",
-            "fatality-survivor-budget: 1491"
+            "weighted-not-selected: 17283",
+            "definition-ineligible: 9657",
+            "already-used-definition: 2591",
+            "fatality-target-stranded: 2534",
+            "fatality-survivor-budget: 1567"
           ]
         }
       },
@@ -1161,29 +1195,29 @@
         "gameSize": "full-game",
         "poolId": "bloodbath-cornucopia",
         "participantShape": "all",
-        "actual": "50.0%",
+        "actual": "47.8%",
         "expected": "no definition above 85.0%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "cornucopia-fatal-cherry-bomb-attack: 45 selections (4.6%)",
-            "cornucopia-fatal-killed-while-fleeing: 45 selections (4.6%)",
-            "cornucopia-fatal-improvised-branch-stabbing: 43 selections (4.4%)",
-            "cornucopia-fatal-thrown-knife-chest: 41 selections (4.2%)",
-            "cornucopia-fatal-fistfight-strangulation: 40 selections (4.1%)"
+            "cornucopia-fatal-killed-while-fleeing: 43 selections (4.4%)",
+            "cornucopia-fatal-fistfight-strangulation: 42 selections (4.3%)",
+            "cornucopia-fatal-cherry-bomb-attack: 41 selections (4.2%)",
+            "cornucopia-fatal-supply-net-counterweight: 41 selections (4.2%)",
+            "cornucopia-fatal-thrown-knife-head: 40 selections (4.1%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "cornucopia-fatal-thrown-knife-head: 687 feasible / 35 selected",
-            "cornucopia-fatal-fistfight-strangulation: 683 feasible / 40 selected",
-            "cornucopia-fatal-discovering-hidden-tribute: 665 feasible / 35 selected",
-            "cornucopia-fatal-head-against-rock: 654 feasible / 36 selected",
-            "cornucopia-fatal-silent-neck-break: 654 feasible / 38 selected"
+            "cornucopia-fatal-discovering-hidden-tribute: 681 feasible / 32 selected",
+            "cornucopia-fatal-head-against-rock: 669 feasible / 33 selected",
+            "cornucopia-fatal-thrown-knife-head: 674 feasible / 40 selected",
+            "cornucopia-fatal-silent-neck-break: 671 feasible / 38 selected",
+            "cornucopia-fatal-improvised-branch-stabbing: 664 feasible / 39 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 16789",
-            "definition-ineligible: 9502",
-            "already-used-definition: 2547",
-            "fatality-target-stranded: 2290",
-            "fatality-survivor-budget: 1491"
+            "weighted-not-selected: 17283",
+            "definition-ineligible: 9657",
+            "already-used-definition: 2591",
+            "fatality-target-stranded: 2534",
+            "fatality-survivor-budget: 1567"
           ]
         }
       },
@@ -1194,29 +1228,29 @@
         "gameSize": "full-game",
         "poolId": "bloodbath-cornucopia",
         "participantShape": "all",
-        "actual": "22.1%",
+        "actual": "21.3%",
         "expected": "no more than 35.8%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "cornucopia-fatal-cherry-bomb-attack: 45 selections (4.6%)",
-            "cornucopia-fatal-killed-while-fleeing: 45 selections (4.6%)",
-            "cornucopia-fatal-improvised-branch-stabbing: 43 selections (4.4%)",
-            "cornucopia-fatal-thrown-knife-chest: 41 selections (4.2%)",
-            "cornucopia-fatal-fistfight-strangulation: 40 selections (4.1%)"
+            "cornucopia-fatal-killed-while-fleeing: 43 selections (4.4%)",
+            "cornucopia-fatal-fistfight-strangulation: 42 selections (4.3%)",
+            "cornucopia-fatal-cherry-bomb-attack: 41 selections (4.2%)",
+            "cornucopia-fatal-supply-net-counterweight: 41 selections (4.2%)",
+            "cornucopia-fatal-thrown-knife-head: 40 selections (4.1%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "cornucopia-fatal-thrown-knife-head: 687 feasible / 35 selected",
-            "cornucopia-fatal-fistfight-strangulation: 683 feasible / 40 selected",
-            "cornucopia-fatal-discovering-hidden-tribute: 665 feasible / 35 selected",
-            "cornucopia-fatal-head-against-rock: 654 feasible / 36 selected",
-            "cornucopia-fatal-silent-neck-break: 654 feasible / 38 selected"
+            "cornucopia-fatal-discovering-hidden-tribute: 681 feasible / 32 selected",
+            "cornucopia-fatal-head-against-rock: 669 feasible / 33 selected",
+            "cornucopia-fatal-thrown-knife-head: 674 feasible / 40 selected",
+            "cornucopia-fatal-silent-neck-break: 671 feasible / 38 selected",
+            "cornucopia-fatal-improvised-branch-stabbing: 664 feasible / 39 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 16789",
-            "definition-ineligible: 9502",
-            "already-used-definition: 2547",
-            "fatality-target-stranded: 2290",
-            "fatality-survivor-budget: 1491"
+            "weighted-not-selected: 17283",
+            "definition-ineligible: 9657",
+            "already-used-definition: 2591",
+            "fatality-target-stranded: 2534",
+            "fatality-survivor-budget: 1567"
           ]
         }
       },
@@ -1227,29 +1261,29 @@
         "gameSize": "full-game",
         "poolId": "bloodbath-cornucopia",
         "participantShape": "all",
-        "actual": "3.17",
+        "actual": "3.26",
         "expected": "no more than 5.08",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "cornucopia-fatal-cherry-bomb-attack: 45 selections (4.6%)",
-            "cornucopia-fatal-killed-while-fleeing: 45 selections (4.6%)",
-            "cornucopia-fatal-improvised-branch-stabbing: 43 selections (4.4%)",
-            "cornucopia-fatal-thrown-knife-chest: 41 selections (4.2%)",
-            "cornucopia-fatal-fistfight-strangulation: 40 selections (4.1%)"
+            "cornucopia-fatal-killed-while-fleeing: 43 selections (4.4%)",
+            "cornucopia-fatal-fistfight-strangulation: 42 selections (4.3%)",
+            "cornucopia-fatal-cherry-bomb-attack: 41 selections (4.2%)",
+            "cornucopia-fatal-supply-net-counterweight: 41 selections (4.2%)",
+            "cornucopia-fatal-thrown-knife-head: 40 selections (4.1%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "cornucopia-fatal-thrown-knife-head: 687 feasible / 35 selected",
-            "cornucopia-fatal-fistfight-strangulation: 683 feasible / 40 selected",
-            "cornucopia-fatal-discovering-hidden-tribute: 665 feasible / 35 selected",
-            "cornucopia-fatal-head-against-rock: 654 feasible / 36 selected",
-            "cornucopia-fatal-silent-neck-break: 654 feasible / 38 selected"
+            "cornucopia-fatal-discovering-hidden-tribute: 681 feasible / 32 selected",
+            "cornucopia-fatal-head-against-rock: 669 feasible / 33 selected",
+            "cornucopia-fatal-thrown-knife-head: 674 feasible / 40 selected",
+            "cornucopia-fatal-silent-neck-break: 671 feasible / 38 selected",
+            "cornucopia-fatal-improvised-branch-stabbing: 664 feasible / 39 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 16789",
-            "definition-ineligible: 9502",
-            "already-used-definition: 2547",
-            "fatality-target-stranded: 2290",
-            "fatality-survivor-budget: 1491"
+            "weighted-not-selected: 17283",
+            "definition-ineligible: 9657",
+            "already-used-definition: 2591",
+            "fatality-target-stranded: 2534",
+            "fatality-survivor-budget: 1567"
           ]
         }
       },
@@ -1260,29 +1294,29 @@
         "gameSize": "full-game",
         "poolId": "bloodbath-cornucopia",
         "participantShape": "all",
-        "actual": "2.9% (1/34): cornucopia-fatal-left-bleeding",
+        "actual": "2.9% (1/35): cornucopia-fatal-left-bleeding",
         "expected": "no more than 22.1% of frequently feasible definitions ignored",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "cornucopia-fatal-cherry-bomb-attack: 45 selections (4.6%)",
-            "cornucopia-fatal-killed-while-fleeing: 45 selections (4.6%)",
-            "cornucopia-fatal-improvised-branch-stabbing: 43 selections (4.4%)",
-            "cornucopia-fatal-thrown-knife-chest: 41 selections (4.2%)",
-            "cornucopia-fatal-fistfight-strangulation: 40 selections (4.1%)"
+            "cornucopia-fatal-killed-while-fleeing: 43 selections (4.4%)",
+            "cornucopia-fatal-fistfight-strangulation: 42 selections (4.3%)",
+            "cornucopia-fatal-cherry-bomb-attack: 41 selections (4.2%)",
+            "cornucopia-fatal-supply-net-counterweight: 41 selections (4.2%)",
+            "cornucopia-fatal-thrown-knife-head: 40 selections (4.1%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "cornucopia-fatal-thrown-knife-head: 687 feasible / 35 selected",
-            "cornucopia-fatal-fistfight-strangulation: 683 feasible / 40 selected",
-            "cornucopia-fatal-discovering-hidden-tribute: 665 feasible / 35 selected",
-            "cornucopia-fatal-head-against-rock: 654 feasible / 36 selected",
-            "cornucopia-fatal-silent-neck-break: 654 feasible / 38 selected"
+            "cornucopia-fatal-discovering-hidden-tribute: 681 feasible / 32 selected",
+            "cornucopia-fatal-head-against-rock: 669 feasible / 33 selected",
+            "cornucopia-fatal-thrown-knife-head: 674 feasible / 40 selected",
+            "cornucopia-fatal-silent-neck-break: 671 feasible / 38 selected",
+            "cornucopia-fatal-improvised-branch-stabbing: 664 feasible / 39 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 16789",
-            "definition-ineligible: 9502",
-            "already-used-definition: 2547",
-            "fatality-target-stranded: 2290",
-            "fatality-survivor-budget: 1491"
+            "weighted-not-selected: 17283",
+            "definition-ineligible: 9657",
+            "already-used-definition: 2591",
+            "fatality-target-stranded: 2534",
+            "fatality-survivor-budget: 1567"
           ]
         }
       },
@@ -1293,27 +1327,28 @@
         "gameSize": "full-game",
         "poolId": "bloodbath-flee",
         "participantShape": "all",
-        "actual": "73.2%",
+        "actual": "73.8%",
         "expected": "at least 70.3%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "bloodbath-flee-pair-shoulder-collision: 19 selections (7.7%)",
-            "bloodbath-flee-pair-same-hollow-tree: 17 selections (6.9%)",
-            "bloodbath-flee-pair-ankle-hook: 16 selections (6.5%)",
-            "bloodbath-flee-pair-ravine-route-argument: 14 selections (5.7%)",
-            "bloodbath-flee-trio-narrow-deer-path: 14 selections (5.7%)"
+            "bloodbath-flee-pair-shoulder-collision: 18 selections (7.4%)",
+            "bloodbath-flee-break-away-crowd: 16 selections (6.6%)",
+            "bloodbath-flee-pair-ankle-hook: 16 selections (6.6%)",
+            "bloodbath-flee-trio-narrow-deer-path: 16 selections (6.6%)",
+            "bloodbath-flee-pair-ravine-route-argument: 13 selections (5.3%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "bloodbath-flee-cross-fallen-tree: 246 feasible / 0 selected",
-            "bloodbath-flee-escape-stampede: 245 feasible / 1 selected",
-            "bloodbath-flee-tall-grass: 246 feasible / 4 selected",
+            "bloodbath-flee-cross-fallen-tree: 244 feasible / 0 selected",
             "bloodbath-flee-leap-across-creek: 244 feasible / 2 selected",
-            "bloodbath-flee-bramble-shortcut: 246 feasible / 5 selected"
+            "bloodbath-flee-tall-grass: 244 feasible / 3 selected",
+            "bloodbath-flee-mud-camouflage: 243 feasible / 2 selected",
+            "bloodbath-flee-escape-stampede: 242 feasible / 1 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 5995",
-            "definition-ineligible: 1125",
-            "already-used-definition: 260"
+            "weighted-not-selected: 6148",
+            "definition-ineligible: 1152",
+            "already-used-definition: 253",
+            "participant-or-item-infeasible: 11"
           ]
         }
       },
@@ -1324,27 +1359,28 @@
         "gameSize": "full-game",
         "poolId": "bloodbath-flee",
         "participantShape": "pair",
-        "actual": "113",
+        "actual": "110",
         "expected": "at least one selection",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "bloodbath-flee-pair-shoulder-collision: 19 selections (7.7%)",
-            "bloodbath-flee-pair-same-hollow-tree: 17 selections (6.9%)",
-            "bloodbath-flee-pair-ankle-hook: 16 selections (6.5%)",
-            "bloodbath-flee-pair-ravine-route-argument: 14 selections (5.7%)",
-            "bloodbath-flee-trio-narrow-deer-path: 14 selections (5.7%)"
+            "bloodbath-flee-pair-shoulder-collision: 18 selections (7.4%)",
+            "bloodbath-flee-break-away-crowd: 16 selections (6.6%)",
+            "bloodbath-flee-pair-ankle-hook: 16 selections (6.6%)",
+            "bloodbath-flee-trio-narrow-deer-path: 16 selections (6.6%)",
+            "bloodbath-flee-pair-ravine-route-argument: 13 selections (5.3%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "bloodbath-flee-cross-fallen-tree: 246 feasible / 0 selected",
-            "bloodbath-flee-escape-stampede: 245 feasible / 1 selected",
-            "bloodbath-flee-tall-grass: 246 feasible / 4 selected",
+            "bloodbath-flee-cross-fallen-tree: 244 feasible / 0 selected",
             "bloodbath-flee-leap-across-creek: 244 feasible / 2 selected",
-            "bloodbath-flee-bramble-shortcut: 246 feasible / 5 selected"
+            "bloodbath-flee-tall-grass: 244 feasible / 3 selected",
+            "bloodbath-flee-mud-camouflage: 243 feasible / 2 selected",
+            "bloodbath-flee-escape-stampede: 242 feasible / 1 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 5995",
-            "definition-ineligible: 1125",
-            "already-used-definition: 260"
+            "weighted-not-selected: 6148",
+            "definition-ineligible: 1152",
+            "already-used-definition: 253",
+            "participant-or-item-infeasible: 11"
           ]
         }
       },
@@ -1355,27 +1391,28 @@
         "gameSize": "full-game",
         "poolId": "bloodbath-flee",
         "participantShape": "trio",
-        "actual": "51",
+        "actual": "55",
         "expected": "at least one selection",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "bloodbath-flee-pair-shoulder-collision: 19 selections (7.7%)",
-            "bloodbath-flee-pair-same-hollow-tree: 17 selections (6.9%)",
-            "bloodbath-flee-pair-ankle-hook: 16 selections (6.5%)",
-            "bloodbath-flee-pair-ravine-route-argument: 14 selections (5.7%)",
-            "bloodbath-flee-trio-narrow-deer-path: 14 selections (5.7%)"
+            "bloodbath-flee-pair-shoulder-collision: 18 selections (7.4%)",
+            "bloodbath-flee-break-away-crowd: 16 selections (6.6%)",
+            "bloodbath-flee-pair-ankle-hook: 16 selections (6.6%)",
+            "bloodbath-flee-trio-narrow-deer-path: 16 selections (6.6%)",
+            "bloodbath-flee-pair-ravine-route-argument: 13 selections (5.3%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "bloodbath-flee-cross-fallen-tree: 246 feasible / 0 selected",
-            "bloodbath-flee-escape-stampede: 245 feasible / 1 selected",
-            "bloodbath-flee-tall-grass: 246 feasible / 4 selected",
+            "bloodbath-flee-cross-fallen-tree: 244 feasible / 0 selected",
             "bloodbath-flee-leap-across-creek: 244 feasible / 2 selected",
-            "bloodbath-flee-bramble-shortcut: 246 feasible / 5 selected"
+            "bloodbath-flee-tall-grass: 244 feasible / 3 selected",
+            "bloodbath-flee-mud-camouflage: 243 feasible / 2 selected",
+            "bloodbath-flee-escape-stampede: 242 feasible / 1 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 5995",
-            "definition-ineligible: 1125",
-            "already-used-definition: 260"
+            "weighted-not-selected: 6148",
+            "definition-ineligible: 1152",
+            "already-used-definition: 253",
+            "participant-or-item-infeasible: 11"
           ]
         }
       },
@@ -1386,27 +1423,28 @@
         "gameSize": "full-game",
         "poolId": "bloodbath-flee",
         "participantShape": "group-four-plus",
-        "actual": "16",
+        "actual": "15",
         "expected": "at least one selection",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "bloodbath-flee-pair-shoulder-collision: 19 selections (7.7%)",
-            "bloodbath-flee-pair-same-hollow-tree: 17 selections (6.9%)",
-            "bloodbath-flee-pair-ankle-hook: 16 selections (6.5%)",
-            "bloodbath-flee-pair-ravine-route-argument: 14 selections (5.7%)",
-            "bloodbath-flee-trio-narrow-deer-path: 14 selections (5.7%)"
+            "bloodbath-flee-pair-shoulder-collision: 18 selections (7.4%)",
+            "bloodbath-flee-break-away-crowd: 16 selections (6.6%)",
+            "bloodbath-flee-pair-ankle-hook: 16 selections (6.6%)",
+            "bloodbath-flee-trio-narrow-deer-path: 16 selections (6.6%)",
+            "bloodbath-flee-pair-ravine-route-argument: 13 selections (5.3%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "bloodbath-flee-cross-fallen-tree: 246 feasible / 0 selected",
-            "bloodbath-flee-escape-stampede: 245 feasible / 1 selected",
-            "bloodbath-flee-tall-grass: 246 feasible / 4 selected",
+            "bloodbath-flee-cross-fallen-tree: 244 feasible / 0 selected",
             "bloodbath-flee-leap-across-creek: 244 feasible / 2 selected",
-            "bloodbath-flee-bramble-shortcut: 246 feasible / 5 selected"
+            "bloodbath-flee-tall-grass: 244 feasible / 3 selected",
+            "bloodbath-flee-mud-camouflage: 243 feasible / 2 selected",
+            "bloodbath-flee-escape-stampede: 242 feasible / 1 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 5995",
-            "definition-ineligible: 1125",
-            "already-used-definition: 260"
+            "weighted-not-selected: 6148",
+            "definition-ineligible: 1152",
+            "already-used-definition: 253",
+            "participant-or-item-infeasible: 11"
           ]
         }
       },
@@ -1417,27 +1455,28 @@
         "gameSize": "full-game",
         "poolId": "bloodbath-flee",
         "participantShape": "solo",
-        "actual": "15.2%",
+        "actual": "17.2%",
         "expected": "no more than 48.3% of solo fleeing selections",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "bloodbath-flee-pair-shoulder-collision: 19 selections (7.7%)",
-            "bloodbath-flee-pair-same-hollow-tree: 17 selections (6.9%)",
-            "bloodbath-flee-pair-ankle-hook: 16 selections (6.5%)",
-            "bloodbath-flee-pair-ravine-route-argument: 14 selections (5.7%)",
-            "bloodbath-flee-trio-narrow-deer-path: 14 selections (5.7%)"
+            "bloodbath-flee-pair-shoulder-collision: 18 selections (7.4%)",
+            "bloodbath-flee-break-away-crowd: 16 selections (6.6%)",
+            "bloodbath-flee-pair-ankle-hook: 16 selections (6.6%)",
+            "bloodbath-flee-trio-narrow-deer-path: 16 selections (6.6%)",
+            "bloodbath-flee-pair-ravine-route-argument: 13 selections (5.3%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "bloodbath-flee-cross-fallen-tree: 246 feasible / 0 selected",
-            "bloodbath-flee-escape-stampede: 245 feasible / 1 selected",
-            "bloodbath-flee-tall-grass: 246 feasible / 4 selected",
+            "bloodbath-flee-cross-fallen-tree: 244 feasible / 0 selected",
             "bloodbath-flee-leap-across-creek: 244 feasible / 2 selected",
-            "bloodbath-flee-bramble-shortcut: 246 feasible / 5 selected"
+            "bloodbath-flee-tall-grass: 244 feasible / 3 selected",
+            "bloodbath-flee-mud-camouflage: 243 feasible / 2 selected",
+            "bloodbath-flee-escape-stampede: 242 feasible / 1 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 5995",
-            "definition-ineligible: 1125",
-            "already-used-definition: 260"
+            "weighted-not-selected: 6148",
+            "definition-ineligible: 1152",
+            "already-used-definition: 253",
+            "participant-or-item-infeasible: 11"
           ]
         }
       },
@@ -1448,27 +1487,28 @@
         "gameSize": "full-game",
         "poolId": "bloodbath-flee",
         "participantShape": "all",
-        "actual": "4.5%",
+        "actual": "6.6%",
         "expected": "0.0%–11.6%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "bloodbath-flee-pair-shoulder-collision: 19 selections (7.7%)",
-            "bloodbath-flee-pair-same-hollow-tree: 17 selections (6.9%)",
-            "bloodbath-flee-pair-ankle-hook: 16 selections (6.5%)",
-            "bloodbath-flee-pair-ravine-route-argument: 14 selections (5.7%)",
-            "bloodbath-flee-trio-narrow-deer-path: 14 selections (5.7%)"
+            "bloodbath-flee-pair-shoulder-collision: 18 selections (7.4%)",
+            "bloodbath-flee-break-away-crowd: 16 selections (6.6%)",
+            "bloodbath-flee-pair-ankle-hook: 16 selections (6.6%)",
+            "bloodbath-flee-trio-narrow-deer-path: 16 selections (6.6%)",
+            "bloodbath-flee-pair-ravine-route-argument: 13 selections (5.3%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "bloodbath-flee-cross-fallen-tree: 246 feasible / 0 selected",
-            "bloodbath-flee-escape-stampede: 245 feasible / 1 selected",
-            "bloodbath-flee-tall-grass: 246 feasible / 4 selected",
+            "bloodbath-flee-cross-fallen-tree: 244 feasible / 0 selected",
             "bloodbath-flee-leap-across-creek: 244 feasible / 2 selected",
-            "bloodbath-flee-bramble-shortcut: 246 feasible / 5 selected"
+            "bloodbath-flee-tall-grass: 244 feasible / 3 selected",
+            "bloodbath-flee-mud-camouflage: 243 feasible / 2 selected",
+            "bloodbath-flee-escape-stampede: 242 feasible / 1 selected"
           ],
           "commonRejectionReasons": [
-            "weighted-not-selected: 5995",
-            "definition-ineligible: 1125",
-            "already-used-definition: 260"
+            "weighted-not-selected: 6148",
+            "definition-ineligible: 1152",
+            "already-used-definition: 253",
+            "participant-or-item-infeasible: 11"
           ]
         }
       },
@@ -1479,29 +1519,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "41.3%",
+        "actual": "47.1%",
         "expected": "at least 26.0%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 90 selections (5.1%)",
-            "status-microsleep-worst-time: 80 selections (4.6%)",
-            "becomes-thirsty: 50 selections (2.8%)",
-            "becomes-hungry: 45 selections (2.6%)",
-            "fallen-cliff: 45 selections (2.6%)"
+            "high-brawn-sack-of-potatoes: 61 selections (3.8%)",
+            "river-current: 55 selections (3.5%)",
+            "status-microsleep-worst-time: 47 selections (3.0%)",
+            "low-brawn-bridge-over-troubled-water: 46 selections (2.9%)",
+            "fallen-cliff: 44 selections (2.8%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1723 feasible / 45 selected",
-            "day-accidental-self-injury: 1658 feasible / 8 selected",
-            "day-picking-flowers: 1658 feasible / 9 selected",
-            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
-            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
+            "day-thinking-about-home: 1533 feasible / 4 selected",
+            "day-picking-flowers: 1533 feasible / 5 selected",
+            "day-accidental-self-injury: 1533 feasible / 7 selected",
+            "day-camouflaging-in-bushes: 1533 feasible / 7 selected",
+            "day-discovering-river: 1533 feasible / 7 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 189276",
-            "participant-or-item-infeasible: 74194",
-            "weighted-not-selected: 73657",
-            "already-used-definition: 14889",
-            "planner-stage-not-attempted: 5737"
+            "definition-ineligible: 190450",
+            "weighted-not-selected: 85871",
+            "participant-or-item-infeasible: 79540",
+            "already-used-definition: 12965",
+            "reservation-blocked: 5336"
           ]
         }
       },
@@ -1512,29 +1552,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "pair",
-        "actual": "37.5%",
+        "actual": "44.5%",
         "expected": "at least 27.5%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 90 selections (5.1%)",
-            "status-microsleep-worst-time: 80 selections (4.6%)",
-            "becomes-thirsty: 50 selections (2.8%)",
-            "becomes-hungry: 45 selections (2.6%)",
-            "fallen-cliff: 45 selections (2.6%)"
+            "high-brawn-sack-of-potatoes: 61 selections (3.8%)",
+            "river-current: 55 selections (3.5%)",
+            "status-microsleep-worst-time: 47 selections (3.0%)",
+            "low-brawn-bridge-over-troubled-water: 46 selections (2.9%)",
+            "fallen-cliff: 44 selections (2.8%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1723 feasible / 45 selected",
-            "day-accidental-self-injury: 1658 feasible / 8 selected",
-            "day-picking-flowers: 1658 feasible / 9 selected",
-            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
-            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
+            "day-thinking-about-home: 1533 feasible / 4 selected",
+            "day-picking-flowers: 1533 feasible / 5 selected",
+            "day-accidental-self-injury: 1533 feasible / 7 selected",
+            "day-camouflaging-in-bushes: 1533 feasible / 7 selected",
+            "day-discovering-river: 1533 feasible / 7 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 189276",
-            "participant-or-item-infeasible: 74194",
-            "weighted-not-selected: 73657",
-            "already-used-definition: 14889",
-            "planner-stage-not-attempted: 5737"
+            "definition-ineligible: 190450",
+            "weighted-not-selected: 85871",
+            "participant-or-item-infeasible: 79540",
+            "already-used-definition: 12965",
+            "reservation-blocked: 5336"
           ]
         }
       },
@@ -1545,29 +1585,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "trio",
-        "actual": "54",
+        "actual": "35",
         "expected": "at least one selection",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 90 selections (5.1%)",
-            "status-microsleep-worst-time: 80 selections (4.6%)",
-            "becomes-thirsty: 50 selections (2.8%)",
-            "becomes-hungry: 45 selections (2.6%)",
-            "fallen-cliff: 45 selections (2.6%)"
+            "high-brawn-sack-of-potatoes: 61 selections (3.8%)",
+            "river-current: 55 selections (3.5%)",
+            "status-microsleep-worst-time: 47 selections (3.0%)",
+            "low-brawn-bridge-over-troubled-water: 46 selections (2.9%)",
+            "fallen-cliff: 44 selections (2.8%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1723 feasible / 45 selected",
-            "day-accidental-self-injury: 1658 feasible / 8 selected",
-            "day-picking-flowers: 1658 feasible / 9 selected",
-            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
-            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
+            "day-thinking-about-home: 1533 feasible / 4 selected",
+            "day-picking-flowers: 1533 feasible / 5 selected",
+            "day-accidental-self-injury: 1533 feasible / 7 selected",
+            "day-camouflaging-in-bushes: 1533 feasible / 7 selected",
+            "day-discovering-river: 1533 feasible / 7 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 189276",
-            "participant-or-item-infeasible: 74194",
-            "weighted-not-selected: 73657",
-            "already-used-definition: 14889",
-            "planner-stage-not-attempted: 5737"
+            "definition-ineligible: 190450",
+            "weighted-not-selected: 85871",
+            "participant-or-item-infeasible: 79540",
+            "already-used-definition: 12965",
+            "reservation-blocked: 5336"
           ]
         }
       },
@@ -1578,29 +1618,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "group-four-plus",
-        "actual": "13",
+        "actual": "7",
         "expected": "informational; accepted baseline had no selections",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 90 selections (5.1%)",
-            "status-microsleep-worst-time: 80 selections (4.6%)",
-            "becomes-thirsty: 50 selections (2.8%)",
-            "becomes-hungry: 45 selections (2.6%)",
-            "fallen-cliff: 45 selections (2.6%)"
+            "high-brawn-sack-of-potatoes: 61 selections (3.8%)",
+            "river-current: 55 selections (3.5%)",
+            "status-microsleep-worst-time: 47 selections (3.0%)",
+            "low-brawn-bridge-over-troubled-water: 46 selections (2.9%)",
+            "fallen-cliff: 44 selections (2.8%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1723 feasible / 45 selected",
-            "day-accidental-self-injury: 1658 feasible / 8 selected",
-            "day-picking-flowers: 1658 feasible / 9 selected",
-            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
-            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
+            "day-thinking-about-home: 1533 feasible / 4 selected",
+            "day-picking-flowers: 1533 feasible / 5 selected",
+            "day-accidental-self-injury: 1533 feasible / 7 selected",
+            "day-camouflaging-in-bushes: 1533 feasible / 7 selected",
+            "day-discovering-river: 1533 feasible / 7 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 189276",
-            "participant-or-item-infeasible: 74194",
-            "weighted-not-selected: 73657",
-            "already-used-definition: 14889",
-            "planner-stage-not-attempted: 5737"
+            "definition-ineligible: 190450",
+            "weighted-not-selected: 85871",
+            "participant-or-item-infeasible: 79540",
+            "already-used-definition: 12965",
+            "reservation-blocked: 5336"
           ]
         }
       },
@@ -1611,29 +1651,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "21.3%",
+        "actual": "15.8%",
         "expected": "at least 9.4%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 90 selections (5.1%)",
-            "status-microsleep-worst-time: 80 selections (4.6%)",
-            "becomes-thirsty: 50 selections (2.8%)",
-            "becomes-hungry: 45 selections (2.6%)",
-            "fallen-cliff: 45 selections (2.6%)"
+            "high-brawn-sack-of-potatoes: 61 selections (3.8%)",
+            "river-current: 55 selections (3.5%)",
+            "status-microsleep-worst-time: 47 selections (3.0%)",
+            "low-brawn-bridge-over-troubled-water: 46 selections (2.9%)",
+            "fallen-cliff: 44 selections (2.8%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1723 feasible / 45 selected",
-            "day-accidental-self-injury: 1658 feasible / 8 selected",
-            "day-picking-flowers: 1658 feasible / 9 selected",
-            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
-            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
+            "day-thinking-about-home: 1533 feasible / 4 selected",
+            "day-picking-flowers: 1533 feasible / 5 selected",
+            "day-accidental-self-injury: 1533 feasible / 7 selected",
+            "day-camouflaging-in-bushes: 1533 feasible / 7 selected",
+            "day-discovering-river: 1533 feasible / 7 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 189276",
-            "participant-or-item-infeasible: 74194",
-            "weighted-not-selected: 73657",
-            "already-used-definition: 14889",
-            "planner-stage-not-attempted: 5737"
+            "definition-ineligible: 190450",
+            "weighted-not-selected: 85871",
+            "participant-or-item-infeasible: 79540",
+            "already-used-definition: 12965",
+            "reservation-blocked: 5336"
           ]
         }
       },
@@ -1644,29 +1684,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "1.9%",
+        "actual": "1.1%",
         "expected": "at least 0.3%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 90 selections (5.1%)",
-            "status-microsleep-worst-time: 80 selections (4.6%)",
-            "becomes-thirsty: 50 selections (2.8%)",
-            "becomes-hungry: 45 selections (2.6%)",
-            "fallen-cliff: 45 selections (2.6%)"
+            "high-brawn-sack-of-potatoes: 61 selections (3.8%)",
+            "river-current: 55 selections (3.5%)",
+            "status-microsleep-worst-time: 47 selections (3.0%)",
+            "low-brawn-bridge-over-troubled-water: 46 selections (2.9%)",
+            "fallen-cliff: 44 selections (2.8%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1723 feasible / 45 selected",
-            "day-accidental-self-injury: 1658 feasible / 8 selected",
-            "day-picking-flowers: 1658 feasible / 9 selected",
-            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
-            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
+            "day-thinking-about-home: 1533 feasible / 4 selected",
+            "day-picking-flowers: 1533 feasible / 5 selected",
+            "day-accidental-self-injury: 1533 feasible / 7 selected",
+            "day-camouflaging-in-bushes: 1533 feasible / 7 selected",
+            "day-discovering-river: 1533 feasible / 7 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 189276",
-            "participant-or-item-infeasible: 74194",
-            "weighted-not-selected: 73657",
-            "already-used-definition: 14889",
-            "planner-stage-not-attempted: 5737"
+            "definition-ineligible: 190450",
+            "weighted-not-selected: 85871",
+            "participant-or-item-infeasible: 79540",
+            "already-used-definition: 12965",
+            "reservation-blocked: 5336"
           ]
         }
       },
@@ -1677,29 +1717,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "66.7% across 135 environmental fatalities",
+        "actual": "55.6% across 99 environmental fatalities",
         "expected": "no definition above 70.0%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 90 selections (5.1%)",
-            "status-microsleep-worst-time: 80 selections (4.6%)",
-            "becomes-thirsty: 50 selections (2.8%)",
-            "becomes-hungry: 45 selections (2.6%)",
-            "fallen-cliff: 45 selections (2.6%)"
+            "high-brawn-sack-of-potatoes: 61 selections (3.8%)",
+            "river-current: 55 selections (3.5%)",
+            "status-microsleep-worst-time: 47 selections (3.0%)",
+            "low-brawn-bridge-over-troubled-water: 46 selections (2.9%)",
+            "fallen-cliff: 44 selections (2.8%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1723 feasible / 45 selected",
-            "day-accidental-self-injury: 1658 feasible / 8 selected",
-            "day-picking-flowers: 1658 feasible / 9 selected",
-            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
-            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
+            "day-thinking-about-home: 1533 feasible / 4 selected",
+            "day-picking-flowers: 1533 feasible / 5 selected",
+            "day-accidental-self-injury: 1533 feasible / 7 selected",
+            "day-camouflaging-in-bushes: 1533 feasible / 7 selected",
+            "day-discovering-river: 1533 feasible / 7 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 189276",
-            "participant-or-item-infeasible: 74194",
-            "weighted-not-selected: 73657",
-            "already-used-definition: 14889",
-            "planner-stage-not-attempted: 5737"
+            "definition-ineligible: 190450",
+            "weighted-not-selected: 85871",
+            "participant-or-item-infeasible: 79540",
+            "already-used-definition: 12965",
+            "reservation-blocked: 5336"
           ]
         }
       }

@@ -12,7 +12,6 @@ import {
   CORNUCOPIA_PAIR_CONFLICT_EVENTS,
   FLEE_EVENTS,
 } from "~/game/events/catalogue/bloodbath";
-import { MULTI_PARTICIPANT_FLEE_EVENTS } from "~/game/events/catalogue/bloodbath/flee-multi-events";
 import type { EventDefinition, ParticipantsByRole } from "~/game/events/event-schema";
 import { EVENT_CATALOGUE } from "~/game/events/catalogue";
 import { getItemDefinition } from "~/game/items/item-catalogue";
@@ -510,9 +509,14 @@ describe("Bloodbath outcome coverage", () => {
   it("preserves legacy flee outcomes and revised multi-participant variation", () => {
     const game = createTestGame();
     const multiParticipantDefinitionIds = new Set(
-      MULTI_PARTICIPANT_FLEE_EVENTS.map((definition) => definition.id),
+      FLEE_EVENTS.filter(
+        (definition) => definition.roles.reduce((total, role) => total + role.count, 0) > 1,
+      ).map((definition) => definition.id),
     );
-    const deterministicMultiDefinitionIds = new Set(["bloodbath-flee-trio-redirect-pursuit"]);
+    const deterministicMultiDefinitionIds = new Set([
+      "bloodbath-flee-trio-redirect-pursuit",
+      "bloodbath-flee-low-brawn-run-faster",
+    ]);
 
     for (const definition of FLEE_EVENTS) {
       const participantsByRole = createDeterministicParticipantsByRole(definition, game.tributes);

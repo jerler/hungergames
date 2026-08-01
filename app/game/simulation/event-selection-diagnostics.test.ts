@@ -84,6 +84,29 @@ describe("event-selection diagnostics", () => {
     expect(pairDiagnostics?.rejectionCounts["planner-stage-not-attempted"]).toBe(1);
   });
 
+  it("counts a participant shape once per selection opportunity", () => {
+    const firstPair = createDefinition("diagnostic-pair-first", 2);
+    const secondPair = createDefinition("diagnostic-pair-second", 2);
+    const trio = createDefinition("diagnostic-trio", 3);
+
+    const { diagnostics } = captureEventSelectionDiagnostics(() => {
+      recordEventSelectionOpportunity({
+        poolId: "bloodbath-flee",
+        stage: "flee",
+        feasibleDefinitions: [firstPair, secondPair, trio],
+        selectedDefinition: firstPair,
+      });
+    });
+
+    const summary = summarizeEventSelectionDiagnosticsForPool(diagnostics, "bloodbath-flee");
+
+    expect(summary.opportunities).toBe(1);
+    expect(summary.feasibleByShape).toMatchObject({
+      pair: 1,
+      trio: 1,
+    });
+  });
+
   it("records hard rejection reasons separately from weighted losses", () => {
     const blocked = createDefinition("diagnostic-blocked", 3);
 

@@ -2,6 +2,7 @@ import {
   createFatalChanges,
   createItemAcquisitionAndSurvivalChanges,
   createSurvivalChanges,
+  createStatusChange,
 } from "~/game/events/event-change-builders";
 import { getItemLabel } from "~/game/events/event-resolution-helpers";
 import { requireSingleParticipant, type EventDefinition } from "~/game/events/event-schema";
@@ -18,6 +19,7 @@ import {
   isHighBrawn,
   isLowBrawn,
   statSelectionProfile,
+  isLowBrains,
 } from "~/game/events/catalogue/stat-gated/stat-gated-helpers";
 import { canFormStandardTruce } from "~/game/truces/truce-lifecycle";
 import {
@@ -438,6 +440,208 @@ const HIGH_BRAWN_YOINK: EventDefinition = {
   },
 };
 
+const LOW_BRAINS_OOH_SHINY: EventDefinition = {
+  id: "cornucopia-low-brains-ooh-shiny",
+  category: "hazard",
+  periods: ["day"],
+  baseWeight: 1.5,
+  tags: ["hazard"],
+  selectionProfile: statSelectionProfile(2),
+  cornucopiaAcquisitionPolicy: {
+    provisionRoleIds: [],
+  },
+  roles: [
+    {
+      id: "tribute",
+      count: 1,
+      isEligible: isLowBrains,
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "tribute");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} rushes into the Cornucopia surrounded by weapons, backpacks, and lifesaving supplies. ` +
+        `Distracted by something shiny at the bottom of an empty crate, confident that it will be ${pronouns.possessiveAdjective} key to survival, ` +
+        `${actor.snapshot.name} spends the entire Bloodbath trying to pry it loose before finding out it was just a mirror, ` +
+        `allowing ${pronouns.object} to take a good long look at ${pronouns.possessiveAdjective} life choices.`,
+      changes: createSurvivalChanges([actor]),
+    };
+  },
+};
+
+const LOW_BRAINS_POINTY_END: EventDefinition = {
+  id: "cornucopia-low-brains-pointy-end",
+  category: "hazard",
+  periods: ["day"],
+  baseWeight: 1.4,
+  tags: ["hazard", "status", "item", "weapon"],
+  selectionProfile: statSelectionProfile(5, ["item-requirement"]),
+  cornucopiaAcquisitionPolicy: {
+    preserveAuthoredItems: true,
+  },
+  roles: [
+    {
+      id: "tribute",
+      count: 1,
+      isEligible: (tribute) =>
+        tribute.snapshot.stats.brains === 1 && hasUsableCornucopiaContestedDirectWeapon(tribute),
+    },
+  ],
+  resolve({ eventId, round, random, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "tribute");
+    const pronouns = getTributePronouns(actor);
+    const weaponId = selectCornucopiaContestedDirectWeapon(actor, random);
+    const weaponLabel = getItemLabel(weaponId).toLowerCase();
+    const weaponWithArticle = /^[aeiou]/i.test(weaponLabel)
+      ? `an ${weaponLabel}`
+      : `a ${weaponLabel}`;
+
+    return {
+      text:
+        `${actor.snapshot.name} grabs ${weaponWithArticle} from the Cornucopia and immediately holds it by the wrong end. ` +
+        `After painfully correcting ${pronouns.possessiveAdjective} grip, ${pronouns.subject} escapes into the woods bleeding but thankfully at least slightly better informed.`,
+      changes: [
+        ...createItemAcquisitionAndSurvivalChanges(eventId, actor, [weaponId], round, "cornucopia"),
+        createStatusChange(eventId, actor, "injured", 1, round),
+      ],
+    };
+  },
+};
+
+const LOW_BRAINS_JUST_ONE_MORE_THING: EventDefinition = {
+  id: "cornucopia-low-brains-just-one-more-thing",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 1,
+  tags: ["fatal", "combat", "ambush"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isLowBrains,
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "target",
+      count: 1,
+      targeting: "hostile",
+      opposesRoleIds: ["actor"],
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} manages to grab a small backpack and run into the woods without injury. ` +
+        `Once safely among the trees, ${actor.snapshot.name} opens the bag and decides ${pronouns.subject} did not get enough supplies. ` +
+        `${actor.snapshot.name} is struck with several arrows as ${pronouns.subject} tries to run back to the Cornucopia.`,
+      changes: [
+        ...createFatalChanges(
+          actor,
+          "cornucopia-low-brains-returned-for-more",
+          "Shot while returning to the Cornucopia",
+          `${actor.snapshot.name} is shot by ${target.snapshot.name} after returning to the Cornucopia for more supplies.`,
+          target,
+        ),
+        ...createSurvivalChanges([target]),
+      ],
+    };
+  },
+};
+
+const LOW_BRAINS_NOT_A_BOX: EventDefinition = {
+  id: "cornucopia-low-brains-not-a-box",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.8,
+  tags: ["fatal", "environment"],
+  selectionProfile: statSelectionProfile(3),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: (tribute) => tribute.snapshot.stats.brains === 1,
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} grabs a hand-sized metal container within the Cornucopia and cannot figure out how to open it. ` +
+        `Finally, ${pronouns.subject} finds a pin-shaped key and pulls it out, hoping the container will swing open, only to have the grenade explode in ${pronouns.possessiveAdjective} hands.`,
+      changes: createFatalChanges(
+        actor,
+        "cornucopia-low-brains-grenade",
+        "Killed by an exploding grenade",
+        `${actor.snapshot.name} is killed after pulling the pin from a grenade at the Cornucopia.`,
+      ),
+    };
+  },
+};
+
+const LOW_BRAINS_FOLLOW_THAT_TRIBUTE: EventDefinition = {
+  id: "bloodbath-flee-low-brains-follow-that-tribute",
+  category: "survival",
+  periods: ["day"],
+  baseWeight: 1.2,
+  tags: ["survival", "truce", "cooperative"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(4, ["truce-requirement", "custom-eligibility"]),
+  isEligible: ({ state, livingTributes }) =>
+    canFormStandardTruce(2, state.tributes.filter((tribute) => tribute.isAlive).length) &&
+    livingTributes.some(
+      (tribute) => isLowBrains(tribute) && !getActiveTruceForTribute(state, tribute.id),
+    ) &&
+    livingTributes.some((tribute) => !getActiveTruceForTribute(state, tribute.id)),
+  getWeightMultiplier: ({ state, round }) => getTruceFormationPopulationMultiplier(state, round),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: (tribute, { state }) =>
+        isLowBrains(tribute) && !getActiveTruceForTribute(state, tribute.id),
+    },
+    {
+      id: "target",
+      count: 1,
+      isEligible: (tribute, { state }) => !getActiveTruceForTribute(state, tribute.id),
+    },
+  ],
+  resolve({ eventId, round, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const targetPronouns = getTributePronouns(target);
+
+    return {
+      text:
+        `${actor.snapshot.name} has no idea where to go and decides ${target.snapshot.name} looks like someone with a plan. ` +
+        `${actor.snapshot.name} follows ${target.snapshot.name} deep into the woods until ${targetPronouns.subject} finally notices the unexpected addition to ${targetPronouns.possessiveAdjective} group.`,
+      changes: [
+        {
+          type: "form-truce",
+          truce: createTruceInstance(
+            eventId,
+            [actor.id, target.id],
+            round,
+            STANDARD_TRUCE_EXPIRY_ROUND,
+          ),
+        },
+        ...createSurvivalChanges([actor, target]),
+      ],
+    };
+  },
+};
+
 const RUN_FASTER: EventDefinition = {
   id: "bloodbath-flee-low-brawn-run-faster",
   category: "survival",
@@ -537,6 +741,8 @@ const HIGH_BRAWN_GENTLE_GIANT_FLEE: EventDefinition = {
 };
 
 export const STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS = [
+  LOW_BRAINS_OOH_SHINY,
+  LOW_BRAINS_POINTY_END,
   LOW_BRAWN_DRAGGING_LOOT,
   SMARTER_NOT_HARDER,
   HIGH_BRAWN_FIRST,
@@ -546,6 +752,16 @@ export const STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS = [
 ] satisfies readonly EventDefinition[];
 
 export const STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES = [
+  {
+    definition: LOW_BRAINS_JUST_ONE_MORE_THING,
+    minImmediateEliminations: 1,
+    maxImmediateEliminations: 1,
+  },
+  {
+    definition: LOW_BRAINS_NOT_A_BOX,
+    minImmediateEliminations: 1,
+    maxImmediateEliminations: 1,
+  },
   {
     definition: SHOOTING_FISH_IN_A_BARREL,
     minImmediateEliminations: 1,
@@ -568,6 +784,7 @@ export const STAT_GATED_CORNUCOPIA_NONFATAL_PAIR_EVENTS = [
 ] satisfies readonly EventDefinition[];
 
 export const STAT_GATED_FLEE_EVENTS = [
+  LOW_BRAINS_FOLLOW_THAT_TRIBUTE,
   RUN_FASTER,
   HIGH_BRAWN_GENTLE_GIANT_FLEE,
 ] satisfies readonly EventDefinition[];

@@ -517,6 +517,7 @@ describe("Bloodbath outcome coverage", () => {
       "bloodbath-flee-trio-redirect-pursuit",
       "bloodbath-flee-low-brawn-run-faster",
       "bloodbath-flee-high-brawn-gentle-giant",
+      "bloodbath-flee-low-brains-follow-that-tribute",
     ]);
 
     for (const definition of FLEE_EVENTS) {

@@ -105,17 +105,17 @@ function context(
 }
 
 describe("stat-gated catalogue expansion", () => {
-  it("registers 59 concepts as 83 unique definitions", () => {
+  it("registers 84 concepts as 116 unique definitions", () => {
     expect(LOW_BRAWN_EVENTS).toHaveLength(25);
     expect(HIGH_BRAWN_EVENTS).toHaveLength(41);
-    expect(LOW_BRAINS_EVENTS).toHaveLength(1);
+    expect(LOW_BRAINS_EVENTS).toHaveLength(29);
     expect(HIGH_BRAINS_EVENTS).toHaveLength(1);
     expect(MIXED_STAT_GATED_EVENTS).toHaveLength(3);
-    expect(STAT_GATED_BLOODBATH_EVENTS).toHaveLength(12);
-    expect(STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS).toHaveLength(6);
-    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(3);
+    expect(STAT_GATED_BLOODBATH_EVENTS).toHaveLength(17);
+    expect(STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS).toHaveLength(8);
+    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(5);
     expect(STAT_GATED_CORNUCOPIA_NONFATAL_PAIR_EVENTS).toHaveLength(1);
-    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(2);
+    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(3);
 
     const definitions = [
       ...LOW_BRAWN_EVENTS,
@@ -126,8 +126,8 @@ describe("stat-gated catalogue expansion", () => {
       ...STAT_GATED_BLOODBATH_EVENTS,
     ];
 
-    expect(definitions).toHaveLength(83);
-    expect(new Set(definitions.map((definition) => definition.id)).size).toBe(83);
+    expect(definitions).toHaveLength(116);
+    expect(new Set(definitions.map((definition) => definition.id)).size).toBe(116);
   });
 
   it("limits Rock and a Hard Place to brawn one or two", () => {
@@ -459,7 +459,9 @@ describe("stat-gated catalogue expansion", () => {
       id: "target",
     });
     const state = createAuthoringTestGame([actor, target]);
-    const definition = STAT_GATED_FLEE_EVENTS[0];
+    const definition = STAT_GATED_FLEE_EVENTS.find(
+      (candidate) => candidate.id === "bloodbath-flee-low-brawn-run-faster",
+    );
 
     if (!definition) {
       throw new Error("Missing Run Faster event.");

@@ -277,8 +277,12 @@ class EventSelectionDiagnosticsCollector {
       stageDiagnostics.noNonSoloFeasible += 1;
     }
 
-    for (const definition of uniqueFeasibleDefinitions) {
-      stageDiagnostics.feasibleByShape[getEventParticipantShape(definition)] += 1;
+    const feasibleShapes = new Set(
+      uniqueFeasibleDefinitions.map((definition) => getEventParticipantShape(definition)),
+    );
+
+    for (const shape of feasibleShapes) {
+      stageDiagnostics.feasibleByShape[shape] += 1;
     }
 
     if (selectedDefinition) {

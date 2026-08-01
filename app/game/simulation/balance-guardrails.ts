@@ -16,19 +16,6 @@ const INFORMATIONAL_EVENT_FAMILY_IDS = new Set<string>([
   "ordinary:standard-dissolution",
 
   /*
-   * The low-Brains family currently contains one deliberately narrow
-   * inventory-flavour event: a low-Brains tribute must still own a med
-   * kit when an ordinary event is selected. Focused catalogue tests
-   * cover its eligibility, item consumption, and lack of status effects.
-   *
-   * Keep aggregate occurrence visible without requiring every fixed
-   * simulation corpus to create that exact inventory/stat combination.
-   * Remove this exemption once the low-Brains family has broader events
-   * or family-level eligibility opportunities are measured directly.
-   */
-  "ordinary:low-brains",
-
-  /*
    * The high-Brains family currently contains one deliberately narrow
    * event: a high-Brains tribute must be poisoned and then selected for
    * an ordinary daytime encounter. Focused catalogue tests cover the

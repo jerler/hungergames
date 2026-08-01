@@ -129,7 +129,12 @@ export function getActiveTruceOfSize(
 ): Truce | null {
   const truce = getActiveTruceForTribute(state, tributeId);
 
-  if (!truce) {
+  /*
+   * Stat-gated truce events using this helper are authored for temporary
+   * standard truces. Romantic truces have their own permanent lifecycle
+   * and may only end through accidental separation.
+   */
+  if (!truce || truce.kind !== "standard") {
     return null;
   }
 

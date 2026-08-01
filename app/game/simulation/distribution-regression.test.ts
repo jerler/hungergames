@@ -46,6 +46,7 @@ interface MutablePoolView {
   events: MutableEventMetric[];
   selectionDiagnostics: {
     opportunities: number;
+    feasibleByShape: Record<EventParticipantShape, number>;
     definitions: MutableDefinitionDiagnostics[];
   };
 }
@@ -156,9 +157,10 @@ describe("Phase 6 distribution regression safeguards", () => {
     const metrics = cloneMetrics();
     const pool = getMutablePool(metrics, "half-game", "bloodbath-flee");
 
-    pool.participantShapes.pair.selections = 0;
-    pool.participantShapes.trio.selections = 0;
-    pool.participantShapes["group-four-plus"].selections = 0;
+    for (const shape of ["pair", "trio", "group-four-plus"] as const) {
+      pool.participantShapes[shape].selections = 0;
+      pool.selectionDiagnostics.feasibleByShape[shape] = pool.selectionDiagnostics.opportunities;
+    }
 
     expect(getFailureIds(metrics)).toEqual(
       expect.arrayContaining([
@@ -167,6 +169,16 @@ describe("Phase 6 distribution regression safeguards", () => {
         "half-game:flee:group-four-plus",
       ]),
     );
+  });
+
+  it("treats a rarely feasible fleeing shape as informational", () => {
+    const metrics = cloneMetrics();
+    const pool = getMutablePool(metrics, "half-game", "bloodbath-flee");
+
+    pool.participantShapes["group-four-plus"].selections = 0;
+    pool.selectionDiagnostics.feasibleByShape["group-four-plus"] = 0;
+
+    expect(getFailureIds(metrics)).not.toContain("half-game:flee:group-four-plus");
   });
 
   it("fails when a frequently feasible definition is never selected", () => {

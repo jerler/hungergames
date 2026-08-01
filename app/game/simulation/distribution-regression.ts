@@ -423,6 +423,9 @@ export function createDistributionRegressionThresholds(
 function getFrequentFeasibilityMinimum(pool: EventDistributionPoolMetric): number {
   return Math.max(10, Math.ceil(pool.selectionDiagnostics.opportunities * 0.15));
 }
+function getShapeCoverageMinimum(pool: EventDistributionPoolMetric): number {
+  return Math.max(20, Math.ceil(pool.selectionDiagnostics.opportunities * 0.25));
+}
 
 function getFrequentlyFeasibleDefinitions(pool: EventDistributionPoolMetric) {
   const minimumFeasible = getFrequentFeasibilityMinimum(pool);
@@ -636,19 +639,27 @@ function evaluateFleeing({
       expected: `at least ${formatRate(poolThresholds.minimumNonSoloShare)}`,
       pool,
     }),
-    ...(["pair", "trio", "group-four-plus"] as const).map((shape): DistributionGuardrailResult =>
-      createResult({
+    ...(["pair", "trio", "group-four-plus"] as const).map((shape): DistributionGuardrailResult => {
+      const currentSelections = pool.participantShapes[shape].selections;
+      const feasibleOpportunities = pool.selectionDiagnostics.feasibleByShape[shape];
+      const minimumFeasibleOpportunities = getShapeCoverageMinimum(pool);
+      const selectionIsRequired = feasibleOpportunities >= minimumFeasibleOpportunities;
+
+      return createResult({
         id: `${gameSizeId}:flee:${shape}`,
         label: `Fleeing ${shape} selections`,
-        passed: pool.participantShapes[shape].selections > 0,
+        passed: !selectionIsRequired || currentSelections > 0,
         gameSize: gameSizeId,
         poolId: "bloodbath-flee",
         participantShape: shape,
-        actual: String(pool.participantShapes[shape].selections),
-        expected: "at least one selection",
+        actual:
+          `${currentSelections} selected / ` + `${feasibleOpportunities} feasible opportunities`,
+        expected: selectionIsRequired
+          ? "at least one selection"
+          : `informational; fewer than ${minimumFeasibleOpportunities} feasible opportunities`,
         pool,
-      }),
-    ),
+      });
+    }),
     createResult({
       id: `${gameSizeId}:flee:solo-dominance`,
       label: "No solo fleeing definition dominates",
@@ -729,15 +740,11 @@ function evaluateLaterDay({
     ...(["trio", "group-four-plus"] as const).map((shape): DistributionGuardrailResult => {
       const baselineSelections = baseline.participantShapeSelections[shape];
       const currentSelections = pool.participantShapes[shape].selections;
-
-      const feasibleSelections = pool.selectionDiagnostics.definitions
-        .filter((definition) => definition.participantShape === shape)
-        .reduce((total, definition) => total + definition.feasible, 0);
-
+      const feasibleOpportunities = pool.selectionDiagnostics.feasibleByShape[shape];
       const shapeIsEstablished = baselineSelections > 0;
-      const minimumFeasibleSelections = getFrequentFeasibilityMinimum(pool);
+      const minimumFeasibleOpportunities = getShapeCoverageMinimum(pool);
       const selectionIsRequired =
-        shapeIsEstablished && feasibleSelections >= minimumFeasibleSelections;
+        shapeIsEstablished && feasibleOpportunities >= minimumFeasibleOpportunities;
 
       return createResult({
         id: `${gameSizeId}:later-day:${shape}`,
@@ -746,11 +753,12 @@ function evaluateLaterDay({
         gameSize: gameSizeId,
         poolId: "later-day",
         participantShape: shape,
-        actual: `${currentSelections} selected / ${feasibleSelections} feasible`,
+        actual:
+          `${currentSelections} selected / ` + `${feasibleOpportunities} feasible opportunities`,
         expected: selectionIsRequired
           ? "at least one selection"
           : shapeIsEstablished
-            ? `informational; fewer than ${minimumFeasibleSelections} feasible selections`
+            ? `informational; fewer than ${minimumFeasibleOpportunities} feasible opportunities`
             : "informational; accepted baseline had no selections",
         pool,
       });

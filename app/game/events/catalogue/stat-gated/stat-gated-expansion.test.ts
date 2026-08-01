@@ -106,18 +106,18 @@ function context(
 }
 
 describe("stat-gated catalogue expansion", () => {
-  it("registers 105 concepts as 137 unique definitions", () => {
+  it("registers 124 concepts as 168 unique definitions", () => {
     expect(LOW_BRAWN_EVENTS).toHaveLength(25);
     expect(HIGH_BRAWN_EVENTS).toHaveLength(41);
     expect(LOW_BRAINS_EVENTS).toHaveLength(29);
-    expect(HIGH_BRAINS_EVENTS).toHaveLength(13);
+    expect(HIGH_BRAINS_EVENTS).toHaveLength(42);
     expect(MIXED_STAT_GATED_EVENTS).toHaveLength(3);
-    expect(STAT_GATED_BLOODBATH_EVENTS).toHaveLength(26);
+    expect(STAT_GATED_BLOODBATH_EVENTS).toHaveLength(28);
     expect(STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS).toHaveLength(11);
-    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(6);
+    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(7);
     expect(STAT_GATED_CORNUCOPIA_NONFATAL_PAIR_EVENTS).toHaveLength(3);
     expect(STAT_GATED_CORNUCOPIA_NONFATAL_TRIO_EVENTS).toHaveLength(1);
-    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(5);
+    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(6);
 
     const definitions = [
       ...LOW_BRAWN_EVENTS,
@@ -128,8 +128,8 @@ describe("stat-gated catalogue expansion", () => {
       ...STAT_GATED_BLOODBATH_EVENTS,
     ];
 
-    expect(definitions).toHaveLength(137);
-    expect(new Set(definitions.map((definition) => definition.id)).size).toBe(137);
+    expect(definitions).toHaveLength(168);
+    expect(new Set(definitions.map((definition) => definition.id)).size).toBe(168);
   });
 
   it("limits Rock and a Hard Place to brawn one or two", () => {
@@ -433,7 +433,10 @@ describe("stat-gated catalogue expansion", () => {
     const actor = withStats(createAuthoringTestTribute({ id: "actor" }), { brawn: 1 });
     const target = withStats(createAuthoringTestTribute({ id: "target" }), { brawn: 3 });
     const state = createAuthoringTestGame([actor, target]);
-    const definition = STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES[0]?.definition;
+    const definition = STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES.find(
+      ({ definition: candidate }) =>
+        candidate.id === "cornucopia-low-brawn-shooting-fish-in-a-barrel",
+    )?.definition;
 
     if (!definition) {
       throw new Error("Missing Shooting Fish in a Barrel event.");

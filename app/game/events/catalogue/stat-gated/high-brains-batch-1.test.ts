@@ -103,8 +103,26 @@ function context(
 }
 
 describe("high-Brains Batch 1 expansion", () => {
-  it("registers thirteen ordinary definitions and nine Bloodbath definitions", () => {
-    expect(HIGH_BRAINS_EVENTS).toHaveLength(13);
+  it("keeps Batch 1's thirteen ordinary and nine Bloodbath definitions registered", () => {
+    const ordinaryBatchIds = new Set([
+      "high-brains-sick-but-smart",
+      "high-brains-field-guide",
+      "high-brains-clean-enough",
+      "high-brains-trail-marker",
+      "high-brains-wrong-footprints",
+      "high-brains-camp-inspection",
+      "high-brains-lead-a-horse-to-water",
+      "high-brains-unattended-baggage",
+      "high-brains-return-to-sender",
+      "high-brains-false-confidence",
+      "high-brains-load-bearing-tribute",
+      "high-brains-delayed-reaction",
+      "high-brains-dose-makes-the-poison",
+    ]);
+
+    expect(
+      HIGH_BRAINS_EVENTS.filter((definition) => ordinaryBatchIds.has(definition.id)),
+    ).toHaveLength(13);
 
     const batchIds = new Set([
       "cornucopia-high-brains-shopping-list",
@@ -122,10 +140,10 @@ describe("high-Brains Batch 1 expansion", () => {
       STAT_GATED_BLOODBATH_EVENTS.filter((definition) => batchIds.has(definition.id)),
     ).toHaveLength(9);
     expect(STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS).toHaveLength(11);
-    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(6);
+    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(7);
     expect(STAT_GATED_CORNUCOPIA_NONFATAL_PAIR_EVENTS).toHaveLength(3);
     expect(STAT_GATED_CORNUCOPIA_NONFATAL_TRIO_EVENTS).toHaveLength(1);
-    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(5);
+    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(6);
   });
 
   it("guarantees two supplies and a weapon through Shopping List", () => {
@@ -262,7 +280,6 @@ describe("high-Brains Batch 1 expansion", () => {
     expect(success.changes.filter((change) => change.type === "acquire-item")).toHaveLength(3);
     expect(definition.cornucopiaAcquisitionPolicy).toEqual({
       preserveAuthoredItems: true,
-      provisionRoleIds: ["actor"],
     });
     expect(failure.changes).toContainEqual(
       expect.objectContaining({

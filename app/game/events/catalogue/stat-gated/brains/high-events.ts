@@ -4,20 +4,32 @@ import {
   createFatalChanges,
   createItemUseChange,
   createKillCreditChange,
+  createNightRestChanges,
   createStatusChange,
   createSurvivalChanges,
 } from "~/game/events/event-change-builders";
-import { requireSingleParticipant, type EventDefinition } from "~/game/events/event-schema";
+import {
+  requireParticipants,
+  requireSingleParticipant,
+  type EventDefinition,
+  type ParticipantRoleDefinition,
+} from "~/game/events/event-schema";
 import { getTributePronouns } from "~/game/tributes/pronouns";
 import type { GameChange, GameTribute } from "~/game/types/game-state";
 
 import {
   MELEE_WEAPON_IDS,
+  TRUCE_EVENT_SIZES,
+  createFatalWithoutLoot,
+  getActiveTruceOfSize,
   getLowercaseItemLabel,
+  getParticipantShapeForSize,
   hasStatus,
   isHighBrains,
+  isLowBrains,
   requireSelectedItem,
   statSelectionProfile,
+  type TruceEventSize,
 } from "../stat-gated-helpers";
 
 function createSatisfyNeedChange(tribute: GameTribute, need: "food" | "water"): GameChange {
@@ -76,6 +88,53 @@ function createSharedFatalChanges(
       createKillCreditChange(killer),
     ]),
   ];
+}
+
+function getTruceEventBaseWeight(baseWeight: number, size: TruceEventSize): number {
+  return size === 2 || size === 3 ? baseWeight : baseWeight / size;
+}
+
+function createHighBrainsTruceMemberRoles(
+  size: TruceEventSize,
+): readonly ParticipantRoleDefinition[] {
+  return [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: (tribute, { state }) =>
+        isHighBrains(tribute) && getActiveTruceOfSize(state, tribute.id, size) !== null,
+    },
+    {
+      id: "members",
+      count: size - 1,
+      isEligible: (tribute, { state, participantsByRole }) => {
+        const actor = participantsByRole.actor?.[0];
+
+        if (!actor) {
+          return false;
+        }
+
+        const truce = getActiveTruceOfSize(state, actor.id, size);
+
+        return truce?.tributeIds.includes(tribute.id) ?? false;
+      },
+    },
+  ];
+}
+
+function getSelectedOwnedWeapon(
+  actor: GameTribute,
+  context: Parameters<NonNullable<EventDefinition["resolve"]>>[0],
+): ReturnType<typeof requireSelectedItem> {
+  const weapon = requireSelectedItem(context, "actor");
+
+  if (!actor.inventory.some((item) => item.id === weapon.id)) {
+    throw new Error(
+      `High-Brains event "${context.eventId}" selected a weapon not owned by ${actor.id}.`,
+    );
+  }
+
+  return weapon;
 }
 
 const SICK_BUT_SMART: EventDefinition = {
@@ -614,6 +673,701 @@ const DOSE_MAKES_THE_POISON: EventDefinition = {
   },
 };
 
+const EFFICIENT_SHELTER: EventDefinition = {
+  id: "high-brains-efficient-shelter",
+  category: "survival",
+  periods: ["night"],
+  baseWeight: 1.7,
+  tags: ["survival", "environment"],
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isHighBrains,
+    },
+  ],
+  resolve({ round, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+
+    return {
+      text:
+        `${actor.snapshot.name} builds a small shelter against a natural rock wall, using the terrain to provide most of the structure. ` +
+        `It is not impressive to look at, but unlike several nearby trees, it is unlikely to collapse during the night.`,
+      changes: [
+        ...createNightRestChanges([actor], round, "sheltered"),
+        ...createSurvivalChanges([actor]),
+      ],
+    };
+  },
+};
+
+const ALARM_SYSTEM: EventDefinition = {
+  id: "high-brains-alarm-system",
+  category: "survival",
+  periods: ["night"],
+  baseWeight: 1.7,
+  tags: ["survival", "environment", "status"],
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isHighBrains,
+    },
+  ],
+  resolve({ eventId, round, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} surrounds ${pronouns.possessiveAdjective} camp with strings tied to loose stones and scraps of metal. ` +
+        `When something approaches during the night, the resulting clatter wakes ${pronouns.object} long before it reaches the shelter.`,
+      changes: [
+        ...createNightRestChanges([actor], round, "sheltered"),
+        createStatusChange(eventId, actor, "alert", 1, round),
+        ...createSurvivalChanges([actor]),
+      ],
+    };
+  },
+};
+
+function createSleepSchedule(size: TruceEventSize): EventDefinition {
+  return {
+    id: `high-brains-sleep-schedule-${size}`,
+    category: "survival",
+    periods: ["night"],
+    baseWeight: getTruceEventBaseWeight(1.7, size),
+    tags: ["survival", "truce", "cooperative"],
+    participantShape: getParticipantShapeForSize(size),
+    selectionProfile: statSelectionProfile(4, ["truce-requirement"]),
+    roles: createHighBrainsTruceMemberRoles(size),
+    resolve({ round, participantsByRole }) {
+      const actor = requireSingleParticipant(participantsByRole, "actor");
+      const members = requireParticipants(participantsByRole, "members");
+      const allMembers = [actor, ...members];
+
+      if (members.length !== size - 1) {
+        throw new Error(`Sleep Schedule expected ${size - 1} truce mates.`);
+      }
+
+      return {
+        text:
+          `${actor.snapshot.name} organizes the truce into overlapping watch shifts, ensuring everyone receives enough sleep without leaving the camp unguarded. ` +
+          `It is disappointingly sensible and works exactly as intended.`,
+        changes: [
+          ...createNightRestChanges(allMembers, round, "sheltered"),
+          ...createSurvivalChanges(allMembers),
+        ],
+      };
+    },
+  };
+}
+
+function createDivisionOfLabour(size: TruceEventSize): EventDefinition {
+  return {
+    id: `high-brains-division-of-labour-${size}`,
+    category: "survival",
+    periods: ["day"],
+    baseWeight: getTruceEventBaseWeight(1.55, size),
+    tags: ["survival", "truce", "cooperative", "deprivation", "status"],
+    participantShape: getParticipantShapeForSize(size),
+    selectionProfile: statSelectionProfile(5, ["truce-requirement", "deprivation-requirement"]),
+    roles: createHighBrainsTruceMemberRoles(size),
+    resolve({ eventId, round, participantsByRole }) {
+      const actor = requireSingleParticipant(participantsByRole, "actor");
+      const members = requireParticipants(participantsByRole, "members");
+      const allMembers = [actor, ...members];
+      const pronouns = getTributePronouns(actor);
+
+      if (members.length !== size - 1) {
+        throw new Error(`Division of Labour expected ${size - 1} truce mates.`);
+      }
+
+      /*
+       * This is authored as a Day event, so the engine cannot record Night
+       * rest here. The completed shelter work is represented by well-rested,
+       * while food and water use their normal survival-need changes.
+       */
+      return {
+        text:
+          `${actor.snapshot.name} takes charge of the group and assigns jobs based on what they are least likely to ruin. ` +
+          `By evening, everyone has food, water, shelter, and only a small amount of resentment toward ${pronouns.object}.`,
+        changes: [
+          ...allMembers.flatMap((member) => [
+            createSatisfyNeedChange(member, "food"),
+            createSatisfyNeedChange(member, "water"),
+            createStatusChange(eventId, member, "well-rested", 1, round),
+          ]),
+          ...createSurvivalChanges(allMembers),
+        ],
+      };
+    },
+  };
+}
+
+const USEFUL_IDIOT: EventDefinition = {
+  id: "high-brains-useful-idiot",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.7,
+  tags: ["fatal", "combat", "truce", "item", "ambush"],
+  participantShape: "trio",
+  selectionProfile: statSelectionProfile(7, [
+    "truce-requirement",
+    "item-requirement",
+    "custom-eligibility",
+  ]),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: (tribute, { state }) =>
+        isHighBrains(tribute) && getActiveTruceOfSize(state, tribute.id, 2) !== null,
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "trucemate",
+      count: 1,
+      isEligible: (tribute, { state, participantsByRole }) => {
+        const actor = participantsByRole.actor?.[0];
+
+        if (!actor || tribute.snapshot.stats.brains > 3) {
+          return false;
+        }
+
+        return getActiveTruceOfSize(state, actor.id, 2)?.tributeIds.includes(tribute.id) ?? false;
+      },
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "target",
+      count: 1,
+      targeting: "hostile",
+      isEligible: (tribute, { state, participantsByRole }) => {
+        const actor = participantsByRole.actor?.[0];
+
+        if (!actor) {
+          return false;
+        }
+
+        const truce = getActiveTruceOfSize(state, actor.id, 2);
+
+        return !(truce?.tributeIds.includes(tribute.id) ?? false);
+      },
+      opposesRoleIds: ["actor", "trucemate"],
+    },
+  ],
+  resolve({ state, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const trucemate = requireSingleParticipant(participantsByRole, "trucemate");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const truce = getActiveTruceOfSize(state, actor.id, 2);
+    const actorPronouns = getTributePronouns(actor);
+
+    if (!truce) {
+      throw new Error("Useful Idiot expected an active two-person truce.");
+    }
+
+    return {
+      text:
+        `${actor.snapshot.name} convinces ${trucemate.snapshot.name} to walk ahead of ${actorPronouns.object} through the clearing. ` +
+        `When ${trucemate.snapshot.name} gets caught in a makeshift net, ${actor.snapshot.name} grabs the trapped tribute's supplies and runs away unharmed before ${target.snapshot.name} arrives and finishes the job.`,
+      changes: [
+        ...createInventoryTransferChanges(trucemate, actor, "truce-betrayal-theft"),
+        ...createFatalWithoutLoot(
+          trucemate,
+          target,
+          "high-brains-useful-idiot",
+          "Killed after being used as bait",
+          `${trucemate.snapshot.name} is used as bait by ${actor.snapshot.name} and killed by ${target.snapshot.name}.`,
+        ),
+        {
+          type: "break-truce",
+          truceId: truce.id,
+          reason: "betrayal",
+        },
+        ...createSurvivalChanges([actor, target]),
+      ],
+    };
+  },
+};
+
+function createHostileTakeover(size: Exclude<TruceEventSize, 2>): EventDefinition {
+  return {
+    id: `high-brains-hostile-takeover-${size}`,
+    category: "fatal",
+    periods: ["day", "night"],
+    baseWeight: getTruceEventBaseWeight(0.55, size),
+    tags: ["fatal", "combat", "truce", "item", "ambush"],
+    participantShape: getParticipantShapeForSize(size),
+    selectionProfile: statSelectionProfile(6, ["truce-requirement"]),
+    roles: createHighBrainsTruceMemberRoles(size),
+    resolve({ state, participantsByRole }) {
+      const actor = requireSingleParticipant(participantsByRole, "actor");
+      const members = requireParticipants(participantsByRole, "members");
+      const truce = getActiveTruceOfSize(state, actor.id, size);
+      const pronouns = getTributePronouns(actor);
+
+      if (!truce || members.length !== size - 1) {
+        throw new Error(`Hostile Takeover expected an active ${size}-person truce.`);
+      }
+
+      return {
+        text:
+          `${actor.snapshot.name} quietly convinces each member of the truce that everyone else is planning a betrayal. ` +
+          `Before long, the group has torn itself apart while ${pronouns.subject} watches from a safe distance and collects whatever remains.`,
+        changes: [
+          ...members.flatMap((member) =>
+            createFatalChanges(
+              member,
+              "high-brains-hostile-takeover",
+              "Killed during a manipulated truce collapse",
+              `${member.snapshot.name} is killed after ${actor.snapshot.name} manipulates the truce into turning on itself.`,
+              actor,
+            ),
+          ),
+          {
+            type: "break-truce",
+            truceId: truce.id,
+            reason: "betrayal",
+          },
+          ...createSurvivalChanges([actor]),
+        ],
+      };
+    },
+  };
+}
+
+const FAKE_WEAKNESS: EventDefinition = {
+  id: "high-brains-fake-weakness",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.8,
+  tags: ["fatal", "combat", "weapon", "item", "ambush"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(5, ["item-requirement"]),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isHighBrains,
+      requiredItemDefinitionIds: MELEE_WEAPON_IDS,
+      itemAccess: "owned",
+      requiredItemRequireUsable: false,
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "target",
+      count: 1,
+      targeting: "hostile",
+      opposesRoleIds: ["actor"],
+    },
+  ],
+  resolve(context) {
+    const actor = requireSingleParticipant(context.participantsByRole, "actor");
+    const target = requireSingleParticipant(context.participantsByRole, "target");
+    const targetPronouns = getTributePronouns(target);
+    const weapon = getSelectedOwnedWeapon(actor, context);
+
+    return {
+      text:
+        `${actor.snapshot.name} deliberately stumbles and begins limping, tempting ${target.snapshot.name} to rush forward for an easy kill. ` +
+        `When ${targetPronouns.subject} gets close enough, ${actor.snapshot.name} drives a hidden ${getLowercaseItemLabel(weapon)} into ${targetPronouns.possessiveAdjective} chest.`,
+      changes: [
+        ...createFatalChanges(
+          target,
+          "high-brains-fake-weakness",
+          "Killed by a feigned weakness",
+          `${target.snapshot.name} is lured into an ambush and killed by ${actor.snapshot.name}.`,
+          actor,
+        ),
+        ...createSurvivalChanges([actor]),
+      ],
+    };
+  },
+};
+
+const OVERTHINKING: EventDefinition = {
+  id: "high-brains-overthinking",
+  category: "hazard",
+  periods: ["day"],
+  baseWeight: 1.3,
+  tags: ["hazard", "status"],
+  selectionProfile: statSelectionProfile(3),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: (tribute) => tribute.snapshot.stats.brains === 5,
+    },
+  ],
+  resolve({ eventId, round, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} notices several possible routes through the arena and spends hours comparing their risks, resources, visibility, terrain, and long-term strategic value. ` +
+        `By the time ${pronouns.subject} makes a decision, the sun is already beginning to set and ${pronouns.subject} is exhausted from the effort.`,
+      changes: [
+        createStatusChange(eventId, actor, "exhausted", 1, round),
+        ...createSurvivalChanges([actor]),
+      ],
+    };
+  },
+};
+
+const PERFECT_PLAN: EventDefinition = {
+  id: "high-brains-perfect-plan",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.45,
+  tags: ["fatal", "environment"],
+  selectionProfile: statSelectionProfile(3),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: (tribute) => tribute.snapshot.stats.brains === 5,
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} decides to create the perfect trap, ending up with an elaborate monstrosity involving counterweights, sharpened stakes, and a carefully concealed trigger. ` +
+        `When attempting to test the system, ${actor.snapshot.name} triggers it and launches a spiked log directly into ${pronouns.possessiveAdjective} chest.`,
+      changes: createFatalChanges(
+        actor,
+        "high-brains-perfect-plan",
+        "Killed while testing an elaborate trap",
+        `${actor.snapshot.name} is killed by ${pronouns.possessiveAdjective} own elaborate trap.`,
+      ),
+    };
+  },
+};
+
+const OCCUPATIONAL_HAZARD: EventDefinition = {
+  id: "high-brains-occupational-hazard",
+  category: "hazard",
+  periods: ["day", "night"],
+  baseWeight: 1.2,
+  tags: ["hazard", "weapon", "item", "status"],
+  selectionProfile: statSelectionProfile(5, ["item-requirement"]),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isHighBrains,
+      requiredItemTags: ["weapon"],
+      itemAccess: "owned",
+      requiredItemRequireUsable: false,
+    },
+  ],
+  resolve(context) {
+    const actor = requireSingleParticipant(context.participantsByRole, "actor");
+    const pronouns = getTributePronouns(actor);
+    const weapon = getSelectedOwnedWeapon(actor, context);
+
+    return {
+      text:
+        `${actor.snapshot.name} carefully prepares a poisoned ${getLowercaseItemLabel(weapon)}, having chosen berries that are both toxic and unlikely to dry on the blade. ` +
+        `Unfortunately, ${pronouns.subject} is not as graceful as ${pronouns.subject} is smart and scratches ${pronouns.possessiveAdjective} hand on the weapon.`,
+      changes: [
+        createStatusChange(context.eventId, actor, "poisoned", 1, context.round),
+        ...createSurvivalChanges([actor]),
+      ],
+    };
+  },
+};
+
+const SEEMS_SUSPICIOUS: EventDefinition = {
+  id: "high-brains-seems-suspicious",
+  category: "hazard",
+  periods: ["day"],
+  baseWeight: 1.4,
+  tags: ["hazard", "deprivation", "resource"],
+  selectionProfile: statSelectionProfile(5, ["status-requirement", "deprivation-requirement"]),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: (tribute) => isHighBrains(tribute) && hasStatus(tribute, "hungry"),
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} finds a patch of perfectly ordinary edible berries but becomes convinced their convenient location must be part of an elaborate trap. ` +
+        `${pronouns.Subject} watches them from behind a tree until birds eat every berry, leaving ${pronouns.object} just as hungry as before.`,
+      changes: createSurvivalChanges([actor]),
+    };
+  },
+};
+
+const TOO_CLEAN: EventDefinition = {
+  id: "high-brains-too-clean",
+  category: "hazard",
+  periods: ["day"],
+  baseWeight: 1.4,
+  tags: ["hazard", "deprivation", "resource"],
+  selectionProfile: statSelectionProfile(5, ["status-requirement", "deprivation-requirement"]),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: (tribute) => isHighBrains(tribute) && hasStatus(tribute, "thirsty"),
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} discovers a clear freshwater spring and immediately becomes suspicious of how safe it appears. ` +
+        `After considering poison, parasites, hidden pressure plates, and several increasingly unlikely Capitol schemes, ${pronouns.subject} decides dehydration is the more predictable threat and walks away.`,
+      changes: createSurvivalChanges([actor]),
+    };
+  },
+};
+
+const I_CAN_FIX_IT: EventDefinition = {
+  id: "high-brains-i-can-fix-it",
+  category: "hazard",
+  periods: ["day"],
+  baseWeight: 1.1,
+  tags: ["hazard", "weapon", "item"],
+  selectionProfile: statSelectionProfile(5, ["item-requirement"]),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: (tribute) => tribute.snapshot.stats.brains === 5,
+      requiredItemTags: ["weapon"],
+      itemAccess: "owned",
+      requiredItemRequireUsable: false,
+    },
+  ],
+  resolve(context) {
+    const actor = requireSingleParticipant(context.participantsByRole, "actor");
+    const pronouns = getTributePronouns(actor);
+    const weapon = getSelectedOwnedWeapon(actor, context);
+
+    return {
+      text:
+        `${actor.snapshot.name} notices a tiny imperfection in ${pronouns.possessiveAdjective} ${getLowercaseItemLabel(weapon)} and takes it apart to improve the design. ` +
+        `Several hours and fourteen carefully arranged pieces later, ${pronouns.subject} realizes knowing how something works is not the same as knowing how to put it back together.`,
+      changes: [
+        {
+          type: "destroy-item",
+          tributeId: actor.id,
+          itemInstanceId: weapon.id,
+          reason: context.eventId,
+        },
+        ...createSurvivalChanges([actor]),
+      ],
+    };
+  },
+};
+
+const TRAP_ENTHUSIAST: EventDefinition = {
+  id: "high-brains-trap-enthusiast",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.45,
+  tags: ["fatal", "environment"],
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isHighBrains,
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} surrounds ${pronouns.possessiveAdjective} camp with an intricate network of snares, tripwires, pits, and counterweights. ` +
+        `When ${pronouns.subject} tries to leave, ${pronouns.subject} forgets the safe route and falls directly into a spike-filled pit.`,
+      changes: createFatalChanges(
+        actor,
+        "high-brains-trap-enthusiast",
+        "Killed by their own trap network",
+        `${actor.snapshot.name} is killed by ${pronouns.possessiveAdjective} own trap network.`,
+      ),
+    };
+  },
+};
+
+const JUST_ONE_MORE_ADJUSTMENT: EventDefinition = {
+  id: "high-brains-just-one-more-adjustment",
+  category: "hazard",
+  periods: ["day", "night"],
+  baseWeight: 1.2,
+  tags: ["hazard", "environment", "status"],
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isHighBrains,
+    },
+  ],
+  resolve({ eventId, round, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} completes an effective trap before deciding it could be slightly more efficient. ` +
+        `After several unnecessary improvements, the mechanism collapses, destroys itself, and strikes ${pronouns.object} in the face with a loose branch.`,
+      changes: [
+        createStatusChange(eventId, actor, "injured", 1, round),
+        ...createSurvivalChanges([actor]),
+      ],
+    };
+  },
+};
+
+const REST_IS_INEFFICIENT: EventDefinition = {
+  id: "high-brains-rest-is-inefficient",
+  category: "hazard",
+  periods: ["night"],
+  baseWeight: 1.5,
+  tags: ["hazard", "status"],
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isHighBrains,
+    },
+  ],
+  resolve({ eventId, round, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} lies awake calculating tomorrow's route, possible betrayals, food requirements, weather patterns, weapon matchups, and the statistical likelihood that ${pronouns.subject} forgot something important. ` +
+        `By sunrise, ${pronouns.subject} has developed an excellent plan and absolutely no energy to carry it out.`,
+      changes: [
+        ...createNightRestChanges([actor], round, "unsheltered"),
+        createStatusChange(eventId, actor, "exhausted", 1, round),
+        ...createSurvivalChanges([actor]),
+      ],
+    };
+  },
+};
+
+const TOO_CLEVER_BY_HALF: EventDefinition = {
+  id: "high-brains-too-clever-by-half",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.65,
+  tags: ["fatal", "combat", "ambush"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(4),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isHighBrains,
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "target",
+      count: 1,
+      targeting: "hostile",
+      isEligible: isLowBrains,
+      opposesRoleIds: ["actor"],
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+
+    return {
+      text:
+        `${actor.snapshot.name} constructs an elaborate deception involving false tracks, staged supplies, and several carefully planted clues. ` +
+        `${target.snapshot.name} ignores every clue, wanders in from the wrong direction, and catches ${actor.snapshot.name} crouched behind a bush, making them easy prey.`,
+      changes: [
+        ...createFatalChanges(
+          actor,
+          "high-brains-too-clever-by-half",
+          "Killed when an elaborate deception failed",
+          `${actor.snapshot.name} is killed by ${target.snapshot.name} after an elaborate deception fails.`,
+          target,
+        ),
+        ...createSurvivalChanges([target]),
+      ],
+    };
+  },
+};
+
+const PREDICTABLY_UNPREDICTABLE: EventDefinition = {
+  id: "high-brains-predictably-unpredictable",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.45,
+  tags: ["fatal", "combat", "environment"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(5),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: (tribute) => tribute.snapshot.stats.brains === 5,
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "target",
+      count: 1,
+      targeting: "hostile",
+      isEligible: isLowBrains,
+      opposesRoleIds: ["actor"],
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const actorPronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} anticipates every logical move ${target.snapshot.name} could possibly make and positions ${actorPronouns.reflexive} accordingly. ` +
+        `${target.snapshot.name}, operating without the burden of logic, does something so profoundly stupid that ${actor.snapshot.name} is struck by a falling branch and killed before either tribute understands what happened.`,
+      changes: [
+        ...createFatalChanges(
+          actor,
+          "high-brains-predictably-unpredictable",
+          "Killed by an accidentally dislodged branch",
+          `${actor.snapshot.name} is accidentally killed by ${target.snapshot.name}'s unpredictable mistake.`,
+          target,
+        ),
+        ...createSurvivalChanges([target]),
+      ],
+    };
+  },
+};
+
+const HIGH_BRAINS_SLEEP_SCHEDULE_EVENTS = TRUCE_EVENT_SIZES.map(createSleepSchedule);
+
+const HIGH_BRAINS_DIVISION_OF_LABOUR_EVENTS = TRUCE_EVENT_SIZES.map(createDivisionOfLabour);
+
+const HIGH_BRAINS_HOSTILE_TAKEOVER_EVENTS = ([3, 4, 5, 6] as const).map(createHostileTakeover);
+
 export const HIGH_BRAINS_EVENTS = [
   SICK_BUT_SMART,
   FIELD_GUIDE,
@@ -628,4 +1382,22 @@ export const HIGH_BRAINS_EVENTS = [
   LOAD_BEARING_TRIBUTE,
   DELAYED_REACTION,
   DOSE_MAKES_THE_POISON,
+  EFFICIENT_SHELTER,
+  ALARM_SYSTEM,
+  ...HIGH_BRAINS_SLEEP_SCHEDULE_EVENTS,
+  ...HIGH_BRAINS_DIVISION_OF_LABOUR_EVENTS,
+  USEFUL_IDIOT,
+  ...HIGH_BRAINS_HOSTILE_TAKEOVER_EVENTS,
+  FAKE_WEAKNESS,
+  OVERTHINKING,
+  PERFECT_PLAN,
+  OCCUPATIONAL_HAZARD,
+  SEEMS_SUSPICIOUS,
+  TOO_CLEAN,
+  I_CAN_FIX_IT,
+  TRAP_ENTHUSIAST,
+  JUST_ONE_MORE_ADJUSTMENT,
+  REST_IS_INEFFICIENT,
+  TOO_CLEVER_BY_HALF,
+  PREDICTABLY_UNPREDICTABLE,
 ] satisfies readonly EventDefinition[];

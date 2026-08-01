@@ -10,7 +10,11 @@ import { createRandomTributeDrafts } from "~/game/tributes/tribute-drafts";
 import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameChange, GameState, ResolvedEvent, TruceKind } from "~/game/types/game-state";
 import { gameReducer } from "~/state/game-reducer";
-import { ROMANTIC_VENDETTA_CHANCE, STANDARD_VENDETTA_CHANCE } from "~/game/truces/vendetta-engine";
+import {
+  createVendettaInstance,
+  ROMANTIC_VENDETTA_CHANCE,
+  STANDARD_VENDETTA_CHANCE,
+} from "~/game/truces/vendetta-engine";
 
 const DAY_ONE = {
   day: 1,
@@ -492,6 +496,45 @@ describe("accidental truce dissolution", () => {
 
     expect(vendettaCount).toBeLessThan(attemptCount);
   });
+  it("keeps an existing vendetta instead of creating a duplicate", () => {
+    const attemptCount = 40;
+
+    for (let attempt = 0; attempt < attemptCount; attempt += 1) {
+      const game = createGame();
+      const victim = game.tributes[0];
+      const survivor = game.tributes[1];
+      const killer = game.tributes[2];
+      const formedState = formTestTruce(game, [victim.id, survivor.id]);
+      const existingVendetta = createVendettaInstance(
+        "existing-vendetta",
+        survivor.id,
+        killer.id,
+        "standard",
+        DAY_ONE,
+      );
+      const stateWithExistingVendetta = {
+        ...formedState,
+        vendettas: [existingVendetta],
+      };
+
+      const stateAfterDeath = applyResolvedEvent(
+        stateWithExistingVendetta,
+        createEvent(
+          `standard-partner-killed-${attempt}`,
+          [createDeathChange(victim.id, [killer.id])],
+          [victim.id, killer.id],
+        ),
+      );
+
+      expect(
+        stateAfterDeath.vendettas.filter(
+          (vendetta) =>
+            vendetta.hunterTributeId === survivor.id && vendetta.targetTributeId === killer.id,
+        ),
+      ).toEqual([existingVendetta]);
+    }
+  });
+
   it("does nothing emotional for a standard truce when there is no killer", () => {
     const game = createGame();
 

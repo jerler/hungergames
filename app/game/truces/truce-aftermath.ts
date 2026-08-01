@@ -75,6 +75,17 @@ function getLivingKillersForTruceDeaths(
   });
 }
 
+function hasExistingVendetta(
+  state: GameState,
+  hunterTributeId: string,
+  targetTributeId: string,
+): boolean {
+  return state.vendettas.some(
+    (vendetta) =>
+      vendetta.hunterTributeId === hunterTributeId && vendetta.targetTributeId === targetTributeId,
+  );
+}
+
 function createAccidentalDissolutionText(
   beforeState: GameState,
   afterState: GameState,
@@ -241,12 +252,24 @@ function createRomanticDeathResponse(
     };
   }
 
-  const killers = getLivingKillersForTruceDeaths(afterState, primaryEvent, truce).filter(
+  const livingKillers = getLivingKillersForTruceDeaths(afterState, primaryEvent, truce).filter(
     (killer) => killer.id !== survivor.id,
   );
 
-  if (killers.length === 0) {
+  if (livingKillers.length === 0) {
     return createDisorientedResponse(aftermathEventId, survivor, primaryEvent);
+  }
+
+  const killers = livingKillers.filter(
+    (killer) => !hasExistingVendetta(beforeState, survivor.id, killer.id),
+  );
+
+  if (killers.length === 0) {
+    return {
+      changes: [],
+      text: "",
+      participantTributeIds: [],
+    };
   }
 
   const becomesVengeful = rollsForVendetta(
@@ -283,7 +306,10 @@ function createStandardDeathResponse(
   }
 
   const responses = getLivingTruceMembers(afterState, truce).flatMap((survivor) => {
-    const eligibleKillers = killers.filter((killer) => killer.id !== survivor.id);
+    const eligibleKillers = killers.filter(
+      (killer) =>
+        killer.id !== survivor.id && !hasExistingVendetta(beforeState, survivor.id, killer.id),
+    );
 
     if (eligibleKillers.length === 0) {
       return [];

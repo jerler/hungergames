@@ -1272,7 +1272,18 @@ function sequenceCornucopiaEvents(
       bonusRandom,
       definition,
     );
-    const provisionRoleIds = definition.cornucopiaAcquisitionPolicy?.provisionRoleIds;
+    /*
+     * Every survivor selected through the fatal Cornucopia planner must
+     * receive provisions through their first appearance. The planner
+     * designation is authoritative: some authored fatal profiles use a
+     * non-fatal category or variable immediate outcomes.
+     *
+     * Role-scoped provisioning remains useful for post-target nonfatal
+     * scenes where only a specific participant reaches the supplies.
+     */
+    const provisionRoleIds = fatalSelection
+      ? undefined
+      : definition.cornucopiaAcquisitionPolicy?.provisionRoleIds;
     const provisionTributeIds = provisionRoleIds
       ? provisionRoleIds.flatMap((roleId) =>
           (participantsByRole[roleId] ?? []).map((tribute) => tribute.id),
@@ -1317,10 +1328,21 @@ function sequenceCornucopiaEvents(
       ),
     ),
   );
+  const firstPassProvisionedTributeIds = new Set(
+    events.flatMap((event) =>
+      event.changes.flatMap((change) =>
+        change.type === "acquire-item" && change.item.definitionId === CORNUCOPIA_PROVISIONS_ITEM_ID
+          ? [change.tributeId]
+          : [],
+      ),
+    ),
+  );
   const repeatEligibleTributes = shuffleItems(
     cornucopiaTributes.filter(
       (tribute) =>
-        !firstPassEliminatedTributeIds.has(tribute.id) && !firstPassTruceTributeIds.has(tribute.id),
+        !firstPassEliminatedTributeIds.has(tribute.id) &&
+        !firstPassTruceTributeIds.has(tribute.id) &&
+        firstPassProvisionedTributeIds.has(tribute.id),
     ),
     random,
   );

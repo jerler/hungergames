@@ -777,7 +777,7 @@ const TITANS: EventDefinition = {
     return {
       text:
         `${actor.snapshot.name} spots ${target.snapshot.name} charging forward. As an invitation, ${actor.snapshot.name} throws down ${actorPronouns.possessiveAdjective} backpack and raises ${actorPronouns.possessiveAdjective} fists. ` +
-        `${target.snapshot.name} accepts, raising ${targetPronouns.possessiveAdjective} own. What follows is a battle of the titans—muscles rippling, blood and sweat spraying—` +
+        `${target.snapshot.name} accepts, raising ${targetPronouns.possessiveAdjective} own. What follows is a battle of the titans - muscles rippling, blood and sweat spraying - ` +
         `until ${winner.snapshot.name} delivers the fatal punch and emerges victorious on ${winnerPronouns.possessiveAdjective} feet.`,
       changes: [
         ...createFatalChanges(

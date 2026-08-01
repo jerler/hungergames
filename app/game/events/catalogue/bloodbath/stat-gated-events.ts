@@ -323,7 +323,7 @@ const HIGH_BRAWN_HUMAN_BULLDOZER: EventDefinition = {
 
     return {
       text:
-        `${actor.snapshot.name} charges toward the Cornucopia, ploughing directly through ${target.snapshot.name} without slowing down—or, frankly, even noticing. ` +
+        `${actor.snapshot.name} charges toward the Cornucopia, ploughing directly through ${target.snapshot.name} without slowing down - or, frankly, even noticing. ` +
         `${target.snapshot.name} disappears beneath the stampede, ending ${targetPronouns.possessiveAdjective} Games early.`,
       changes: [
         ...createFatalChanges(
@@ -919,7 +919,6 @@ const HIGH_BRAINS_INVENTORY_MANAGEMENT: EventDefinition = {
   selectionProfile: statSelectionProfile(4, ["item-requirement"]),
   cornucopiaAcquisitionPolicy: {
     preserveAuthoredItems: true,
-    provisionRoleIds: ["actor"],
   },
   roles: [
     {
@@ -1162,6 +1161,51 @@ const HIGH_BRAINS_READ_THE_ROOM: EventDefinition = {
   },
 };
 
+function createHighBrainsDecisionParalysis(id: string): EventDefinition {
+  return {
+    id,
+    category: "fatal",
+    periods: ["day"],
+    baseWeight: 0.15,
+    tags: ["fatal", "environment"],
+    selectionProfile: statSelectionProfile(3),
+    roles: [
+      {
+        id: "actor",
+        count: 1,
+        isEligible: isHighBrains,
+      },
+    ],
+    resolve({ random, participantsByRole }) {
+      const actor = requireSingleParticipant(participantsByRole, "actor");
+      const text = chooseTextVariant(random, [
+        `${actor.snapshot.name} begins comparing every possible outcome for running toward or away from the Cornucopia, including survival odds, weapon value, hiding places, and potential alliances. By the time the cannon fires, ${actor.snapshot.name} is stuck in decision paralysis and gets trampled by the less cerebral.`,
+        `${actor.snapshot.name} spends the countdown calculating whether the Cornucopia's supplies justify the risk. The cannon fires before the analysis reaches a conclusion, and the stampede reaches ${actor.snapshot.name} shortly afterward.`,
+        `${actor.snapshot.name} takes three steps toward the Cornucopia, remembers several excellent reasons to flee, turns toward the woods, and immediately reconsiders. While ${actor.snapshot.name} searches for a statistically optimal third option, the other tributes run straight over them.`,
+        `${actor.snapshot.name} carefully predicts the opening movements of every tribute in the arena and identifies the perfect route to safety. Unfortunately, the calculation takes slightly longer than the opening itself, leaving ${actor.snapshot.name} standing on the plate when the less cerebral arrive.`,
+      ]);
+
+      return {
+        text,
+        changes: createFatalChanges(
+          actor,
+          "high-brains-decision-paralysis",
+          "Trampled during decision paralysis",
+          `${actor.snapshot.name} is trampled after freezing at the start of the Bloodbath.`,
+        ),
+      };
+    },
+  };
+}
+
+const HIGH_BRAINS_DECISION_PARALYSIS_CORNUCOPIA = createHighBrainsDecisionParalysis(
+  "cornucopia-high-brains-decision-paralysis",
+);
+
+const HIGH_BRAINS_DECISION_PARALYSIS_FLEE = createHighBrainsDecisionParalysis(
+  "bloodbath-flee-high-brains-decision-paralysis",
+);
+
 export const STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS = [
   HIGH_BRAINS_SHOPPING_LIST,
   HIGH_BRAINS_PRIORITIES,
@@ -1177,6 +1221,11 @@ export const STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS = [
 ] satisfies readonly EventDefinition[];
 
 export const STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES = [
+  {
+    definition: HIGH_BRAINS_DECISION_PARALYSIS_CORNUCOPIA,
+    minImmediateEliminations: 1,
+    maxImmediateEliminations: 1,
+  },
   {
     definition: HIGH_BRAINS_INVENTORY_MANAGEMENT,
     minImmediateEliminations: 0,
@@ -1220,6 +1269,7 @@ export const STAT_GATED_CORNUCOPIA_NONFATAL_TRIO_EVENTS = [
 ] satisfies readonly EventDefinition[];
 
 export const STAT_GATED_FLEE_EVENTS = [
+  HIGH_BRAINS_DECISION_PARALYSIS_FLEE,
   HIGH_BRAINS_NOT_MY_PROBLEM,
   HIGH_BRAINS_MUTUAL_INTEREST,
   LOW_BRAINS_FOLLOW_THAT_TRIBUTE,

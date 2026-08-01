@@ -599,6 +599,43 @@ export function applyGameChange(
       };
     }
 
+    case "destroy-item": {
+      const itemOwner = state.tributes.find((tribute) => tribute.id === change.tributeId);
+
+      if (!itemOwner) {
+        throw new Error(`Cannot destroy an item owned by missing tribute "${change.tributeId}".`);
+      }
+
+      const item = itemOwner.inventory.find((candidate) => candidate.id === change.itemInstanceId);
+
+      if (!item) {
+        throw new Error(`Cannot destroy missing item "${change.itemInstanceId}".`);
+      }
+
+      const stateWithoutItem = updateTribute(state, change.tributeId, (tribute) => ({
+        ...tribute,
+        inventory: tribute.inventory.filter((candidate) => candidate.id !== item.id),
+      }));
+
+      const transaction: InventoryTransaction = {
+        id: `destroy:${event.id}:${item.id}`,
+        type: "destroyed",
+        tributeId: change.tributeId,
+        itemInstanceId: item.id,
+        definitionId: item.definitionId,
+        uses: item.usesRemaining,
+        round: {
+          ...event.round,
+        },
+        sourceId: change.reason,
+      };
+
+      return {
+        ...stateWithoutItem,
+        itemTransactions: [...stateWithoutItem.itemTransactions, transaction],
+      };
+    }
+
     case "transfer-item": {
       if (change.fromTributeId === change.toTributeId) {
         throw new Error(

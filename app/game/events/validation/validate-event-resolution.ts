@@ -198,6 +198,11 @@ export function validateEventResolution({
 
         break;
 
+      case "destroy-item":
+        requireNonEmpty(change.reason, `Event "${definitionId}" item-destruction reason`);
+
+        break;
+
       case "transfer-item":
         requireNonEmpty(change.reason, `Event "${definitionId}" transfer reason`);
 

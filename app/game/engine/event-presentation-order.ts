@@ -69,6 +69,7 @@ function collectPresentationDependencies(
 
         case "consume-item":
         case "use-item":
+        case "destroy-item":
         case "transfer-item":
           referencedItemInstanceIds.add(change.itemInstanceId);
           break;
@@ -138,6 +139,7 @@ function mustKeepCanonicalSlot(
 
       case "consume-item":
       case "use-item":
+      case "destroy-item":
       case "transfer-item":
         return true;
 

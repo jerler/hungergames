@@ -67,7 +67,11 @@ describe("balance report", () => {
         },
       ]),
     );
-    const informationalFamilyIds = ["ordinary:romantic", "ordinary:low-brains"] as const;
+    const informationalFamilyIds = [
+      "ordinary:romantic",
+      "ordinary:low-brains",
+      "ordinary:high-brains",
+    ] as const;
 
     for (const familyId of informationalFamilyIds) {
       const family = metrics.eventFamilies.find((candidate) => candidate.id === familyId);

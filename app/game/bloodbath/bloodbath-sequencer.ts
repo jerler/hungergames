@@ -38,6 +38,7 @@ import {
   CORNUCOPIA_NONFATAL_TRIO_EVENTS,
   CORNUCOPIA_PAIR_CONFLICT_EVENTS,
   FLEE_EVENTS,
+  STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS,
 } from "~/game/events/catalogue/bloodbath";
 import { isEventDefinitionEligible } from "~/game/events/event-eligibility";
 import type {
@@ -94,9 +95,10 @@ function hasNeedSatisfaction(
   );
 }
 
-function addCornucopiaProvisions(
+export function addCornucopiaProvisions(
   event: ResolvedEvent,
   tributes: readonly GameTribute[],
+  eligibleTributeIds: readonly string[] = event.participantTributeIds,
 ): ResolvedEvent {
   const eliminatedTributeIds = new Set(
     event.changes.flatMap((change) =>
@@ -106,7 +108,7 @@ function addCornucopiaProvisions(
 
   const tributeById = new Map(tributes.map((tribute) => [tribute.id, tribute] as const));
 
-  const survivors = event.participantTributeIds
+  const survivors = [...new Set(eligibleTributeIds)]
     .filter((tributeId) => !eliminatedTributeIds.has(tributeId))
     .map((tributeId) => {
       const tribute = tributeById.get(tributeId);
@@ -801,11 +803,16 @@ function selectSupplementalFatalBloodbathEvent(
 
 const RARE_CORNUCOPIA_BONUS_ITEM_CHANCE = 0.1;
 
-function normalizeCornucopiaAcquisitions(
+export function normalizeCornucopiaAcquisitions(
   event: ResolvedEvent,
   tributes: readonly GameTribute[],
   random: RandomSource,
+  definition: EventDefinition,
 ): ResolvedEvent {
+  if (definition.cornucopiaAcquisitionPolicy?.preserveAuthoredItems) {
+    return event;
+  }
+
   const acquisitionTributeIds = [
     ...new Set(
       event.changes.flatMap((change) =>
@@ -925,6 +932,7 @@ export function getBloodbathPostTargetDefinitions(): EventDefinition[] {
         ...CORNUCOPIA_NONFATAL_TRIO_EVENTS,
         ...CORNUCOPIA_NONFATAL_PAIR_EVENTS,
         ...weaponAcquisitionDefinitions,
+        ...STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS,
       ].map((definition) => [definition.id, definition]),
     ).values(),
   ];
@@ -1262,9 +1270,20 @@ function sequenceCornucopiaEvents(
       resolvedEvent,
       livingTributes,
       bonusRandom,
+      definition,
     );
+    const provisionRoleIds = definition.cornucopiaAcquisitionPolicy?.provisionRoleIds;
+    const provisionTributeIds = provisionRoleIds
+      ? provisionRoleIds.flatMap((roleId) =>
+          (participantsByRole[roleId] ?? []).map((tribute) => tribute.id),
+        )
+      : eventWithPossibleBonus.participantTributeIds;
 
-    const event = addCornucopiaProvisions(eventWithPossibleBonus, livingTributes);
+    const event = addCornucopiaProvisions(
+      eventWithPossibleBonus,
+      livingTributes,
+      provisionTributeIds,
+    );
 
     plannedEliminationCount += countPlannedEliminations(event.changes);
 

@@ -516,6 +516,7 @@ describe("Bloodbath outcome coverage", () => {
     const deterministicMultiDefinitionIds = new Set([
       "bloodbath-flee-trio-redirect-pursuit",
       "bloodbath-flee-low-brawn-run-faster",
+      "bloodbath-flee-high-brawn-gentle-giant",
     ]);
 
     for (const definition of FLEE_EVENTS) {

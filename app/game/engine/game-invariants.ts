@@ -693,6 +693,25 @@ export function assertGameStateInvariants(state: GameState): void {
       `item "${transaction.itemInstanceId}" ` + "does not have an owner.",
     );
 
+    if (transaction.type === "destroyed") {
+      assert(
+        currentOwnerId === transaction.tributeId,
+        `item "${transaction.itemInstanceId}" was ` +
+          `destroyed by "${transaction.tributeId}" ` +
+          `but is owned by "${currentOwnerId}".`,
+      );
+
+      assert(
+        transaction.uses === remainingUses,
+        `destruction "${transaction.id}" changed the ` + "recorded remaining uses.",
+      );
+
+      itemUseLedger.delete(transaction.itemInstanceId);
+      itemOwnerLedger.delete(transaction.itemInstanceId);
+
+      continue;
+    }
+
     if (transaction.type === "transferred") {
       assert(
         tributeIds.has(transaction.fromTributeId),
@@ -727,7 +746,7 @@ export function assertGameStateInvariants(state: GameState): void {
     }
 
     /*
-     * After the acquired and transferred
+     * After the acquired, destroyed, and transferred
      * branches continue, TypeScript knows
      * this is a consumed transaction.
      */

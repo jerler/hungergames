@@ -90,8 +90,18 @@ export interface EventItemTransferPresentation {
   itemLabel: string;
 }
 
+export interface EventItemDestructionPresentation {
+  key: string;
+  kind: "destroyed";
+  tribute: GameTribute | null;
+  tributeName: string;
+  itemLabel: string;
+}
+
 export type EventItemChangePresentation =
-  EventItemAcquisitionPresentation | EventItemTransferPresentation;
+  | EventItemAcquisitionPresentation
+  | EventItemTransferPresentation
+  | EventItemDestructionPresentation;
 
 export interface EventCardPresentation {
   visualKind: EventVisualKind;
@@ -446,6 +456,19 @@ export function createEventCardPresentation(
           tributeName: tribute?.snapshot.name ?? "Unknown tribute",
           itemLabel: getItemDefinition(change.item.definitionId).label,
           sourceLabel: formatAcquisitionSource(change.acquisitionSource),
+        });
+        break;
+      }
+
+      case "destroy-item": {
+        const tribute = tributeById.get(change.tributeId) ?? null;
+
+        itemChanges.push({
+          key: `${event.id}:item-destroyed:${change.itemInstanceId}`,
+          kind: "destroyed",
+          tribute,
+          tributeName: tribute?.snapshot.name ?? "Unknown tribute",
+          itemLabel: getItemLabelFromInstanceId(change.itemInstanceId),
         });
         break;
       }

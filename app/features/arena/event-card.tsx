@@ -404,6 +404,23 @@ export function EventCard({ event, tributes }: EventCardProps) {
 
                         <span className="event-card__item-source">{itemChange.sourceLabel}</span>
                       </div>
+                    ) : itemChange.kind === "destroyed" ? (
+                      <div className="event-card__item-acquisition" key={itemChange.key}>
+                        <EventTributeAvatar
+                          tribute={itemChange.tribute}
+                          fallbackName={itemChange.tributeName}
+                        />
+
+                        <div className="event-card__item-copy">
+                          <strong>{itemChange.tributeName}</strong>
+
+                          <span>
+                            Destroyed <b>{itemChange.itemLabel}</b>
+                          </span>
+                        </div>
+
+                        <span className="event-card__item-source">Broken</span>
+                      </div>
                     ) : (
                       <div
                         className="event-card__item-transfer"

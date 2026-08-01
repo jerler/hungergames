@@ -196,6 +196,14 @@ export interface UseInventoryItemChange {
   reason: string;
 }
 
+export interface DestroyInventoryItemChange {
+  type: "destroy-item";
+
+  tributeId: string;
+  itemInstanceId: string;
+  reason: string;
+}
+
 export interface TransferInventoryItemChange {
   type: "transfer-item";
 
@@ -242,7 +250,7 @@ export interface DeclareVictoryChange {
   outcome: VictoryOutcome;
 }
 
-export type InventoryTransactionType = "acquired" | "consumed" | "transferred";
+export type InventoryTransactionType = "acquired" | "consumed" | "destroyed" | "transferred";
 
 interface InventoryTransactionBase {
   id: string;
@@ -278,6 +286,10 @@ export interface ConsumedInventoryTransaction extends InventoryTransactionBase {
   uses: number;
 }
 
+export interface DestroyedInventoryTransaction extends InventoryTransactionBase {
+  type: "destroyed";
+}
+
 export interface TransferredInventoryTransaction extends InventoryTransactionBase {
   type: "transferred";
 
@@ -286,7 +298,10 @@ export interface TransferredInventoryTransaction extends InventoryTransactionBas
 }
 
 export type InventoryTransaction =
-  AcquiredInventoryTransaction | ConsumedInventoryTransaction | TransferredInventoryTransaction;
+  | AcquiredInventoryTransaction
+  | ConsumedInventoryTransaction
+  | DestroyedInventoryTransaction
+  | TransferredInventoryTransaction;
 
 export type GameChange =
   | EliminateTributeChange
@@ -298,6 +313,7 @@ export type GameChange =
   | AcquireInventoryItemChange
   | UseInventoryItemChange
   | ConsumeInventoryItemChange
+  | DestroyInventoryItemChange
   | TransferInventoryItemChange
   | FormTruceChange
   | BreakTruceChange

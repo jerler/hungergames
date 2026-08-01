@@ -94,7 +94,7 @@ describe("imported non-fatal Cornucopia events", () => {
       ...CORNUCOPIA_NONFATAL_INTERACTION_EVENTS,
     ];
 
-    expect(importedDefinitions).toHaveLength(33);
+    expect(importedDefinitions).toHaveLength(38);
     expect(new Set(importedDefinitions.map((definition) => definition.id)).size).toBe(
       importedDefinitions.length,
     );

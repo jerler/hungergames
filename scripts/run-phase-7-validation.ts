@@ -192,6 +192,23 @@ function validateInventoryTransactions(run: SimulationRun, failures: ValidationF
         break;
       }
 
+      case "destroyed": {
+        const owner = ownerByItemInstanceId.get(transaction.itemInstanceId);
+
+        if (owner !== transaction.tributeId) {
+          addFailure(
+            failures,
+            "inventory:invalid-destruction-owner",
+            `Item ${transaction.itemInstanceId} was destroyed by ` +
+              `${transaction.tributeId}, but the tracked owner was ${owner ?? "missing"}.`,
+            run.seed,
+          );
+        }
+
+        ownerByItemInstanceId.delete(transaction.itemInstanceId);
+        break;
+      }
+
       case "transferred": {
         const owner = ownerByItemInstanceId.get(transaction.itemInstanceId);
 

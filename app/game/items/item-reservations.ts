@@ -15,6 +15,7 @@ export function getCommittedItemInstanceIds(changes: readonly GameChange[]): str
 
       case "use-item":
       case "consume-item":
+      case "destroy-item":
       case "transfer-item":
         return [change.itemInstanceId];
 

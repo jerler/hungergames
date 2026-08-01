@@ -29,6 +29,14 @@ const INFORMATIONAL_EVENT_FAMILY_IDS = new Set<string>([
   "ordinary:low-brains",
 
   /*
+   * The high-Brains family currently contains one deliberately narrow
+   * event: a high-Brains tribute must be poisoned and then selected for
+   * an ordinary daytime encounter. Focused catalogue tests cover the
+   * event without requiring every fixed simulation corpus to select it.
+   */
+  "ordinary:high-brains",
+
+  /*
    * Romantic formation intentionally carries a very low weight.
    * Focused romantic-event tests cover formation, permanence,
    * partner targeting, protection outcomes, and joint victory.

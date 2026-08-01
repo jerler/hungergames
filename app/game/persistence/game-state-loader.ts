@@ -77,6 +77,7 @@ function isDeprecatedResourceItemChange(
 
     case "consume-item":
     case "use-item":
+    case "destroy-item":
     case "transfer-item":
       return deprecatedItemInstanceIds.has(change.itemInstanceId);
 

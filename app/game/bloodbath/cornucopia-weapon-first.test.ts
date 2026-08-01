@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-
+import type { EventDefinition } from "~/game/events/event-schema";
+import { CORNUCOPIA_EVENTS } from "~/game/events/catalogue/bloodbath";
 import { createInitialGameState } from "~/game/engine/create-initial-game-state";
 import { getItemDefinition } from "~/game/items/item-catalogue";
 import { DEFAULT_TRIBUTES } from "~/game/tributes/default-tributes";
@@ -40,6 +41,14 @@ describe("weapon-first Cornucopia acquisitions", () => {
       const events = sequenceBloodbathEvents(createGame(`weapon-first-${index}`), DAY_ONE);
 
       for (const event of events) {
+        const definition = CORNUCOPIA_EVENTS.find(
+          (candidate) => candidate.id === event.definitionId,
+        ) as EventDefinition | undefined;
+
+        if (definition?.cornucopiaAcquisitionPolicy?.preserveAuthoredItems) {
+          continue;
+        }
+
         const byTribute = new Map<string, ItemDefinitionId[]>();
 
         for (const change of event.changes) {

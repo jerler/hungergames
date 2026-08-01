@@ -215,6 +215,20 @@ export interface EventResolution {
   changes: GameChange[];
 }
 
+export interface CornucopiaAcquisitionPolicy {
+  /**
+   * Keeps every authored non-provision acquisition instead of applying
+   * the ordinary weapon-first normalization and rare bonus-item rule.
+   */
+  preserveAuthoredItems?: boolean;
+
+  /**
+   * Restricts automatic Cornucopia provisions and need satisfaction to
+   * participants selected for these roles. Omitted means every survivor.
+   */
+  provisionRoleIds?: readonly string[];
+}
+
 export interface EventDefinition {
   id: string;
   category: EventCategory;
@@ -250,6 +264,11 @@ export interface EventDefinition {
    * when those technical roles do not represent the event's meaningful cast.
    */
   participantShape?: EventParticipantShape;
+
+  /**
+   * Optional Day 1 acquisition policy for authored Cornucopia events.
+   */
+  cornucopiaAcquisitionPolicy?: CornucopiaAcquisitionPolicy;
 
   roles: readonly ParticipantRoleDefinition[];
 

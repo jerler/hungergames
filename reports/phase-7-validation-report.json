@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-31T17:08:01.510Z",
+  "generatedAt": "2026-08-01T15:23:33.945Z",
   "configuration": {
     "seedGroups": [
       {
@@ -28,51 +28,51 @@
     {
       "id": "alpha",
       "games": 90,
-      "elapsedMs": 4834.646199999999,
-      "averageGameMs": 53.7182911111111,
+      "elapsedMs": 4710.7394,
+      "averageGameMs": 52.341548888888894,
       "halfGame": {
         "cornucopiaNonSolo": 0.7272727272727273,
         "fleeingNonSolo": 0.5714285714285714,
-        "laterDayNonSolo": 0.25313807531380755
+        "laterDayNonSolo": 0.3227990970654628
       },
       "fullGame": {
         "cornucopiaNonSolo": 0.8646153846153846,
         "fleeingNonSolo": 0.6666666666666666,
-        "laterDayNonSolo": 0.3521594684385382
+        "laterDayNonSolo": 0.39429530201342283
       },
       "invariantFailures": 0
     },
     {
       "id": "beta",
       "games": 90,
-      "elapsedMs": 4692.8252,
-      "averageGameMs": 52.14250222222223,
+      "elapsedMs": 4474.6333,
+      "averageGameMs": 49.71814777777778,
       "halfGame": {
         "cornucopiaNonSolo": 0.7151702786377709,
         "fleeingNonSolo": 0.5794392523364486,
-        "laterDayNonSolo": 0.26439232409381663
+        "laterDayNonSolo": 0.33190578158458245
       },
       "fullGame": {
         "cornucopiaNonSolo": 0.8664596273291926,
         "fleeingNonSolo": 0.7058823529411765,
-        "laterDayNonSolo": 0.3404605263157895
+        "laterDayNonSolo": 0.40955631399317405
       },
       "invariantFailures": 0
     },
     {
       "id": "gamma",
       "games": 90,
-      "elapsedMs": 4630.789500000001,
-      "averageGameMs": 51.45321666666668,
+      "elapsedMs": 4303.7983,
+      "averageGameMs": 47.81998111111112,
       "halfGame": {
         "cornucopiaNonSolo": 0.75,
         "fleeingNonSolo": 0.5980392156862745,
-        "laterDayNonSolo": 0.2606924643584521
+        "laterDayNonSolo": 0.29227557411273486
       },
       "fullGame": {
         "cornucopiaNonSolo": 0.8629283489096573,
         "fleeingNonSolo": 0.8311688311688312,
-        "laterDayNonSolo": 0.34846029173419774
+        "laterDayNonSolo": 0.4365217391304348
       },
       "invariantFailures": 0
     }
@@ -82,7 +82,7 @@
     "averageOpeningEliminationRate": 0.5016975308641975,
     "minimumOpeningEliminationRate": 0.4583333333333333,
     "maximumOpeningEliminationRate": 0.5416666666666666,
-    "performanceRatio": 1.044022018275717,
+    "performanceRatio": 1.0945539431994291,
     "comparisons": [
       {
         "gameSize": "half-game",
@@ -98,8 +98,8 @@
         },
         "laterDayNonSolo": {
           "phase1": 0.226,
-          "current": 0.25938803894297635,
-          "delta": 0.033388038942976345
+          "current": 0.31533477321814257,
+          "delta": 0.08933477321814257
         },
         "cornucopiaTopFive": {
           "phase1": 0.592,
@@ -131,8 +131,8 @@
         },
         "laterDayNonSolo": {
           "phase1": 0.295,
-          "current": 0.3470169677066229,
-          "delta": 0.052016967706622896
+          "current": 0.41320432555492315,
+          "delta": 0.11820432555492316
         },
         "cornucopiaTopFive": {
           "phase1": 0.495,
@@ -170,14 +170,14 @@
         "id": "half-game-length",
         "label": "Half Game average length",
         "passed": true,
-        "actual": "11.54",
+        "actual": "11.18",
         "expected": "greater than 1 and less than 50 rounds"
       },
       {
         "id": "full-game-length",
         "label": "Full Game average length",
         "passed": true,
-        "actual": "17.31",
+        "actual": "16.73",
         "expected": "greater than 1 and less than 50 rounds"
       },
       {
@@ -191,42 +191,42 @@
         "id": "direct-combat-outcomes",
         "label": "Direct combat exercises success and failure",
         "passed": true,
-        "actual": "282 successes / 103 failures",
+        "actual": "249 successes / 97 failures",
         "expected": "at least one of each"
       },
       {
         "id": "tactical-offense",
         "label": "Tactical offense is exercised",
         "passed": true,
-        "actual": "1",
+        "actual": "2",
         "expected": "at least one attempt"
       },
       {
         "id": "item-acquisition",
         "label": "Items are acquired",
         "passed": true,
-        "actual": "2366",
+        "actual": "2335",
         "expected": "at least one acquisition"
       },
       {
         "id": "item-consumption",
         "label": "Remaining limited-use items are consumed",
         "passed": true,
-        "actual": "16",
+        "actual": "15",
         "expected": "at least one consumed use"
       },
       {
         "id": "theft-transfers",
         "label": "Theft transfers occur",
         "passed": true,
-        "actual": "123",
+        "actual": "102",
         "expected": "at least one transfer"
       },
       {
         "id": "death-loot-transfers",
         "label": "Death-loot transfers occur",
         "passed": true,
-        "actual": "762",
+        "actual": "958",
         "expected": "at least one transfer"
       },
       {
@@ -240,49 +240,49 @@
         "id": "status-applications",
         "label": "Status mechanics are exercised",
         "passed": true,
-        "actual": "11467",
+        "actual": "11175",
         "expected": "at least one application"
       },
       {
         "id": "event-driven-night-rest",
         "label": "Event-driven night rest is exercised",
         "passed": true,
-        "actual": "8973",
+        "actual": "8653",
         "expected": "at least one recorded rest outcome"
       },
       {
         "id": "night-rest-quality-coverage",
         "label": "All night-rest qualities are exercised",
         "passed": true,
-        "actual": "87 comfortable / 1749 sheltered / 7137 unsheltered",
+        "actual": "246 comfortable / 1565 sheltered / 6842 unsheltered",
         "expected": "at least one of each"
       },
       {
         "id": "morning-rest-resolution",
         "label": "Morning rest resolution is exercised",
         "passed": true,
-        "actual": "8494",
+        "actual": "8210",
         "expected": "at least one resolution"
       },
       {
         "id": "morning-rest-consequences",
         "label": "Both morning rest consequences are exercised",
         "passed": true,
-        "actual": "6992 exhausted / 1743 well-rested",
+        "actual": "6725 exhausted / 1727 well-rested",
         "expected": "at least one of each"
       },
       {
         "id": "night-rest-balance",
         "label": "Protected and unsheltered rest both remain meaningful",
         "passed": true,
-        "actual": "20.5%",
+        "actual": "20.9%",
         "expected": "protected rest between 10% and 95%"
       },
       {
         "id": "deprivation-events-occur",
         "label": "Hunger and thirst occur sometimes",
         "passed": true,
-        "actual": "126 hungry / 133 thirsty",
+        "actual": "114 hungry / 117 thirsty",
         "expected": "at least one application of each across the deterministic batch"
       },
       {
@@ -296,28 +296,28 @@
         "id": "deprivation-remains-optional",
         "label": "Eligibility does not guarantee a deprivation event",
         "passed": true,
-        "actual": "126/4277 hunger; 133/4318 thirst",
+        "actual": "114/3929 hunger; 117/3990 thirst",
         "expected": "applications lower than tribute-round eligibility opportunities"
       },
       {
         "id": "deprivation-balance",
         "label": "Hunger and thirst do not dominate later play",
         "passed": true,
-        "actual": "2.7%",
+        "actual": "2.5%",
         "expected": "greater than 0% and no more than 20% of primary events"
       },
       {
         "id": "deprivation-resolutions",
         "label": "Hunger and thirst can both be resolved",
         "passed": true,
-        "actual": "33 hunger / 32 thirst",
+        "actual": "40 hunger / 71 thirst",
         "expected": "at least one resolution of each"
       },
       {
         "id": "resource-theft-outcomes",
         "label": "Authored resource theft exercises attempts and successes",
         "passed": true,
-        "actual": "17/33 food; 17/28 water",
+        "actual": "16/23 food; 12/26 water",
         "expected": "at least one attempt and success for each need"
       },
       {
@@ -338,133 +338,140 @@
         "id": "family:ordinary:cornucopia-provisions",
         "label": "Event family: cornucopia-provisions",
         "passed": true,
-        "actual": "419",
+        "actual": "355",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:deprivation",
         "label": "Event family: deprivation",
         "passed": true,
-        "actual": "259",
+        "actual": "231",
+        "expected": "at least one event"
+      },
+      {
+        "id": "family:ordinary:status-specific",
+        "label": "Event family: status-specific",
+        "passed": true,
+        "actual": "546",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:day-authored-01-15",
         "label": "Event family: day-authored-01-15",
         "passed": true,
-        "actual": "602",
+        "actual": "522",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:day-authored-16-33",
         "label": "Event family: day-authored-16-33",
         "passed": true,
-        "actual": "803",
+        "actual": "711",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:day-weapon-crafting",
         "label": "Event family: day-weapon-crafting",
         "passed": true,
-        "actual": "204",
+        "actual": "169",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:food-theft",
         "label": "Event family: food-theft",
         "passed": true,
-        "actual": "33",
+        "actual": "23",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:water-theft",
         "label": "Event family: water-theft",
         "passed": true,
-        "actual": "28",
+        "actual": "26",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:combat",
         "label": "Event family: combat",
         "passed": true,
-        "actual": "385",
+        "actual": "346",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:tactical",
         "label": "Event family: tactical",
         "passed": true,
-        "actual": "1",
+        "actual": "2",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:theft",
         "label": "Event family: theft",
         "passed": true,
-        "actual": "129",
+        "actual": "108",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:environmental",
         "label": "Event family: environmental",
         "passed": true,
-        "actual": "1267",
+        "actual": "1134",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:survival",
         "label": "Event family: survival",
         "passed": true,
-        "actual": "500",
+        "actual": "451",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:night-accidental-fatal",
         "label": "Event family: night-accidental-fatal",
         "passed": true,
-        "actual": "265",
+        "actual": "190",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:night-fatal",
         "label": "Event family: night-fatal",
         "passed": true,
-        "actual": "326",
+        "actual": "313",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:night",
         "label": "Event family: night",
         "passed": true,
-        "actual": "1282",
+        "actual": "1118",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:hunting",
         "label": "Event family: hunting",
         "passed": true,
-        "actual": "45",
+        "actual": "27",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:foraging",
         "label": "Event family: foraging",
         "passed": true,
-        "actual": "99",
+        "actual": "107",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:item-use",
         "label": "Event family: item-use",
         "passed": true,
-        "actual": "8",
+        "actual": "7",
         "expected": "at least one event"
       },
       {
         "id": "family:ordinary:high-luck",
         "label": "Event family: high-luck",
         "passed": true,
-        "actual": "30",
+        "actual": "34",
         "expected": "at least one event"
       },
       {
@@ -478,7 +485,7 @@
         "id": "family:ordinary:standard-interaction",
         "label": "Event family: standard-interaction",
         "passed": true,
-        "actual": "35",
+        "actual": "28",
         "expected": "at least one event"
       },
       {
@@ -890,29 +897,29 @@
         "gameSize": "half-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "25.9%",
+        "actual": "31.5%",
         "expected": "at least 20.0%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 153 selections (10.6%)",
-            "fallen-cliff: 95 selections (6.6%)",
-            "becomes-thirsty: 47 selections (3.3%)",
-            "day-creating-diversion-and-escaping: 45 selections (3.1%)",
-            "day-exploring-arena: 44 selections (3.1%)"
+            "river-current: 124 selections (8.9%)",
+            "status-microsleep-worst-time: 78 selections (5.6%)",
+            "fallen-cliff: 70 selections (5.0%)",
+            "day-theft-while-distracted: 44 selections (3.2%)",
+            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1423 feasible / 95 selected",
-            "river-current: 1409 feasible / 153 selected",
-            "day-picking-flowers: 1249 feasible / 5 selected",
-            "day-discovering-cave-failure: 1249 feasible / 7 selected",
-            "day-accidental-self-injury: 1249 feasible / 9 selected"
+            "fallen-cliff: 1376 feasible / 70 selected",
+            "river-current: 1357 feasible / 124 selected",
+            "day-picking-flowers: 1230 feasible / 6 selected",
+            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
+            "day-questioning-sanity: 1230 feasible / 8 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 141970",
-            "weighted-not-selected: 50453",
-            "participant-or-item-infeasible: 49482",
-            "planner-stage-not-attempted: 12568",
-            "already-used-definition: 4852"
+            "definition-ineligible: 157639",
+            "participant-or-item-infeasible: 63766",
+            "weighted-not-selected: 51172",
+            "planner-stage-not-attempted: 11609",
+            "already-used-definition: 4438"
           ]
         }
       },
@@ -923,29 +930,29 @@
         "gameSize": "half-game",
         "poolId": "later-day",
         "participantShape": "pair",
-        "actual": "25.8%",
+        "actual": "30.7%",
         "expected": "at least 21.6%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 153 selections (10.6%)",
-            "fallen-cliff: 95 selections (6.6%)",
-            "becomes-thirsty: 47 selections (3.3%)",
-            "day-creating-diversion-and-escaping: 45 selections (3.1%)",
-            "day-exploring-arena: 44 selections (3.1%)"
+            "river-current: 124 selections (8.9%)",
+            "status-microsleep-worst-time: 78 selections (5.6%)",
+            "fallen-cliff: 70 selections (5.0%)",
+            "day-theft-while-distracted: 44 selections (3.2%)",
+            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1423 feasible / 95 selected",
-            "river-current: 1409 feasible / 153 selected",
-            "day-picking-flowers: 1249 feasible / 5 selected",
-            "day-discovering-cave-failure: 1249 feasible / 7 selected",
-            "day-accidental-self-injury: 1249 feasible / 9 selected"
+            "fallen-cliff: 1376 feasible / 70 selected",
+            "river-current: 1357 feasible / 124 selected",
+            "day-picking-flowers: 1230 feasible / 6 selected",
+            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
+            "day-questioning-sanity: 1230 feasible / 8 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 141970",
-            "weighted-not-selected: 50453",
-            "participant-or-item-infeasible: 49482",
-            "planner-stage-not-attempted: 12568",
-            "already-used-definition: 4852"
+            "definition-ineligible: 157639",
+            "participant-or-item-infeasible: 63766",
+            "weighted-not-selected: 51172",
+            "planner-stage-not-attempted: 11609",
+            "already-used-definition: 4438"
           ]
         }
       },
@@ -956,29 +963,29 @@
         "gameSize": "half-game",
         "poolId": "later-day",
         "participantShape": "trio",
-        "actual": "2",
+        "actual": "5",
         "expected": "at least one selection",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 153 selections (10.6%)",
-            "fallen-cliff: 95 selections (6.6%)",
-            "becomes-thirsty: 47 selections (3.3%)",
-            "day-creating-diversion-and-escaping: 45 selections (3.1%)",
-            "day-exploring-arena: 44 selections (3.1%)"
+            "river-current: 124 selections (8.9%)",
+            "status-microsleep-worst-time: 78 selections (5.6%)",
+            "fallen-cliff: 70 selections (5.0%)",
+            "day-theft-while-distracted: 44 selections (3.2%)",
+            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1423 feasible / 95 selected",
-            "river-current: 1409 feasible / 153 selected",
-            "day-picking-flowers: 1249 feasible / 5 selected",
-            "day-discovering-cave-failure: 1249 feasible / 7 selected",
-            "day-accidental-self-injury: 1249 feasible / 9 selected"
+            "fallen-cliff: 1376 feasible / 70 selected",
+            "river-current: 1357 feasible / 124 selected",
+            "day-picking-flowers: 1230 feasible / 6 selected",
+            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
+            "day-questioning-sanity: 1230 feasible / 8 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 141970",
-            "weighted-not-selected: 50453",
-            "participant-or-item-infeasible: 49482",
-            "planner-stage-not-attempted: 12568",
-            "already-used-definition: 4852"
+            "definition-ineligible: 157639",
+            "participant-or-item-infeasible: 63766",
+            "weighted-not-selected: 51172",
+            "planner-stage-not-attempted: 11609",
+            "already-used-definition: 4438"
           ]
         }
       },
@@ -989,29 +996,29 @@
         "gameSize": "half-game",
         "poolId": "later-day",
         "participantShape": "group-four-plus",
-        "actual": "0",
+        "actual": "6",
         "expected": "informational; accepted baseline had no selections",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 153 selections (10.6%)",
-            "fallen-cliff: 95 selections (6.6%)",
-            "becomes-thirsty: 47 selections (3.3%)",
-            "day-creating-diversion-and-escaping: 45 selections (3.1%)",
-            "day-exploring-arena: 44 selections (3.1%)"
+            "river-current: 124 selections (8.9%)",
+            "status-microsleep-worst-time: 78 selections (5.6%)",
+            "fallen-cliff: 70 selections (5.0%)",
+            "day-theft-while-distracted: 44 selections (3.2%)",
+            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1423 feasible / 95 selected",
-            "river-current: 1409 feasible / 153 selected",
-            "day-picking-flowers: 1249 feasible / 5 selected",
-            "day-discovering-cave-failure: 1249 feasible / 7 selected",
-            "day-accidental-self-injury: 1249 feasible / 9 selected"
+            "fallen-cliff: 1376 feasible / 70 selected",
+            "river-current: 1357 feasible / 124 selected",
+            "day-picking-flowers: 1230 feasible / 6 selected",
+            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
+            "day-questioning-sanity: 1230 feasible / 8 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 141970",
-            "weighted-not-selected: 50453",
-            "participant-or-item-infeasible: 49482",
-            "planner-stage-not-attempted: 12568",
-            "already-used-definition: 4852"
+            "definition-ineligible: 157639",
+            "participant-or-item-infeasible: 63766",
+            "weighted-not-selected: 51172",
+            "planner-stage-not-attempted: 11609",
+            "already-used-definition: 4438"
           ]
         }
       },
@@ -1022,29 +1029,29 @@
         "gameSize": "half-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "19.3%",
+        "actual": "20.2%",
         "expected": "at least 8.2%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 153 selections (10.6%)",
-            "fallen-cliff: 95 selections (6.6%)",
-            "becomes-thirsty: 47 selections (3.3%)",
-            "day-creating-diversion-and-escaping: 45 selections (3.1%)",
-            "day-exploring-arena: 44 selections (3.1%)"
+            "river-current: 124 selections (8.9%)",
+            "status-microsleep-worst-time: 78 selections (5.6%)",
+            "fallen-cliff: 70 selections (5.0%)",
+            "day-theft-while-distracted: 44 selections (3.2%)",
+            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1423 feasible / 95 selected",
-            "river-current: 1409 feasible / 153 selected",
-            "day-picking-flowers: 1249 feasible / 5 selected",
-            "day-discovering-cave-failure: 1249 feasible / 7 selected",
-            "day-accidental-self-injury: 1249 feasible / 9 selected"
+            "fallen-cliff: 1376 feasible / 70 selected",
+            "river-current: 1357 feasible / 124 selected",
+            "day-picking-flowers: 1230 feasible / 6 selected",
+            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
+            "day-questioning-sanity: 1230 feasible / 8 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 141970",
-            "weighted-not-selected: 50453",
-            "participant-or-item-infeasible: 49482",
-            "planner-stage-not-attempted: 12568",
-            "already-used-definition: 4852"
+            "definition-ineligible: 157639",
+            "participant-or-item-infeasible: 63766",
+            "weighted-not-selected: 51172",
+            "planner-stage-not-attempted: 11609",
+            "already-used-definition: 4438"
           ]
         }
       },
@@ -1055,29 +1062,29 @@
         "gameSize": "half-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "1.6%",
+        "actual": "1.9%",
         "expected": "at least 0.3%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 153 selections (10.6%)",
-            "fallen-cliff: 95 selections (6.6%)",
-            "becomes-thirsty: 47 selections (3.3%)",
-            "day-creating-diversion-and-escaping: 45 selections (3.1%)",
-            "day-exploring-arena: 44 selections (3.1%)"
+            "river-current: 124 selections (8.9%)",
+            "status-microsleep-worst-time: 78 selections (5.6%)",
+            "fallen-cliff: 70 selections (5.0%)",
+            "day-theft-while-distracted: 44 selections (3.2%)",
+            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1423 feasible / 95 selected",
-            "river-current: 1409 feasible / 153 selected",
-            "day-picking-flowers: 1249 feasible / 5 selected",
-            "day-discovering-cave-failure: 1249 feasible / 7 selected",
-            "day-accidental-self-injury: 1249 feasible / 9 selected"
+            "fallen-cliff: 1376 feasible / 70 selected",
+            "river-current: 1357 feasible / 124 selected",
+            "day-picking-flowers: 1230 feasible / 6 selected",
+            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
+            "day-questioning-sanity: 1230 feasible / 8 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 141970",
-            "weighted-not-selected: 50453",
-            "participant-or-item-infeasible: 49482",
-            "planner-stage-not-attempted: 12568",
-            "already-used-definition: 4852"
+            "definition-ineligible: 157639",
+            "participant-or-item-infeasible: 63766",
+            "weighted-not-selected: 51172",
+            "planner-stage-not-attempted: 11609",
+            "already-used-definition: 4438"
           ]
         }
       },
@@ -1088,29 +1095,29 @@
         "gameSize": "half-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "61.7% across 248 environmental fatalities",
+        "actual": "63.9% across 194 environmental fatalities",
         "expected": "no definition above 68.2%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 153 selections (10.6%)",
-            "fallen-cliff: 95 selections (6.6%)",
-            "becomes-thirsty: 47 selections (3.3%)",
-            "day-creating-diversion-and-escaping: 45 selections (3.1%)",
-            "day-exploring-arena: 44 selections (3.1%)"
+            "river-current: 124 selections (8.9%)",
+            "status-microsleep-worst-time: 78 selections (5.6%)",
+            "fallen-cliff: 70 selections (5.0%)",
+            "day-theft-while-distracted: 44 selections (3.2%)",
+            "day-creating-diversion-and-escaping: 40 selections (2.9%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1423 feasible / 95 selected",
-            "river-current: 1409 feasible / 153 selected",
-            "day-picking-flowers: 1249 feasible / 5 selected",
-            "day-discovering-cave-failure: 1249 feasible / 7 selected",
-            "day-accidental-self-injury: 1249 feasible / 9 selected"
+            "fallen-cliff: 1376 feasible / 70 selected",
+            "river-current: 1357 feasible / 124 selected",
+            "day-picking-flowers: 1230 feasible / 6 selected",
+            "day-ignoring-distant-smoke: 1230 feasible / 7 selected",
+            "day-questioning-sanity: 1230 feasible / 8 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 141970",
-            "weighted-not-selected: 50453",
-            "participant-or-item-infeasible: 49482",
-            "planner-stage-not-attempted: 12568",
-            "already-used-definition: 4852"
+            "definition-ineligible: 157639",
+            "participant-or-item-infeasible: 63766",
+            "weighted-not-selected: 51172",
+            "planner-stage-not-attempted: 11609",
+            "already-used-definition: 4438"
           ]
         }
       },
@@ -1472,29 +1479,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "34.7%",
+        "actual": "41.3%",
         "expected": "at least 26.0%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 102 selections (5.6%)",
-            "fallen-cliff: 61 selections (3.3%)",
-            "becomes-thirsty: 55 selections (3.0%)",
-            "becomes-hungry: 54 selections (3.0%)",
-            "day-creating-diversion-and-escaping: 48 selections (2.6%)"
+            "river-current: 90 selections (5.1%)",
+            "status-microsleep-worst-time: 80 selections (4.6%)",
+            "becomes-thirsty: 50 selections (2.8%)",
+            "becomes-hungry: 45 selections (2.6%)",
+            "fallen-cliff: 45 selections (2.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1782 feasible / 61 selected",
-            "day-accidental-self-injury: 1692 feasible / 8 selected",
-            "day-discovering-cave-failure: 1692 feasible / 11 selected",
-            "day-discovering-cave-shelter: 1692 feasible / 12 selected",
-            "day-picking-flowers: 1692 feasible / 13 selected"
+            "fallen-cliff: 1723 feasible / 45 selected",
+            "day-accidental-self-injury: 1658 feasible / 8 selected",
+            "day-picking-flowers: 1658 feasible / 9 selected",
+            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
+            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 168277",
-            "weighted-not-selected: 72473",
-            "participant-or-item-infeasible: 56266",
-            "already-used-definition: 15907",
-            "planner-stage-not-attempted: 6339"
+            "definition-ineligible: 189276",
+            "participant-or-item-infeasible: 74194",
+            "weighted-not-selected: 73657",
+            "already-used-definition: 14889",
+            "planner-stage-not-attempted: 5737"
           ]
         }
       },
@@ -1505,29 +1512,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "pair",
-        "actual": "32.3%",
+        "actual": "37.5%",
         "expected": "at least 27.5%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 102 selections (5.6%)",
-            "fallen-cliff: 61 selections (3.3%)",
-            "becomes-thirsty: 55 selections (3.0%)",
-            "becomes-hungry: 54 selections (3.0%)",
-            "day-creating-diversion-and-escaping: 48 selections (2.6%)"
+            "river-current: 90 selections (5.1%)",
+            "status-microsleep-worst-time: 80 selections (4.6%)",
+            "becomes-thirsty: 50 selections (2.8%)",
+            "becomes-hungry: 45 selections (2.6%)",
+            "fallen-cliff: 45 selections (2.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1782 feasible / 61 selected",
-            "day-accidental-self-injury: 1692 feasible / 8 selected",
-            "day-discovering-cave-failure: 1692 feasible / 11 selected",
-            "day-discovering-cave-shelter: 1692 feasible / 12 selected",
-            "day-picking-flowers: 1692 feasible / 13 selected"
+            "fallen-cliff: 1723 feasible / 45 selected",
+            "day-accidental-self-injury: 1658 feasible / 8 selected",
+            "day-picking-flowers: 1658 feasible / 9 selected",
+            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
+            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 168277",
-            "weighted-not-selected: 72473",
-            "participant-or-item-infeasible: 56266",
-            "already-used-definition: 15907",
-            "planner-stage-not-attempted: 6339"
+            "definition-ineligible: 189276",
+            "participant-or-item-infeasible: 74194",
+            "weighted-not-selected: 73657",
+            "already-used-definition: 14889",
+            "planner-stage-not-attempted: 5737"
           ]
         }
       },
@@ -1538,29 +1545,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "trio",
-        "actual": "43",
+        "actual": "54",
         "expected": "at least one selection",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 102 selections (5.6%)",
-            "fallen-cliff: 61 selections (3.3%)",
-            "becomes-thirsty: 55 selections (3.0%)",
-            "becomes-hungry: 54 selections (3.0%)",
-            "day-creating-diversion-and-escaping: 48 selections (2.6%)"
+            "river-current: 90 selections (5.1%)",
+            "status-microsleep-worst-time: 80 selections (4.6%)",
+            "becomes-thirsty: 50 selections (2.8%)",
+            "becomes-hungry: 45 selections (2.6%)",
+            "fallen-cliff: 45 selections (2.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1782 feasible / 61 selected",
-            "day-accidental-self-injury: 1692 feasible / 8 selected",
-            "day-discovering-cave-failure: 1692 feasible / 11 selected",
-            "day-discovering-cave-shelter: 1692 feasible / 12 selected",
-            "day-picking-flowers: 1692 feasible / 13 selected"
+            "fallen-cliff: 1723 feasible / 45 selected",
+            "day-accidental-self-injury: 1658 feasible / 8 selected",
+            "day-picking-flowers: 1658 feasible / 9 selected",
+            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
+            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 168277",
-            "weighted-not-selected: 72473",
-            "participant-or-item-infeasible: 56266",
-            "already-used-definition: 15907",
-            "planner-stage-not-attempted: 6339"
+            "definition-ineligible: 189276",
+            "participant-or-item-infeasible: 74194",
+            "weighted-not-selected: 73657",
+            "already-used-definition: 14889",
+            "planner-stage-not-attempted: 5737"
           ]
         }
       },
@@ -1571,29 +1578,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "group-four-plus",
-        "actual": "0",
+        "actual": "13",
         "expected": "informational; accepted baseline had no selections",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 102 selections (5.6%)",
-            "fallen-cliff: 61 selections (3.3%)",
-            "becomes-thirsty: 55 selections (3.0%)",
-            "becomes-hungry: 54 selections (3.0%)",
-            "day-creating-diversion-and-escaping: 48 selections (2.6%)"
+            "river-current: 90 selections (5.1%)",
+            "status-microsleep-worst-time: 80 selections (4.6%)",
+            "becomes-thirsty: 50 selections (2.8%)",
+            "becomes-hungry: 45 selections (2.6%)",
+            "fallen-cliff: 45 selections (2.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1782 feasible / 61 selected",
-            "day-accidental-self-injury: 1692 feasible / 8 selected",
-            "day-discovering-cave-failure: 1692 feasible / 11 selected",
-            "day-discovering-cave-shelter: 1692 feasible / 12 selected",
-            "day-picking-flowers: 1692 feasible / 13 selected"
+            "fallen-cliff: 1723 feasible / 45 selected",
+            "day-accidental-self-injury: 1658 feasible / 8 selected",
+            "day-picking-flowers: 1658 feasible / 9 selected",
+            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
+            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 168277",
-            "weighted-not-selected: 72473",
-            "participant-or-item-infeasible: 56266",
-            "already-used-definition: 15907",
-            "planner-stage-not-attempted: 6339"
+            "definition-ineligible: 189276",
+            "participant-or-item-infeasible: 74194",
+            "weighted-not-selected: 73657",
+            "already-used-definition: 14889",
+            "planner-stage-not-attempted: 5737"
           ]
         }
       },
@@ -1604,29 +1611,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "19.8%",
+        "actual": "21.3%",
         "expected": "at least 9.4%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 102 selections (5.6%)",
-            "fallen-cliff: 61 selections (3.3%)",
-            "becomes-thirsty: 55 selections (3.0%)",
-            "becomes-hungry: 54 selections (3.0%)",
-            "day-creating-diversion-and-escaping: 48 selections (2.6%)"
+            "river-current: 90 selections (5.1%)",
+            "status-microsleep-worst-time: 80 selections (4.6%)",
+            "becomes-thirsty: 50 selections (2.8%)",
+            "becomes-hungry: 45 selections (2.6%)",
+            "fallen-cliff: 45 selections (2.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1782 feasible / 61 selected",
-            "day-accidental-self-injury: 1692 feasible / 8 selected",
-            "day-discovering-cave-failure: 1692 feasible / 11 selected",
-            "day-discovering-cave-shelter: 1692 feasible / 12 selected",
-            "day-picking-flowers: 1692 feasible / 13 selected"
+            "fallen-cliff: 1723 feasible / 45 selected",
+            "day-accidental-self-injury: 1658 feasible / 8 selected",
+            "day-picking-flowers: 1658 feasible / 9 selected",
+            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
+            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 168277",
-            "weighted-not-selected: 72473",
-            "participant-or-item-infeasible: 56266",
-            "already-used-definition: 15907",
-            "planner-stage-not-attempted: 6339"
+            "definition-ineligible: 189276",
+            "participant-or-item-infeasible: 74194",
+            "weighted-not-selected: 73657",
+            "already-used-definition: 14889",
+            "planner-stage-not-attempted: 5737"
           ]
         }
       },
@@ -1637,29 +1644,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "2.2%",
+        "actual": "1.9%",
         "expected": "at least 0.3%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 102 selections (5.6%)",
-            "fallen-cliff: 61 selections (3.3%)",
-            "becomes-thirsty: 55 selections (3.0%)",
-            "becomes-hungry: 54 selections (3.0%)",
-            "day-creating-diversion-and-escaping: 48 selections (2.6%)"
+            "river-current: 90 selections (5.1%)",
+            "status-microsleep-worst-time: 80 selections (4.6%)",
+            "becomes-thirsty: 50 selections (2.8%)",
+            "becomes-hungry: 45 selections (2.6%)",
+            "fallen-cliff: 45 selections (2.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1782 feasible / 61 selected",
-            "day-accidental-self-injury: 1692 feasible / 8 selected",
-            "day-discovering-cave-failure: 1692 feasible / 11 selected",
-            "day-discovering-cave-shelter: 1692 feasible / 12 selected",
-            "day-picking-flowers: 1692 feasible / 13 selected"
+            "fallen-cliff: 1723 feasible / 45 selected",
+            "day-accidental-self-injury: 1658 feasible / 8 selected",
+            "day-picking-flowers: 1658 feasible / 9 selected",
+            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
+            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 168277",
-            "weighted-not-selected: 72473",
-            "participant-or-item-infeasible: 56266",
-            "already-used-definition: 15907",
-            "planner-stage-not-attempted: 6339"
+            "definition-ineligible: 189276",
+            "participant-or-item-infeasible: 74194",
+            "weighted-not-selected: 73657",
+            "already-used-definition: 14889",
+            "planner-stage-not-attempted: 5737"
           ]
         }
       },
@@ -1670,29 +1677,29 @@
         "gameSize": "full-game",
         "poolId": "later-day",
         "participantShape": "all",
-        "actual": "62.6% across 163 environmental fatalities",
+        "actual": "66.7% across 135 environmental fatalities",
         "expected": "no definition above 70.0%",
         "diagnostics": {
           "mostSelectedDefinitions": [
-            "river-current: 102 selections (5.6%)",
-            "fallen-cliff: 61 selections (3.3%)",
-            "becomes-thirsty: 55 selections (3.0%)",
-            "becomes-hungry: 54 selections (3.0%)",
-            "day-creating-diversion-and-escaping: 48 selections (2.6%)"
+            "river-current: 90 selections (5.1%)",
+            "status-microsleep-worst-time: 80 selections (4.6%)",
+            "becomes-thirsty: 50 selections (2.8%)",
+            "becomes-hungry: 45 selections (2.6%)",
+            "fallen-cliff: 45 selections (2.6%)"
           ],
           "frequentlyFeasibleButRejectedDefinitions": [
-            "fallen-cliff: 1782 feasible / 61 selected",
-            "day-accidental-self-injury: 1692 feasible / 8 selected",
-            "day-discovering-cave-failure: 1692 feasible / 11 selected",
-            "day-discovering-cave-shelter: 1692 feasible / 12 selected",
-            "day-picking-flowers: 1692 feasible / 13 selected"
+            "fallen-cliff: 1723 feasible / 45 selected",
+            "day-accidental-self-injury: 1658 feasible / 8 selected",
+            "day-picking-flowers: 1658 feasible / 9 selected",
+            "day-discovering-cave-shelter: 1658 feasible / 10 selected",
+            "day-camouflaging-in-bushes: 1658 feasible / 12 selected"
           ],
           "commonRejectionReasons": [
-            "definition-ineligible: 168277",
-            "weighted-not-selected: 72473",
-            "participant-or-item-infeasible: 56266",
-            "already-used-definition: 15907",
-            "planner-stage-not-attempted: 6339"
+            "definition-ineligible: 189276",
+            "participant-or-item-infeasible: 74194",
+            "weighted-not-selected: 73657",
+            "already-used-definition: 14889",
+            "planner-stage-not-attempted: 5737"
           ]
         }
       }

@@ -18,6 +18,7 @@ import { DAY_EVENTS_16_33 } from "./encounters/day-events-continued";
 
 import { DAY_EVENTS } from "./encounters/day-events";
 import { DEPRIVATION_EVENTS } from "./encounters/deprivation-events";
+import { STATUS_SPECIFIC_EVENTS } from "./encounters/status-specific-events";
 
 import { FOOD_THEFT_EVENTS, WATER_THEFT_EVENTS } from "./encounters/resource-theft-events";
 
@@ -78,6 +79,12 @@ export const ORDINARY_EVENT_CATALOGUE_FAMILIES = [
     name: "deprivation",
 
     events: DEPRIVATION_EVENTS,
+  },
+
+  {
+    name: "status-specific",
+
+    events: STATUS_SPECIFIC_EVENTS,
   },
   {
     name: "day-authored-01-15",

@@ -16,6 +16,7 @@ export function createEvenTruceInventoryRedistributionChanges(
   truce: Truce,
   random: RandomSource,
   reason: string,
+  unavailableItemInstanceIds: ReadonlySet<string> = new Set<string>(),
 ): TransferInventoryItemChange[] {
   const members = truce.tributeIds.map((tributeId) => {
     const tribute = state.tributes.find((candidate) => candidate.id === tributeId);
@@ -38,11 +39,13 @@ export function createEvenTruceInventoryRedistributionChanges(
   }
 
   const pooledItems: OwnedInventoryItem[] = members.flatMap((tribute) =>
-    tribute.inventory.map((item) => ({
-      ownerId: tribute.id,
+    tribute.inventory
+      .filter((item) => !unavailableItemInstanceIds.has(item.id))
+      .map((item) => ({
+        ownerId: tribute.id,
 
-      item,
-    })),
+        item,
+      })),
   );
 
   if (pooledItems.length === 0) {

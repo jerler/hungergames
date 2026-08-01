@@ -87,7 +87,7 @@ function createAmicableSeparationEvent(size: TruceGroupSize, sizeWeight: number)
         round,
         groupSize: size,
       }),
-    resolve({ state, random, participantsByRole }): EventResolution {
+    resolve({ state, random, participantsByRole, unavailableItemInstanceIds }): EventResolution {
       const members = requireParticipants(participantsByRole, "members");
 
       if (members.length !== size) {
@@ -113,6 +113,7 @@ function createAmicableSeparationEvent(size: TruceGroupSize, sizeWeight: number)
         truce,
         random,
         "amicable-truce-separation",
+        unavailableItemInstanceIds,
       );
       const names = members.map((member) => member.snapshot.name);
 

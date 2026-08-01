@@ -309,7 +309,11 @@ export function sequenceRoundEvents(
 
   const unavailableTributeIds = getCommittedItemOwnerIds(state, unavailableItemInstanceIds);
 
-  const forcedTruceSeparationEvents = createForcedStandardTruceSeparationEvents(state, round);
+  const forcedTruceSeparationEvents = createForcedStandardTruceSeparationEvents(
+    state,
+    round,
+    unavailableItemInstanceIds,
+  );
   const targetEventCount = Math.max(baseTargetEventCount, forcedTruceSeparationEvents.length);
   const events: ResolvedEvent[] = [...forcedTruceSeparationEvents];
   const ordinaryEventStartIndex = forcedTruceSeparationEvents.length;
@@ -508,6 +512,25 @@ export function sequenceRoundEvents(
         round,
         resolution,
       });
+
+      /*
+       * Required and optional item roles are filtered before resolution,
+       * but direct definitions may discover inventory opportunistically
+       * while resolving. Reject any candidate that tries to commit a
+       * physical item already used by preparation or an earlier event.
+       */
+      const resolvedCommittedItemInstanceIds = getCommittedItemInstanceIds(resolution.changes);
+      const conflictingCommittedItemInstanceId = resolvedCommittedItemInstanceIds.find(
+        (itemInstanceId) => unavailableItemInstanceIds.has(itemInstanceId),
+      );
+
+      if (conflictingCommittedItemInstanceId) {
+        opportunityRejectionReasons.set(selected.definition.id, "reservation-blocked");
+        remainingCandidates = remainingCandidates.filter(
+          (candidate) => candidate.definition.id !== selected.definition.id,
+        );
+        continue;
+      }
 
       const eventEliminationCount = countEliminationChanges(resolution.changes);
 

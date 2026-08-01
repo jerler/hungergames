@@ -25,6 +25,7 @@ function getLivingMembers(state: GameState, truce: Truce) {
 export function createForcedStandardTruceSeparationEvents(
   state: GameState,
   round: RoundReference,
+  unavailableItemInstanceIds: ReadonlySet<string> = new Set<string>(),
 ): ResolvedEvent[] {
   return getOversizedStandardTruces(state).map((truce, eventIndex) => {
     const members = getLivingMembers(state, truce);
@@ -55,6 +56,7 @@ export function createForcedStandardTruceSeparationEvents(
       livingTruce,
       random,
       "forced-oversized-truce-separation",
+      unavailableItemInstanceIds,
     );
     const names = members.map((member) => member.snapshot.name);
 

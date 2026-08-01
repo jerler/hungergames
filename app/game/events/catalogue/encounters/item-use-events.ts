@@ -15,7 +15,7 @@ export const ITEM_USE_EVENTS = [
     check: brains(3),
     tags: ["environment", "weapon", "tool", "item", "status"],
     periods: ["day"],
-    weight: 3.5,
+    weight: 8,
     outcomes: {
       criticalFailure: result({
         text: ({ tribute }) =>
@@ -49,7 +49,7 @@ export const ITEM_USE_EVENTS = [
     check: brains(3),
     tags: ["weapon", "item", "status", "resource"],
     periods: ["day"],
-    weight: 3.5,
+    weight: 4.5,
     recoveryTargets: [
       {
         kind: "survival-need",

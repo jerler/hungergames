@@ -518,6 +518,8 @@ describe("Bloodbath outcome coverage", () => {
       "bloodbath-flee-low-brawn-run-faster",
       "bloodbath-flee-high-brawn-gentle-giant",
       "bloodbath-flee-low-brains-follow-that-tribute",
+      "bloodbath-flee-high-brains-not-my-problem",
+      "bloodbath-flee-high-brains-mutual-interest",
     ]);
 
     for (const definition of FLEE_EVENTS) {

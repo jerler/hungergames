@@ -59,6 +59,29 @@ function createTestGame(seed = "cornucopia-flavour-events"): GameState {
   };
 }
 
+function createParticipantsByRole(
+  definition: EventDefinition,
+  tributes: readonly GameTribute[],
+): ParticipantsByRole {
+  let offset = 0;
+  const participantsByRole: Record<string, readonly GameTribute[]> = {};
+
+  for (const role of definition.roles) {
+    const participants = tributes.slice(offset, offset + role.count);
+
+    if (participants.length !== role.count) {
+      throw new Error(
+        `Not enough deterministic participants for role "${role.id}" in "${definition.id}".`,
+      );
+    }
+
+    participantsByRole[role.id] = participants;
+    offset += role.count;
+  }
+
+  return participantsByRole;
+}
+
 function resolveDefinition(
   state: GameState,
   definition: EventDefinition,
@@ -94,7 +117,7 @@ describe("imported non-fatal Cornucopia events", () => {
       ...CORNUCOPIA_NONFATAL_INTERACTION_EVENTS,
     ];
 
-    expect(importedDefinitions).toHaveLength(40);
+    expect(importedDefinitions).toHaveLength(46);
     expect(new Set(importedDefinitions.map((definition) => definition.id)).size).toBe(
       importedDefinitions.length,
     );
@@ -142,15 +165,11 @@ describe("imported non-fatal Cornucopia events", () => {
     const quartet = state.tributes.slice(0, 4);
 
     for (const definition of CORNUCOPIA_NONFATAL_TRIO_EVENTS) {
-      resolveDefinition(state, definition, {
-        tributes: trio,
-      });
+      resolveDefinition(state, definition, createParticipantsByRole(definition, trio));
     }
 
     for (const definition of CORNUCOPIA_NONFATAL_QUARTET_EVENTS) {
-      resolveDefinition(state, definition, {
-        tributes: quartet,
-      });
+      resolveDefinition(state, definition, createParticipantsByRole(definition, quartet));
     }
   });
 

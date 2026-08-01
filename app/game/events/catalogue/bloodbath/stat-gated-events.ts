@@ -740,7 +740,432 @@ const HIGH_BRAWN_GENTLE_GIANT_FLEE: EventDefinition = {
   },
 };
 
+const HIGH_BRAINS_SHOPPING_LIST: EventDefinition = {
+  id: "cornucopia-high-brains-shopping-list",
+  category: "survival",
+  periods: ["day"],
+  baseWeight: 1.7,
+  tags: ["survival", "weapon", "item", "resource"],
+  selectionProfile: statSelectionProfile(6, ["item-requirement"]),
+  cornucopiaAcquisitionPolicy: {
+    preserveAuthoredItems: true,
+  },
+  roles: [
+    {
+      id: "tribute",
+      count: 1,
+      isEligible: (tribute) =>
+        isHighBrains(tribute) &&
+        hasUsableCornucopiaPackItem(tribute) &&
+        hasUsableCornucopiaContestedDirectWeapon(tribute),
+    },
+  ],
+  resolve({ eventId, round, random, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "tribute");
+    const pronouns = getTributePronouns(actor);
+    const itemIds = selectDistinctCornucopiaPackItems(actor, 2, random);
+    const weaponId = selectCornucopiaContestedDirectWeapon(actor, random);
+
+    if (itemIds.length !== 2) {
+      throw new Error("Shopping List could not select two distinct supplies.");
+    }
+
+    return {
+      text:
+        `${actor.snapshot.name} studies the Cornucopia before the cannon fires, memorizing exactly where the most useful supplies appear to be stored. ` +
+        `While everyone else grabs whatever they can reach, ${pronouns.subject} follows a carefully planned route and disappears into the woods with everything ${pronouns.subject} wanted.`,
+      changes: createItemAcquisitionAndSurvivalChanges(
+        eventId,
+        actor,
+        [...itemIds, weaponId],
+        round,
+        "cornucopia",
+      ),
+    };
+  },
+};
+
+const HIGH_BRAINS_PRIORITIES: EventDefinition = {
+  id: "cornucopia-high-brains-priorities",
+  category: "survival",
+  periods: ["day"],
+  baseWeight: 1.4,
+  tags: ["survival", "item", "resource"],
+  selectionProfile: statSelectionProfile(5, ["item-requirement"]),
+  cornucopiaAcquisitionPolicy: {
+    preserveAuthoredItems: true,
+  },
+  roles: [
+    {
+      id: "tribute",
+      count: 1,
+      isEligible: isHighBrains,
+    },
+  ],
+  resolve({ eventId, round, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "tribute");
+
+    return {
+      text:
+        `${actor.snapshot.name} ignores the enormous weapon pile and grabs the smaller supplies everyone else overlooked. ` +
+        `By the time the other tributes realize medicine and fire-starters might also be useful, ${actor.snapshot.name} is already safely inside the woods.`,
+      changes: createItemAcquisitionAndSurvivalChanges(
+        eventId,
+        actor,
+        ["poison-vial", "med-kit", "energy-drink", "lighter"],
+        round,
+        "cornucopia",
+      ),
+    };
+  },
+};
+
+const HIGH_BRAINS_LET_THEM_FIGHT: EventDefinition = {
+  id: "cornucopia-high-brains-let-them-fight",
+  category: "hazard",
+  periods: ["day"],
+  baseWeight: 1.2,
+  tags: ["hazard", "combat", "status"],
+  participantShape: "trio",
+  selectionProfile: statSelectionProfile(2),
+  cornucopiaAcquisitionPolicy: {
+    provisionRoleIds: ["actor"],
+  },
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isHighBrains,
+    },
+    {
+      id: "target",
+      count: 1,
+    },
+    {
+      id: "bystander",
+      count: 1,
+    },
+  ],
+  resolve({ eventId, round, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const bystander = requireSingleParticipant(participantsByRole, "bystander");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} waits patiently while ${target.snapshot.name} and ${bystander.snapshot.name} fight over a backpack. ` +
+        `Once they are sufficiently distracted by each other, ${pronouns.subject} grabs the bag and runs to safety.`,
+      changes: [
+        createStatusChange(eventId, target, "injured", 1, round),
+        createStatusChange(eventId, bystander, "injured", 1, round),
+        ...createSurvivalChanges([actor, target, bystander]),
+      ],
+    };
+  },
+};
+
+const HIGH_BRAINS_THINKING_OUTSIDE_THE_BOX: EventDefinition = {
+  id: "cornucopia-high-brains-thinking-outside-the-box",
+  category: "hazard",
+  periods: ["day"],
+  baseWeight: 1.3,
+  tags: ["hazard", "combat", "weapon", "item", "resource"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(5, ["item-requirement"]),
+  cornucopiaAcquisitionPolicy: {
+    preserveAuthoredItems: true,
+    provisionRoleIds: ["actor"],
+  },
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: (tribute) =>
+        isHighBrains(tribute) && hasUsableCornucopiaContestedDirectWeapon(tribute),
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "target",
+      count: 1,
+      opposesRoleIds: ["actor"],
+    },
+  ],
+  resolve({ eventId, round, random, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const weaponId = selectCornucopiaContestedDirectWeapon(actor, random);
+    const weaponLabel = getItemLabel(weaponId).toLowerCase();
+
+    return {
+      text:
+        `Not wanting to risk getting injured in the fight for the weaponry, ${actor.snapshot.name} waits beside a teetering tower of boxes until ${target.snapshot.name} runs into view holding a shiny ${weaponLabel}. ` +
+        `${actor.snapshot.name} sends the boxes flying onto ${target.snapshot.name}, steals the ${weaponLabel}, and runs to safety.`,
+      changes: [
+        ...createItemAcquisitionAndSurvivalChanges(eventId, actor, [weaponId], round, "cornucopia"),
+        ...createSurvivalChanges([target]),
+      ],
+    };
+  },
+};
+
+const HIGH_BRAINS_INVENTORY_MANAGEMENT: EventDefinition = {
+  id: "cornucopia-high-brains-inventory-management",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.75,
+  tags: ["fatal", "combat", "item", "resource"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(4, ["item-requirement"]),
+  cornucopiaAcquisitionPolicy: {
+    preserveAuthoredItems: true,
+    provisionRoleIds: ["actor"],
+  },
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: (tribute) => isHighBrains(tribute) && hasUsableCornucopiaPackItem(tribute),
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "target",
+      count: 1,
+      targeting: "hostile",
+      opposesRoleIds: ["actor"],
+    },
+  ],
+  resolve({ eventId, round, random, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const pronouns = getTributePronouns(actor);
+
+    if (random() < 0.5) {
+      return {
+        text:
+          `${actor.snapshot.name} opens several backpacks inside the Cornucopia, removes the useless weight, and combines the best supplies into one manageable bag. ` +
+          `${pronouns.Subject} escapes while everyone else is still struggling with whatever they grabbed first.`,
+        changes: [
+          ...createItemAcquisitionAndSurvivalChanges(
+            eventId,
+            actor,
+            ["lighter", "med-kit", "energy-drink"],
+            round,
+            "cornucopia",
+          ),
+          ...createSurvivalChanges([target]),
+        ],
+      };
+    }
+
+    return {
+      text:
+        `${actor.snapshot.name} opens several backpacks inside the Cornucopia, removes the useless weight, and combines the best supplies into one manageable bag. ` +
+        `Unfortunately, ${pronouns.subject} spends too long on the task and is rewarded with an arrow to the skull.`,
+      changes: [
+        ...createFatalChanges(
+          actor,
+          "cornucopia-high-brains-inventory-management",
+          "Shot while reorganizing supplies",
+          `${actor.snapshot.name} is shot by ${target.snapshot.name} after spending too long reorganizing Cornucopia supplies.`,
+          target,
+        ),
+        ...createSurvivalChanges([target]),
+      ],
+    };
+  },
+};
+
+const HIGH_BRAINS_CALCULATED_LOSS: EventDefinition = {
+  id: "cornucopia-high-brains-calculated-loss",
+  category: "survival",
+  periods: ["day"],
+  baseWeight: 1.2,
+  tags: ["survival", "item", "resource"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(4, ["item-requirement"]),
+  cornucopiaAcquisitionPolicy: {
+    preserveAuthoredItems: true,
+    provisionRoleIds: ["actor"],
+  },
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isHighBrains,
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "target",
+      count: 1,
+      isEligible: hasUsableCornucopiaPackItem,
+      opposesRoleIds: ["actor"],
+    },
+  ],
+  resolve({ eventId, round, random, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const actorPronouns = getTributePronouns(actor);
+    const itemId = selectCornucopiaPackItem(target, random);
+
+    return {
+      text:
+        `${actor.snapshot.name} grabs a bag from the Cornucopia and runs for the woods, only to realize that ${target.snapshot.name} is racing after ${actorPronouns.object}. ` +
+        `Thinking fast, ${actor.snapshot.name} drops the least useful item from the bag, causing ${target.snapshot.name} to stop and collect it while ${actor.snapshot.name} escapes with everything that actually matters.`,
+      changes: [
+        ...createItemAcquisitionAndSurvivalChanges(eventId, target, [itemId], round, "cornucopia"),
+        ...createSurvivalChanges([actor]),
+      ],
+    };
+  },
+};
+
+const HIGH_BRAINS_NOT_MY_PROBLEM: EventDefinition = {
+  id: "bloodbath-flee-high-brains-not-my-problem",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.35,
+  tags: ["fatal", "combat"],
+  participantShape: "trio",
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isHighBrains,
+    },
+    {
+      id: "target",
+      count: 1,
+      targeting: "hostile",
+      opposesRoleIds: ["killer"],
+    },
+    {
+      id: "killer",
+      count: 1,
+      opposesRoleIds: ["target"],
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const killer = requireSingleParticipant(participantsByRole, "killer");
+    const actorPronouns = getTributePronouns(actor);
+    const targetPronouns = getTributePronouns(target);
+
+    return {
+      text:
+        `${target.snapshot.name} and ${actor.snapshot.name} run into the woods at the same time, with several tributes hot in pursuit. ` +
+        `${target.snapshot.name} begs ${actor.snapshot.name} to slow down so they can help each other escape together. ` +
+        `${actor.snapshot.name} glances back at the approaching tributes, apologizes with complete insincerity, and continues running. ` +
+        `${killer.snapshot.name} catches ${target.snapshot.name} moments later and kills ${targetPronouns.object} while ${actorPronouns.subject} disappears into the woods.`,
+      changes: [
+        ...createFatalChanges(
+          target,
+          "bloodbath-flee-high-brains-not-my-problem",
+          "Abandoned during the escape",
+          `${target.snapshot.name} is abandoned by ${actor.snapshot.name} and killed by ${killer.snapshot.name}.`,
+          killer,
+        ),
+        ...createSurvivalChanges([actor, killer]),
+      ],
+    };
+  },
+};
+
+const HIGH_BRAINS_MUTUAL_INTEREST: EventDefinition = {
+  id: "bloodbath-flee-high-brains-mutual-interest",
+  category: "survival",
+  periods: ["day"],
+  baseWeight: 1.15,
+  tags: ["survival", "truce", "cooperative"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(5, ["truce-requirement", "custom-eligibility"]),
+  isEligible: ({ state, livingTributes }) =>
+    canFormStandardTruce(2, state.tributes.filter((tribute) => tribute.isAlive).length) &&
+    livingTributes.filter(
+      (tribute) => isHighBrains(tribute) && !getActiveTruceForTribute(state, tribute.id),
+    ).length >= 2,
+  getWeightMultiplier: ({ state, round }) => getTruceFormationPopulationMultiplier(state, round),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: (tribute, { state }) =>
+        isHighBrains(tribute) && !getActiveTruceForTribute(state, tribute.id),
+    },
+    {
+      id: "target",
+      count: 1,
+      isEligible: (tribute, { state }) =>
+        isHighBrains(tribute) && !getActiveTruceForTribute(state, tribute.id),
+    },
+  ],
+  resolve({ eventId, round, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+
+    return {
+      text:
+        `${actor.snapshot.name} and ${target.snapshot.name} flee the Cornucopia along the same route. ` +
+        `Without slowing down, they exchange a few practical questions about supplies, skills, and sleeping habits before agreeing that cooperation is temporarily logical.`,
+      changes: [
+        {
+          type: "form-truce",
+          truce: createTruceInstance(
+            eventId,
+            [actor.id, target.id],
+            round,
+            STANDARD_TRUCE_EXPIRY_ROUND,
+          ),
+        },
+        ...createSurvivalChanges([actor, target]),
+      ],
+    };
+  },
+};
+
+const HIGH_BRAINS_READ_THE_ROOM: EventDefinition = {
+  id: "cornucopia-high-brains-read-the-room",
+  category: "survival",
+  periods: ["day"],
+  baseWeight: 1.5,
+  tags: ["survival", "item", "resource"],
+  selectionProfile: statSelectionProfile(4, ["item-requirement"]),
+  cornucopiaAcquisitionPolicy: {
+    preserveAuthoredItems: true,
+  },
+  roles: [
+    {
+      id: "tribute",
+      count: 1,
+      isEligible: (tribute) => isHighBrains(tribute) && hasUsableCornucopiaPackItem(tribute),
+    },
+  ],
+  resolve({ eventId, round, random, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "tribute");
+    const pronouns = getTributePronouns(actor);
+    const itemId = selectCornucopiaPackItem(actor, random);
+
+    return {
+      text:
+        `${actor.snapshot.name} sprints toward the Cornucopia, takes one look at the larger tributes fighting over the weapons, and decides that bravery is just poor risk assessment. ` +
+        `${pronouns.Subject} quickly grabs a small bag from the edge of the Cornucopia and takes off for the woods.`,
+      changes: createItemAcquisitionAndSurvivalChanges(
+        eventId,
+        actor,
+        [itemId],
+        round,
+        "cornucopia",
+      ),
+    };
+  },
+};
+
 export const STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS = [
+  HIGH_BRAINS_SHOPPING_LIST,
+  HIGH_BRAINS_PRIORITIES,
+  HIGH_BRAINS_READ_THE_ROOM,
   LOW_BRAINS_OOH_SHINY,
   LOW_BRAINS_POINTY_END,
   LOW_BRAWN_DRAGGING_LOOT,
@@ -752,6 +1177,11 @@ export const STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS = [
 ] satisfies readonly EventDefinition[];
 
 export const STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES = [
+  {
+    definition: HIGH_BRAINS_INVENTORY_MANAGEMENT,
+    minImmediateEliminations: 0,
+    maxImmediateEliminations: 1,
+  },
   {
     definition: LOW_BRAINS_JUST_ONE_MORE_THING,
     minImmediateEliminations: 1,
@@ -780,10 +1210,18 @@ export const STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES = [
 ] satisfies readonly CornucopiaFatalTargetProfile[];
 
 export const STAT_GATED_CORNUCOPIA_NONFATAL_PAIR_EVENTS = [
+  HIGH_BRAINS_THINKING_OUTSIDE_THE_BOX,
+  HIGH_BRAINS_CALCULATED_LOSS,
   HIGH_BRAWN_YOINK,
 ] satisfies readonly EventDefinition[];
 
+export const STAT_GATED_CORNUCOPIA_NONFATAL_TRIO_EVENTS = [
+  HIGH_BRAINS_LET_THEM_FIGHT,
+] satisfies readonly EventDefinition[];
+
 export const STAT_GATED_FLEE_EVENTS = [
+  HIGH_BRAINS_NOT_MY_PROBLEM,
+  HIGH_BRAINS_MUTUAL_INTEREST,
   LOW_BRAINS_FOLLOW_THAT_TRIBUTE,
   RUN_FASTER,
   HIGH_BRAWN_GENTLE_GIANT_FLEE,
@@ -793,5 +1231,6 @@ export const STAT_GATED_BLOODBATH_EVENTS = [
   ...STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS,
   ...STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES.map(({ definition }) => definition),
   ...STAT_GATED_CORNUCOPIA_NONFATAL_PAIR_EVENTS,
+  ...STAT_GATED_CORNUCOPIA_NONFATAL_TRIO_EVENTS,
   ...STAT_GATED_FLEE_EVENTS,
 ] satisfies readonly EventDefinition[];

@@ -16,6 +16,7 @@ import {
   STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES,
   STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS,
   STAT_GATED_CORNUCOPIA_NONFATAL_PAIR_EVENTS,
+  STAT_GATED_CORNUCOPIA_NONFATAL_TRIO_EVENTS,
   STAT_GATED_FLEE_EVENTS,
 } from "~/game/events/catalogue/bloodbath/stat-gated-events";
 import { createStatusEffectInstance } from "~/game/statuses/status-engine";
@@ -105,17 +106,18 @@ function context(
 }
 
 describe("stat-gated catalogue expansion", () => {
-  it("registers 84 concepts as 116 unique definitions", () => {
+  it("registers 105 concepts as 137 unique definitions", () => {
     expect(LOW_BRAWN_EVENTS).toHaveLength(25);
     expect(HIGH_BRAWN_EVENTS).toHaveLength(41);
     expect(LOW_BRAINS_EVENTS).toHaveLength(29);
-    expect(HIGH_BRAINS_EVENTS).toHaveLength(1);
+    expect(HIGH_BRAINS_EVENTS).toHaveLength(13);
     expect(MIXED_STAT_GATED_EVENTS).toHaveLength(3);
-    expect(STAT_GATED_BLOODBATH_EVENTS).toHaveLength(17);
-    expect(STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS).toHaveLength(8);
-    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(5);
-    expect(STAT_GATED_CORNUCOPIA_NONFATAL_PAIR_EVENTS).toHaveLength(1);
-    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(3);
+    expect(STAT_GATED_BLOODBATH_EVENTS).toHaveLength(26);
+    expect(STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS).toHaveLength(11);
+    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(6);
+    expect(STAT_GATED_CORNUCOPIA_NONFATAL_PAIR_EVENTS).toHaveLength(3);
+    expect(STAT_GATED_CORNUCOPIA_NONFATAL_TRIO_EVENTS).toHaveLength(1);
+    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(5);
 
     const definitions = [
       ...LOW_BRAWN_EVENTS,
@@ -126,8 +128,8 @@ describe("stat-gated catalogue expansion", () => {
       ...STAT_GATED_BLOODBATH_EVENTS,
     ];
 
-    expect(definitions).toHaveLength(116);
-    expect(new Set(definitions.map((definition) => definition.id)).size).toBe(116);
+    expect(definitions).toHaveLength(137);
+    expect(new Set(definitions.map((definition) => definition.id)).size).toBe(137);
   });
 
   it("limits Rock and a Hard Place to brawn one or two", () => {

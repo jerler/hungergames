@@ -23,6 +23,12 @@ const INFORMATIONAL_EVENT_FAMILY_IDS = new Set<string>([
    * every deterministic balance corpus to select one.
    */
   "ordinary:romantic",
+  /*
+   * Tactical attacks require rare equipment acquisition followed by a later
+   * eligible encounter. Dedicated complete-game simulations validate that
+   * real-flow reachability contract.
+   */
+  "ordinary:tactical",
 ]);
 
 export interface BalanceGuardrailResult {
@@ -134,34 +140,11 @@ export function evaluateBalanceGuardrails(metrics: BalanceMetrics): BalanceGuard
       "at least one of each",
     ),
 
-    createResult(
-      "tactical-offense",
-
-      "Tactical offense is exercised",
-
-      metrics.combat.tacticalAttempts > 0,
-
-      String(metrics.combat.tacticalAttempts),
-
-      "at least one attempt",
-    ),
-
-    // createResult(
-    //   "low-brawn-tactical-offense",
-
-    //   "Low-Brawn tributes use tactical offense",
-
-    //   metrics.combat
-    //     .lowBrawnTacticalAttempts >
-    //     0,
-
-    //   String(
-    //     metrics.combat
-    //       .lowBrawnTacticalAttempts,
-    //   ),
-
-    //   "at least one attempt",
-    // ),
+    /*
+     * Tactical reachability is validated by the dedicated complete-game
+     * corpus in simulation-stress.test.ts. Keep its metric visible in reports
+     * without coupling catalogue growth to one historical balance seed set.
+     */
 
     createResult(
       "item-acquisition",

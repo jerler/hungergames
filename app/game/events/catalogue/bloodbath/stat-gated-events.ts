@@ -17,9 +17,10 @@ import {
   chooseTextVariant,
   isHighBrains,
   isHighBrawn,
-  isLowBrawn,
-  statSelectionProfile,
   isLowBrains,
+  isLowBrawn,
+  isLowLuck,
+  statSelectionProfile,
 } from "~/game/events/catalogue/stat-gated/stat-gated-helpers";
 import { canFormStandardTruce } from "~/game/truces/truce-lifecycle";
 import {
@@ -1161,6 +1162,342 @@ const HIGH_BRAINS_READ_THE_ROOM: EventDefinition = {
   },
 };
 
+const LOW_LUCK_GRAB_AND_GO: EventDefinition = {
+  id: "cornucopia-low-luck-grab-and-go",
+  category: "hazard",
+  periods: ["day"],
+  baseWeight: 1.1,
+  tags: ["hazard", "resource"],
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "tribute",
+      count: 1,
+      isEligible: isLowLuck,
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "tribute");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} takes ${pronouns.possessiveAdjective} chances running to the Cornucopia. ` +
+        `${pronouns.Subject} quickly grabs a bag and sprints toward the woods, amazed ${pronouns.subject} made it out unscathed. ` +
+        `Of course, ${pronouns.subject} then notices the bottom of the bag was torn and only a few bits of food remain.`,
+      changes: createSurvivalChanges([actor]),
+    };
+  },
+};
+
+const LOW_LUCK_LOOSE_STRAP: EventDefinition = {
+  id: "cornucopia-low-luck-loose-strap",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.6,
+  tags: ["fatal", "combat", "environment"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isLowLuck,
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "target",
+      count: 1,
+      targeting: "hostile",
+      opposesRoleIds: ["actor"],
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} grabs a backpack but trips on a coil of rope that somehow winds itself around ${pronouns.possessiveAdjective} ankle. ` +
+        `Falling to the ground, ${pronouns.subject} panics and tries to free ${pronouns.reflexive}, only to become bound so tightly ${pronouns.subject} can no longer move. ` +
+        `Finally, ${target.snapshot.name} notices ${actor.snapshot.name} and puts ${pronouns.object} out of ${pronouns.possessiveAdjective} misery.`,
+      changes: [
+        ...createFatalChanges(
+          actor,
+          "cornucopia-low-luck-loose-strap",
+          "Killed while tangled in rope",
+          `${actor.snapshot.name} becomes trapped in a coil of rope and is killed by ${target.snapshot.name}.`,
+          target,
+        ),
+        ...createSurvivalChanges([target]),
+      ],
+    };
+  },
+};
+
+const LOW_LUCK_BUTTERFINGERS: EventDefinition = {
+  id: "cornucopia-low-luck-butterfingers",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.65,
+  tags: ["fatal", "combat", "weapon", "item", "resource"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(5, ["item-requirement"]),
+  cornucopiaAcquisitionPolicy: {
+    preserveAuthoredItems: true,
+  },
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isLowLuck,
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "target",
+      count: 1,
+      targeting: "hostile",
+      isEligible: hasUsableCornucopiaContestedDirectWeapon,
+      opposesRoleIds: ["actor"],
+    },
+  ],
+  resolve({ eventId, round, random, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const pronouns = getTributePronouns(actor);
+    const weaponId = selectCornucopiaContestedDirectWeapon(target, random);
+    const weaponLabel = getItemLabel(weaponId).toLowerCase();
+
+    return {
+      text:
+        `${actor.snapshot.name} grabs a ${weaponLabel} from the Cornucopia, immediately drops it onto ${pronouns.possessiveAdjective} foot, and begins hopping through the Bloodbath while trying not to scream. ` +
+        `${target.snapshot.name} picks up the ${weaponLabel} and uses it to end ${actor.snapshot.name}'s cringey display.`,
+      changes: [
+        ...createFatalChanges(
+          actor,
+          "cornucopia-low-luck-butterfingers",
+          `Killed with a dropped ${weaponLabel}`,
+          `${target.snapshot.name} kills ${actor.snapshot.name} with the ${weaponLabel} that ${actor.snapshot.name} dropped.`,
+          target,
+        ),
+        ...createItemAcquisitionAndSurvivalChanges(
+          eventId,
+          target,
+          [weaponId],
+          round,
+          "cornucopia",
+        ),
+      ],
+    };
+  },
+};
+
+const LOW_LUCK_PERFECTLY_TIMED_SNEEZE: EventDefinition = {
+  id: "cornucopia-low-luck-perfectly-timed-sneeze",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.55,
+  tags: ["fatal", "combat", "ambush"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isLowLuck,
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "target",
+      count: 1,
+      targeting: "hostile",
+      opposesRoleIds: ["actor"],
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} successfully hides beneath a pile of supplies while ${target.snapshot.name} searches nearby. ` +
+        `Just as ${target.snapshot.name} begins to walk away, ${actor.snapshot.name} releases an enormous sneeze. ` +
+        `The next thing ${pronouns.subject} knows, a throwing knife is spinning toward ${pronouns.possessiveAdjective} head.`,
+      changes: [
+        ...createFatalChanges(
+          actor,
+          "cornucopia-low-luck-perfectly-timed-sneeze",
+          "Killed after sneezing in hiding",
+          `${actor.snapshot.name} gives away ${pronouns.possessiveAdjective} hiding place with a sneeze and is killed by ${target.snapshot.name}.`,
+          target,
+        ),
+        ...createSurvivalChanges([target]),
+      ],
+    };
+  },
+};
+
+const LOW_LUCK_ALMOST_IMPRESSIVE: EventDefinition = {
+  id: "bloodbath-flee-low-luck-almost-impressive",
+  category: "hazard",
+  periods: ["day"],
+  baseWeight: 0.9,
+  tags: ["hazard", "environment", "status"],
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isLowLuck,
+    },
+  ],
+  resolve({ eventId, round, random, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const pronouns = getTributePronouns(actor);
+    const text = chooseTextVariant(random, [
+      `${actor.snapshot.name} leaps over a fallen log with surprising grace, turns around to see whether anyone noticed, and runs face-first into a second log hanging at head height.`,
+      `${actor.snapshot.name} clears a fallen tree in one beautiful stride, looks back toward the Cornucopia in triumph, and immediately trips over the stump attached to it.`,
+      `${actor.snapshot.name} vaults over a low branch with unexpected athleticism. ${pronouns.Subject} lands perfectly, takes two confident steps, and walks directly into a much larger branch.`,
+      `${actor.snapshot.name} bounds across a narrow ditch without breaking stride, glances behind ${pronouns.reflexive} to admire the distance, and tumbles down the hill on the other side.`,
+    ]);
+
+    return {
+      text,
+      changes: [
+        createStatusChange(eventId, actor, "injured", 1, round),
+        ...createSurvivalChanges([actor]),
+      ],
+    };
+  },
+};
+
+const LOW_LUCK_LACE_TO_MEET_YOU: EventDefinition = {
+  id: "bloodbath-flee-low-luck-lace-to-meet-you",
+  category: "hazard",
+  periods: ["day"],
+  baseWeight: 0.9,
+  tags: ["hazard", "environment", "status"],
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isLowLuck,
+    },
+  ],
+  resolve({ eventId, round, random, participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const pronouns = getTributePronouns(actor);
+    const text = chooseTextVariant(random, [
+      `${actor.snapshot.name} runs into the woods at full speed until one shoelace catches around the other foot. ${pronouns.Subject} performs an impressive forward somersault before landing face-down in a thorn bush.`,
+      `${actor.snapshot.name} feels one shoe coming loose but decides stopping would be more dangerous. The lace tangles around ${pronouns.possessiveAdjective} other ankle and proves the decision wrong almost immediately.`,
+      `${actor.snapshot.name} sprints away from the Cornucopia until ${pronouns.possessiveAdjective} laces knot themselves together. ${pronouns.Subject} sails forward and lands in the least forgiving patch of brambles nearby.`,
+      `${actor.snapshot.name} nearly reaches the tree line before stepping on ${pronouns.possessiveAdjective} own loose lace. The resulting cartwheel is spectacular; the landing is mostly thorns.`,
+    ]);
+
+    return {
+      text,
+      changes: [
+        createStatusChange(eventId, actor, "injured", 1, round),
+        ...createSurvivalChanges([actor]),
+      ],
+    };
+  },
+};
+
+const LOW_LUCK_BRANCH_MANAGER: EventDefinition = {
+  id: "bloodbath-flee-low-luck-branch-manager",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.1,
+  tags: ["fatal", "combat", "environment"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isLowLuck,
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "target",
+      count: 1,
+      targeting: "hostile",
+      opposesRoleIds: ["actor"],
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} ducks beneath a low branch while fleeing from ${target.snapshot.name}. ` +
+        `The branch catches inside ${pronouns.possessiveAdjective} clothes and yanks ${pronouns.object} backward, leaving ${actor.snapshot.name} dangling helplessly as ${target.snapshot.name} approaches.`,
+      changes: [
+        ...createFatalChanges(
+          actor,
+          "bloodbath-flee-low-luck-branch-manager",
+          "Killed while caught on a branch",
+          `${actor.snapshot.name} is caught on a branch and killed by ${target.snapshot.name}.`,
+          target,
+        ),
+        ...createSurvivalChanges([target]),
+      ],
+    };
+  },
+};
+
+const LOW_LUCK_DRAMATIC_GETAWAY: EventDefinition = {
+  id: "bloodbath-flee-low-luck-dramatic-getaway",
+  category: "fatal",
+  periods: ["day"],
+  baseWeight: 0.1,
+  tags: ["fatal", "combat", "environment"],
+  participantShape: "pair",
+  selectionProfile: statSelectionProfile(2),
+  roles: [
+    {
+      id: "actor",
+      count: 1,
+      isEligible: isLowLuck,
+      opposesRoleIds: ["target"],
+    },
+    {
+      id: "target",
+      count: 1,
+      targeting: "hostile",
+      opposesRoleIds: ["actor"],
+    },
+  ],
+  resolve({ participantsByRole }) {
+    const actor = requireSingleParticipant(participantsByRole, "actor");
+    const target = requireSingleParticipant(participantsByRole, "target");
+    const pronouns = getTributePronouns(actor);
+
+    return {
+      text:
+        `${actor.snapshot.name} dives through a thick wall of bushes expecting to emerge safely on the other side. ` +
+        `Instead, ${pronouns.subject} becomes completely wedged between the branches with only ${pronouns.possessiveAdjective} ass sticking out toward the Cornucopia. ` +
+        `${pronouns.Subject} struggles fruitlessly until ${target.snapshot.name} comes along to put ${pronouns.object} out of ${pronouns.possessiveAdjective} misery.`,
+      changes: [
+        ...createFatalChanges(
+          actor,
+          "bloodbath-flee-low-luck-dramatic-getaway",
+          "Killed while wedged in bushes",
+          `${actor.snapshot.name} becomes wedged in the bushes and is killed by ${target.snapshot.name}.`,
+          target,
+        ),
+        ...createSurvivalChanges([target]),
+      ],
+    };
+  },
+};
+
 function createHighBrainsDecisionParalysis(id: string): EventDefinition {
   return {
     id,
@@ -1207,6 +1544,7 @@ const HIGH_BRAINS_DECISION_PARALYSIS_FLEE = createHighBrainsDecisionParalysis(
 );
 
 export const STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS = [
+  LOW_LUCK_GRAB_AND_GO,
   HIGH_BRAINS_SHOPPING_LIST,
   HIGH_BRAINS_PRIORITIES,
   HIGH_BRAINS_READ_THE_ROOM,
@@ -1221,6 +1559,21 @@ export const STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS = [
 ] satisfies readonly EventDefinition[];
 
 export const STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES = [
+  {
+    definition: LOW_LUCK_LOOSE_STRAP,
+    minImmediateEliminations: 1,
+    maxImmediateEliminations: 1,
+  },
+  {
+    definition: LOW_LUCK_BUTTERFINGERS,
+    minImmediateEliminations: 1,
+    maxImmediateEliminations: 1,
+  },
+  {
+    definition: LOW_LUCK_PERFECTLY_TIMED_SNEEZE,
+    minImmediateEliminations: 1,
+    maxImmediateEliminations: 1,
+  },
   {
     definition: HIGH_BRAINS_DECISION_PARALYSIS_CORNUCOPIA,
     minImmediateEliminations: 1,
@@ -1269,6 +1622,10 @@ export const STAT_GATED_CORNUCOPIA_NONFATAL_TRIO_EVENTS = [
 ] satisfies readonly EventDefinition[];
 
 export const STAT_GATED_FLEE_EVENTS = [
+  LOW_LUCK_ALMOST_IMPRESSIVE,
+  LOW_LUCK_LACE_TO_MEET_YOU,
+  LOW_LUCK_BRANCH_MANAGER,
+  LOW_LUCK_DRAMATIC_GETAWAY,
   HIGH_BRAINS_DECISION_PARALYSIS_FLEE,
   HIGH_BRAINS_NOT_MY_PROBLEM,
   HIGH_BRAINS_MUTUAL_INTEREST,

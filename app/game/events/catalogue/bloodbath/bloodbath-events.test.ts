@@ -521,6 +521,8 @@ describe("Bloodbath outcome coverage", () => {
       "bloodbath-flee-high-brains-not-my-problem",
       "bloodbath-flee-high-brains-mutual-interest",
       "bloodbath-flee-high-brains-decision-paralysis",
+      "bloodbath-flee-low-luck-branch-manager",
+      "bloodbath-flee-low-luck-dramatic-getaway",
     ]);
 
     for (const definition of FLEE_EVENTS) {

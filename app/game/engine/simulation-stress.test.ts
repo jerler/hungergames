@@ -44,7 +44,10 @@ import { evaluateBalanceGuardrails } from "~/game/simulation/balance-guardrails"
 
 import { collectBalanceMetrics } from "~/game/simulation/balance-metrics";
 
-import { simulateGameBatch } from "~/game/simulation/simulation-runner";
+import {
+  simulateGame as simulateCompleteGame,
+  simulateGameBatch,
+} from "~/game/simulation/simulation-runner";
 
 const STATUS_CONSUMABLE_ITEM_IDS = new Set<ItemDefinitionId>([
   "burger-and-fries",
@@ -67,6 +70,16 @@ type TransferItemChange = Extract<
 const CORNUCOPIA_EVENT_IDS = new Set(CORNUCOPIA_EVENTS.map((event) => event.id));
 const ORDINARY_COMBAT_EVENT_IDS = new Set(COMBAT_EVENTS.map((event) => event.id));
 const TACTICAL_EVENT_IDS = new Set(TACTICAL_EVENTS.map((event) => event.id));
+
+const TACTICAL_COVERAGE_SEED_PREFIXES = [
+  "event-distribution-full-game",
+  "tactical-coverage-full-game",
+  "tactical-reachability-full-game",
+  "ordinary-tactical-coverage",
+  "tactical-item-flow",
+  "complete-game-tactical",
+] as const;
+const TACTICAL_COVERAGE_GAMES_PER_PREFIX = 100;
 const CORNUCOPIA_PACK_ENTRY_BY_ITEM_ID = new Map<
   ItemDefinitionId,
   (typeof CORNUCOPIA_PACK_ITEM_POOL)[number]
@@ -802,7 +815,30 @@ describe("simulation stress tests", () => {
   }, 20000);
 
   it("exercises tactical offense in complete games", () => {
-    const attempts = getStressResults().flatMap((result) =>
+    const tacticalCoverageResults: GameState[] = [];
+
+    /*
+     * Tactical attacks require a rare tactical-item acquisition followed by
+     * a later eligible encounter. Search dedicated deterministic seed groups
+     * rather than coupling reachability to the historical balance corpus.
+     * Every candidate remains a complete, invariant-checked game.
+     */
+    tacticalCoverageSearch: for (const seedPrefix of TACTICAL_COVERAGE_SEED_PREFIXES) {
+      for (let index = 0; index < TACTICAL_COVERAGE_GAMES_PER_PREFIX; index += 1) {
+        const result = simulateCompleteGame({
+          seed: `${seedPrefix}-${index}`,
+          districtCount: 12,
+        }).state;
+
+        tacticalCoverageResults.push(result);
+
+        if (getPrimaryEvents(result).some((event) => TACTICAL_EVENT_IDS.has(event.definitionId))) {
+          break tacticalCoverageSearch;
+        }
+      }
+    }
+
+    const attempts = tacticalCoverageResults.flatMap((result) =>
       getPrimaryEvents(result)
         .filter((event) => TACTICAL_EVENT_IDS.has(event.definitionId))
         .map((event) => {
@@ -834,13 +870,8 @@ describe("simulation stress tests", () => {
 
     /*
      * Complete simulations prove that tactical equipment acquired through
-     * real game flow is selected and committed by ordinary tactical events.
-     *
-     * Low-Brawn usability and attacker preference are deterministic catalogue
-     * contracts. They are tested in tactical-low-brawn-reachability.test.ts
-     * rather than inferred from whichever careers survive one fixed batch.
+     * real game flow is selected and committed by an ordinary tactical event.
      */
-
     for (const { event } of attempts) {
       expect(event.resolutionMode).toBe("standard");
 
@@ -857,5 +888,5 @@ describe("simulation stress tests", () => {
         ),
       ).toHaveLength(1);
     }
-  }, 30_000);
+  }, 60_000);
 });

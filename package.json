@@ -24,7 +24,8 @@
     "check": "npm run validate:release",
     "phase7:validate": "tsx scripts/run-phase-7-validation.ts",
     "phase7:full": "bash scripts/validate-phase-7.sh",
-    "event-frequency": "tsx scripts/generate-event-frequency-report.ts"
+    "event-frequency": "tsx scripts/generate-event-frequency-report.ts",
+    "test:audit-metadata": "vitest run app/game/simulation/event-frequency-report-provenance.test.ts"
   },
   "dependencies": {
     "@react-router/node": "8.0.0",

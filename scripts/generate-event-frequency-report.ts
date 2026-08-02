@@ -1,4 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
@@ -28,6 +29,12 @@ import {
 import { STATUS_CATALOGUE } from "~/game/statuses/status-catalogue";
 import { PREPARED_CAVE_NIGHT_DEFINITION_ID } from "~/game/survival/night-rest-coverage";
 import type { GameChange, ResolvedEvent } from "~/game/types/game-state";
+
+import {
+  claimReportOutputDirectory,
+  createEventFrequencyReportProvenance,
+  type EventFrequencyReportProvenance,
+} from "./event-frequency-report-provenance";
 
 const DEFAULT_HALF_GAMES = 500;
 const DEFAULT_FULL_GAMES = 500;
@@ -93,6 +100,7 @@ interface ReportConfiguration {
   fullGames: number;
   seedPrefix: string;
   outputDirectory: string;
+  overwrite: boolean;
 }
 
 interface CatalogueDefinitionMetadata {
@@ -280,6 +288,7 @@ interface CatalogueCoverageMetric {
 
 interface FrequencyReportData {
   generatedAt: string;
+  provenance: EventFrequencyReportProvenance;
   configuration: ReportConfiguration;
   methodology: {
     selectionFrequency: string;
@@ -373,6 +382,10 @@ function readOption(name: string): string | undefined {
   return argumentIndex < 0 ? undefined : arguments_[argumentIndex + 1];
 }
 
+function hasFlag(name: string): boolean {
+  return process.argv.slice(2).includes(`--${name}`);
+}
+
 function parseGameCount(name: string, fallback: number): number {
   const rawValue = readOption(name);
 
@@ -395,6 +408,7 @@ function getConfiguration(): ReportConfiguration {
     fullGames: parseGameCount("full-games", DEFAULT_FULL_GAMES),
     seedPrefix: readOption("seed-prefix") ?? DEFAULT_SEED_PREFIX,
     outputDirectory: readOption("output-directory") ?? DEFAULT_OUTPUT_DIRECTORY,
+    overwrite: hasFlag("overwrite"),
   };
 
   if (configuration.halfGames + configuration.fullGames === 0) {
@@ -420,6 +434,7 @@ Options:
   --full-games <count>       Full Games to simulate (default: ${DEFAULT_FULL_GAMES})
   --seed-prefix <prefix>     Deterministic seed prefix
   --output-directory <path>  Report directory (default: ${DEFAULT_OUTPUT_DIRECTORY})
+  --overwrite                Explicitly replace a nonempty report directory
   --help                     Show this help
 `);
 }
@@ -545,10 +560,7 @@ function createMetricKey(
   return [gameSize, poolId, definitionId].join("\u0000");
 }
 
-function createDefinitionKey(
-  gameSize: EventDistributionGameSizeId,
-  definitionId: string,
-): string {
+function createDefinitionKey(gameSize: EventDistributionGameSizeId, definitionId: string): string {
   return [gameSize, definitionId].join("\u0000");
 }
 
@@ -568,11 +580,7 @@ function escapeRegularExpression(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function replaceWholeTermCaseInsensitive(
-  text: string,
-  value: string,
-  replacement: string,
-): string {
+function replaceWholeTermCaseInsensitive(text: string, value: string, replacement: string): string {
   if (value.length === 0) {
     return text;
   }
@@ -892,10 +900,7 @@ function addRunEvents(
     }
 
     eventMetric.gamesWithEvent += 1;
-    eventMetric.maximumSelectionsInGame = Math.max(
-      eventMetric.maximumSelectionsInGame,
-      count,
-    );
+    eventMetric.maximumSelectionsInGame = Math.max(eventMetric.maximumSelectionsInGame, count);
 
     perGameEvents.push({
       seed: run.seed,
@@ -991,12 +996,7 @@ function addRunDiagnostics(
 
     const typedGameSize = gameSizeId as EventDistributionGameSizeId;
     const typedPoolId = poolId as EventDistributionPoolId;
-    const metric = getOrCreateEventMetric(
-      metricsByKey,
-      typedGameSize,
-      typedPoolId,
-      definitionId,
-    );
+    const metric = getOrCreateEventMetric(metricsByKey, typedGameSize, typedPoolId, definitionId);
     const actualSelections = actualSelectionsByMetricKey.get(metricKey) ?? 0;
     const selectedInGame = actualSelections > 0;
 
@@ -1062,9 +1062,7 @@ function addRunDiagnostics(
   }
 }
 
-function getEventFlags(
-  metric: Omit<EventFrequencyMetric, "flags" | "outcomes">,
-): string[] {
+function getEventFlags(metric: Omit<EventFrequencyMetric, "flags" | "outcomes">): string[] {
   if (!metric.diagnosticsApplicable) {
     return [];
   }
@@ -1083,17 +1081,11 @@ function getEventFlags(
     flags.push("feasible-never-selected");
   }
 
-  if (
-    metric.gamesFeasible >= 50 &&
-    metric.gameSelectionRateWhenFeasible < 0.02
-  ) {
+  if (metric.gamesFeasible >= 50 && metric.gameSelectionRateWhenFeasible < 0.02) {
     flags.push("very-low-game-selection-conversion");
   }
 
-  if (
-    metric.feasible >= 100 &&
-    metric.opportunitySelectionRateWhenFeasible < 0.01
-  ) {
+  if (metric.feasible >= 100 && metric.opportunitySelectionRateWhenFeasible < 0.01) {
     flags.push("very-low-opportunity-selection-conversion");
   }
 
@@ -1142,12 +1134,8 @@ function createFrequencyMetrics(
         eventClassLabel: EVENT_CLASS_LABELS[eventClass],
         diagnosticsApplicable,
         definitionId: metric.definitionId,
-        expectedPools: catalogueMetadata
-          ? [...catalogueMetadata.expectedPools].sort()
-          : [],
-        familyLabels: catalogueMetadata
-          ? [...catalogueMetadata.familyLabels].sort()
-          : [],
+        expectedPools: catalogueMetadata ? [...catalogueMetadata.expectedPools].sort() : [],
+        familyLabels: catalogueMetadata ? [...catalogueMetadata.familyLabels].sort() : [],
         kinds: [...metric.kinds].sort(),
         games,
         selections: metric.selections,
@@ -1185,21 +1173,19 @@ function createFrequencyMetrics(
         stages: [...metric.stages].sort(),
       };
       const outcomes = [...metric.outcomesByKey.values()]
-        .map(
-          (outcome): EventOutcomeMetric => ({
-            key: outcome.key,
-            normalizedText: outcome.normalizedText,
-            coreEffectSignature: outcome.coreEffectSignature,
-            sampleFullEffectSignature: outcome.sampleFullEffectSignature,
-            distinctFullEffectSignatures: outcome.fullEffectSignatures.size,
-            sampleText: outcome.sampleText,
-            selections: outcome.selections,
-            gamesWithOutcome: outcome.gamesWithOutcome,
-            appearanceRate: divide(outcome.gamesWithOutcome, games),
-            eventSelectionShare: divide(outcome.selections, metric.selections),
-            maximumSelectionsInGame: outcome.maximumSelectionsInGame,
-          }),
-        )
+        .map((outcome): EventOutcomeMetric => ({
+          key: outcome.key,
+          normalizedText: outcome.normalizedText,
+          coreEffectSignature: outcome.coreEffectSignature,
+          sampleFullEffectSignature: outcome.sampleFullEffectSignature,
+          distinctFullEffectSignatures: outcome.fullEffectSignatures.size,
+          sampleText: outcome.sampleText,
+          selections: outcome.selections,
+          gamesWithOutcome: outcome.gamesWithOutcome,
+          appearanceRate: divide(outcome.gamesWithOutcome, games),
+          eventSelectionShare: divide(outcome.selections, metric.selections),
+          maximumSelectionsInGame: outcome.maximumSelectionsInGame,
+        }))
         .sort(
           (first, second) =>
             second.selections - first.selections ||
@@ -1296,10 +1282,7 @@ function createDefinitionMetrics({
   }
 
   for (const diagnostic of perGameDiagnostics) {
-    const definitionKey = createDefinitionKey(
-      diagnostic.gameSize,
-      diagnostic.definitionId,
-    );
+    const definitionKey = createDefinitionKey(diagnostic.gameSize, diagnostic.definitionId);
 
     if (diagnostic.eligible > 0) {
       const eligibleSeeds = eligibleGamesByDefinitionKey.get(definitionKey) ?? new Set<string>();
@@ -1343,18 +1326,12 @@ function createDefinitionMetrics({
         eventClass,
         eventClassLabel: EVENT_CLASS_LABELS[eventClass],
         inActiveCatalogue: catalogueMetadata !== undefined,
-        familyLabels: catalogueMetadata
-          ? [...catalogueMetadata.familyLabels].sort()
-          : [],
-        expectedPools: catalogueMetadata
-          ? [...catalogueMetadata.expectedPools].sort()
-          : [],
+        familyLabels: catalogueMetadata ? [...catalogueMetadata.familyLabels].sort() : [],
+        expectedPools: catalogueMetadata ? [...catalogueMetadata.expectedPools].sort() : [],
         auditedPools: [...new Set(definitionEvents.map((event) => event.poolId))].sort(),
         observedPools: [
           ...new Set(
-            definitionEvents
-              .filter((event) => event.selections > 0)
-              .map((event) => event.poolId),
+            definitionEvents.filter((event) => event.selections > 0).map((event) => event.poolId),
           ),
         ].sort(),
         poolRows: definitionEvents.length,
@@ -1372,10 +1349,7 @@ function createDefinitionMetrics({
           (total, event) => total + event.fatalSelections,
           0,
         ),
-        eliminations: definitionEvents.reduce(
-          (total, event) => total + event.eliminations,
-          0,
-        ),
+        eliminations: definitionEvents.reduce((total, event) => total + event.eliminations, 0),
         considered: definitionEvents.reduce((total, event) => total + event.considered, 0),
         eligible: definitionEvents.reduce((total, event) => total + event.eligible, 0),
         feasible: definitionEvents.reduce((total, event) => total + event.feasible, 0),
@@ -1385,12 +1359,10 @@ function createDefinitionMetrics({
         ),
         gamesEligible: eligibleSeeds.size,
         gamesFeasible: feasibleSeeds.size,
-        gamesEligibleButNotSelected: [...eligibleSeeds].filter(
-          (seed) => !selectedSeeds.has(seed),
-        ).length,
-        gamesFeasibleButNotSelected: [...feasibleSeeds].filter(
-          (seed) => !selectedSeeds.has(seed),
-        ).length,
+        gamesEligibleButNotSelected: [...eligibleSeeds].filter((seed) => !selectedSeeds.has(seed))
+          .length,
+        gamesFeasibleButNotSelected: [...feasibleSeeds].filter((seed) => !selectedSeeds.has(seed))
+          .length,
         gameSelectionRateWhenEligible: divide(
           [...eligibleSeeds].filter((seed) => selectedSeeds.has(seed)).length,
           eligibleSeeds.size,
@@ -1433,8 +1405,7 @@ function createCatalogueCoverage(
       (metadata) =>
         [...metadata.expectedPools].flatMap((poolId) =>
           gameEvents.some(
-            (event) =>
-              event.definitionId === metadata.definitionId && event.poolId === poolId,
+            (event) => event.definitionId === metadata.definitionId && event.poolId === poolId,
           )
             ? []
             : [
@@ -1473,9 +1444,7 @@ function createCatalogueCoverage(
       eligibleNeverFeasibleCatalogueDefinitions: catalogueDefinitions
         .filter(
           (definition) =>
-            definition.eligible > 0 &&
-            definition.feasible === 0 &&
-            definition.selections === 0,
+            definition.eligible > 0 && definition.feasible === 0 && definition.selections === 0,
         )
         .map((definition) => definition.definitionId)
         .sort(),
@@ -1485,9 +1454,7 @@ function createCatalogueCoverage(
           first.definitionId.localeCompare(second.definitionId),
       ),
       selectedOutsideActiveCatalogue: gameDefinitions
-        .filter(
-          (definition) => !definition.inActiveCatalogue && definition.selections > 0,
-        )
+        .filter((definition) => !definition.inActiveCatalogue && definition.selections > 0)
         .map((definition) => definition.definitionId)
         .sort(),
     };
@@ -1533,9 +1500,7 @@ function createUniqueDefinitionSummary(
   const feasibleNeverSelected = definitions.filter(
     (definition) => definition.feasible > 0 && definition.selections === 0,
   );
-  const highAppearance = definitions.filter(
-    (definition) => definition.appearanceRate >= 0.5,
-  );
+  const highAppearance = definitions.filter((definition) => definition.appearanceRate >= 0.5);
 
   return [
     "### Unique-definition summary",
@@ -1669,7 +1634,9 @@ function createDiagnosticBottleneckTable(events: readonly EventFrequencyMetric[]
               event.gameSelectionRateWhenFeasible,
             )} | ${escapeMarkdownCell(getTopRejection(event))} | ${event.flags.join(", ")} |`,
         )
-      : ["| _No bottlenecks detected by the default thresholds_ | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0% | — | — |"]),
+      : [
+          "| _No bottlenecks detected by the default thresholds_ | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0% | — | — |",
+        ]),
     "",
   ];
 }
@@ -1777,11 +1744,7 @@ function createMarkdownReport(data: FrequencyReportData): string {
       continue;
     }
 
-    lines.push(
-      `## ${gameSizeLabel}`,
-      "",
-      ...createUniqueDefinitionSummary(gameSizeDefinitions),
-    );
+    lines.push(`## ${gameSizeLabel}`, "", ...createUniqueDefinitionSummary(gameSizeDefinitions));
 
     if (coverage) {
       lines.push(...createCatalogueCoverageSection(coverage));
@@ -1791,9 +1754,7 @@ function createMarkdownReport(data: FrequencyReportData): string {
 
     for (const poolId of EVENT_DISTRIBUTION_POOL_IDS) {
       const poolEvents = gameSizeEvents.filter((event) => event.poolId === poolId);
-      const weightedEvents = poolEvents.filter(
-        (event) => event.eventClass === "weighted-authored",
-      );
+      const weightedEvents = poolEvents.filter((event) => event.eventClass === "weighted-authored");
       const lifecycleEvents = poolEvents.filter(
         (event) => event.eventClass === "lifecycle-primary",
       );
@@ -1847,9 +1808,7 @@ function createMarkdownReport(data: FrequencyReportData): string {
     }
 
     const uncataloguedEvents = gameSizeEvents.filter(
-      (event) =>
-        event.eventClass === "uncatalogued-primary" ||
-        event.eventClass === "unclassified",
+      (event) => event.eventClass === "uncatalogued-primary" || event.eventClass === "unclassified",
     );
 
     if (uncataloguedEvents.length > 0) {
@@ -1950,10 +1909,7 @@ function createEventTsv(events: readonly EventFrequencyMetric[]): string {
       getTopRejection(event),
       event.flags.join(","),
       event.outcomes.length,
-      event.outcomes.reduce(
-        (total, outcome) => total + outcome.distinctFullEffectSignatures,
-        0,
-      ),
+      event.outcomes.reduce((total, outcome) => total + outcome.distinctFullEffectSignatures, 0),
     ]
       .map((value) => sanitizeTsv(String(value)))
       .join("\t"),
@@ -2033,14 +1989,7 @@ function createDefinitionTsv(definitions: readonly DefinitionFrequencyMetric[]):
 }
 
 function createPerGameEventTsv(events: readonly PerGameEventMetric[]): string {
-  const header = [
-    "seed",
-    "game_size",
-    "pool",
-    "event_class",
-    "definition_id",
-    "selections",
-  ];
+  const header = ["seed", "game_size", "pool", "event_class", "definition_id", "selections"];
   const rows = sortedCopy(
     events,
     (first, second) =>
@@ -2048,24 +1997,22 @@ function createPerGameEventTsv(events: readonly PerGameEventMetric[]): string {
       first.poolId.localeCompare(second.poolId) ||
       first.definitionId.localeCompare(second.definitionId),
   ).map((event) =>
-      [
-        event.seed,
-        event.gameSize,
-        event.poolId,
-        event.eventClass,
-        event.definitionId,
-        event.selections,
-      ]
-        .map((value) => sanitizeTsv(String(value)))
-        .join("\t"),
-    );
+    [
+      event.seed,
+      event.gameSize,
+      event.poolId,
+      event.eventClass,
+      event.definitionId,
+      event.selections,
+    ]
+      .map((value) => sanitizeTsv(String(value)))
+      .join("\t"),
+  );
 
   return `${[header.join("\t"), ...rows].join("\n")}\n`;
 }
 
-function createPerGameDiagnosticTsv(
-  diagnostics: readonly PerGameDiagnosticMetric[],
-): string {
+function createPerGameDiagnosticTsv(diagnostics: readonly PerGameDiagnosticMetric[]): string {
   const header = [
     "seed",
     "game_size",
@@ -2087,25 +2034,23 @@ function createPerGameDiagnosticTsv(
       first.poolId.localeCompare(second.poolId) ||
       first.definitionId.localeCompare(second.definitionId),
   ).map((diagnostic) =>
-      [
-        diagnostic.seed,
-        diagnostic.gameSize,
-        diagnostic.poolId,
-        diagnostic.eventClass,
-        diagnostic.definitionId,
-        diagnostic.actualSelections,
-        diagnostic.considered,
-        diagnostic.eligible,
-        diagnostic.feasible,
-        diagnostic.diagnosticSelected,
-        diagnostic.stages.join(","),
-        ...EVENT_SELECTION_REJECTION_REASONS.map(
-          (reason) => diagnostic.rejectionCounts[reason],
-        ),
-      ]
-        .map((value) => sanitizeTsv(String(value)))
-        .join("\t"),
-    );
+    [
+      diagnostic.seed,
+      diagnostic.gameSize,
+      diagnostic.poolId,
+      diagnostic.eventClass,
+      diagnostic.definitionId,
+      diagnostic.actualSelections,
+      diagnostic.considered,
+      diagnostic.eligible,
+      diagnostic.feasible,
+      diagnostic.diagnosticSelected,
+      diagnostic.stages.join(","),
+      ...EVENT_SELECTION_REJECTION_REASONS.map((reason) => diagnostic.rejectionCounts[reason]),
+    ]
+      .map((value) => sanitizeTsv(String(value)))
+      .join("\t"),
+  );
 
   return `${[header.join("\t"), ...rows].join("\n")}\n`;
 }
@@ -2130,20 +2075,20 @@ function createPerGameOutcomeTsv(outcomes: readonly PerGameOutcomeMetric[]): str
       first.definitionId.localeCompare(second.definitionId) ||
       first.normalizedText.localeCompare(second.normalizedText),
   ).map((outcome) =>
-      [
-        outcome.seed,
-        outcome.gameSize,
-        outcome.poolId,
-        outcome.eventClass,
-        outcome.definitionId,
-        outcome.selections,
-        outcome.coreEffectSignature,
-        outcome.fullEffectSignatures.join(" || "),
-        outcome.normalizedText,
-      ]
-        .map((value) => sanitizeTsv(String(value)))
-        .join("\t"),
-    );
+    [
+      outcome.seed,
+      outcome.gameSize,
+      outcome.poolId,
+      outcome.eventClass,
+      outcome.definitionId,
+      outcome.selections,
+      outcome.coreEffectSignature,
+      outcome.fullEffectSignatures.join(" || "),
+      outcome.normalizedText,
+    ]
+      .map((value) => sanitizeTsv(String(value)))
+      .join("\t"),
+  );
 
   return `${[header.join("\t"), ...rows].join("\n")}\n`;
 }
@@ -2200,164 +2145,189 @@ if (process.argv.includes("--help")) {
 }
 
 const configuration = getConfiguration();
-const batchDefinitions: SimulationBatchDefinition[] = [
-  ...(configuration.halfGames > 0
-    ? [
-        {
-          seedPrefix: `${configuration.seedPrefix}-half-game`,
-          count: configuration.halfGames,
-          districtCount: 6 as const,
-          captureSelectionDiagnostics: true,
-        },
-      ]
-    : []),
-  ...(configuration.fullGames > 0
-    ? [
-        {
-          seedPrefix: `${configuration.seedPrefix}-full-game`,
-          count: configuration.fullGames,
-          districtCount: 12 as const,
-          captureSelectionDiagnostics: true,
-        },
-      ]
-    : []),
-];
-
-const runs = simulateGameBatch(batchDefinitions);
-const distributionMetrics = collectEventDistributionMetrics(runs);
-const metricsByKey = new Map<string, MutableEventMetric>();
-const poolSelectionsByKey = new Map<string, number>();
-const perGameEvents: PerGameEventMetric[] = [];
-const perGameOutcomes: PerGameOutcomeMetric[] = [];
-const perGameDiagnostics: PerGameDiagnosticMetric[] = [];
-
-seedActiveCatalogueMetrics(metricsByKey, configuration);
-
-for (const run of runs) {
-  const actualSelectionsByMetricKey = addRunEvents(
-    metricsByKey,
-    poolSelectionsByKey,
-    perGameEvents,
-    perGameOutcomes,
-    run,
-  );
-
-  addRunDiagnostics(
-    metricsByKey,
-    perGameDiagnostics,
-    actualSelectionsByMetricKey,
-    run,
-  );
-}
-
-const events = createFrequencyMetrics(configuration, metricsByKey, poolSelectionsByKey);
-const definitions = createDefinitionMetrics({
-  configuration,
-  events,
-  perGameEvents,
-  perGameDiagnostics,
-});
-const catalogueCoverage = createCatalogueCoverage(definitions, events);
-const data: FrequencyReportData = {
-  generatedAt: new Date().toISOString(),
-  configuration,
-  methodology: {
-    selectionFrequency:
-      "Counts resolved event-history entries by game size, pool, definition, and game, then separately aggregates unique definition IDs across pools.",
-    eligibility:
-      "Uses selector diagnostics. Eligible means definition-level eligibility passed; feasible means participants and required items could be selected. Game-level conversion uses actual event-history selection in the same game and pool.",
-    lifecycleSeparation:
-      "Forced or derived lifecycle primary events and automatic preparation, aftermath, and status-resolution events remain counted but are separated from weighted authored definitions and do not receive ordinary selector-conversion flags.",
-    outcomeGrouping:
-      "Groups observed core variants by whole-term-safe normalized wording plus a core mechanical signature. Routine statistic increments, eliminated-tribute status cleanup, and death-loot transfer/destruction are excluded from the core key but retained as counted full-effect permutations.",
-    catalogueCoverage:
-      "Validates definitions exported by active catalogue families and their expected pools. It does not discover dormant source definitions that are not exported through those families.",
-  },
-  distributionMetrics,
-  catalogueCoverage,
-  definitions,
-  events,
-};
-
-const outputDirectory = resolve(process.cwd(), configuration.outputDirectory);
-const markdownPath = resolve(outputDirectory, "event-frequency-report.md");
-const jsonPath = resolve(outputDirectory, "event-frequency-report.json");
-const eventTsvPath = resolve(outputDirectory, "event-frequency-events.tsv");
-const definitionTsvPath = resolve(outputDirectory, "event-frequency-definitions.tsv");
-const outcomeTsvPath = resolve(outputDirectory, "event-frequency-outcomes.tsv");
-const perGameEventTsvPath = resolve(outputDirectory, "event-frequency-by-game.tsv");
-const perGameDiagnosticTsvPath = resolve(
-  outputDirectory,
-  "event-frequency-diagnostics-by-game.tsv",
+const outputClaim = await claimReportOutputDirectory(
+  configuration.outputDirectory,
+  configuration.overwrite,
 );
-const perGameOutcomeTsvPath = resolve(
-  outputDirectory,
-  "event-frequency-outcomes-by-game.tsv",
-);
+const outputDirectory = outputClaim.outputDirectory;
 
-await mkdir(outputDirectory, {
-  recursive: true,
-});
+try {
+  const provenance = await createEventFrequencyReportProvenance();
+  const batchDefinitions: SimulationBatchDefinition[] = [
+    ...(configuration.halfGames > 0
+      ? [
+          {
+            seedPrefix: `${configuration.seedPrefix}-half-game`,
+            count: configuration.halfGames,
+            districtCount: 6 as const,
+            captureSelectionDiagnostics: true,
+          },
+        ]
+      : []),
+    ...(configuration.fullGames > 0
+      ? [
+          {
+            seedPrefix: `${configuration.seedPrefix}-full-game`,
+            count: configuration.fullGames,
+            districtCount: 12 as const,
+            captureSelectionDiagnostics: true,
+          },
+        ]
+      : []),
+  ];
 
-await Promise.all([
-  writeFile(markdownPath, createMarkdownReport(data), "utf8"),
-  writeFile(jsonPath, `${JSON.stringify(data, null, 2)}\n`, "utf8"),
-  writeFile(eventTsvPath, createEventTsv(events), "utf8"),
-  writeFile(definitionTsvPath, createDefinitionTsv(definitions), "utf8"),
-  writeFile(outcomeTsvPath, createOutcomeTsv(events), "utf8"),
-  writeFile(perGameEventTsvPath, createPerGameEventTsv(perGameEvents), "utf8"),
-  writeFile(
-    perGameDiagnosticTsvPath,
-    createPerGameDiagnosticTsv(perGameDiagnostics),
-    "utf8",
-  ),
-  writeFile(
-    perGameOutcomeTsvPath,
-    createPerGameOutcomeTsv(perGameOutcomes),
-    "utf8",
-  ),
-]);
+  const runs = simulateGameBatch(batchDefinitions);
+  const distributionMetrics = collectEventDistributionMetrics(runs);
+  const metricsByKey = new Map<string, MutableEventMetric>();
+  const poolSelectionsByKey = new Map<string, number>();
+  const perGameEvents: PerGameEventMetric[] = [];
+  const perGameOutcomes: PerGameOutcomeMetric[] = [];
+  const perGameDiagnostics: PerGameDiagnosticMetric[] = [];
 
-console.log(`Event frequency Markdown written to ${markdownPath}`);
-console.log(`Event frequency JSON written to ${jsonPath}`);
-console.log(`Pool-level event TSV written to ${eventTsvPath}`);
-console.log(`Unique-definition TSV written to ${definitionTsvPath}`);
-console.log(`Outcome TSV written to ${outcomeTsvPath}`);
-console.log(`Per-game event TSV written to ${perGameEventTsvPath}`);
-console.log(`Per-game diagnostic TSV written to ${perGameDiagnosticTsvPath}`);
-console.log(`Per-game outcome TSV written to ${perGameOutcomeTsvPath}`);
-console.log(
-  `Simulated ${configuration.halfGames} Half Games and ${configuration.fullGames} Full Games.`,
-);
+  seedActiveCatalogueMetrics(metricsByKey, configuration);
 
-for (const gameSize of EVENT_DISTRIBUTION_GAME_SIZE_IDS) {
-  const gameSizeEvents = events.filter((event) => event.gameSize === gameSize);
-  const gameSizeDefinitions = definitions.filter(
-    (definition) => definition.gameSize === gameSize,
-  );
-  if (gameSizeDefinitions.length === 0) {
-    continue;
+  for (const run of runs) {
+    const actualSelectionsByMetricKey = addRunEvents(
+      metricsByKey,
+      poolSelectionsByKey,
+      perGameEvents,
+      perGameOutcomes,
+      run,
+    );
+
+    addRunDiagnostics(metricsByKey, perGameDiagnostics, actualSelectionsByMetricKey, run);
   }
 
-  const selectedDefinitions = gameSizeDefinitions.filter(
-    (definition) => definition.selections > 0,
-  ).length;
-  const neverSelectedDefinitions = gameSizeDefinitions.filter(
-    (definition) => definition.selections === 0,
-  ).length;
-  const feasibleNeverSelectedDefinitions = gameSizeDefinitions.filter(
-    (definition) => definition.feasible > 0 && definition.selections === 0,
-  ).length;
-  const lifecycleDefinitions = gameSizeDefinitions.filter(
-    (definition) =>
-      definition.eventClass !== "weighted-authored" && definition.selections > 0,
-  ).length;
+  const events = createFrequencyMetrics(configuration, metricsByKey, poolSelectionsByKey);
+  const definitions = createDefinitionMetrics({
+    configuration,
+    events,
+    perGameEvents,
+    perGameDiagnostics,
+  });
+  const catalogueCoverage = createCatalogueCoverage(definitions, events);
+  const data: FrequencyReportData = {
+    generatedAt: new Date().toISOString(),
+    provenance,
+    configuration,
+    methodology: {
+      selectionFrequency:
+        "Counts resolved event-history entries by game size, pool, definition, and game, then separately aggregates unique definition IDs across pools.",
+      eligibility:
+        "Uses selector diagnostics. Eligible means definition-level eligibility passed; feasible means participants and required items could be selected. Game-level conversion uses actual event-history selection in the same game and pool.",
+      lifecycleSeparation:
+        "Forced or derived lifecycle primary events and automatic preparation, aftermath, and status-resolution events remain counted but are separated from weighted authored definitions and do not receive ordinary selector-conversion flags.",
+      outcomeGrouping:
+        "Groups observed core variants by whole-term-safe normalized wording plus a core mechanical signature. Routine statistic increments, eliminated-tribute status cleanup, and death-loot transfer/destruction are excluded from the core key but retained as counted full-effect permutations.",
+      catalogueCoverage:
+        "Validates definitions exported by active catalogue families and their expected pools. It does not discover dormant source definitions that are not exported through those families.",
+    },
+    distributionMetrics,
+    catalogueCoverage,
+    definitions,
+    events,
+  };
 
-  console.log(
-    `${gameSize}: ${gameSizeDefinitions.length} unique definitions across ` +
-      `${gameSizeEvents.length} pool rows; ${selectedDefinitions} selected; ` +
-      `${neverSelectedDefinitions} never selected; ` +
-      `${feasibleNeverSelectedDefinitions} feasible but never selected; ` +
-      `${lifecycleDefinitions} lifecycle/automatic definitions observed.`,
+  const markdownPath = resolve(outputDirectory, "event-frequency-report.md");
+  const jsonPath = resolve(outputDirectory, "event-frequency-report.json");
+  const eventTsvPath = resolve(outputDirectory, "event-frequency-events.tsv");
+  const definitionTsvPath = resolve(outputDirectory, "event-frequency-definitions.tsv");
+  const outcomeTsvPath = resolve(outputDirectory, "event-frequency-outcomes.tsv");
+  const perGameEventTsvPath = resolve(outputDirectory, "event-frequency-by-game.tsv");
+  const perGameDiagnosticTsvPath = resolve(
+    outputDirectory,
+    "event-frequency-diagnostics-by-game.tsv",
   );
+  const perGameOutcomeTsvPath = resolve(outputDirectory, "event-frequency-outcomes-by-game.tsv");
+
+  await Promise.all([
+    writeFile(markdownPath, createMarkdownReport(data), "utf8"),
+    writeFile(jsonPath, `${JSON.stringify(data, null, 2)}\n`, "utf8"),
+    writeFile(eventTsvPath, createEventTsv(events), "utf8"),
+    writeFile(definitionTsvPath, createDefinitionTsv(definitions), "utf8"),
+    writeFile(outcomeTsvPath, createOutcomeTsv(events), "utf8"),
+    writeFile(perGameEventTsvPath, createPerGameEventTsv(perGameEvents), "utf8"),
+    writeFile(perGameDiagnosticTsvPath, createPerGameDiagnosticTsv(perGameDiagnostics), "utf8"),
+    writeFile(perGameOutcomeTsvPath, createPerGameOutcomeTsv(perGameOutcomes), "utf8"),
+  ]);
+
+  const generatedPaths = [
+    markdownPath,
+    jsonPath,
+    eventTsvPath,
+    definitionTsvPath,
+    outcomeTsvPath,
+    perGameEventTsvPath,
+    perGameDiagnosticTsvPath,
+    perGameOutcomeTsvPath,
+  ];
+  const checksumManifest = {
+    schemaVersion: provenance.schemaVersion,
+    commitSha: provenance.commitSha,
+    generator: {
+      path: provenance.generatorPath,
+      version: provenance.generatorVersion,
+      sha256: provenance.generatorSha256,
+    },
+    files: Object.fromEntries(
+      await Promise.all(
+        generatedPaths.map(async (path) => {
+          const contents = await readFile(path);
+          return [
+            path.slice(outputDirectory.length + 1).replaceAll("\\", "/"),
+            createHash("sha256").update(contents).digest("hex"),
+          ] as const;
+        }),
+      ),
+    ),
+  };
+  const checksumManifestPath = resolve(outputDirectory, "checksums.sha256.json");
+  await writeFile(checksumManifestPath, `${JSON.stringify(checksumManifest, null, 2)}\n`, "utf8");
+  await outputClaim.commit();
+
+  console.log(`Event frequency Markdown written to ${markdownPath}`);
+  console.log(`Event frequency JSON written to ${jsonPath}`);
+  console.log(`Pool-level event TSV written to ${eventTsvPath}`);
+  console.log(`Unique-definition TSV written to ${definitionTsvPath}`);
+  console.log(`Outcome TSV written to ${outcomeTsvPath}`);
+  console.log(`Per-game event TSV written to ${perGameEventTsvPath}`);
+  console.log(`Per-game diagnostic TSV written to ${perGameDiagnosticTsvPath}`);
+  console.log(`Per-game outcome TSV written to ${perGameOutcomeTsvPath}`);
+  console.log(
+    `Simulated ${configuration.halfGames} Half Games and ${configuration.fullGames} Full Games.`,
+  );
+
+  for (const gameSize of EVENT_DISTRIBUTION_GAME_SIZE_IDS) {
+    const gameSizeEvents = events.filter((event) => event.gameSize === gameSize);
+    const gameSizeDefinitions = definitions.filter(
+      (definition) => definition.gameSize === gameSize,
+    );
+    if (gameSizeDefinitions.length === 0) {
+      continue;
+    }
+
+    const selectedDefinitions = gameSizeDefinitions.filter(
+      (definition) => definition.selections > 0,
+    ).length;
+    const neverSelectedDefinitions = gameSizeDefinitions.filter(
+      (definition) => definition.selections === 0,
+    ).length;
+    const feasibleNeverSelectedDefinitions = gameSizeDefinitions.filter(
+      (definition) => definition.feasible > 0 && definition.selections === 0,
+    ).length;
+    const lifecycleDefinitions = gameSizeDefinitions.filter(
+      (definition) => definition.eventClass !== "weighted-authored" && definition.selections > 0,
+    ).length;
+
+    console.log(
+      `${gameSize}: ${gameSizeDefinitions.length} unique definitions across ` +
+        `${gameSizeEvents.length} pool rows; ${selectedDefinitions} selected; ` +
+        `${neverSelectedDefinitions} never selected; ` +
+        `${feasibleNeverSelectedDefinitions} feasible but never selected; ` +
+        `${lifecycleDefinitions} lifecycle/automatic definitions observed.`,
+    );
+  }
+} catch (error) {
+  await outputClaim.rollback();
+  throw error;
 }

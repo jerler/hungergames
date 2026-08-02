@@ -2139,6 +2139,62 @@ function createOutcomeTsv(events: readonly EventFrequencyMetric[]): string {
   return `${[header.join("\t"), ...rows].join("\n")}\n`;
 }
 
+function createOpportunityTsv(runs: readonly SimulationRun[]): string {
+  const header = [
+    "seed",
+    "gameSize",
+    "roundSequence",
+    "roundPeriod",
+    "roundDay",
+    "poolId",
+    "stage",
+    "opportunityIndex",
+    "opportunityId",
+    "definitionId",
+    "considered",
+    "eligible",
+    "stateFeasible",
+    "opportunityFeasible",
+    "plannerAdmitted",
+    "finalWeightedPool",
+    "drawn",
+    "resolvedAccepted",
+    "rejectionReason",
+  ];
+
+  const rows = runs.flatMap((run) => {
+    const gameSize = getGameSize(run);
+
+    return (run.selectionDiagnostics?.opportunities ?? []).map((opportunity) =>
+      [
+        opportunity.gameSeed,
+        gameSize,
+        opportunity.roundSequence,
+        opportunity.roundPeriod,
+        opportunity.roundDay,
+        opportunity.poolId,
+        opportunity.stage,
+        opportunity.opportunityIndex,
+        opportunity.opportunityId,
+        opportunity.definitionId,
+        opportunity.considered,
+        opportunity.eligible,
+        opportunity.stateFeasible,
+        opportunity.opportunityFeasible,
+        opportunity.plannerAdmitted,
+        opportunity.finalWeightedPool,
+        opportunity.drawn,
+        opportunity.resolvedAccepted,
+        opportunity.rejectionReason ?? "",
+      ]
+        .map((value) => sanitizeTsv(String(value)))
+        .join("\t"),
+    );
+  });
+
+  return `${[header.join("\t"), ...rows].join("\n")}\n`;
+}
+
 if (process.argv.includes("--help")) {
   printHelp();
   process.exit(0);
@@ -2239,6 +2295,10 @@ try {
     "event-frequency-diagnostics-by-game.tsv",
   );
   const perGameOutcomeTsvPath = resolve(outputDirectory, "event-frequency-outcomes-by-game.tsv");
+  const opportunityTsvPath = resolve(
+    outputDirectory,
+    "event-frequency-selection-opportunities.tsv",
+  );
 
   await Promise.all([
     writeFile(markdownPath, createMarkdownReport(data), "utf8"),
@@ -2249,6 +2309,7 @@ try {
     writeFile(perGameEventTsvPath, createPerGameEventTsv(perGameEvents), "utf8"),
     writeFile(perGameDiagnosticTsvPath, createPerGameDiagnosticTsv(perGameDiagnostics), "utf8"),
     writeFile(perGameOutcomeTsvPath, createPerGameOutcomeTsv(perGameOutcomes), "utf8"),
+    writeFile(opportunityTsvPath, createOpportunityTsv(runs), "utf8"),
   ]);
 
   const generatedPaths = [
@@ -2260,6 +2321,7 @@ try {
     perGameEventTsvPath,
     perGameDiagnosticTsvPath,
     perGameOutcomeTsvPath,
+    opportunityTsvPath,
   ];
   const checksumManifest = {
     schemaVersion: provenance.schemaVersion,
@@ -2293,6 +2355,7 @@ try {
   console.log(`Per-game event TSV written to ${perGameEventTsvPath}`);
   console.log(`Per-game diagnostic TSV written to ${perGameDiagnosticTsvPath}`);
   console.log(`Per-game outcome TSV written to ${perGameOutcomeTsvPath}`);
+  console.log(`Opportunity-level selection TSV written to ${opportunityTsvPath}`);
   console.log(
     `Simulated ${configuration.halfGames} Half Games and ${configuration.fullGames} Full Games.`,
   );

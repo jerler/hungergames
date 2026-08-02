@@ -8,6 +8,13 @@ import {
 import type { EventDefinition, EventSelectionContext } from "~/game/events/event-schema";
 import { selectEventParticipants } from "~/game/events/participant-selection";
 
+import {
+  createEventSelectionOpportunityId,
+  isStateFeasibleCandidate,
+  type EventSelectionOpportunityContext,
+  type EventSelectionOpportunityRecord,
+} from "./event-selection-opportunity";
+
 export const EVENT_SELECTION_DIAGNOSTIC_POOL_IDS = [
   "bloodbath-cornucopia",
   "bloodbath-flee",
@@ -68,6 +75,7 @@ export interface EventSelectionStageDiagnostics {
 
 export interface EventSelectionDiagnosticsSnapshot {
   stages: readonly EventSelectionStageDiagnostics[];
+  opportunities?: readonly EventSelectionOpportunityRecord[];
 }
 
 export interface EventSelectionPoolDiagnosticsSummary {
@@ -384,9 +392,44 @@ class EventSelectionDiagnosticsCollector {
   }
 }
 
-let activeCollector: EventSelectionDiagnosticsCollector | null = null;
+interface PendingOpportunityCandidate {
+  definition: EventDefinition;
+  eligible: boolean;
+  feasible: boolean;
+  rejectionReason: EventSelectionRejectionReason | null;
+}
 
-export function captureEventSelectionDiagnostics<T>(callback: () => T): {
+let activeCollector: EventSelectionDiagnosticsCollector | null = null;
+let activeOpportunityContext: EventSelectionOpportunityContext | null = null;
+let activeOpportunityRecords: EventSelectionOpportunityRecord[] | null = null;
+let pendingCandidatesByStageKey: Map<string, Map<string, PendingOpportunityCandidate>> | null =
+  null;
+let opportunityIndexesByStageKey: Map<string, number> | null = null;
+
+function getOpportunityStageKey(
+  poolId: EventSelectionDiagnosticPoolId,
+  stage: EventSelectionDiagnosticStage,
+): string {
+  return `${poolId}:${stage}`;
+}
+
+export function setEventSelectionDiagnosticRoundContext(
+  context: Omit<EventSelectionOpportunityContext, "gameSeed">,
+): void {
+  if (!activeOpportunityContext) {
+    return;
+  }
+
+  activeOpportunityContext = {
+    ...activeOpportunityContext,
+    ...context,
+  };
+}
+
+export function captureEventSelectionDiagnostics<T>(
+  callback: () => T,
+  options?: { gameSeed: string },
+): {
   result: T;
   diagnostics: EventSelectionDiagnosticsSnapshot;
 } {
@@ -396,16 +439,34 @@ export function captureEventSelectionDiagnostics<T>(callback: () => T): {
 
   const collector = new EventSelectionDiagnosticsCollector();
   activeCollector = collector;
+  activeOpportunityContext = options
+    ? {
+        gameSeed: options.gameSeed,
+        roundSequence: 0,
+        roundPeriod: "day",
+        roundDay: 1,
+      }
+    : null;
+  activeOpportunityRecords = [];
+  pendingCandidatesByStageKey = new Map();
+  opportunityIndexesByStageKey = new Map();
 
   try {
     const result = callback();
 
     return {
       result,
-      diagnostics: collector.toSnapshot(),
+      diagnostics: {
+        ...collector.toSnapshot(),
+        opportunities: [...(activeOpportunityRecords ?? [])],
+      },
     };
   } finally {
     activeCollector = null;
+    activeOpportunityContext = null;
+    activeOpportunityRecords = null;
+    pendingCandidatesByStageKey = null;
+    opportunityIndexesByStageKey = null;
   }
 }
 
@@ -422,6 +483,22 @@ export function recordEventSelectionCandidateEvaluation(options: {
   rejectionReason?: EventSelectionRejectionReason;
 }): void {
   activeCollector?.recordCandidate(options);
+
+  if (!pendingCandidatesByStageKey) {
+    return;
+  }
+
+  const key = getOpportunityStageKey(options.poolId, options.stage);
+  const candidates =
+    pendingCandidatesByStageKey.get(key) ?? new Map<string, PendingOpportunityCandidate>();
+
+  candidates.set(options.definition.id, {
+    definition: options.definition,
+    eligible: options.eligible,
+    feasible: options.feasible,
+    rejectionReason: options.rejectionReason ?? null,
+  });
+  pendingCandidatesByStageKey.set(key, candidates);
 }
 
 export function recordEventSelectionOpportunity(options: {
@@ -433,6 +510,90 @@ export function recordEventSelectionOpportunity(options: {
   rejectionReasonsByDefinitionId?: ReadonlyMap<string, EventSelectionRejectionReason>;
 }): void {
   activeCollector?.recordOpportunity(options);
+
+  if (
+    !activeOpportunityContext ||
+    !activeOpportunityRecords ||
+    !pendingCandidatesByStageKey ||
+    !opportunityIndexesByStageKey
+  ) {
+    return;
+  }
+
+  const key = getOpportunityStageKey(options.poolId, options.stage);
+  const opportunityIndex = (opportunityIndexesByStageKey.get(key) ?? 0) + 1;
+  opportunityIndexesByStageKey.set(key, opportunityIndex);
+
+  const pendingCandidates =
+    pendingCandidatesByStageKey.get(key) ?? new Map<string, PendingOpportunityCandidate>();
+  const feasibleById = new Map(
+    options.feasibleDefinitions.map((definition) => [definition.id, definition]),
+  );
+  const definitionsById = new Map<string, EventDefinition>();
+
+  for (const candidate of pendingCandidates.values()) {
+    definitionsById.set(candidate.definition.id, candidate.definition);
+  }
+
+  for (const definition of options.feasibleDefinitions) {
+    definitionsById.set(definition.id, definition);
+  }
+
+  if (options.selectedDefinition) {
+    definitionsById.set(options.selectedDefinition.id, options.selectedDefinition);
+  }
+
+  const opportunityId = createEventSelectionOpportunityId({
+    ...activeOpportunityContext,
+    poolId: options.poolId,
+    stage: options.stage,
+    opportunityIndex,
+  });
+
+  for (const definition of definitionsById.values()) {
+    const pending = pendingCandidates.get(definition.id);
+    const opportunityFeasible = feasibleById.has(definition.id);
+    const explicitOpportunityReason =
+      options.rejectionReasonsByDefinitionId?.get(definition.id) ?? null;
+    const plannerAdmitted =
+      opportunityFeasible &&
+      (!options.plannerConsideredDefinitionIds ||
+        options.plannerConsideredDefinitionIds.has(definition.id));
+    const selected = options.selectedDefinition?.id === definition.id;
+    const rejectionReason = selected
+      ? null
+      : (explicitOpportunityReason ??
+        pending?.rejectionReason ??
+        (opportunityFeasible && !plannerAdmitted
+          ? "planner-stage-not-attempted"
+          : opportunityFeasible
+            ? "weighted-not-selected"
+            : null));
+
+    activeOpportunityRecords.push({
+      ...activeOpportunityContext,
+      opportunityId,
+      opportunityIndex,
+      poolId: options.poolId,
+      stage: options.stage,
+      definitionId: definition.id,
+      considered: pending !== undefined,
+      eligible: pending?.eligible ?? (opportunityFeasible || selected),
+      stateFeasible: isStateFeasibleCandidate({
+        opportunityFeasible,
+        rejectionReason,
+      }),
+      opportunityFeasible,
+      plannerAdmitted,
+      finalWeightedPool:
+        opportunityFeasible && plannerAdmitted && explicitOpportunityReason === null,
+      drawn: selected,
+      resolvedAccepted: selected,
+      rejectionReason,
+    });
+  }
+
+  pendingCandidatesByStageKey.delete(key);
 }
 
 export function diagnoseEventSelectionFeasibilityRejection({
@@ -483,7 +644,10 @@ export function mergeEventSelectionDiagnostics(
     collector.merge(snapshot);
   }
 
-  return collector.toSnapshot();
+  return {
+    ...collector.toSnapshot(),
+    opportunities: snapshots.flatMap((snapshot) => snapshot.opportunities ?? []),
+  };
 }
 
 export function summarizeEventSelectionDiagnosticsForPool(

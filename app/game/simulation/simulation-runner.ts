@@ -17,6 +17,7 @@ import { createDefaultGameConfig } from "~/game/types/game-config";
 import type { GameState } from "~/game/types/game-state";
 import {
   captureEventSelectionDiagnostics,
+  setEventSelectionDiagnosticRoundContext,
   type EventSelectionDiagnosticsSnapshot,
 } from "~/game/simulation/event-selection-diagnostics";
 
@@ -112,14 +113,16 @@ export function simulateGame({
   captureSelectionDiagnostics: shouldCaptureSelectionDiagnostics = false,
 }: SimulateGameOptions): SimulationRun {
   if (shouldCaptureSelectionDiagnostics) {
-    const { result, diagnostics } = captureEventSelectionDiagnostics(() =>
-      simulateGame({
-        seed,
-        districtCount,
-        maxRounds,
-        createdAt,
-        captureSelectionDiagnostics: false,
-      }),
+    const { result, diagnostics } = captureEventSelectionDiagnostics(
+      () =>
+        simulateGame({
+          seed,
+          districtCount,
+          maxRounds,
+          createdAt,
+          captureSelectionDiagnostics: false,
+        }),
+      { gameSeed: seed },
     );
 
     return {
@@ -140,6 +143,12 @@ export function simulateGame({
 
   for (let roundIndex = 0; roundIndex < maxRounds; roundIndex += 1) {
     const nextRound = getNextRound(state.currentRound);
+
+    setEventSelectionDiagnosticRoundContext({
+      roundSequence: getRoundSequence(nextRound),
+      roundPeriod: nextRound.period,
+      roundDay: nextRound.day,
+    });
 
     roundSnapshots.push({
       round: nextRound,

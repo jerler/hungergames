@@ -23,6 +23,7 @@ export interface PronounGrammar {
   object: string;
 
   possessiveAdjective: string;
+  PossessiveAdjective: string;
   possessivePronoun: string;
 
   reflexive: string;
@@ -39,6 +40,7 @@ export const PRONOUN_GRAMMAR: Record<PronounSetId, PronounGrammar> = {
     Subject: "They",
     object: "them",
     possessiveAdjective: "their",
+    PossessiveAdjective: "Their",
     possessivePronoun: "theirs",
     reflexive: "themself",
     bePresent: "are",
@@ -52,6 +54,7 @@ export const PRONOUN_GRAMMAR: Record<PronounSetId, PronounGrammar> = {
     Subject: "She",
     object: "her",
     possessiveAdjective: "her",
+    PossessiveAdjective: "Her",
     possessivePronoun: "hers",
     reflexive: "herself",
     bePresent: "is",
@@ -65,6 +68,7 @@ export const PRONOUN_GRAMMAR: Record<PronounSetId, PronounGrammar> = {
     Subject: "He",
     object: "him",
     possessiveAdjective: "his",
+    PossessiveAdjective: "His",
     possessivePronoun: "his",
     reflexive: "himself",
     bePresent: "is",
@@ -78,6 +82,7 @@ export const PRONOUN_GRAMMAR: Record<PronounSetId, PronounGrammar> = {
     Subject: "It",
     object: "it",
     possessiveAdjective: "its",
+    PossessiveAdjective: "Its",
     possessivePronoun: "its",
     reflexive: "itself",
     bePresent: "is",

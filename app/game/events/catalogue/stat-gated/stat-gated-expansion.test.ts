@@ -10,6 +10,7 @@ import { HIGH_BRAINS_EVENTS } from "~/game/events/catalogue/stat-gated/brains/hi
 import { LOW_BRAINS_EVENTS } from "~/game/events/catalogue/stat-gated/brains/low-events";
 import { HIGH_BRAWN_EVENTS } from "~/game/events/catalogue/stat-gated/brawn/high-events";
 import { LOW_BRAWN_EVENTS } from "~/game/events/catalogue/stat-gated/brawn/low-events";
+import { LOW_LUCK_EVENTS } from "~/game/events/catalogue/stat-gated/luck/low-events";
 import { MIXED_STAT_GATED_EVENTS } from "~/game/events/catalogue/stat-gated/mixed-events";
 import {
   STAT_GATED_BLOODBATH_EVENTS,
@@ -106,12 +107,13 @@ function context(
 }
 
 describe("stat-gated catalogue expansion", () => {
-  it("registers 132 concepts as 176 unique definitions", () => {
+  it("registers 145 concepts as 189 unique definitions", () => {
     expect(LOW_BRAWN_EVENTS).toHaveLength(25);
     expect(HIGH_BRAWN_EVENTS).toHaveLength(41);
     expect(LOW_BRAINS_EVENTS).toHaveLength(29);
     expect(HIGH_BRAINS_EVENTS).toHaveLength(42);
     expect(MIXED_STAT_GATED_EVENTS).toHaveLength(3);
+    expect(LOW_LUCK_EVENTS).toHaveLength(13);
     expect(STAT_GATED_BLOODBATH_EVENTS).toHaveLength(36);
     expect(STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS).toHaveLength(12);
     expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(10);
@@ -125,11 +127,12 @@ describe("stat-gated catalogue expansion", () => {
       ...LOW_BRAINS_EVENTS,
       ...HIGH_BRAINS_EVENTS,
       ...MIXED_STAT_GATED_EVENTS,
+      ...LOW_LUCK_EVENTS,
       ...STAT_GATED_BLOODBATH_EVENTS,
     ];
 
-    expect(definitions).toHaveLength(176);
-    expect(new Set(definitions.map((definition) => definition.id)).size).toBe(176);
+    expect(definitions).toHaveLength(189);
+    expect(new Set(definitions.map((definition) => definition.id)).size).toBe(189);
   });
 
   it("limits Rock and a Hard Place to brawn one or two", () => {

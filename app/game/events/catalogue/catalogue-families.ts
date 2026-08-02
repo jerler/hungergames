@@ -214,7 +214,6 @@ export const ORDINARY_EVENT_CATALOGUE_FAMILIES = [
   {
     name: "low-luck",
     events: LOW_LUCK_EVENTS,
-    allowEmpty: true,
   },
 
   {

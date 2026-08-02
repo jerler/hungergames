@@ -23,7 +23,8 @@
     "validate:release": "npm run format:check && npm run typecheck && npm run lint && npm run test && npm run test:e2e",
     "check": "npm run validate:release",
     "phase7:validate": "tsx scripts/run-phase-7-validation.ts",
-    "phase7:full": "bash scripts/validate-phase-7.sh"
+    "phase7:full": "bash scripts/validate-phase-7.sh",
+    "event-frequency": "tsx scripts/generate-event-frequency-report.ts"
   },
   "dependencies": {
     "@react-router/node": "8.0.0",

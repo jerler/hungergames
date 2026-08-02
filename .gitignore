@@ -17,5 +17,4 @@ documentation/
 script.sh
 
 # Generated simulation diagnostics
-/reports/event-distribution-report.md
-/reports/event-distribution-report.json
+reports/

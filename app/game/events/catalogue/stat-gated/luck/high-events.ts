@@ -10,6 +10,8 @@ import type { EventDefinition } from "~/game/events/event-schema";
 import { getEffectiveLuck } from "~/game/engine/effective-stats";
 import { getActiveTruceForTribute } from "~/game/truces/truce-engine";
 
+import { HIGH_LUCK_EXPANSION_EVENTS } from "./high-luck-expansion-events";
+
 export const HIGH_LUCK_EVENTS = [
   /* Day Only */
 
@@ -57,4 +59,5 @@ export const HIGH_LUCK_EVENTS = [
       }),
     },
   }),
+  ...HIGH_LUCK_EXPANSION_EVENTS,
 ] satisfies readonly EventDefinition[];

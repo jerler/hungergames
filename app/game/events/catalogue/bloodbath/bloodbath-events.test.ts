@@ -343,6 +343,14 @@ describe("Bloodbath event catalogue", () => {
         for (const change of getAcquisitions(resolution.changes)) {
           const itemDefinition = getItemDefinition(change.item.definitionId);
 
+          if (
+            definition.id === "bloodbath-flee-high-luck-dramatic-getaway" &&
+            change.item.definitionId === "cornucopia-provisions"
+          ) {
+            expect(change.acquisitionSource).toBe("cornucopia");
+            continue;
+          }
+
           if (itemDefinition.origin === "natural-resource") {
             expect(change.acquisitionSource).toBe("natural-foraging");
             continue;
@@ -362,7 +370,7 @@ describe("Bloodbath event catalogue", () => {
           getAcquisitions(resolution.changes).some(
             (change) => change.item.definitionId === "cornucopia-provisions",
           ),
-        ).toBe(false);
+        ).toBe(definition.id === "bloodbath-flee-high-luck-dramatic-getaway");
       }
     }
   });

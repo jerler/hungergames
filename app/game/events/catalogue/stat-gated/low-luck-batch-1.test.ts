@@ -77,10 +77,10 @@ describe("Low-Luck Batch 1 opening expansion", () => {
     expect(
       STAT_GATED_BLOODBATH_EVENTS.filter((definition) => openingIds.has(definition.id)),
     ).toHaveLength(8);
-    expect(STAT_GATED_BLOODBATH_EVENTS).toHaveLength(36);
-    expect(STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS).toHaveLength(12);
-    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(10);
-    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(10);
+    expect(STAT_GATED_BLOODBATH_EVENTS).toHaveLength(46);
+    expect(STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS).toHaveLength(16);
+    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(14);
+    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(12);
   });
 
   it("keeps the opening catalogue meaningfully visible after balance tuning", () => {

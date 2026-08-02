@@ -128,9 +128,9 @@ describe("authored fatal Bloodbath events", () => {
     const catalogueIds = new Set(CORNUCOPIA_EVENTS.map((definition) => definition.id));
     const authoredIds = CORNUCOPIA_FATAL_BLOODBATH_EVENTS.map((definition) => definition.id);
 
-    expect(CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(47);
+    expect(CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(51);
     expect(CORNUCOPIA_FATAL_DELAYED_EVENTS).toHaveLength(2);
-    expect(authoredIds).toHaveLength(49);
+    expect(authoredIds).toHaveLength(53);
     expect(new Set(authoredIds).size).toBe(authoredIds.length);
 
     for (const eventId of authoredIds) {

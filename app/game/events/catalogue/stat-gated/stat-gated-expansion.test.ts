@@ -107,19 +107,19 @@ function context(
 }
 
 describe("stat-gated catalogue expansion", () => {
-  it("registers 145 concepts as 189 unique definitions", () => {
+  it("registers 155 concepts as 199 unique definitions", () => {
     expect(LOW_BRAWN_EVENTS).toHaveLength(25);
     expect(HIGH_BRAWN_EVENTS).toHaveLength(41);
     expect(LOW_BRAINS_EVENTS).toHaveLength(29);
     expect(HIGH_BRAINS_EVENTS).toHaveLength(42);
     expect(MIXED_STAT_GATED_EVENTS).toHaveLength(3);
     expect(LOW_LUCK_EVENTS).toHaveLength(13);
-    expect(STAT_GATED_BLOODBATH_EVENTS).toHaveLength(36);
-    expect(STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS).toHaveLength(12);
-    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(10);
+    expect(STAT_GATED_BLOODBATH_EVENTS).toHaveLength(46);
+    expect(STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS).toHaveLength(16);
+    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(14);
     expect(STAT_GATED_CORNUCOPIA_NONFATAL_PAIR_EVENTS).toHaveLength(3);
     expect(STAT_GATED_CORNUCOPIA_NONFATAL_TRIO_EVENTS).toHaveLength(1);
-    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(10);
+    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(12);
 
     const definitions = [
       ...LOW_BRAWN_EVENTS,
@@ -131,8 +131,8 @@ describe("stat-gated catalogue expansion", () => {
       ...STAT_GATED_BLOODBATH_EVENTS,
     ];
 
-    expect(definitions).toHaveLength(189);
-    expect(new Set(definitions.map((definition) => definition.id)).size).toBe(189);
+    expect(definitions).toHaveLength(199);
+    expect(new Set(definitions.map((definition) => definition.id)).size).toBe(199);
   });
 
   it("limits Rock and a Hard Place to brawn one or two", () => {

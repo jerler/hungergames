@@ -32,6 +32,11 @@ import {
 import { getTributePronouns } from "~/game/tributes/pronouns";
 
 import type { CornucopiaFatalTargetProfile } from "./cornucopia-fatal-events";
+import {
+  HIGH_LUCK_CORNUCOPIA_FATAL_TARGET_PROFILES,
+  HIGH_LUCK_CORNUCOPIA_FLAVOUR_EVENTS,
+  HIGH_LUCK_FLEE_EVENTS,
+} from "./high-luck-opening-events";
 
 const LOW_BRAWN_DRAGGING_LOOT: EventDefinition = {
   id: "cornucopia-low-brawn-dragging-loot",
@@ -1556,6 +1561,7 @@ export const STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS = [
   HIGH_BRAWN_MORE_THAN_YOUR_SHARE,
   HIGH_BRAWN_BAG_OF_CHIPS,
   HIGH_BRAWN_EMERGENCY_EXIT,
+  ...HIGH_LUCK_CORNUCOPIA_FLAVOUR_EVENTS,
 ] satisfies readonly EventDefinition[];
 
 export const STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES = [
@@ -1609,6 +1615,7 @@ export const STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES = [
     minImmediateEliminations: 1,
     maxImmediateEliminations: 1,
   },
+  ...HIGH_LUCK_CORNUCOPIA_FATAL_TARGET_PROFILES,
 ] satisfies readonly CornucopiaFatalTargetProfile[];
 
 export const STAT_GATED_CORNUCOPIA_NONFATAL_PAIR_EVENTS = [
@@ -1632,6 +1639,7 @@ export const STAT_GATED_FLEE_EVENTS = [
   LOW_BRAINS_FOLLOW_THAT_TRIBUTE,
   RUN_FASTER,
   HIGH_BRAWN_GENTLE_GIANT_FLEE,
+  ...HIGH_LUCK_FLEE_EVENTS,
 ] satisfies readonly EventDefinition[];
 
 export const STAT_GATED_BLOODBATH_EVENTS = [

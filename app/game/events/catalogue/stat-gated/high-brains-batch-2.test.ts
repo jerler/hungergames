@@ -154,7 +154,7 @@ describe("High-Brains Batch 2 expansion", () => {
       STAT_GATED_BLOODBATH_EVENTS.filter((definition) => bloodbathIds.has(definition.id)),
     ).toHaveLength(2);
     expect(HIGH_BRAINS_EVENTS).toHaveLength(42);
-    expect(STAT_GATED_BLOODBATH_EVENTS).toHaveLength(36);
+    expect(STAT_GATED_BLOODBATH_EVENTS).toHaveLength(46);
   });
 
   it("gives Alarm System sheltered rest and alertness", () => {

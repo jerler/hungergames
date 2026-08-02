@@ -139,11 +139,11 @@ describe("high-Brains Batch 1 expansion", () => {
     expect(
       STAT_GATED_BLOODBATH_EVENTS.filter((definition) => batchIds.has(definition.id)),
     ).toHaveLength(9);
-    expect(STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS).toHaveLength(12);
-    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(10);
+    expect(STAT_GATED_CORNUCOPIA_FLAVOUR_EVENTS).toHaveLength(16);
+    expect(STAT_GATED_CORNUCOPIA_FATAL_TARGET_PROFILES).toHaveLength(14);
     expect(STAT_GATED_CORNUCOPIA_NONFATAL_PAIR_EVENTS).toHaveLength(3);
     expect(STAT_GATED_CORNUCOPIA_NONFATAL_TRIO_EVENTS).toHaveLength(1);
-    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(10);
+    expect(STAT_GATED_FLEE_EVENTS).toHaveLength(12);
   });
 
   it("guarantees two supplies and a weapon through Shopping List", () => {

@@ -11,7 +11,8 @@ export interface EventSelectionOpportunityContext {
   roundDay: number;
 }
 
-export interface EventSelectionOpportunityRecord extends EventSelectionOpportunityContext {
+export interface EventSelectionOpportunityRecord
+  extends EventSelectionOpportunityContext {
   opportunityId: string;
   opportunityIndex: number;
   poolId: EventSelectionDiagnosticPoolId;
@@ -19,10 +20,15 @@ export interface EventSelectionOpportunityRecord extends EventSelectionOpportuni
   definitionId: string;
   considered: boolean;
   eligible: boolean;
+  hardFeasible: boolean;
+  /** Transitional alias retained until the report column is migrated. */
   stateFeasible: boolean;
   opportunityFeasible: boolean;
   plannerAdmitted: boolean;
   finalWeightedPool: boolean;
+  weightedPoolEntryCount: number;
+  uniformExpectedSelections: number;
+  drawAttemptCount: number;
   drawn: boolean;
   resolvedAccepted: boolean;
   rejectionReason: EventSelectionRejectionReason | null;
@@ -36,7 +42,11 @@ export function createEventSelectionOpportunityId({
   opportunityIndex,
 }: Pick<
   EventSelectionOpportunityRecord,
-  "gameSeed" | "roundSequence" | "poolId" | "stage" | "opportunityIndex"
+  | "gameSeed"
+  | "roundSequence"
+  | "poolId"
+  | "stage"
+  | "opportunityIndex"
 >): string {
   return [
     gameSeed,
@@ -45,14 +55,4 @@ export function createEventSelectionOpportunityId({
     stage,
     `opportunity-${opportunityIndex}`,
   ].join(":");
-}
-
-export function isStateFeasibleCandidate({
-  opportunityFeasible,
-  rejectionReason,
-}: {
-  opportunityFeasible: boolean;
-  rejectionReason: EventSelectionRejectionReason | null;
-}): boolean {
-  return opportunityFeasible || rejectionReason === "reservation-blocked";
 }

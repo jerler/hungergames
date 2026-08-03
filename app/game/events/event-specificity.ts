@@ -93,6 +93,43 @@ export function getEventSpecificityBreakdown(
   };
 }
 
+export interface EventAuditSpecificityBreakdown {
+  score: number;
+  authoredScore: number;
+  structuralScore: number;
+  reasons: readonly EventSpecificityReason[];
+  broadEvent: boolean;
+}
+
+export function getEventAuditSpecificityBreakdown(
+  definition: EventDefinition,
+): EventAuditSpecificityBreakdown {
+  const authoredScore =
+    definition.selectionProfile?.specificityScore ?? 0;
+  const structural =
+    getStructuralSpecificity(definition);
+  const reasons = [
+    ...new Set([
+      ...(definition.selectionProfile
+        ?.specificityReasons ?? []),
+      ...structural.reasons,
+    ]),
+  ];
+
+  const score = Math.max(
+    authoredScore,
+    structural.score,
+  );
+
+  return {
+    score,
+    authoredScore,
+    structuralScore: structural.score,
+    reasons,
+    broadEvent: score === 0 && reasons.length === 0,
+  };
+}
+
 export function getEventDefinitionSpecificityScore(definition: EventDefinition): number {
   return getEventSpecificityBreakdown(definition).score;
 }

@@ -11,7 +11,7 @@ import type { RoundReference } from "~/game/types/game-state";
 import { getEventSelectionRecoveryPriorityMultiplier } from "~/game/events/event-recovery-priority";
 import { getOrdinaryEventParticipantShapeMultiplier } from "~/game/engine/ordinary-event-selection-policy";
 import {
-  diagnoseEventSelectionFeasibilityRejection,
+  evaluateEventSelectionFeasibility,
   isEventSelectionDiagnosticsActive,
   recordEventSelectionCandidateEvaluation,
   type EventSelectionDiagnosticPoolId,
@@ -144,31 +144,45 @@ export function createFeasibleEventCandidates({
           );
 
     if (!feasibilitySelection) {
-      if (diagnostics && isEventSelectionDiagnosticsActive()) {
-        recordEventSelectionCandidateEvaluation({
-          ...diagnostics,
-          definition,
-          eligible: true,
-          feasible: false,
-          rejectionReason: diagnoseEventSelectionFeasibilityRejection({
+      if (
+        diagnostics &&
+        isEventSelectionDiagnosticsActive()
+      ) {
+        const evaluation =
+          evaluateEventSelectionFeasibility({
             definition,
             context,
             unavailableTributeIds,
             unavailableItemInstanceIds,
             selectionSeed,
-          }),
+          });
+
+        recordEventSelectionCandidateEvaluation({
+          ...diagnostics,
+          definition,
+          eligible: true,
+          hardFeasible: evaluation.hardFeasible,
+          opportunityFeasible:
+            evaluation.opportunityFeasible,
+          rejectionReason:
+            evaluation.rejectionReason ??
+            "participant-or-item-infeasible",
         });
       }
 
       return [];
     }
 
-    if (diagnostics && isEventSelectionDiagnosticsActive()) {
+    if (
+      diagnostics &&
+      isEventSelectionDiagnosticsActive()
+    ) {
       recordEventSelectionCandidateEvaluation({
         ...diagnostics,
         definition,
         eligible: true,
-        feasible: true,
+        hardFeasible: true,
+        opportunityFeasible: true,
       });
     }
 

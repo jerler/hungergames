@@ -243,6 +243,42 @@ class EventSelectionDiagnosticsCollector {
     }
   }
 
+  public replaceCandidateRejection({
+    poolId,
+    stage,
+    definition,
+    fromReason,
+    toReason,
+  }: {
+    poolId: EventSelectionDiagnosticPoolId;
+    stage: EventSelectionDiagnosticStage;
+    definition: EventDefinition;
+    fromReason: EventSelectionRejectionReason;
+    toReason: EventSelectionRejectionReason | null;
+  }): void {
+    if (fromReason === toReason) {
+      return;
+    }
+
+    const diagnostics = this.getDefinition(
+      poolId,
+      stage,
+      definition,
+    );
+
+    if (diagnostics.rejectionCounts[fromReason] <= 0) {
+      throw new Error(
+        `Cannot reconcile missing event-selection rejection "${fromReason}" for "${definition.id}".`,
+      );
+    }
+
+    diagnostics.rejectionCounts[fromReason] -= 1;
+
+    if (toReason) {
+      diagnostics.rejectionCounts[toReason] += 1;
+    }
+  }
+
   public recordOpportunity({
     poolId,
     stage,
@@ -687,12 +723,15 @@ export function recordEventSelectionOpportunity(options: {
         );
       const hardFeasible =
         reachedWeightedDraw ||
+        weightedPoolEntryCount > 0 ||
         hardFeasibleById.has(definition.id);
       const opportunityFeasible =
         reachedWeightedDraw ||
+        weightedPoolEntryCount > 0 ||
         opportunityFeasibleById.has(definition.id);
       const plannerAdmitted =
         reachedWeightedDraw ||
+        weightedPoolEntryCount > 0 ||
         (opportunityFeasible &&
           plannerConsideredDefinitionIds.has(
             definition.id,
@@ -709,23 +748,21 @@ export function recordEventSelectionOpportunity(options: {
           selected);
       const rejectionReason = selected
         ? null
-        : (options.rejectionReasonsByDefinitionId?.get(
-              definition.id,
-            ) ??
-          pending?.rejectionReason ??
-          (!eligible
-            ? "definition-ineligible"
-            : !hardFeasible
-              ? "participant-or-item-infeasible"
-              : !opportunityFeasible
-                ? "reservation-blocked"
-                : !plannerAdmitted
-                  ? "planner-stage-not-attempted"
-                  : !finalWeightedPool
-                    ? "planner-stage-not-attempted"
-                    : drawAttemptCount > 0
-                      ? "draw-resolution-rejected"
-                      : "weighted-not-selected"));
+        : finalWeightedPool
+          ? drawAttemptCount > 0
+            ? "draw-resolution-rejected"
+            : "weighted-not-selected"
+          : (options.rejectionReasonsByDefinitionId?.get(
+                definition.id,
+              ) ??
+            pending?.rejectionReason ??
+            (!eligible
+              ? "definition-ineligible"
+              : !hardFeasible
+                ? "participant-or-item-infeasible"
+                : !opportunityFeasible
+                  ? "reservation-blocked"
+                  : "planner-stage-not-attempted"));
 
       return {
         definition,
@@ -757,16 +794,35 @@ export function recordEventSelectionOpportunity(options: {
         : [],
     ),
   );
-  const precountedRejectionDefinitionIds = new Set(
-    [...pendingCandidates.entries()]
-      .filter(
-        ([definitionId, candidate]) =>
-          candidate.rejectionReason !== null &&
-          definitionId !==
-            options.selectedDefinition?.id,
-      )
-      .map(([definitionId]) => definitionId),
-  );
+  const precountedRejectionDefinitionIds =
+    new Set<string>();
+
+  for (const result of candidateResults) {
+    const pendingReason =
+      pendingCandidates.get(
+        result.definition.id,
+      )?.rejectionReason ?? null;
+
+    if (!pendingReason) {
+      continue;
+    }
+
+    if (pendingReason !== result.rejectionReason) {
+      activeCollector?.replaceCandidateRejection({
+        poolId: options.poolId,
+        stage: options.stage,
+        definition: result.definition,
+        fromReason: pendingReason,
+        toReason: result.rejectionReason,
+      });
+    }
+
+    if (result.rejectionReason) {
+      precountedRejectionDefinitionIds.add(
+        result.definition.id,
+      );
+    }
+  }
 
   activeCollector?.recordOpportunity({
     poolId: options.poolId,

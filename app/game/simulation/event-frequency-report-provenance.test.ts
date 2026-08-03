@@ -8,6 +8,7 @@ import {
   EVENT_FREQUENCY_GENERATOR_VERSION,
   EVENT_FREQUENCY_REPORT_SCHEMA_VERSION,
   calculateFileSha256,
+  calculateSourceTreeSha256,
   claimReportOutputDirectory,
 } from "../../../scripts/event-frequency-report-provenance";
 
@@ -21,16 +22,19 @@ async function createTemporaryDirectory(): Promise<string> {
 
 afterEach(async () => {
   await Promise.all(
-    temporaryDirectories
-      .splice(0)
-      .map((directory) => rm(directory, { recursive: true, force: true })),
+    temporaryDirectories.splice(0).map((directory) =>
+      rm(directory, {
+        recursive: true,
+        force: true,
+      }),
+    ),
   );
 });
 
 describe("event-frequency report provenance", () => {
   it("uses explicit stable schema and generator versions", () => {
-    expect(EVENT_FREQUENCY_REPORT_SCHEMA_VERSION).toBe("3.0.0");
-    expect(EVENT_FREQUENCY_GENERATOR_VERSION).toBe("phase-0-provenance-v1");
+    expect(EVENT_FREQUENCY_REPORT_SCHEMA_VERSION).toBe("3.0.1");
+    expect(EVENT_FREQUENCY_GENERATOR_VERSION).toBe("phase-0-provenance-v2");
   });
 
   it("calculates a deterministic SHA-256 checksum", async () => {
@@ -40,6 +44,23 @@ describe("event-frequency report provenance", () => {
 
     expect(await calculateFileSha256(path)).toBe(
       "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
+    );
+  });
+
+  it("fingerprints paths and contents deterministically", async () => {
+    const directory = await createTemporaryDirectory();
+    await writeFile(join(directory, "first.ts"), "first\n", "utf8");
+    await writeFile(join(directory, "second.ts"), "second\n", "utf8");
+
+    const firstHash = await calculateSourceTreeSha256(directory, ["second.ts", "first.ts"]);
+    const reorderedHash = await calculateSourceTreeSha256(directory, ["first.ts", "second.ts"]);
+
+    expect(reorderedHash).toBe(firstHash);
+
+    await writeFile(join(directory, "second.ts"), "changed\n", "utf8");
+
+    expect(await calculateSourceTreeSha256(directory, ["first.ts", "second.ts"])).not.toBe(
+      firstHash,
     );
   });
 });
@@ -68,7 +89,7 @@ describe("event-frequency report output claiming", () => {
     expect(await readFile(join(output, "baseline.txt"), "utf8")).toBe("preserve me\n");
   });
 
-  it("restores the complete previous directory when an overwrite run fails", async () => {
+  it("restores the previous directory when overwrite fails", async () => {
     const parent = await createTemporaryDirectory();
     const output = join(parent, "report");
     await mkdir(output);
@@ -82,7 +103,7 @@ describe("event-frequency report output claiming", () => {
     await expect(readFile(join(output, "partial.txt"), "utf8")).rejects.toThrow();
   });
 
-  it("replaces the previous directory only after an overwrite run commits", async () => {
+  it("replaces the previous directory only after commit", async () => {
     const parent = await createTemporaryDirectory();
     const output = join(parent, "report");
     await mkdir(output);

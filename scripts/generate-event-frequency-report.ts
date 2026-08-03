@@ -101,6 +101,7 @@ interface ReportConfiguration {
   seedPrefix: string;
   outputDirectory: string;
   overwrite: boolean;
+  allowDirty: boolean;
 }
 
 interface CatalogueDefinitionMetadata {
@@ -409,6 +410,7 @@ function getConfiguration(): ReportConfiguration {
     seedPrefix: readOption("seed-prefix") ?? DEFAULT_SEED_PREFIX,
     outputDirectory: readOption("output-directory") ?? DEFAULT_OUTPUT_DIRECTORY,
     overwrite: hasFlag("overwrite"),
+    allowDirty: hasFlag("allow-dirty"),
   };
 
   if (configuration.halfGames + configuration.fullGames === 0) {
@@ -435,6 +437,7 @@ Options:
   --seed-prefix <prefix>     Deterministic seed prefix
   --output-directory <path>  Report directory (default: ${DEFAULT_OUTPUT_DIRECTORY})
   --overwrite                Explicitly replace a nonempty report directory
+  --allow-dirty               Permit a non-baseline smoke audit from a dirty tree
   --help                     Show this help
 `);
 }
@@ -2208,7 +2211,9 @@ const outputClaim = await claimReportOutputDirectory(
 const outputDirectory = outputClaim.outputDirectory;
 
 try {
-  const provenance = await createEventFrequencyReportProvenance();
+  const provenance = await createEventFrequencyReportProvenance({
+    allowDirty: configuration.allowDirty,
+  });
   const batchDefinitions: SimulationBatchDefinition[] = [
     ...(configuration.halfGames > 0
       ? [
@@ -2330,6 +2335,12 @@ try {
       path: provenance.generatorPath,
       version: provenance.generatorVersion,
       sha256: provenance.generatorSha256,
+    },
+    source: {
+      worktreeState: provenance.worktreeState,
+      worktreeStatusSha256: provenance.worktreeStatusSha256,
+      sourceTreeSha256: provenance.sourceTreeSha256,
+      sourceFileCount: provenance.sourceFileCount,
     },
     files: Object.fromEntries(
       await Promise.all(

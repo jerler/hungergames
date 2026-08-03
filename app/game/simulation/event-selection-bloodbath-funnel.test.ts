@@ -13,15 +13,11 @@ describe("Bloodbath selection funnel integration", () => {
     const second = simulateGame(options);
     const firstRows =
       first.selectionDiagnostics?.opportunities?.filter(
-        (row) =>
-          row.poolId === "bloodbath-cornucopia" ||
-          row.poolId === "bloodbath-flee",
+        (row) => row.poolId === "bloodbath-cornucopia" || row.poolId === "bloodbath-flee",
       ) ?? [];
     const secondRows =
       second.selectionDiagnostics?.opportunities?.filter(
-        (row) =>
-          row.poolId === "bloodbath-cornucopia" ||
-          row.poolId === "bloodbath-flee",
+        (row) => row.poolId === "bloodbath-cornucopia" || row.poolId === "bloodbath-flee",
       ) ?? [];
 
     expect(firstRows.length).toBeGreaterThan(0);

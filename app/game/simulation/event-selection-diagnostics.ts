@@ -46,7 +46,9 @@ export const EVENT_SELECTION_REJECTION_REASONS = [
   "planner-stage-not-attempted",
   "exact-cover-excluded",
   "repeat-cycle-excluded",
-  "draw-resolution-rejected",
+  "post-draw-item-conflict",
+  "post-draw-fatality-overshoot",
+  "post-draw-resolution-rejected",
   "weighted-not-selected",
 ] as const;
 
@@ -138,7 +140,9 @@ function createRejectionRecord(): Record<EventSelectionRejectionReason, number> 
     "planner-stage-not-attempted": 0,
     "exact-cover-excluded": 0,
     "repeat-cycle-excluded": 0,
-    "draw-resolution-rejected": 0,
+    "post-draw-item-conflict": 0,
+    "post-draw-fatality-overshoot": 0,
+    "post-draw-resolution-rejected": 0,
     "weighted-not-selected": 0,
   };
 }
@@ -222,11 +226,7 @@ class EventSelectionDiagnosticsCollector {
     hardFeasible: boolean;
     rejectionReason?: EventSelectionRejectionReason;
   }): void {
-    const diagnostics = this.getDefinition(
-      poolId,
-      stage,
-      definition,
-    );
+    const diagnostics = this.getDefinition(poolId, stage, definition);
 
     diagnostics.considered += 1;
 
@@ -260,11 +260,7 @@ class EventSelectionDiagnosticsCollector {
       return;
     }
 
-    const diagnostics = this.getDefinition(
-      poolId,
-      stage,
-      definition,
-    );
+    const diagnostics = this.getDefinition(poolId, stage, definition);
 
     if (diagnostics.rejectionCounts[fromReason] <= 0) {
       throw new Error(
@@ -291,28 +287,17 @@ class EventSelectionDiagnosticsCollector {
     stage: EventSelectionDiagnosticStage;
     hardFeasibleDefinitions: readonly EventDefinition[];
     selectedDefinition: EventDefinition | null;
-    rejectionReasonsByDefinitionId?: ReadonlyMap<
-      string,
-      EventSelectionRejectionReason
-    >;
+    rejectionReasonsByDefinitionId?: ReadonlyMap<string, EventSelectionRejectionReason>;
     precountedRejectionDefinitionIds?: ReadonlySet<string>;
   }): void {
     const stageDiagnostics = this.getStage(poolId, stage);
     const uniqueHardFeasibleDefinitions = [
-      ...new Map(
-        hardFeasibleDefinitions.map((definition) => [
-          definition.id,
-          definition,
-        ]),
-      ).values(),
+      ...new Map(hardFeasibleDefinitions.map((definition) => [definition.id, definition])).values(),
     ];
 
     if (
       selectedDefinition &&
-      !uniqueHardFeasibleDefinitions.some(
-        (definition) =>
-          definition.id === selectedDefinition.id,
-      )
+      !uniqueHardFeasibleDefinitions.some((definition) => definition.id === selectedDefinition.id)
     ) {
       this.recordCandidate({
         poolId,
@@ -330,25 +315,19 @@ class EventSelectionDiagnosticsCollector {
       stageDiagnostics.noFeasibleCandidates += 1;
     }
 
-    const hasSoloFeasible =
-      uniqueHardFeasibleDefinitions.some(
-        (definition) =>
-          getEventParticipantShape(definition) === "solo",
-      );
-    const hasNonSoloFeasible =
-      uniqueHardFeasibleDefinitions.some(
-        (definition) =>
-          getEventParticipantShape(definition) !== "solo",
-      );
+    const hasSoloFeasible = uniqueHardFeasibleDefinitions.some(
+      (definition) => getEventParticipantShape(definition) === "solo",
+    );
+    const hasNonSoloFeasible = uniqueHardFeasibleDefinitions.some(
+      (definition) => getEventParticipantShape(definition) !== "solo",
+    );
 
     if (!hasNonSoloFeasible) {
       stageDiagnostics.noNonSoloFeasible += 1;
     }
 
     const feasibleShapes = new Set(
-      uniqueHardFeasibleDefinitions.map((definition) =>
-        getEventParticipantShape(definition),
-      ),
+      uniqueHardFeasibleDefinitions.map((definition) => getEventParticipantShape(definition)),
     );
 
     for (const shape of feasibleShapes) {
@@ -356,8 +335,7 @@ class EventSelectionDiagnosticsCollector {
     }
 
     if (selectedDefinition) {
-      const selectedShape =
-        getEventParticipantShape(selectedDefinition);
+      const selectedShape = getEventParticipantShape(selectedDefinition);
       stageDiagnostics.selectedByShape[selectedShape] += 1;
 
       if (selectedShape === "solo" && hasNonSoloFeasible) {
@@ -368,11 +346,7 @@ class EventSelectionDiagnosticsCollector {
         stageDiagnostics.selectedNonSoloWithSoloFeasible += 1;
       }
 
-      this.getDefinition(
-        poolId,
-        stage,
-        selectedDefinition,
-      ).selected += 1;
+      this.getDefinition(poolId, stage, selectedDefinition).selected += 1;
     }
 
     for (const definition of uniqueHardFeasibleDefinitions) {
@@ -380,21 +354,13 @@ class EventSelectionDiagnosticsCollector {
         continue;
       }
 
-      if (
-        precountedRejectionDefinitionIds?.has(definition.id)
-      ) {
+      if (precountedRejectionDefinitionIds?.has(definition.id)) {
         continue;
       }
 
-      const reason =
-        rejectionReasonsByDefinitionId?.get(definition.id) ??
-        "weighted-not-selected";
+      const reason = rejectionReasonsByDefinitionId?.get(definition.id) ?? "weighted-not-selected";
 
-      this.getDefinition(
-        poolId,
-        stage,
-        definition,
-      ).rejectionCounts[reason] += 1;
+      this.getDefinition(poolId, stage, definition).rejectionCounts[reason] += 1;
     }
   }
 
@@ -559,12 +525,8 @@ export function recordEventSelectionCandidateEvaluation(options: {
   opportunityFeasible?: boolean;
   rejectionReason?: EventSelectionRejectionReason;
 }): void {
-  const hardFeasible =
-    options.hardFeasible ?? options.feasible ?? false;
-  const opportunityFeasible =
-    options.opportunityFeasible ??
-    options.feasible ??
-    false;
+  const hardFeasible = options.hardFeasible ?? options.feasible ?? false;
+  const opportunityFeasible = options.opportunityFeasible ?? options.feasible ?? false;
 
   activeCollector?.recordCandidate({
     poolId: options.poolId,
@@ -579,13 +541,9 @@ export function recordEventSelectionCandidateEvaluation(options: {
     return;
   }
 
-  const key = getOpportunityStageKey(
-    options.poolId,
-    options.stage,
-  );
+  const key = getOpportunityStageKey(options.poolId, options.stage);
   const candidates =
-    pendingCandidatesByStageKey.get(key) ??
-    new Map<string, PendingOpportunityCandidate>();
+    pendingCandidatesByStageKey.get(key) ?? new Map<string, PendingOpportunityCandidate>();
 
   candidates.set(options.definition.id, {
     definition: options.definition,
@@ -608,53 +566,37 @@ export function recordEventSelectionOpportunity(options: {
   finalWeightedPoolDefinitionIds?: ReadonlySet<string>;
   weightedPoolDefinitionIdsByDraw?: readonly ReadonlySet<string>[];
   drawnDefinitionIds?: readonly string[];
-  rejectionReasonsByDefinitionId?: ReadonlyMap<
-    string,
-    EventSelectionRejectionReason
-  >;
+  rejectionReasonsByDefinitionId?: ReadonlyMap<string, EventSelectionRejectionReason>;
 }): void {
-  const key = getOpportunityStageKey(
-    options.poolId,
-    options.stage,
-  );
+  const key = getOpportunityStageKey(options.poolId, options.stage);
   const pendingCandidates =
-    pendingCandidatesByStageKey?.get(key) ??
-    new Map<string, PendingOpportunityCandidate>();
+    pendingCandidatesByStageKey?.get(key) ?? new Map<string, PendingOpportunityCandidate>();
 
   const definitionsById = new Map<string, EventDefinition>();
 
   for (const candidate of pendingCandidates.values()) {
-    definitionsById.set(
-      candidate.definition.id,
-      candidate.definition,
-    );
+    definitionsById.set(candidate.definition.id, candidate.definition);
   }
 
   for (const definition of options.feasibleDefinitions) {
     definitionsById.set(definition.id, definition);
   }
 
-  for (const definition of
-    options.hardFeasibleDefinitions ?? []) {
+  for (const definition of options.hardFeasibleDefinitions ?? []) {
     definitionsById.set(definition.id, definition);
   }
 
-  for (const definition of
-    options.opportunityFeasibleDefinitions ?? []) {
+  for (const definition of options.opportunityFeasibleDefinitions ?? []) {
     definitionsById.set(definition.id, definition);
   }
 
   if (options.selectedDefinition) {
-    definitionsById.set(
-      options.selectedDefinition.id,
-      options.selectedDefinition,
-    );
+    definitionsById.set(options.selectedDefinition.id, options.selectedDefinition);
   }
 
   const hardFeasibleById = new Set(
     (
-      options.hardFeasibleDefinitions ??
-      [
+      options.hardFeasibleDefinitions ?? [
         ...options.feasibleDefinitions,
         ...[...pendingCandidates.values()]
           .filter((candidate) => candidate.hardFeasible)
@@ -663,145 +605,101 @@ export function recordEventSelectionOpportunity(options: {
     ).map((definition) => definition.id),
   );
   const opportunityFeasibleById = new Set(
-    (
-      options.opportunityFeasibleDefinitions ??
-      options.feasibleDefinitions
-    ).map((definition) => definition.id),
+    (options.opportunityFeasibleDefinitions ?? options.feasibleDefinitions).map(
+      (definition) => definition.id,
+    ),
   );
 
   if (options.selectedDefinition) {
     hardFeasibleById.add(options.selectedDefinition.id);
-    opportunityFeasibleById.add(
-      options.selectedDefinition.id,
-    );
+    opportunityFeasibleById.add(options.selectedDefinition.id);
   }
 
   const plannerConsideredDefinitionIds =
-    options.plannerConsideredDefinitionIds ??
-    opportunityFeasibleById;
-  const weightedPoolDefinitionIdsByDraw =
-    options.weightedPoolDefinitionIdsByDraw ??
-    [
-      options.finalWeightedPoolDefinitionIds ??
-        plannerConsideredDefinitionIds,
-    ];
+    options.plannerConsideredDefinitionIds ?? opportunityFeasibleById;
+  const weightedPoolDefinitionIdsByDraw = options.weightedPoolDefinitionIdsByDraw ?? [
+    options.finalWeightedPoolDefinitionIds ?? plannerConsideredDefinitionIds,
+  ];
   const drawnDefinitionIds =
     options.drawnDefinitionIds ??
-    (options.selectedDefinition
-      ? [options.selectedDefinition.id]
-      : []);
+    (options.selectedDefinition ? [options.selectedDefinition.id] : []);
   const drawCountsByDefinitionId = new Map<string, number>();
 
   for (const definitionId of drawnDefinitionIds) {
     drawCountsByDefinitionId.set(
       definitionId,
-      (drawCountsByDefinitionId.get(definitionId) ?? 0) +
-        1,
+      (drawCountsByDefinitionId.get(definitionId) ?? 0) + 1,
     );
   }
 
-  const candidateResults = [...definitionsById.values()].map(
-    (definition) => {
-      const pending = pendingCandidates.get(definition.id);
-      const drawAttemptCount =
-        drawCountsByDefinitionId.get(definition.id) ?? 0;
-      const selected =
-        options.selectedDefinition?.id === definition.id;
-      const reachedWeightedDraw =
-        drawAttemptCount > 0 || selected;
-      const weightedPoolEntryCount =
-        weightedPoolDefinitionIdsByDraw.filter((pool) =>
-          pool.has(definition.id),
-        ).length;
-      const uniformExpectedSelections =
-        weightedPoolDefinitionIdsByDraw.reduce(
-          (total, pool) =>
-            pool.has(definition.id) && pool.size > 0
-              ? total + 1 / pool.size
-              : total,
-          0,
-        );
-      const hardFeasible =
-        reachedWeightedDraw ||
-        weightedPoolEntryCount > 0 ||
-        hardFeasibleById.has(definition.id);
-      const opportunityFeasible =
-        reachedWeightedDraw ||
-        weightedPoolEntryCount > 0 ||
-        opportunityFeasibleById.has(definition.id);
-      const plannerAdmitted =
-        reachedWeightedDraw ||
-        weightedPoolEntryCount > 0 ||
-        (opportunityFeasible &&
-          plannerConsideredDefinitionIds.has(
-            definition.id,
-          ));
-      const finalWeightedPool =
-        reachedWeightedDraw ||
-        weightedPoolEntryCount > 0;
-      const eligible =
-        pending?.eligible ??
-        (hardFeasible ||
-          opportunityFeasible ||
-          plannerAdmitted ||
-          finalWeightedPool ||
-          selected);
-      const rejectionReason = selected
-        ? null
-        : finalWeightedPool
-          ? drawAttemptCount > 0
-            ? "draw-resolution-rejected"
-            : "weighted-not-selected"
-          : (options.rejectionReasonsByDefinitionId?.get(
-                definition.id,
-              ) ??
-            pending?.rejectionReason ??
-            (!eligible
-              ? "definition-ineligible"
-              : !hardFeasible
-                ? "participant-or-item-infeasible"
-                : !opportunityFeasible
-                  ? "reservation-blocked"
-                  : "planner-stage-not-attempted"));
+  const candidateResults = [...definitionsById.values()].map((definition) => {
+    const pending = pendingCandidates.get(definition.id);
+    const drawAttemptCount = drawCountsByDefinitionId.get(definition.id) ?? 0;
+    const selected = options.selectedDefinition?.id === definition.id;
+    const reachedWeightedDraw = drawAttemptCount > 0 || selected;
+    const weightedPoolEntryCount = weightedPoolDefinitionIdsByDraw.filter((pool) =>
+      pool.has(definition.id),
+    ).length;
+    const uniformExpectedSelections = weightedPoolDefinitionIdsByDraw.reduce(
+      (total, pool) => (pool.has(definition.id) && pool.size > 0 ? total + 1 / pool.size : total),
+      0,
+    );
+    const hardFeasible =
+      reachedWeightedDraw || weightedPoolEntryCount > 0 || hardFeasibleById.has(definition.id);
+    const opportunityFeasible =
+      reachedWeightedDraw ||
+      weightedPoolEntryCount > 0 ||
+      opportunityFeasibleById.has(definition.id);
+    const plannerAdmitted =
+      reachedWeightedDraw ||
+      weightedPoolEntryCount > 0 ||
+      (opportunityFeasible && plannerConsideredDefinitionIds.has(definition.id));
+    const finalWeightedPool = reachedWeightedDraw || weightedPoolEntryCount > 0;
+    const eligible =
+      pending?.eligible ??
+      (hardFeasible || opportunityFeasible || plannerAdmitted || finalWeightedPool || selected);
+    const rejectionReason = selected
+      ? null
+      : finalWeightedPool
+        ? drawAttemptCount > 0
+          ? "post-draw-resolution-rejected"
+          : "weighted-not-selected"
+        : (options.rejectionReasonsByDefinitionId?.get(definition.id) ??
+          pending?.rejectionReason ??
+          (!eligible
+            ? "definition-ineligible"
+            : !hardFeasible
+              ? "participant-or-item-infeasible"
+              : !opportunityFeasible
+                ? "reservation-blocked"
+                : "planner-stage-not-attempted"));
 
-      return {
-        definition,
-        considered: pending !== undefined,
-        eligible,
-        hardFeasible,
-        opportunityFeasible,
-        plannerAdmitted,
-        finalWeightedPool,
-        weightedPoolEntryCount,
-        uniformExpectedSelections,
-        drawAttemptCount,
-        drawn: drawAttemptCount > 0,
-        resolvedAccepted: selected,
-        rejectionReason,
-      };
-    },
-  );
+    return {
+      definition,
+      considered: pending !== undefined,
+      eligible,
+      hardFeasible,
+      opportunityFeasible,
+      plannerAdmitted,
+      finalWeightedPool,
+      weightedPoolEntryCount,
+      uniformExpectedSelections,
+      drawAttemptCount,
+      drawn: drawAttemptCount > 0,
+      resolvedAccepted: selected,
+      rejectionReason,
+    };
+  });
 
   const finalRejectionReasonsByDefinitionId = new Map(
     candidateResults.flatMap((result) =>
-      result.rejectionReason
-        ? [
-            [
-              result.definition.id,
-              result.rejectionReason,
-            ] as const,
-          ]
-        : [],
+      result.rejectionReason ? [[result.definition.id, result.rejectionReason] as const] : [],
     ),
   );
-  const precountedRejectionDefinitionIds =
-    new Set<string>();
+  const precountedRejectionDefinitionIds = new Set<string>();
 
   for (const result of candidateResults) {
-    const pendingReason =
-      pendingCandidates.get(
-        result.definition.id,
-      )?.rejectionReason ?? null;
+    const pendingReason = pendingCandidates.get(result.definition.id)?.rejectionReason ?? null;
 
     if (!pendingReason) {
       continue;
@@ -818,9 +716,7 @@ export function recordEventSelectionOpportunity(options: {
     }
 
     if (result.rejectionReason) {
-      precountedRejectionDefinitionIds.add(
-        result.definition.id,
-      );
+      precountedRejectionDefinitionIds.add(result.definition.id);
     }
   }
 
@@ -831,29 +727,19 @@ export function recordEventSelectionOpportunity(options: {
       .filter((result) => result.hardFeasible)
       .map((result) => result.definition),
     selectedDefinition: options.selectedDefinition,
-    rejectionReasonsByDefinitionId:
-      finalRejectionReasonsByDefinitionId,
+    rejectionReasonsByDefinitionId: finalRejectionReasonsByDefinitionId,
     precountedRejectionDefinitionIds,
   });
 
-  if (
-    activeOpportunityContext &&
-    activeOpportunityRecords &&
-    opportunityIndexesByStageKey
-  ) {
-    const opportunityIndex =
-      (opportunityIndexesByStageKey.get(key) ?? 0) + 1;
-    opportunityIndexesByStageKey.set(
-      key,
+  if (activeOpportunityContext && activeOpportunityRecords && opportunityIndexesByStageKey) {
+    const opportunityIndex = (opportunityIndexesByStageKey.get(key) ?? 0) + 1;
+    opportunityIndexesByStageKey.set(key, opportunityIndex);
+    const opportunityId = createEventSelectionOpportunityId({
+      ...activeOpportunityContext,
+      poolId: options.poolId,
+      stage: options.stage,
       opportunityIndex,
-    );
-    const opportunityId =
-      createEventSelectionOpportunityId({
-        ...activeOpportunityContext,
-        poolId: options.poolId,
-        stage: options.stage,
-        opportunityIndex,
-      });
+    });
 
     for (const result of candidateResults) {
       activeOpportunityRecords.push({
@@ -867,19 +753,14 @@ export function recordEventSelectionOpportunity(options: {
         eligible: result.eligible,
         hardFeasible: result.hardFeasible,
         stateFeasible: result.hardFeasible,
-        opportunityFeasible:
-          result.opportunityFeasible,
+        opportunityFeasible: result.opportunityFeasible,
         plannerAdmitted: result.plannerAdmitted,
-        finalWeightedPool:
-          result.finalWeightedPool,
-        weightedPoolEntryCount:
-          result.weightedPoolEntryCount,
-        uniformExpectedSelections:
-          result.uniformExpectedSelections,
+        finalWeightedPool: result.finalWeightedPool,
+        weightedPoolEntryCount: result.weightedPoolEntryCount,
+        uniformExpectedSelections: result.uniformExpectedSelections,
         drawAttemptCount: result.drawAttemptCount,
         drawn: result.drawn,
-        resolvedAccepted:
-          result.resolvedAccepted,
+        resolvedAccepted: result.resolvedAccepted,
         rejectionReason: result.rejectionReason,
       });
     }
@@ -907,10 +788,7 @@ export function evaluateEventSelectionFeasibility({
   unavailableItemInstanceIds: ReadonlySet<string>;
   selectionSeed: string;
 }): EventSelectionFeasibilityEvaluation {
-  if (
-    getEventParticipantCount(definition) >
-    context.livingTributes.length
-  ) {
+  if (getEventParticipantCount(definition) > context.livingTributes.length) {
     return {
       hardFeasible: false,
       opportunityFeasible: false,
@@ -921,9 +799,7 @@ export function evaluateEventSelectionFeasibility({
   const hardSelection = selectEventParticipants(
     definition,
     context,
-    createSeededRandom(
-      [selectionSeed, definition.id].join(":"),
-    ),
+    createSeededRandom([selectionSeed, definition.id].join(":")),
     new Set<string>(),
     new Set<string>(),
   );
@@ -939,9 +815,7 @@ export function evaluateEventSelectionFeasibility({
   const opportunitySelection = selectEventParticipants(
     definition,
     context,
-    createSeededRandom(
-      [selectionSeed, definition.id].join(":"),
-    ),
+    createSeededRandom([selectionSeed, definition.id].join(":")),
     unavailableTributeIds,
     unavailableItemInstanceIds,
   );
@@ -962,14 +836,10 @@ export function evaluateEventSelectionFeasibility({
 }
 
 export function diagnoseEventSelectionFeasibilityRejection(
-  options: Parameters<
-    typeof evaluateEventSelectionFeasibility
-  >[0],
+  options: Parameters<typeof evaluateEventSelectionFeasibility>[0],
 ): EventSelectionRejectionReason {
   return (
-    evaluateEventSelectionFeasibility(options)
-      .rejectionReason ??
-    "participant-or-item-infeasible"
+    evaluateEventSelectionFeasibility(options).rejectionReason ?? "participant-or-item-infeasible"
   );
 }
 

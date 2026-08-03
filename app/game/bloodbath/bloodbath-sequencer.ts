@@ -352,16 +352,10 @@ function collectBloodbathDiagnosticFeasibility({
     livingTributes: remainingTributes,
   };
   const uniqueDefinitions = [
-    ...new Map(
-      definitions.map((definition) => [
-        definition.id,
-        definition,
-      ]),
-    ).values(),
+    ...new Map(definitions.map((definition) => [definition.id, definition])).values(),
   ];
   const hardFeasibleDefinitions: EventDefinition[] = [];
-  const opportunityFeasibleDefinitions:
-    EventDefinition[] = [];
+  const opportunityFeasibleDefinitions: EventDefinition[] = [];
 
   for (const definition of uniqueDefinitions) {
     if (!isEventDefinitionEligible(definition, context)) {
@@ -377,10 +371,7 @@ function collectBloodbathDiagnosticFeasibility({
       continue;
     }
 
-    if (
-      getDefinitionParticipantCount(definition) >
-      remainingTributes.length
-    ) {
+    if (getDefinitionParticipantCount(definition) > remainingTributes.length) {
       recordEventSelectionCandidateEvaluation({
         poolId,
         stage,
@@ -388,8 +379,7 @@ function collectBloodbathDiagnosticFeasibility({
         eligible: true,
         hardFeasible: false,
         opportunityFeasible: false,
-        rejectionReason:
-          "participant-count-unavailable",
+        rejectionReason: "participant-count-unavailable",
       });
       continue;
     }
@@ -419,19 +409,15 @@ function collectBloodbathDiagnosticFeasibility({
         eligible: true,
         hardFeasible: false,
         opportunityFeasible: false,
-        rejectionReason:
-          "participant-or-item-infeasible",
+        rejectionReason: "participant-or-item-infeasible",
       });
       continue;
     }
 
     hardFeasibleDefinitions.push(definition);
 
-    const opportunityRejectionReason =
-      getOpportunityRejectionReason?.(definition) ??
-      null;
-    const opportunityFeasible =
-      opportunityRejectionReason === null;
+    const opportunityRejectionReason = getOpportunityRejectionReason?.(definition) ?? null;
+    const opportunityFeasible = opportunityRejectionReason === null;
 
     recordEventSelectionCandidateEvaluation({
       poolId,
@@ -442,8 +428,7 @@ function collectBloodbathDiagnosticFeasibility({
       opportunityFeasible,
       ...(opportunityRejectionReason
         ? {
-            rejectionReason:
-              opportunityRejectionReason,
+            rejectionReason: opportunityRejectionReason,
           }
         : {}),
     });
@@ -617,95 +602,58 @@ export function selectAuthoredFatalBloodbathEvent(
     ...bestEffortProfiles.map((profile) => profile.definition.id),
   ]);
 
-  const diagnosticFeasibility =
-    collectBloodbathDiagnosticFeasibility({
-      state,
-      round,
-      remainingTributes,
-      definitions: fatalSelectionProfiles.map(
-        (profile) => profile.definition,
-      ),
-      poolId: "bloodbath-cornucopia",
-      stage: "cornucopia-fatal",
-      diagnosticKey: [
-        "fatal-unified",
-        remainingTributes.length,
-        fatalityDeficit,
-        reservedPostTargetCount,
-      ].join(":"),
-      getOpportunityRejectionReason: (definition) => {
-        const profile = fatalSelectionProfiles.find(
-          (candidate) =>
-            candidate.definition.id === definition.id,
-        );
+  const diagnosticFeasibility = collectBloodbathDiagnosticFeasibility({
+    state,
+    round,
+    remainingTributes,
+    definitions: fatalSelectionProfiles.map((profile) => profile.definition),
+    poolId: "bloodbath-cornucopia",
+    stage: "cornucopia-fatal",
+    diagnosticKey: [
+      "fatal-unified",
+      remainingTributes.length,
+      fatalityDeficit,
+      reservedPostTargetCount,
+    ].join(":"),
+    getOpportunityRejectionReason: (definition) => {
+      const profile = fatalSelectionProfiles.find(
+        (candidate) => candidate.definition.id === definition.id,
+      );
 
-        if (!profile) {
-          return "participant-or-item-infeasible";
-        }
+      if (!profile) {
+        return "participant-or-item-infeasible";
+      }
 
-        return getDefinitionParticipantCount(
-          profile.definition,
-        ) > availableFatalParticipants
-          ? "reservation-blocked"
-          : null;
-      },
-    });
+      return getDefinitionParticipantCount(profile.definition) > availableFatalParticipants
+        ? "reservation-blocked"
+        : null;
+    },
+  });
 
-  const plannerConsideredDefinitionIds = new Set(
-    plannerEligibleDefinitionIds,
-  );
-  const opportunityRejectionReasons = new Map<
-    string,
-    EventSelectionRejectionReason
-  >();
+  const plannerConsideredDefinitionIds = new Set(plannerEligibleDefinitionIds);
+  const opportunityRejectionReasons = new Map<string, EventSelectionRejectionReason>();
 
-  for (
-    const definition of
-      diagnosticFeasibility.hardFeasibleDefinitions
-  ) {
+  for (const definition of diagnosticFeasibility.hardFeasibleDefinitions) {
     const profile = fatalSelectionProfiles.find(
-      (candidate) =>
-        candidate.definition.id === definition.id,
+      (candidate) => candidate.definition.id === definition.id,
     );
 
     if (!profile) {
       continue;
     }
 
-    const hardRejectionReason =
-      getHardRejectionReason(profile);
+    const hardRejectionReason = getHardRejectionReason(profile);
 
-    if (
-      hardRejectionReason ===
-      "already-used-definition"
-    ) {
-      opportunityRejectionReasons.set(
-        definition.id,
-        "repeat-cycle-excluded",
-      );
-    } else if (
-      hardRejectionReason &&
-      hardRejectionReason !== "reservation-blocked"
-    ) {
-      opportunityRejectionReasons.set(
-        definition.id,
-        hardRejectionReason,
-      );
-    } else if (
-      hardRejectionReason === null &&
-      !plannerEligibleDefinitionIds.has(
-        definition.id,
-      )
-    ) {
-      opportunityRejectionReasons.set(
-        definition.id,
-        "fatality-target-stranded",
-      );
+    if (hardRejectionReason === "already-used-definition") {
+      opportunityRejectionReasons.set(definition.id, "repeat-cycle-excluded");
+    } else if (hardRejectionReason && hardRejectionReason !== "reservation-blocked") {
+      opportunityRejectionReasons.set(definition.id, hardRejectionReason);
+    } else if (hardRejectionReason === null && !plannerEligibleDefinitionIds.has(definition.id)) {
+      opportunityRejectionReasons.set(definition.id, "fatality-target-stranded");
     }
   }
 
-  const weightedPoolDefinitionIdsByDraw:
-    Set<string>[] = [];
+  const weightedPoolDefinitionIdsByDraw: Set<string>[] = [];
   const drawnDefinitionIds: string[] = [];
 
   const finishSelection = (
@@ -714,18 +662,14 @@ export function selectAuthoredFatalBloodbathEvent(
     recordEventSelectionOpportunity({
       poolId: "bloodbath-cornucopia",
       stage: "cornucopia-fatal",
-      feasibleDefinitions:
-        diagnosticFeasibility.opportunityFeasibleDefinitions,
-      hardFeasibleDefinitions:
-        diagnosticFeasibility.hardFeasibleDefinitions,
-      opportunityFeasibleDefinitions:
-        diagnosticFeasibility.opportunityFeasibleDefinitions,
+      feasibleDefinitions: diagnosticFeasibility.opportunityFeasibleDefinitions,
+      hardFeasibleDefinitions: diagnosticFeasibility.hardFeasibleDefinitions,
+      opportunityFeasibleDefinitions: diagnosticFeasibility.opportunityFeasibleDefinitions,
       selectedDefinition: selection?.definition ?? null,
       plannerConsideredDefinitionIds,
       weightedPoolDefinitionIdsByDraw,
       drawnDefinitionIds,
-      rejectionReasonsByDefinitionId:
-        opportunityRejectionReasons,
+      rejectionReasonsByDefinitionId: opportunityRejectionReasons,
     });
 
     return selection;
@@ -742,20 +686,12 @@ export function selectAuthoredFatalBloodbathEvent(
       : remainingProfiles;
 
     weightedPoolDefinitionIdsByDraw.push(
-      new Set(
-        selectableProfiles.map(
-          (candidate) => candidate.definition.id,
-        ),
-      ),
+      new Set(selectableProfiles.map((candidate) => candidate.definition.id)),
     );
 
     const profile = selectWeightedItem(
       selectableProfiles,
-      (candidate) =>
-        getBloodbathFatalProfileWeight(
-          candidate,
-          context,
-        ),
+      (candidate) => getBloodbathFatalProfileWeight(candidate, context),
       random,
     );
     drawnDefinitionIds.push(profile.definition.id);
@@ -767,10 +703,7 @@ export function selectAuthoredFatalBloodbathEvent(
     );
 
     if (!selection) {
-      opportunityRejectionReasons.set(
-        profile.definition.id,
-        "draw-resolution-rejected",
-      );
+      opportunityRejectionReasons.set(profile.definition.id, "post-draw-resolution-rejected");
       remainingProfiles = remainingProfiles.filter(
         (candidate) => candidate.definition.id !== profile.definition.id,
       );
@@ -831,66 +764,39 @@ function selectSupplementalFatalBloodbathEvent(
     round,
     livingTributes: availableTributes,
   };
-  const supplementalProfiles =
-    getBloodbathFatalSelectionProfiles().filter(
-      (profile) =>
-        profile.minImmediateEliminations === 1 &&
-        profile.maxImmediateEliminations === 1 &&
-        getDefinitionParticipantCount(
-          profile.definition,
-        ) === 2 &&
-        SAFE_SUPPLEMENTAL_FATAL_DEFINITION_IDS.has(
-          profile.definition.id,
-        ),
-    );
+  const supplementalProfiles = getBloodbathFatalSelectionProfiles().filter(
+    (profile) =>
+      profile.minImmediateEliminations === 1 &&
+      profile.maxImmediateEliminations === 1 &&
+      getDefinitionParticipantCount(profile.definition) === 2 &&
+      SAFE_SUPPLEMENTAL_FATAL_DEFINITION_IDS.has(profile.definition.id),
+  );
   const candidateProfiles = supplementalProfiles.filter(
     (profile) =>
       !usedDefinitionIds.has(profile.definition.id) &&
-      isEventDefinitionEligible(
-        profile.definition,
-        context,
-      ),
+      isEventDefinitionEligible(profile.definition, context),
   );
-  const diagnosticFeasibility =
-    collectBloodbathDiagnosticFeasibility({
-      state,
-      round,
-      remainingTributes: availableTributes,
-      definitions: supplementalProfiles.map(
-        (profile) => profile.definition,
-      ),
-      poolId: "bloodbath-cornucopia",
-      stage: "cornucopia-repeat-fatal",
-      diagnosticKey: [
-        "repeat-fatal",
-        availableTributes.length,
-        fatalityDeficit,
-      ].join(":"),
-    });
+  const diagnosticFeasibility = collectBloodbathDiagnosticFeasibility({
+    state,
+    round,
+    remainingTributes: availableTributes,
+    definitions: supplementalProfiles.map((profile) => profile.definition),
+    poolId: "bloodbath-cornucopia",
+    stage: "cornucopia-repeat-fatal",
+    diagnosticKey: ["repeat-fatal", availableTributes.length, fatalityDeficit].join(":"),
+  });
   const plannerConsideredDefinitionIds = new Set(
-    candidateProfiles.map(
-      (profile) => profile.definition.id,
-    ),
+    candidateProfiles.map((profile) => profile.definition.id),
   );
-  const rejectionReasonsByDefinitionId = new Map<
-    string,
-    EventSelectionRejectionReason
-  >();
+  const rejectionReasonsByDefinitionId = new Map<string, EventSelectionRejectionReason>();
 
-  for (
-    const definition of
-      diagnosticFeasibility.opportunityFeasibleDefinitions
-  ) {
+  for (const definition of diagnosticFeasibility.opportunityFeasibleDefinitions) {
     if (usedDefinitionIds.has(definition.id)) {
-      rejectionReasonsByDefinitionId.set(
-        definition.id,
-        "repeat-cycle-excluded",
-      );
+      rejectionReasonsByDefinitionId.set(definition.id, "repeat-cycle-excluded");
     }
   }
 
-  const weightedPoolDefinitionIdsByDraw:
-    Set<string>[] = [];
+  const weightedPoolDefinitionIdsByDraw: Set<string>[] = [];
   const drawnDefinitionIds: string[] = [];
 
   const finishSelection = (
@@ -900,12 +806,9 @@ function selectSupplementalFatalBloodbathEvent(
     recordEventSelectionOpportunity({
       poolId: "bloodbath-cornucopia",
       stage: "cornucopia-repeat-fatal",
-      feasibleDefinitions:
-        diagnosticFeasibility.opportunityFeasibleDefinitions,
-      hardFeasibleDefinitions:
-        diagnosticFeasibility.hardFeasibleDefinitions,
-      opportunityFeasibleDefinitions:
-        diagnosticFeasibility.opportunityFeasibleDefinitions,
+      feasibleDefinitions: diagnosticFeasibility.opportunityFeasibleDefinitions,
+      hardFeasibleDefinitions: diagnosticFeasibility.hardFeasibleDefinitions,
+      opportunityFeasibleDefinitions: diagnosticFeasibility.opportunityFeasibleDefinitions,
       selectedDefinition: definition,
       plannerConsideredDefinitionIds,
       weightedPoolDefinitionIdsByDraw,
@@ -920,20 +823,12 @@ function selectSupplementalFatalBloodbathEvent(
 
   while (remainingProfiles.length > 0) {
     weightedPoolDefinitionIdsByDraw.push(
-      new Set(
-        remainingProfiles.map(
-          (candidate) => candidate.definition.id,
-        ),
-      ),
+      new Set(remainingProfiles.map((candidate) => candidate.definition.id)),
     );
 
     const profile = selectWeightedItem(
       remainingProfiles,
-      (candidate) =>
-        getBloodbathFatalProfileWeight(
-          candidate,
-          context,
-        ),
+      (candidate) => getBloodbathFatalProfileWeight(candidate, context),
       random,
     );
     drawnDefinitionIds.push(profile.definition.id);
@@ -946,7 +841,7 @@ function selectSupplementalFatalBloodbathEvent(
     );
 
     if (!selection) {
-      rejectionReasonsByDefinitionId.set(profile.definition.id, "draw-resolution-rejected");
+      rejectionReasonsByDefinitionId.set(profile.definition.id, "post-draw-resolution-rejected");
       remainingProfiles = remainingProfiles.filter(
         (candidate) => candidate.definition.id !== profile.definition.id,
       );
@@ -971,7 +866,7 @@ function selectSupplementalFatalBloodbathEvent(
     });
 
     if (!isSafeSupplementalFatalEvent(candidateEvent)) {
-      rejectionReasonsByDefinitionId.set(profile.definition.id, "draw-resolution-rejected");
+      rejectionReasonsByDefinitionId.set(profile.definition.id, "post-draw-resolution-rejected");
       remainingProfiles = remainingProfiles.filter(
         (candidate) => candidate.definition.id !== profile.definition.id,
       );
@@ -1199,44 +1094,28 @@ export function selectPostTargetCornucopiaEvent(
     }
   }
 
-  const diagnosticFeasibility =
-    collectBloodbathDiagnosticFeasibility({
-      state,
-      round,
-      remainingTributes,
-      definitions: uniquePostTargetDefinitions,
-      poolId: "bloodbath-cornucopia",
-      stage: "cornucopia-post-target",
-      diagnosticKey: ["post-target-unified", remainingTributes.length].join(":"),
-    });
+  const diagnosticFeasibility = collectBloodbathDiagnosticFeasibility({
+    state,
+    round,
+    remainingTributes,
+    definitions: uniquePostTargetDefinitions,
+    poolId: "bloodbath-cornucopia",
+    stage: "cornucopia-post-target",
+    diagnosticKey: ["post-target-unified", remainingTributes.length].join(":"),
+  });
 
-  for (
-    const definition of
-      diagnosticFeasibility.opportunityFeasibleDefinitions
-  ) {
+  for (const definition of diagnosticFeasibility.opportunityFeasibleDefinitions) {
     if (usedDefinitionIds.has(definition.id)) {
-      opportunityRejectionReasons.set(
-        definition.id,
-        "repeat-cycle-excluded",
-      );
+      opportunityRejectionReasons.set(definition.id, "repeat-cycle-excluded");
     }
   }
 
   const plannerConsideredDefinitionIds = new Set(
-    coverageSafeSelections.map(
-      (selection) => selection.definition.id,
-    ),
+    coverageSafeSelections.map((selection) => selection.definition.id),
   );
   const weightedPoolDefinitionIdsByDraw =
     coverageSafeSelections.length > 0
-      ? [
-          new Set(
-            coverageSafeSelections.map(
-              (selection) =>
-                selection.definition.id,
-            ),
-          ),
-        ]
+      ? [new Set(coverageSafeSelections.map((selection) => selection.definition.id))]
       : [];
   const drawnDefinitionIds: string[] = [];
   const finishSelection = (
@@ -1246,10 +1125,8 @@ export function selectPostTargetCornucopiaEvent(
       poolId: "bloodbath-cornucopia",
       stage: "cornucopia-post-target",
       feasibleDefinitions: diagnosticFeasibility.opportunityFeasibleDefinitions,
-      hardFeasibleDefinitions:
-        diagnosticFeasibility.hardFeasibleDefinitions,
-      opportunityFeasibleDefinitions:
-        diagnosticFeasibility.opportunityFeasibleDefinitions,
+      hardFeasibleDefinitions: diagnosticFeasibility.hardFeasibleDefinitions,
+      opportunityFeasibleDefinitions: diagnosticFeasibility.opportunityFeasibleDefinitions,
       selectedDefinition: selection?.definition ?? null,
       plannerConsideredDefinitionIds,
       weightedPoolDefinitionIdsByDraw,
@@ -1680,49 +1557,33 @@ export function selectFleeBloodbathEvent(
     }
   }
 
-  const diagnosticFeasibility =
-    recordDiagnostics
-      ? collectBloodbathDiagnosticFeasibility({
-      state,
-      round,
-      remainingTributes,
-      definitions: uniqueDefinitions,
-      poolId: "bloodbath-flee",
-      stage: "flee",
-      diagnosticKey: ["flee-unified", remainingTributes.length].join(":"),
-    })
-      : {
-          hardFeasibleDefinitions: [],
-          opportunityFeasibleDefinitions: [],
-        };
+  const diagnosticFeasibility = recordDiagnostics
+    ? collectBloodbathDiagnosticFeasibility({
+        state,
+        round,
+        remainingTributes,
+        definitions: uniqueDefinitions,
+        poolId: "bloodbath-flee",
+        stage: "flee",
+        diagnosticKey: ["flee-unified", remainingTributes.length].join(":"),
+      })
+    : {
+        hardFeasibleDefinitions: [],
+        opportunityFeasibleDefinitions: [],
+      };
 
-  for (
-    const definition of
-      diagnosticFeasibility.opportunityFeasibleDefinitions
-  ) {
+  for (const definition of diagnosticFeasibility.opportunityFeasibleDefinitions) {
     if (usedDefinitionIds.has(definition.id)) {
-      rejectionReasonsByDefinitionId.set(
-        definition.id,
-        "repeat-cycle-excluded",
-      );
+      rejectionReasonsByDefinitionId.set(definition.id, "repeat-cycle-excluded");
     }
   }
 
   const plannerConsideredDefinitionIds = new Set(
-    coverageSafeSelections.map(
-      (selection) => selection.definition.id,
-    ),
+    coverageSafeSelections.map((selection) => selection.definition.id),
   );
   const weightedPoolDefinitionIdsByDraw =
     coverageSafeSelections.length > 0
-      ? [
-          new Set(
-            coverageSafeSelections.map(
-              (selection) =>
-                selection.definition.id,
-            ),
-          ),
-        ]
+      ? [new Set(coverageSafeSelections.map((selection) => selection.definition.id))]
       : [];
   const drawnDefinitionIds: string[] = [];
   const finishSelection = (
@@ -1733,10 +1594,8 @@ export function selectFleeBloodbathEvent(
         poolId: "bloodbath-flee",
         stage: "flee",
         feasibleDefinitions: diagnosticFeasibility.opportunityFeasibleDefinitions,
-        hardFeasibleDefinitions:
-          diagnosticFeasibility.hardFeasibleDefinitions,
-        opportunityFeasibleDefinitions:
-          diagnosticFeasibility.opportunityFeasibleDefinitions,
+        hardFeasibleDefinitions: diagnosticFeasibility.hardFeasibleDefinitions,
+        opportunityFeasibleDefinitions: diagnosticFeasibility.opportunityFeasibleDefinitions,
         selectedDefinition: selection?.definition ?? null,
         plannerConsideredDefinitionIds,
         weightedPoolDefinitionIdsByDraw,

@@ -33,8 +33,8 @@ afterEach(async () => {
 
 describe("event-frequency report provenance", () => {
   it("uses explicit stable schema and generator versions", () => {
-    expect(EVENT_FREQUENCY_REPORT_SCHEMA_VERSION).toBe("3.0.1");
-    expect(EVENT_FREQUENCY_GENERATOR_VERSION).toBe("phase-0-provenance-v2");
+    expect(EVENT_FREQUENCY_REPORT_SCHEMA_VERSION).toBe("4.0.0");
+    expect(EVENT_FREQUENCY_GENERATOR_VERSION).toBe("phase-1-selection-funnel-v1");
   });
 
   it("calculates a deterministic SHA-256 checksum", async () => {

@@ -360,25 +360,14 @@ export function sequenceRoundEvents(
       hasEliminationBudget &&
       shouldForceElimination(state);
 
-    const candidateSelectionSeed =
-      createEventCandidateSelectionSeed(
-        state.seed,
-        round,
-        eventIndex,
-      );
-    const diagnosticHardFeasibleDefinitions:
-      EventDefinition[] = [];
-    const diagnosticOpportunityFeasibleDefinitions:
-      EventDefinition[] = [];
-    const opportunityRejectionReasons = new Map<
-      string,
-      EventSelectionRejectionReason
-    >();
+    const candidateSelectionSeed = createEventCandidateSelectionSeed(state.seed, round, eventIndex);
+    const diagnosticHardFeasibleDefinitions: EventDefinition[] = [];
+    const diagnosticOpportunityFeasibleDefinitions: EventDefinition[] = [];
+    const opportunityRejectionReasons = new Map<string, EventSelectionRejectionReason>();
 
     if (captureSelectionDiagnostics) {
       for (const definition of catalogue) {
-        const isEligible =
-          eligibleDefinitionIds.has(definition.id);
+        const isEligible = eligibleDefinitionIds.has(definition.id);
 
         if (!isEligible) {
           recordEventSelectionCandidateEvaluation({
@@ -393,14 +382,13 @@ export function sequenceRoundEvents(
           continue;
         }
 
-        const evaluation =
-          evaluateEventSelectionFeasibility({
-            definition,
-            context,
-            unavailableTributeIds,
-            unavailableItemInstanceIds,
-            selectionSeed: candidateSelectionSeed,
-          });
+        const evaluation = evaluateEventSelectionFeasibility({
+          definition,
+          context,
+          unavailableTributeIds,
+          unavailableItemInstanceIds,
+          selectionSeed: candidateSelectionSeed,
+        });
 
         recordEventSelectionCandidateEvaluation({
           poolId: diagnosticPoolId,
@@ -408,60 +396,34 @@ export function sequenceRoundEvents(
           definition,
           eligible: true,
           hardFeasible: evaluation.hardFeasible,
-          opportunityFeasible:
-            evaluation.opportunityFeasible,
+          opportunityFeasible: evaluation.opportunityFeasible,
           ...(evaluation.rejectionReason
             ? {
-                rejectionReason:
-                  evaluation.rejectionReason,
+                rejectionReason: evaluation.rejectionReason,
               }
             : {}),
         });
 
         if (evaluation.hardFeasible) {
-          diagnosticHardFeasibleDefinitions.push(
-            definition,
-          );
+          diagnosticHardFeasibleDefinitions.push(definition);
         }
 
         if (!evaluation.opportunityFeasible) {
           continue;
         }
 
-        diagnosticOpportunityFeasibleDefinitions.push(
-          definition,
-        );
+        diagnosticOpportunityFeasibleDefinitions.push(definition);
 
         if (
           isSafetyResolution &&
           definition.category !== "fatal" &&
-          !(
-            "safetyResolution" in definition &&
-            definition.safetyResolution ===
-              "force-success"
-          )
+          !("safetyResolution" in definition && definition.safetyResolution === "force-success")
         ) {
-          opportunityRejectionReasons.set(
-            definition.id,
-            "planner-stage-not-attempted",
-          );
-        } else if (
-          lethalityRejectedDefinitionIds.has(
-            definition.id,
-          )
-        ) {
-          opportunityRejectionReasons.set(
-            definition.id,
-            "fatality-target-overshoot",
-          );
-        } else if (
-          !hasEliminationBudget &&
-          isPotentiallyLethalDefinition(definition)
-        ) {
-          opportunityRejectionReasons.set(
-            definition.id,
-            "lethality-budget-exhausted",
-          );
+          opportunityRejectionReasons.set(definition.id, "planner-stage-not-attempted");
+        } else if (lethalityRejectedDefinitionIds.has(definition.id)) {
+          opportunityRejectionReasons.set(definition.id, "fatality-target-overshoot");
+        } else if (!hasEliminationBudget && isPotentiallyLethalDefinition(definition)) {
+          opportunityRejectionReasons.set(definition.id, "lethality-budget-exhausted");
         }
       }
     }
@@ -486,8 +448,7 @@ export function sequenceRoundEvents(
       unavailableTributeIds,
       unavailableItemInstanceIds,
       selectionSeed: candidateSelectionSeed,
-      previousSelectionsByDefinitionId:
-        feasibilitySelectionsByDefinitionId,
+      previousSelectionsByDefinitionId: feasibilitySelectionsByDefinitionId,
     });
 
     feasibilitySelectionsByDefinitionId = new Map(
@@ -515,51 +476,27 @@ export function sequenceRoundEvents(
      * so low-population and structurally unavoidable rounds still resolve.
      */
     const plannerCandidates =
-      coverageSafeCandidates.length > 0
-        ? coverageSafeCandidates
-        : feasibleCandidates;
+      coverageSafeCandidates.length > 0 ? coverageSafeCandidates : feasibleCandidates;
     const plannerCandidateIds = new Set(
-      plannerCandidates.map(
-        (candidate) => candidate.definition.id,
-      ),
+      plannerCandidates.map((candidate) => candidate.definition.id),
     );
 
     if (coverageSafeCandidates.length > 0) {
       for (const candidate of feasibleCandidates) {
-        if (
-          !plannerCandidateIds.has(
-            candidate.definition.id,
-          )
-        ) {
-          opportunityRejectionReasons.set(
-            candidate.definition.id,
-            "exact-cover-excluded",
-          );
+        if (!plannerCandidateIds.has(candidate.definition.id)) {
+          opportunityRejectionReasons.set(candidate.definition.id, "exact-cover-excluded");
         }
       }
     }
 
-    const repeatCycleSelection =
-      selectEventRepeatCycleCandidates(
-        plannerCandidates,
-        repeatCycle,
-      );
+    const repeatCycleSelection = selectEventRepeatCycleCandidates(plannerCandidates, repeatCycle);
     const repeatCycleCandidateIds = new Set(
-      repeatCycleSelection.candidates.map(
-        (candidate) => candidate.definition.id,
-      ),
+      repeatCycleSelection.candidates.map((candidate) => candidate.definition.id),
     );
 
     for (const candidate of plannerCandidates) {
-      if (
-        !repeatCycleCandidateIds.has(
-          candidate.definition.id,
-        )
-      ) {
-        opportunityRejectionReasons.set(
-          candidate.definition.id,
-          "repeat-cycle-excluded",
-        );
+      if (!repeatCycleCandidateIds.has(candidate.definition.id)) {
+        opportunityRejectionReasons.set(candidate.definition.id, "repeat-cycle-excluded");
       }
     }
 
@@ -572,27 +509,17 @@ export function sequenceRoundEvents(
           : 1),
     }));
 
-    const weightedPoolDefinitionIdsByDraw:
-      Set<string>[] = [];
+    const weightedPoolDefinitionIdsByDraw: Set<string>[] = [];
     const drawnDefinitionIds: string[] = [];
     let acceptedEvent = false;
-    let acceptedDefinition:
-      | (typeof feasibleCandidates)[number]["definition"]
-      | null = null;
+    let acceptedDefinition: (typeof feasibleCandidates)[number]["definition"] | null = null;
 
     while (remainingCandidates.length > 0) {
       weightedPoolDefinitionIdsByDraw.push(
-        new Set(
-          remainingCandidates.map(
-            (candidate) => candidate.definition.id,
-          ),
-        ),
+        new Set(remainingCandidates.map((candidate) => candidate.definition.id)),
       );
 
-      const selected = selectFeasibleEventCandidate(
-        remainingCandidates,
-        random,
-      );
+      const selected = selectFeasibleEventCandidate(remainingCandidates, random);
 
       if (!selected) {
         break;
@@ -646,7 +573,7 @@ export function sequenceRoundEvents(
       );
 
       if (conflictingCommittedItemInstanceId) {
-        opportunityRejectionReasons.set(selected.definition.id, "reservation-blocked");
+        opportunityRejectionReasons.set(selected.definition.id, "post-draw-item-conflict");
         remainingCandidates = remainingCandidates.filter(
           (candidate) => candidate.definition.id !== selected.definition.id,
         );
@@ -657,7 +584,7 @@ export function sequenceRoundEvents(
 
       if (plannedEliminationCount + eventEliminationCount > lethalityProfile.maxEliminations) {
         lethalityRejectedDefinitionIds.add(selected.definition.id);
-        opportunityRejectionReasons.set(selected.definition.id, "fatality-target-overshoot");
+        opportunityRejectionReasons.set(selected.definition.id, "post-draw-fatality-overshoot");
         remainingCandidates = remainingCandidates.filter(
           (candidate) => candidate.definition.id !== selected.definition.id,
         );
@@ -698,19 +625,14 @@ export function sequenceRoundEvents(
       recordEventSelectionOpportunity({
         poolId: diagnosticPoolId,
         stage: "ordinary",
-        feasibleDefinitions:
-          diagnosticOpportunityFeasibleDefinitions,
-        hardFeasibleDefinitions:
-          diagnosticHardFeasibleDefinitions,
-        opportunityFeasibleDefinitions:
-          diagnosticOpportunityFeasibleDefinitions,
+        feasibleDefinitions: diagnosticOpportunityFeasibleDefinitions,
+        hardFeasibleDefinitions: diagnosticHardFeasibleDefinitions,
+        opportunityFeasibleDefinitions: diagnosticOpportunityFeasibleDefinitions,
         selectedDefinition: acceptedDefinition,
-        plannerConsideredDefinitionIds:
-          plannerCandidateIds,
+        plannerConsideredDefinitionIds: plannerCandidateIds,
         weightedPoolDefinitionIdsByDraw,
         drawnDefinitionIds,
-        rejectionReasonsByDefinitionId:
-          opportunityRejectionReasons,
+        rejectionReasonsByDefinitionId: opportunityRejectionReasons,
       });
     }
 

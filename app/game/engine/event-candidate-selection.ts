@@ -144,39 +144,29 @@ export function createFeasibleEventCandidates({
           );
 
     if (!feasibilitySelection) {
-      if (
-        diagnostics &&
-        isEventSelectionDiagnosticsActive()
-      ) {
-        const evaluation =
-          evaluateEventSelectionFeasibility({
-            definition,
-            context,
-            unavailableTributeIds,
-            unavailableItemInstanceIds,
-            selectionSeed,
-          });
+      if (diagnostics && isEventSelectionDiagnosticsActive()) {
+        const evaluation = evaluateEventSelectionFeasibility({
+          definition,
+          context,
+          unavailableTributeIds,
+          unavailableItemInstanceIds,
+          selectionSeed,
+        });
 
         recordEventSelectionCandidateEvaluation({
           ...diagnostics,
           definition,
           eligible: true,
           hardFeasible: evaluation.hardFeasible,
-          opportunityFeasible:
-            evaluation.opportunityFeasible,
-          rejectionReason:
-            evaluation.rejectionReason ??
-            "participant-or-item-infeasible",
+          opportunityFeasible: evaluation.opportunityFeasible,
+          rejectionReason: evaluation.rejectionReason ?? "participant-or-item-infeasible",
         });
       }
 
       return [];
     }
 
-    if (
-      diagnostics &&
-      isEventSelectionDiagnosticsActive()
-    ) {
+    if (diagnostics && isEventSelectionDiagnosticsActive()) {
       recordEventSelectionCandidateEvaluation({
         ...diagnostics,
         definition,

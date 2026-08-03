@@ -22,6 +22,13 @@ import {
   type EventSelectionRejectionReason,
 } from "~/game/simulation/event-selection-diagnostics";
 import {
+  createEventSelectionFunnelMarkdown,
+  createEventSelectionFunnelReport,
+  createEventSelectionFunnelSummaryTsv,
+  createEventSelectionFunnelTsv,
+  type EventSelectionFunnelReport,
+} from "~/game/simulation/event-selection-funnel-report";
+import {
   simulateGameBatch,
   type SimulationBatchDefinition,
   type SimulationRun,
@@ -297,8 +304,10 @@ interface FrequencyReportData {
     lifecycleSeparation: string;
     outcomeGrouping: string;
     catalogueCoverage: string;
+    selectionFunnel: string;
   };
   distributionMetrics: EventDistributionMetrics;
+  selectionFunnel: EventSelectionFunnelReport;
   catalogueCoverage: readonly CatalogueCoverageMetric[];
   definitions: readonly DefinitionFrequencyMetric[];
   events: readonly EventFrequencyMetric[];
@@ -1733,6 +1742,7 @@ function createMarkdownReport(data: FrequencyReportData): string {
     "- Full Games naturally contain more event opportunities; pool share and selector conversion should be considered alongside game appearance.",
     "- Rare outcomes need enough total selections before their percentages are meaningful.",
     "",
+    ...createEventSelectionFunnelMarkdown(data.selectionFunnel),
   ];
 
   for (const gameSize of EVENT_DISTRIBUTION_GAME_SIZE_IDS) {
@@ -2142,62 +2152,6 @@ function createOutcomeTsv(events: readonly EventFrequencyMetric[]): string {
   return `${[header.join("\t"), ...rows].join("\n")}\n`;
 }
 
-function createOpportunityTsv(runs: readonly SimulationRun[]): string {
-  const header = [
-    "seed",
-    "gameSize",
-    "roundSequence",
-    "roundPeriod",
-    "roundDay",
-    "poolId",
-    "stage",
-    "opportunityIndex",
-    "opportunityId",
-    "definitionId",
-    "considered",
-    "eligible",
-    "stateFeasible",
-    "opportunityFeasible",
-    "plannerAdmitted",
-    "finalWeightedPool",
-    "drawn",
-    "resolvedAccepted",
-    "rejectionReason",
-  ];
-
-  const rows = runs.flatMap((run) => {
-    const gameSize = getGameSize(run);
-
-    return (run.selectionDiagnostics?.opportunities ?? []).map((opportunity) =>
-      [
-        opportunity.gameSeed,
-        gameSize,
-        opportunity.roundSequence,
-        opportunity.roundPeriod,
-        opportunity.roundDay,
-        opportunity.poolId,
-        opportunity.stage,
-        opportunity.opportunityIndex,
-        opportunity.opportunityId,
-        opportunity.definitionId,
-        opportunity.considered,
-        opportunity.eligible,
-        opportunity.stateFeasible,
-        opportunity.opportunityFeasible,
-        opportunity.plannerAdmitted,
-        opportunity.finalWeightedPool,
-        opportunity.drawn,
-        opportunity.resolvedAccepted,
-        opportunity.rejectionReason ?? "",
-      ]
-        .map((value) => sanitizeTsv(String(value)))
-        .join("\t"),
-    );
-  });
-
-  return `${[header.join("\t"), ...rows].join("\n")}\n`;
-}
-
 if (process.argv.includes("--help")) {
   printHelp();
   process.exit(0);
@@ -2239,6 +2193,14 @@ try {
 
   const runs = simulateGameBatch(batchDefinitions);
   const distributionMetrics = collectEventDistributionMetrics(runs);
+  const selectionFunnel = createEventSelectionFunnelReport(runs);
+
+  if (!selectionFunnel.reconciliation.passed) {
+    throw new Error(
+      "Event-selection funnel reconciliation failed:\n" +
+        selectionFunnel.reconciliation.failures.join("\n"),
+    );
+  }
   const metricsByKey = new Map<string, MutableEventMetric>();
   const poolSelectionsByKey = new Map<string, number>();
   const perGameEvents: PerGameEventMetric[] = [];
@@ -2282,8 +2244,11 @@ try {
         "Groups observed core variants by whole-term-safe normalized wording plus a core mechanical signature. Routine statistic increments, eliminated-tribute status cleanup, and death-loot transfer/destruction are excluded from the core key but retained as counted full-effect permutations.",
       catalogueCoverage:
         "Validates definitions exported by active catalogue families and their expected pools. It does not discover dormant source definitions that are not exported through those families.",
+      selectionFunnel:
+        "Records deterministic definition-level rows for every concrete selector opportunity, then aggregates state feasibility, reservation-aware opportunity feasibility, planner admission, weighted-pool exposure, draws, rejected resolutions, accepted selections, route-normalized exposure, and reconciliation against aggregate diagnostics and event history.",
     },
     distributionMetrics,
+    selectionFunnel,
     catalogueCoverage,
     definitions,
     events,
@@ -2300,9 +2265,10 @@ try {
     "event-frequency-diagnostics-by-game.tsv",
   );
   const perGameOutcomeTsvPath = resolve(outputDirectory, "event-frequency-outcomes-by-game.tsv");
-  const opportunityTsvPath = resolve(
+  const selectionFunnelTsvPath = resolve(outputDirectory, "event-frequency-selection-funnel.tsv");
+  const selectionFunnelSummaryTsvPath = resolve(
     outputDirectory,
-    "event-frequency-selection-opportunities.tsv",
+    "event-frequency-selection-funnel-summary.tsv",
   );
 
   await Promise.all([
@@ -2314,7 +2280,12 @@ try {
     writeFile(perGameEventTsvPath, createPerGameEventTsv(perGameEvents), "utf8"),
     writeFile(perGameDiagnosticTsvPath, createPerGameDiagnosticTsv(perGameDiagnostics), "utf8"),
     writeFile(perGameOutcomeTsvPath, createPerGameOutcomeTsv(perGameOutcomes), "utf8"),
-    writeFile(opportunityTsvPath, createOpportunityTsv(runs), "utf8"),
+    writeFile(selectionFunnelTsvPath, createEventSelectionFunnelTsv(runs), "utf8"),
+    writeFile(
+      selectionFunnelSummaryTsvPath,
+      createEventSelectionFunnelSummaryTsv(selectionFunnel),
+      "utf8",
+    ),
   ]);
 
   const generatedPaths = [
@@ -2326,7 +2297,8 @@ try {
     perGameEventTsvPath,
     perGameDiagnosticTsvPath,
     perGameOutcomeTsvPath,
-    opportunityTsvPath,
+    selectionFunnelTsvPath,
+    selectionFunnelSummaryTsvPath,
   ];
   const checksumManifest = {
     schemaVersion: provenance.schemaVersion,
@@ -2366,7 +2338,8 @@ try {
   console.log(`Per-game event TSV written to ${perGameEventTsvPath}`);
   console.log(`Per-game diagnostic TSV written to ${perGameDiagnosticTsvPath}`);
   console.log(`Per-game outcome TSV written to ${perGameOutcomeTsvPath}`);
-  console.log(`Opportunity-level selection TSV written to ${opportunityTsvPath}`);
+  console.log(`Selection-funnel TSV written to ${selectionFunnelTsvPath}`);
+  console.log(`Selection-funnel summary TSV written to ${selectionFunnelSummaryTsvPath}`);
   console.log(
     `Simulated ${configuration.halfGames} Half Games and ${configuration.fullGames} Full Games.`,
   );

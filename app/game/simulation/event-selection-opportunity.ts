@@ -11,8 +11,7 @@ export interface EventSelectionOpportunityContext {
   roundDay: number;
 }
 
-export interface EventSelectionOpportunityRecord
-  extends EventSelectionOpportunityContext {
+export interface EventSelectionOpportunityRecord extends EventSelectionOpportunityContext {
   opportunityId: string;
   opportunityIndex: number;
   poolId: EventSelectionDiagnosticPoolId;
@@ -42,11 +41,7 @@ export function createEventSelectionOpportunityId({
   opportunityIndex,
 }: Pick<
   EventSelectionOpportunityRecord,
-  | "gameSeed"
-  | "roundSequence"
-  | "poolId"
-  | "stage"
-  | "opportunityIndex"
+  "gameSeed" | "roundSequence" | "poolId" | "stage" | "opportunityIndex"
 >): string {
   return [
     gameSeed,

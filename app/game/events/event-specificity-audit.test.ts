@@ -4,10 +4,7 @@ import type { EventDefinition } from "~/game/events/event-schema";
 
 import { getEventAuditSpecificityBreakdown } from "./event-specificity";
 
-function createDefinition(
-  id: string,
-  overrides: Partial<EventDefinition> = {},
-): EventDefinition {
+function createDefinition(id: string, overrides: Partial<EventDefinition> = {}): EventDefinition {
   return {
     id,
     category: "survival",
@@ -25,11 +22,7 @@ function createDefinition(
 
 describe("audit-only event specificity", () => {
   it("classifies only zero-specificity definitions as broad", () => {
-    expect(
-      getEventAuditSpecificityBreakdown(
-        createDefinition("audit-broad"),
-      ),
-    ).toMatchObject({
+    expect(getEventAuditSpecificityBreakdown(createDefinition("audit-broad"))).toMatchObject({
       score: 0,
       authoredScore: 0,
       structuralScore: 0,
@@ -39,25 +32,21 @@ describe("audit-only event specificity", () => {
   });
 
   it("unions authored and structurally inferred specificity", () => {
-    const definition = createDefinition(
-      "audit-authored-and-structural",
-      {
-        selectionProfile: {
-          specificityScore: 2,
-          specificityReasons: ["stat-requirement"],
-        },
-        roles: [
-          {
-            id: "tribute",
-            count: 1,
-            isEligible: () => true,
-          },
-        ],
+    const definition = createDefinition("audit-authored-and-structural", {
+      selectionProfile: {
+        specificityScore: 2,
+        specificityReasons: ["stat-requirement"],
       },
-    );
+      roles: [
+        {
+          id: "tribute",
+          count: 1,
+          isEligible: () => true,
+        },
+      ],
+    });
 
-    const breakdown =
-      getEventAuditSpecificityBreakdown(definition);
+    const breakdown = getEventAuditSpecificityBreakdown(definition);
 
     expect(breakdown).toMatchObject({
       score: 2,
@@ -65,9 +54,6 @@ describe("audit-only event specificity", () => {
       structuralScore: 0.5,
       broadEvent: false,
     });
-    expect(breakdown.reasons).toEqual([
-      "stat-requirement",
-      "custom-eligibility",
-    ]);
+    expect(breakdown.reasons).toEqual(["stat-requirement", "custom-eligibility"]);
   });
 });

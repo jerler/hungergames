@@ -3,8 +3,8 @@ import { execFileSync } from "node:child_process";
 import { mkdir, readFile, readdir, rename, rm, stat } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
-export const EVENT_FREQUENCY_REPORT_SCHEMA_VERSION = "3.0.1";
-export const EVENT_FREQUENCY_GENERATOR_VERSION = "phase-0-provenance-v2";
+export const EVENT_FREQUENCY_REPORT_SCHEMA_VERSION = "4.0.0";
+export const EVENT_FREQUENCY_GENERATOR_VERSION = "phase-1-selection-funnel-v1";
 
 export interface EventFrequencyReportProvenance {
   commitSha: string;

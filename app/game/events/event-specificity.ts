@@ -104,22 +104,13 @@ export interface EventAuditSpecificityBreakdown {
 export function getEventAuditSpecificityBreakdown(
   definition: EventDefinition,
 ): EventAuditSpecificityBreakdown {
-  const authoredScore =
-    definition.selectionProfile?.specificityScore ?? 0;
-  const structural =
-    getStructuralSpecificity(definition);
+  const authoredScore = definition.selectionProfile?.specificityScore ?? 0;
+  const structural = getStructuralSpecificity(definition);
   const reasons = [
-    ...new Set([
-      ...(definition.selectionProfile
-        ?.specificityReasons ?? []),
-      ...structural.reasons,
-    ]),
+    ...new Set([...(definition.selectionProfile?.specificityReasons ?? []), ...structural.reasons]),
   ];
 
-  const score = Math.max(
-    authoredScore,
-    structural.score,
-  );
+  const score = Math.max(authoredScore, structural.score);
 
   return {
     score,

@@ -34,30 +34,18 @@ describe("event-selection opportunity records", () => {
         stage: "ordinary",
         opportunityIndex: 2,
       }),
-    ).toBe(
-      "catalogue-audit-v3-full-game-0:round-3:later-day:ordinary:opportunity-2",
-    );
+    ).toBe("catalogue-audit-v3-full-game-0:round-3:later-day:ordinary:opportunity-2");
   });
 
   it("separates the complete selection funnel", () => {
     const accepted = createDefinition("accepted");
-    const reservationBlocked = createDefinition(
-      "reservation-blocked",
-    );
-    const exactCoverExcluded = createDefinition(
-      "exact-cover-excluded",
-    );
-    const rejectedAfterDraw = createDefinition(
-      "rejected-after-draw",
-    );
+    const reservationBlocked = createDefinition("reservation-blocked");
+    const exactCoverExcluded = createDefinition("exact-cover-excluded");
+    const rejectedAfterDraw = createDefinition("rejected-after-draw");
 
     const { diagnostics } = captureEventSelectionDiagnostics(
       () => {
-        for (const definition of [
-          accepted,
-          exactCoverExcluded,
-          rejectedAfterDraw,
-        ]) {
+        for (const definition of [accepted, exactCoverExcluded, rejectedAfterDraw]) {
           recordEventSelectionCandidateEvaluation({
             poolId: "later-day",
             stage: "ordinary",
@@ -81,56 +69,31 @@ describe("event-selection opportunity records", () => {
         recordEventSelectionOpportunity({
           poolId: "later-day",
           stage: "ordinary",
-          feasibleDefinitions: [
-            accepted,
-            exactCoverExcluded,
-            rejectedAfterDraw,
-          ],
+          feasibleDefinitions: [accepted, exactCoverExcluded, rejectedAfterDraw],
           hardFeasibleDefinitions: [
             accepted,
             reservationBlocked,
             exactCoverExcluded,
             rejectedAfterDraw,
           ],
-          opportunityFeasibleDefinitions: [
-            accepted,
-            exactCoverExcluded,
-            rejectedAfterDraw,
-          ],
+          opportunityFeasibleDefinitions: [accepted, exactCoverExcluded, rejectedAfterDraw],
           selectedDefinition: accepted,
-          plannerConsideredDefinitionIds: new Set([
-            accepted.id,
-            rejectedAfterDraw.id,
-          ]),
+          plannerConsideredDefinitionIds: new Set([accepted.id, rejectedAfterDraw.id]),
           weightedPoolDefinitionIdsByDraw: [
             new Set([accepted.id, rejectedAfterDraw.id]),
             new Set([accepted.id]),
           ],
-          drawnDefinitionIds: [
-            rejectedAfterDraw.id,
-            accepted.id,
-          ],
+          drawnDefinitionIds: [rejectedAfterDraw.id, accepted.id],
           rejectionReasonsByDefinitionId: new Map([
-            [
-              exactCoverExcluded.id,
-              "exact-cover-excluded",
-            ],
-            [
-              rejectedAfterDraw.id,
-              "draw-resolution-rejected",
-            ],
+            [exactCoverExcluded.id, "exact-cover-excluded"],
+            [rejectedAfterDraw.id, "post-draw-resolution-rejected"],
           ]),
         });
       },
       { gameSeed: "opportunity-funnel" },
     );
 
-    const byId = new Map(
-      diagnostics.opportunities?.map((row) => [
-        row.definitionId,
-        row,
-      ]),
-    );
+    const byId = new Map(diagnostics.opportunities?.map((row) => [row.definitionId, row]));
 
     expect(byId.get(reservationBlocked.id)).toMatchObject({
       hardFeasible: true,
@@ -154,7 +117,7 @@ describe("event-selection opportunity records", () => {
       drawAttemptCount: 1,
       drawn: true,
       resolvedAccepted: false,
-      rejectionReason: "draw-resolution-rejected",
+      rejectionReason: "post-draw-resolution-rejected",
     });
     expect(byId.get(accepted.id)).toMatchObject({
       plannerAdmitted: true,

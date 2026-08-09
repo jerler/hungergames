@@ -441,7 +441,7 @@ describe("Phase 5.5 lifecycle and determinism integration", () => {
     });
 
     expect(events).toHaveLength(2);
-    expect(events[0]?.definitionId).toBe("amicable-truce-separation-2");
+    expect(events[0]?.definitionId).toBe("forced-oversized-truce-separation-2");
     expect(events[1]?.definitionId).toBe(ordinary.id);
 
     const separatedTributeIds = new Set(oversizedTruce.tributeIds);

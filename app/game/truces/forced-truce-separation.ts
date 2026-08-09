@@ -34,7 +34,7 @@ export function createForcedStandardTruceSeparationEvents(
       throw new Error(`Oversized truce "${truce.id}" has fewer than two living members.`);
     }
 
-    const definitionId = `amicable-truce-separation-${members.length}`;
+    const definitionId = `forced-oversized-truce-separation-${members.length}`;
     const eventId = [round.period, round.day, eventIndex, definitionId].join("-");
     const random = createSeededRandom(
       [state.seed, "forced-oversized-truce-separation", round.day, round.period, truce.id].join(

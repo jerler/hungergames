@@ -96,7 +96,7 @@ const EVENT_CLASS_LABELS = {
   unclassified: "Unclassified",
 } as const satisfies Record<EventClassId, string>;
 
-const FORCED_TRUCE_SEPARATION_PREFIX = "amicable-truce-separation-";
+const FORCED_TRUCE_SEPARATION_PREFIX = "forced-oversized-truce-separation-";
 const KNOWN_LIFECYCLE_PRIMARY_IDS = new Set<string>([
   POISONOUS_BERRIES_JOINT_VICTORY_EVENT.id,
   PREPARED_CAVE_NIGHT_DEFINITION_ID,

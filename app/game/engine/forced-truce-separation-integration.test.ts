@@ -138,7 +138,7 @@ function findForcedSafetyFixture(): ForcedSafetyFixture {
       0;
 
     if (
-      forcedEvent?.definitionId === "amicable-truce-separation-4" &&
+      forcedEvent?.definitionId === "forced-oversized-truce-separation-4" &&
       forcedTransferCount > 0 &&
       firstOrdinaryEvent?.resolutionMode === "safety" &&
       safetyEliminationCount > 0 &&
@@ -161,7 +161,7 @@ describe("forced truce separation sequencing", () => {
     const forcedEvent = fixture.events[0];
     const firstOrdinaryEvent = fixture.events[1];
 
-    expect(forcedEvent?.definitionId).toBe("amicable-truce-separation-4");
+    expect(forcedEvent?.definitionId).toBe("forced-oversized-truce-separation-4");
     expect(forcedEvent?.resolutionMode).toBe("standard");
     expect(firstOrdinaryEvent?.resolutionMode).toBe("safety");
     expect(firstOrdinaryEvent?.changes.some((change) => change.type === "eliminate-tribute")).toBe(

@@ -30,7 +30,7 @@ const POST_DRAW_REJECTION_REASONS = new Set<EventSelectionRejectionReason>([
   "post-draw-resolution-rejected",
 ]);
 
-const FORCED_TRUCE_SEPARATION_PREFIX = "amicable-truce-separation-";
+const FORCED_TRUCE_SEPARATION_PREFIX = "forced-oversized-truce-separation-";
 
 function isLifecyclePrimaryDefinition(definitionId: string): boolean {
   return (

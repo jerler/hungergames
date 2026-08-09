@@ -132,7 +132,7 @@ function isDayOneDaytime(round: RoundReference): boolean {
 }
 
 function isForcedLifecycleEvent(event: ResolvedEvent): boolean {
-  return event.definitionId.startsWith("amicable-truce-separation-");
+  return event.definitionId.startsWith("forced-oversized-truce-separation-");
 }
 
 function getEliminations(event: ResolvedEvent) {

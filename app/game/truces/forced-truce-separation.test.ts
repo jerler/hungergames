@@ -73,8 +73,8 @@ describe("forced standard-truce separation", () => {
 
     expect(repeated).toEqual(first);
     expect(first.map((event) => event.id)).toEqual([
-      "day-2-0-amicable-truce-separation-4",
-      "day-2-1-amicable-truce-separation-4",
+      "day-2-0-forced-oversized-truce-separation-4",
+      "day-2-1-forced-oversized-truce-separation-4",
     ]);
     expect(first.map((event) => event.participantTributeIds)).toEqual([
       alphabeticallyFirst.tributeIds,
@@ -115,7 +115,7 @@ describe("forced standard-truce separation", () => {
 
     const event = events[0];
 
-    expect(event?.definitionId).toBe("amicable-truce-separation-2");
+    expect(event?.definitionId).toBe("forced-oversized-truce-separation-2");
     expect(event?.participantTributeIds).toEqual([stockedMember.id, tributes[1]!.id]);
     expect(event?.participantTributeIds).not.toContain(deadMember.id);
     expect(event?.changes).toContainEqual({

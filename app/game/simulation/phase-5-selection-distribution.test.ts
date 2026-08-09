@@ -80,7 +80,7 @@ function getRoundKey(round: RoundReference): string {
 }
 
 function isForcedLifecycleDefinition(definitionId: string): boolean {
-  return definitionId.startsWith("amicable-truce-separation-");
+  return definitionId.startsWith("forced-oversized-truce-separation-");
 }
 
 function createRunSignature(run: SimulationRun): string {

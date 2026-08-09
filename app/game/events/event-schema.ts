@@ -18,10 +18,13 @@ import type {
   GameTribute,
   InventoryItem,
   RoundReference,
+  TruceKind,
+  VendettaKind,
 } from "~/game/types/game-state";
 import type { ItemDefinitionId, ItemTag } from "~/game/items/item-schema";
 import type { StatusEffectId } from "~/game/statuses/status-schema";
 import type { SurvivalNeed } from "~/game/survival/survival-schema";
+import type { TributeStats, TributeStatValue } from "~/game/types/tribute";
 
 export type EventCategory = "fatal" | "survival" | "hazard";
 
@@ -56,6 +59,85 @@ export type EventSpecificityReason =
   | "truce-requirement"
   | "item-requirement"
   | "custom-eligibility";
+
+export type EventAuditPrerequisiteEvidence = "complete" | "partially-structural" | "opaque";
+
+export type EventAuditEligibilityCoverage = "complete" | "opaque";
+
+export type EventAuditStat = keyof TributeStats;
+
+export type EventAuditStatComparison = "eq" | "gte" | "lte";
+
+export type EventAuditItemAccess = "accessible" | "owned";
+
+export type EventAuditPrerequisite =
+  | {
+      kind: "stat";
+      roleId: string;
+      stat: EventAuditStat;
+      comparison: EventAuditStatComparison;
+      threshold: TributeStatValue;
+    }
+  | {
+      kind: "status";
+      roleId: string;
+      statusId: StatusEffectId;
+      present: boolean;
+    }
+  | {
+      kind: "deprivation";
+      roleId: string;
+      need: SurvivalNeed;
+      deprived: boolean;
+    }
+  | {
+      kind: "relationship";
+      roleId: string;
+      relationship: "truce" | "vendetta";
+      relationshipKind?: TruceKind | VendettaKind;
+      relatedRoleId?: string;
+    }
+  | {
+      kind: "truce";
+      roleId: string;
+      truceKind?: TruceKind;
+      exactSize?: number;
+      minimumSize?: number;
+      maximumSize?: number;
+    }
+  | {
+      kind: "item-definition";
+      roleId: string;
+      definitionIds: readonly ItemDefinitionId[];
+      access: EventAuditItemAccess;
+      requireUsable: boolean;
+      usableByRoleId: string;
+    }
+  | {
+      kind: "item-tag";
+      roleId: string;
+      tags: readonly ItemTag[];
+      access: EventAuditItemAccess;
+      requireUsable: boolean;
+      usableByRoleId: string;
+    };
+
+export interface EventAuditEligibilityMetadata {
+  /**
+   * "complete" means these typed prerequisites fully describe the callback's
+   * audit-relevant eligibility contract.
+   *
+   * "opaque" means the callback still contains logic that cannot be represented
+   * safely by the typed audit prerequisite model. Known typed prerequisites may
+   * still be listed without pretending the callback is fully understood.
+   */
+  coverage: EventAuditEligibilityCoverage;
+
+  /**
+   * Read-only audit metadata. Production selection must not consume this field.
+   */
+  prerequisites: readonly EventAuditPrerequisite[];
+}
 
 export interface EventSelectionProfile {
   /**
@@ -125,6 +207,12 @@ export interface ParticipantRoleDefinition {
   targeting?: ParticipantTargeting;
 
   isEligible?: (tribute: GameTribute, context: ParticipantSelectionContext) => boolean;
+
+  /**
+   * Typed, read-only metadata describing prerequisites hidden inside isEligible.
+   * The production selector intentionally ignores this field.
+   */
+  auditEligibility?: EventAuditEligibilityMetadata;
 
   getWeight?: (tribute: GameTribute, context: ParticipantSelectionContext) => number;
 
@@ -273,6 +361,13 @@ export interface EventDefinition {
   roles: readonly ParticipantRoleDefinition[];
 
   isEligible?: (context: EventSelectionContext) => boolean;
+
+  /**
+   * Typed, read-only metadata describing prerequisites hidden inside isEligible.
+   * Definition-level metadata may reference any declared participant role.
+   * The production selector intentionally ignores this field.
+   */
+  auditEligibility?: EventAuditEligibilityMetadata;
 
   getWeightMultiplier?: (context: EventSelectionContext) => number;
 

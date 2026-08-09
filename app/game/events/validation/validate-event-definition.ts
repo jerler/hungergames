@@ -1,5 +1,7 @@
 import {
   EVENT_PARTICIPANT_SHAPES,
+  type EventAuditEligibilityMetadata,
+  type EventAuditPrerequisite,
   type EventDefinition,
   type ParticipantRoleDefinition,
 } from "~/game/events/event-schema";
@@ -44,6 +46,14 @@ const EVENT_SPECIFICITY_REASONS = new Set([
   "item-requirement",
   "custom-eligibility",
 ]);
+
+const EVENT_AUDIT_ELIGIBILITY_COVERAGE = new Set(["complete", "opaque"]);
+const EVENT_AUDIT_STATS = new Set(["brains", "brawn", "luck"]);
+const EVENT_AUDIT_STAT_COMPARISONS = new Set(["eq", "gte", "lte"]);
+const EVENT_AUDIT_RELATIONSHIPS = new Set(["truce", "vendetta"]);
+const EVENT_AUDIT_RELATIONSHIP_KINDS = new Set(["standard", "romantic"]);
+const EVENT_AUDIT_ITEM_ACCESS = new Set(["accessible", "owned"]);
+const EVENT_AUDIT_SURVIVAL_NEEDS = new Set(["food", "water"]);
 
 function validateUniqueValues(eventId: string, label: string, values: readonly string[]): void {
   if (new Set(values).size !== values.length) {
@@ -251,6 +261,303 @@ function validateRole(
   validateItemTags(eventId, role.id, "optional", optionalItemTags);
 }
 
+function validateAuditRoleReference(
+  eventId: string,
+  label: string,
+  roleId: string,
+  knownRoleIds: ReadonlySet<string>,
+): void {
+  if (!roleId.trim() || !knownRoleIds.has(roleId)) {
+    throw new Error(`Event "${eventId}" ${label} references unknown role "${roleId}".`);
+  }
+}
+
+function validateAuditPrerequisite(
+  eventId: string,
+  prerequisite: EventAuditPrerequisite,
+  knownRoleIds: ReadonlySet<string>,
+  scopeRoleId?: string,
+): void {
+  validateAuditRoleReference(
+    eventId,
+    `audit prerequisite "${prerequisite.kind}"`,
+    prerequisite.roleId,
+    knownRoleIds,
+  );
+
+  if (scopeRoleId !== undefined && prerequisite.roleId !== scopeRoleId) {
+    throw new Error(
+      `Event "${eventId}" role "${scopeRoleId}" audit prerequisite ` +
+        `must reference its own role, not "${prerequisite.roleId}".`,
+    );
+  }
+
+  switch (prerequisite.kind) {
+    case "stat":
+      if (!EVENT_AUDIT_STATS.has(prerequisite.stat)) {
+        throw new Error(
+          `Event "${eventId}" has invalid audit stat "${String(prerequisite.stat)}".`,
+        );
+      }
+
+      if (!EVENT_AUDIT_STAT_COMPARISONS.has(prerequisite.comparison)) {
+        throw new Error(
+          `Event "${eventId}" has invalid audit stat comparison ` +
+            `"${String(prerequisite.comparison)}".`,
+        );
+      }
+
+      if (
+        !Number.isInteger(prerequisite.threshold) ||
+        prerequisite.threshold < 1 ||
+        prerequisite.threshold > 5
+      ) {
+        throw new Error(
+          `Event "${eventId}" has invalid audit stat threshold ` +
+            `"${String(prerequisite.threshold)}".`,
+        );
+      }
+      return;
+
+    case "status":
+      if (!String(prerequisite.statusId).trim()) {
+        throw new Error(`Event "${eventId}" has an empty audit status prerequisite.`);
+      }
+
+      if (typeof prerequisite.present !== "boolean") {
+        throw new Error(`Event "${eventId}" has invalid audit status presence metadata.`);
+      }
+      return;
+
+    case "deprivation":
+      if (!EVENT_AUDIT_SURVIVAL_NEEDS.has(prerequisite.need)) {
+        throw new Error(
+          `Event "${eventId}" has invalid audit deprivation need ` +
+            `"${String(prerequisite.need)}".`,
+        );
+      }
+
+      if (typeof prerequisite.deprived !== "boolean") {
+        throw new Error(`Event "${eventId}" has invalid audit deprivation metadata.`);
+      }
+      return;
+
+    case "relationship":
+      if (!EVENT_AUDIT_RELATIONSHIPS.has(prerequisite.relationship)) {
+        throw new Error(
+          `Event "${eventId}" has invalid audit relationship ` +
+            `"${String(prerequisite.relationship)}".`,
+        );
+      }
+
+      if (
+        prerequisite.relationshipKind !== undefined &&
+        !EVENT_AUDIT_RELATIONSHIP_KINDS.has(prerequisite.relationshipKind)
+      ) {
+        throw new Error(
+          `Event "${eventId}" has invalid audit relationship kind ` +
+            `"${String(prerequisite.relationshipKind)}".`,
+        );
+      }
+
+      if (prerequisite.relatedRoleId !== undefined) {
+        validateAuditRoleReference(
+          eventId,
+          "audit relationship prerequisite",
+          prerequisite.relatedRoleId,
+          knownRoleIds,
+        );
+      }
+      return;
+
+    case "truce": {
+      if (
+        prerequisite.truceKind !== undefined &&
+        !EVENT_AUDIT_RELATIONSHIP_KINDS.has(prerequisite.truceKind)
+      ) {
+        throw new Error(
+          `Event "${eventId}" has invalid audit truce kind ` +
+            `"${String(prerequisite.truceKind)}".`,
+        );
+      }
+
+      const sizes = [
+        prerequisite.exactSize,
+        prerequisite.minimumSize,
+        prerequisite.maximumSize,
+      ].filter((value): value is number => value !== undefined);
+
+      for (const size of sizes) {
+        if (!Number.isInteger(size) || size < 2) {
+          throw new Error(`Event "${eventId}" audit truce sizes must be integers of at least two.`);
+        }
+      }
+
+      if (
+        prerequisite.exactSize !== undefined &&
+        (prerequisite.minimumSize !== undefined || prerequisite.maximumSize !== undefined)
+      ) {
+        throw new Error(
+          `Event "${eventId}" audit truce prerequisite cannot combine exact and ranged sizes.`,
+        );
+      }
+
+      if (
+        prerequisite.minimumSize !== undefined &&
+        prerequisite.maximumSize !== undefined &&
+        prerequisite.minimumSize > prerequisite.maximumSize
+      ) {
+        throw new Error(`Event "${eventId}" audit truce minimum size exceeds its maximum size.`);
+      }
+      return;
+    }
+
+    case "item-definition":
+      if (prerequisite.definitionIds.length === 0) {
+        throw new Error(`Event "${eventId}" has an empty audit item-definition prerequisite.`);
+      }
+
+      validateItemDefinitionIds(eventId, prerequisite.roleId, "audit", prerequisite.definitionIds);
+
+      if (!EVENT_AUDIT_ITEM_ACCESS.has(prerequisite.access)) {
+        throw new Error(`Event "${eventId}" has invalid audit item access.`);
+      }
+
+      if (typeof prerequisite.requireUsable !== "boolean") {
+        throw new Error(`Event "${eventId}" has invalid audit item usability.`);
+      }
+
+      validateAuditRoleReference(
+        eventId,
+        "audit item usability",
+        prerequisite.usableByRoleId,
+        knownRoleIds,
+      );
+      return;
+
+    case "item-tag":
+      if (prerequisite.tags.length === 0) {
+        throw new Error(`Event "${eventId}" has an empty audit item-tag prerequisite.`);
+      }
+
+      validateItemTags(eventId, prerequisite.roleId, "audit", prerequisite.tags);
+
+      if (!EVENT_AUDIT_ITEM_ACCESS.has(prerequisite.access)) {
+        throw new Error(`Event "${eventId}" has invalid audit item access.`);
+      }
+
+      if (typeof prerequisite.requireUsable !== "boolean") {
+        throw new Error(`Event "${eventId}" has invalid audit item usability.`);
+      }
+
+      validateAuditRoleReference(
+        eventId,
+        "audit item usability",
+        prerequisite.usableByRoleId,
+        knownRoleIds,
+      );
+      return;
+  }
+}
+
+function validateAuditEligibilityMetadata({
+  eventId,
+  scopeLabel,
+  scopeRoleId,
+  metadata,
+  hasEligibilityCallback,
+  knownRoleIds,
+}: {
+  eventId: string;
+  scopeLabel: string;
+  scopeRoleId?: string;
+  metadata: EventAuditEligibilityMetadata | undefined;
+  hasEligibilityCallback: boolean;
+  knownRoleIds: ReadonlySet<string>;
+}): void {
+  if (!metadata) {
+    return;
+  }
+
+  if (!hasEligibilityCallback) {
+    throw new Error(
+      `Event "${eventId}" ${scopeLabel} declares audit eligibility metadata ` +
+        "without an eligibility callback.",
+    );
+  }
+
+  if (!EVENT_AUDIT_ELIGIBILITY_COVERAGE.has(metadata.coverage)) {
+    throw new Error(`Event "${eventId}" ${scopeLabel} has invalid audit eligibility coverage.`);
+  }
+
+  const prerequisiteKeys = metadata.prerequisites.map((prerequisite) =>
+    JSON.stringify(prerequisite),
+  );
+
+  validateUniqueValues(eventId, `${scopeLabel} audit prerequisites`, prerequisiteKeys);
+
+  for (const prerequisite of metadata.prerequisites) {
+    validateAuditPrerequisite(eventId, prerequisite, knownRoleIds, scopeRoleId);
+  }
+}
+
+function sortedStrings(values: readonly string[]): string[] {
+  return [...values].sort();
+}
+
+function sameStrings(first: readonly string[], second: readonly string[]): boolean {
+  return JSON.stringify(sortedStrings(first)) === JSON.stringify(sortedStrings(second));
+}
+
+function validateAuditItemContradictions(definition: EventDefinition): void {
+  const explicitPrerequisites = [
+    ...(definition.auditEligibility?.prerequisites ?? []),
+    ...definition.roles.flatMap((role) => role.auditEligibility?.prerequisites ?? []),
+  ];
+
+  for (const role of definition.roles) {
+    const access = role.itemAccess ?? "accessible";
+    const requireUsable = role.requiredItemRequireUsable ?? true;
+    const usableByRoleId = role.requiredItemUsableByRoleId ?? role.id;
+    const structuralDefinitionIds = role.requiredItemDefinitionIds ?? [];
+    const structuralTags = role.requiredItemTags ?? [];
+
+    for (const prerequisite of explicitPrerequisites) {
+      if (prerequisite.roleId !== role.id) {
+        continue;
+      }
+
+      if (
+        prerequisite.kind === "item-definition" &&
+        structuralDefinitionIds.length > 0 &&
+        (!sameStrings(prerequisite.definitionIds, structuralDefinitionIds) ||
+          prerequisite.access !== access ||
+          prerequisite.requireUsable !== requireUsable ||
+          prerequisite.usableByRoleId !== usableByRoleId)
+      ) {
+        throw new Error(
+          `Event "${definition.id}" role "${role.id}" has audit item-definition ` +
+            "metadata that contradicts its declarative required-item contract.",
+        );
+      }
+
+      if (
+        prerequisite.kind === "item-tag" &&
+        structuralTags.length > 0 &&
+        (!sameStrings(prerequisite.tags, structuralTags) ||
+          prerequisite.access !== access ||
+          prerequisite.requireUsable !== requireUsable ||
+          prerequisite.usableByRoleId !== usableByRoleId)
+      ) {
+        throw new Error(
+          `Event "${definition.id}" role "${role.id}" has audit item-tag ` +
+            "metadata that contradicts its declarative required-item contract.",
+        );
+      }
+    }
+  }
+}
+
 function validateSelectionProfile(definition: EventDefinition): void {
   const profile = definition.selectionProfile;
 
@@ -344,8 +651,27 @@ export function validateEventDefinition(definition: EventDefinition): void {
   for (const role of definition.roles) {
     validateRole(definition.id, role, knownRoleIds, earlierRoleIds);
 
+    validateAuditEligibilityMetadata({
+      eventId: definition.id,
+      scopeLabel: `role "${role.id}"`,
+      scopeRoleId: role.id,
+      metadata: role.auditEligibility,
+      hasEligibilityCallback: role.isEligible !== undefined,
+      knownRoleIds,
+    });
+
     earlierRoleIds.add(role.id);
   }
+
+  validateAuditEligibilityMetadata({
+    eventId: definition.id,
+    scopeLabel: "definition",
+    metadata: definition.auditEligibility,
+    hasEligibilityCallback: definition.isEligible !== undefined,
+    knownRoleIds,
+  });
+
+  validateAuditItemContradictions(definition);
 
   if (definition.isEligible !== undefined && typeof definition.isEligible !== "function") {
     throw new Error(`Event "${definition.id}" has an invalid eligibility callback.`);

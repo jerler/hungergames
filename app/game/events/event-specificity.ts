@@ -1,5 +1,14 @@
 // Phase 2: event specificity weighting.
-import type { EventDefinition, EventSpecificityReason } from "~/game/events/event-schema";
+import {
+  getEventAuditPrerequisiteEvidence,
+  getEventAuditPrerequisiteKinds,
+} from "~/game/events/event-audit-prerequisites";
+import type {
+  EventAuditPrerequisite,
+  EventAuditPrerequisiteEvidence,
+  EventDefinition,
+  EventSpecificityReason,
+} from "~/game/events/event-schema";
 
 export const MAX_EVENT_SPECIFICITY_MULTIPLIER = 4;
 export const EVENT_SPECIFICITY_MULTIPLIER_PER_POINT = 0.5;
@@ -99,6 +108,8 @@ export interface EventAuditSpecificityBreakdown {
   structuralScore: number;
   reasons: readonly EventSpecificityReason[];
   broadEvent: boolean;
+  prerequisiteEvidence: EventAuditPrerequisiteEvidence;
+  prerequisiteKinds: readonly EventAuditPrerequisite["kind"][];
 }
 
 export function getEventAuditSpecificityBreakdown(
@@ -111,13 +122,21 @@ export function getEventAuditSpecificityBreakdown(
   ];
 
   const score = Math.max(authoredScore, structural.score);
+  const prerequisiteEvidence = getEventAuditPrerequisiteEvidence(definition);
+  const prerequisiteKinds = getEventAuditPrerequisiteKinds(definition);
 
   return {
     score,
     authoredScore,
     structuralScore: structural.score,
     reasons,
-    broadEvent: score === 0 && reasons.length === 0,
+    broadEvent:
+      score === 0 &&
+      reasons.length === 0 &&
+      prerequisiteEvidence.evidence === "complete" &&
+      prerequisiteEvidence.prerequisites.length === 0,
+    prerequisiteEvidence: prerequisiteEvidence.evidence,
+    prerequisiteKinds,
   };
 }
 

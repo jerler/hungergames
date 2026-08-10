@@ -89,6 +89,19 @@ function createLowBrainsTruceMemberRoles(
       count: 1,
       isEligible: (tribute, { state }) =>
         isLowBrains(tribute) && getActiveTruceOfSize(state, tribute.id, size) !== null,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds,
     },
     {
@@ -144,6 +157,19 @@ const CHILDPROOFED_MEDKIT_BRAINS: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: ["med-kit"],
       itemAccess: "owned",
     },
@@ -179,6 +205,19 @@ const HANSEL_AND_GRETEL_SOLO: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -283,6 +322,19 @@ const NATURES_SNACK_BOWL: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowBrains(tribute) && hasStatus(tribute, "hungry"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -324,6 +376,19 @@ const PREMIUM_WATER: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowBrains(tribute) && hasStatus(tribute, "thirsty"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -355,6 +420,19 @@ const FREE_HONEY: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -384,6 +462,19 @@ const SNAKE_TAMER_FATAL: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brains === 1,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "eq",
+            threshold: 1,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -416,6 +507,19 @@ const SNAKE_TAMER_NONFATAL: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brains === 1,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "eq",
+            threshold: 1,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -447,6 +551,19 @@ const OBVIOUS_TRAP_NONFATAL: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brains === 1,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "eq",
+            threshold: 1,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: ALL_ITEM_IDS,
       requiredItemRequireUsable: false,
       itemAccess: "owned",
@@ -491,6 +608,19 @@ const OBVIOUS_TRAP_FATAL: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brains === 1,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "eq",
+            threshold: 1,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -541,6 +671,19 @@ const TWO_BIRDS_ONE_WEAPON: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: MELEE_WEAPON_IDS,
       requiredItemRequireUsable: false,
       itemAccess: "owned",
@@ -595,6 +738,19 @@ const FISHING_GENIUS: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowBrains(tribute) && hasStatus(tribute, "hungry"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -626,6 +782,19 @@ const WEAPON_MAINTENANCE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: MELEE_WEAPON_IDS,
       requiredItemRequireUsable: false,
       itemAccess: "owned",
@@ -661,6 +830,19 @@ const NATURES_BLANKET: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -726,6 +908,19 @@ const TRADE_DEAL: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: ALL_ITEM_IDS,
       requiredItemRequireUsable: false,
       itemAccess: "owned",
@@ -766,6 +961,19 @@ const LUCKY_ROCK: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brains === 1,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "eq",
+            threshold: 1,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: ALL_ITEM_IDS,
       requiredItemRequireUsable: false,
       itemAccess: "owned",
@@ -800,6 +1008,19 @@ const THIS_SIDE_UP: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: BOW_IDS,
       requiredItemRequireUsable: false,
       itemAccess: "owned",
@@ -835,6 +1056,29 @@ const WARNING_SHOT: EventDefinition = {
       count: 1,
       isEligible: (tribute) =>
         tribute.snapshot.stats.brains === 1 || tribute.snapshot.stats.luck === 1,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat-any",
+            roleId: "actor",
+            alternatives: [
+              {
+                stat: "brains",
+                comparison: "eq",
+                threshold: 1,
+                valueSource: "base",
+              },
+              {
+                stat: "luck",
+                comparison: "eq",
+                threshold: 1,
+                valueSource: "base",
+              },
+            ],
+          },
+        ],
+      },
       requiredItemDefinitionIds: RANGED_WEAPON_IDS,
       requiredItemRequireUsable: false,
       itemAccess: "owned",
@@ -871,6 +1115,19 @@ const PLAYING_DEAD: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -916,6 +1173,19 @@ const REVERSE_PSYCHOLOGY: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: ALL_ITEM_IDS,
       requiredItemRequireUsable: false,
       itemAccess: "owned",

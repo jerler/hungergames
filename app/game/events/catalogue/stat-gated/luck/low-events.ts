@@ -47,6 +47,19 @@ const CAMOUFAILURE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -92,6 +105,19 @@ const GROUNDED_HOG: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -119,6 +145,19 @@ const PERSONAL_RAIN_CLOUD: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -155,6 +194,19 @@ const STUCK_IN_THE_MUD: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowLuck(tribute) && hasStatus(tribute, "thirsty"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -195,6 +247,19 @@ const WATER_LANDING: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowLuck(tribute) && hasStatus(tribute, "thirsty"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -227,6 +292,19 @@ const NATURE_CALLS: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -279,6 +357,19 @@ const BIRD_STRIKE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -310,6 +401,19 @@ const STEP_ON_A_WASP_NEST: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -376,6 +480,19 @@ const RABBIT_HOLE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowLuck(tribute) && hasStatus(tribute, "hungry"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -406,6 +523,19 @@ const FORAGING_DIGNITY: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowLuck(tribute) && hasStatus(tribute, "hungry"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -433,6 +563,19 @@ const FORAGING_DIGNITY_AGAIN: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowLuck(tribute) && hasStatus(tribute, "hungry"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -461,6 +604,19 @@ const BERRY_UNFORTUNATE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowLuck(tribute) && hasStatus(tribute, "hungry"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -488,6 +644,19 @@ const LAST_SIP: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowLuck(tribute) && hasStatus(tribute, "thirsty"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {

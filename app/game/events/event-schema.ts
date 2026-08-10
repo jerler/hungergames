@@ -68,15 +68,34 @@ export type EventAuditStat = keyof TributeStats;
 
 export type EventAuditStatComparison = "eq" | "gte" | "lte";
 
+export type EventAuditStatValueSource = "base" | "effective";
+
+export interface EventAuditStatCondition {
+  stat: EventAuditStat;
+  comparison: EventAuditStatComparison;
+  threshold: TributeStatValue;
+
+  /**
+   * Base means the authored callback reads snapshot.stats directly.
+   * Effective means the authored requirement uses effective stats.
+   *
+   * Omitted metadata from Phase 1B is treated as base for backward
+   * compatibility.
+   */
+  valueSource?: EventAuditStatValueSource;
+}
+
 export type EventAuditItemAccess = "accessible" | "owned";
 
 export type EventAuditPrerequisite =
-  | {
+  | ({
       kind: "stat";
       roleId: string;
-      stat: EventAuditStat;
-      comparison: EventAuditStatComparison;
-      threshold: TributeStatValue;
+    } & EventAuditStatCondition)
+  | {
+      kind: "stat-any";
+      roleId: string;
+      alternatives: readonly EventAuditStatCondition[];
     }
   | {
       kind: "status";

@@ -50,6 +50,7 @@ const EVENT_SPECIFICITY_REASONS = new Set([
 const EVENT_AUDIT_ELIGIBILITY_COVERAGE = new Set(["complete", "opaque"]);
 const EVENT_AUDIT_STATS = new Set(["brains", "brawn", "luck"]);
 const EVENT_AUDIT_STAT_COMPARISONS = new Set(["eq", "gte", "lte"]);
+const EVENT_AUDIT_STAT_VALUE_SOURCES = new Set(["base", "effective"]);
 const EVENT_AUDIT_RELATIONSHIPS = new Set(["truce", "vendetta"]);
 const EVENT_AUDIT_RELATIONSHIP_KINDS = new Set(["standard", "romantic"]);
 const EVENT_AUDIT_ITEM_ACCESS = new Set(["accessible", "owned"]);
@@ -272,6 +273,47 @@ function validateAuditRoleReference(
   }
 }
 
+function validateAuditStatCondition(
+  eventId: string,
+  condition: {
+    stat: string;
+    comparison: string;
+    threshold: number;
+    valueSource?: string;
+  },
+): void {
+  if (!EVENT_AUDIT_STATS.has(condition.stat)) {
+    throw new Error(`Event "${eventId}" has invalid audit stat "${String(condition.stat)}".`);
+  }
+
+  if (!EVENT_AUDIT_STAT_COMPARISONS.has(condition.comparison)) {
+    throw new Error(
+      `Event "${eventId}" has invalid audit stat comparison ` +
+        `"${String(condition.comparison)}".`,
+    );
+  }
+
+  if (
+    !Number.isInteger(condition.threshold) ||
+    condition.threshold < 1 ||
+    condition.threshold > 5
+  ) {
+    throw new Error(
+      `Event "${eventId}" has invalid audit stat threshold ` + `"${String(condition.threshold)}".`,
+    );
+  }
+
+  if (
+    condition.valueSource !== undefined &&
+    !EVENT_AUDIT_STAT_VALUE_SOURCES.has(condition.valueSource)
+  ) {
+    throw new Error(
+      `Event "${eventId}" has invalid audit stat value source ` +
+        `"${String(condition.valueSource)}".`,
+    );
+  }
+}
+
 function validateAuditPrerequisite(
   eventId: string,
   prerequisite: EventAuditPrerequisite,
@@ -294,28 +336,24 @@ function validateAuditPrerequisite(
 
   switch (prerequisite.kind) {
     case "stat":
-      if (!EVENT_AUDIT_STATS.has(prerequisite.stat)) {
+      validateAuditStatCondition(eventId, prerequisite);
+      return;
+
+    case "stat-any":
+      if (prerequisite.alternatives.length < 2) {
         throw new Error(
-          `Event "${eventId}" has invalid audit stat "${String(prerequisite.stat)}".`,
+          `Event "${eventId}" audit stat-any prerequisite requires at least two alternatives.`,
         );
       }
 
-      if (!EVENT_AUDIT_STAT_COMPARISONS.has(prerequisite.comparison)) {
-        throw new Error(
-          `Event "${eventId}" has invalid audit stat comparison ` +
-            `"${String(prerequisite.comparison)}".`,
-        );
-      }
+      validateUniqueValues(
+        eventId,
+        `audit stat alternatives for role "${prerequisite.roleId}"`,
+        prerequisite.alternatives.map((alternative) => JSON.stringify(alternative)),
+      );
 
-      if (
-        !Number.isInteger(prerequisite.threshold) ||
-        prerequisite.threshold < 1 ||
-        prerequisite.threshold > 5
-      ) {
-        throw new Error(
-          `Event "${eventId}" has invalid audit stat threshold ` +
-            `"${String(prerequisite.threshold)}".`,
-        );
+      for (const alternative of prerequisite.alternatives) {
+        validateAuditStatCondition(eventId, alternative);
       }
       return;
 

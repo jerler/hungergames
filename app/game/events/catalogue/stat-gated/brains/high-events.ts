@@ -103,6 +103,19 @@ function createHighBrainsTruceMemberRoles(
       count: 1,
       isEligible: (tribute, { state }) =>
         isHighBrains(tribute) && getActiveTruceOfSize(state, tribute.id, size) !== null,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "members",
@@ -149,6 +162,19 @@ const SICK_BUT_SMART: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isHighBrains(tribute) && hasStatus(tribute, "poisoned"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -193,6 +219,19 @@ const FIELD_GUIDE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isHighBrains(tribute) && hasStatus(tribute, "hungry"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -229,6 +268,19 @@ const CLEAN_ENOUGH: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isHighBrains(tribute) && hasStatus(tribute, "thirsty"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -256,6 +308,19 @@ const TRAIL_MARKER: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -284,6 +349,19 @@ const WRONG_FOOTPRINTS: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -315,6 +393,19 @@ const CAMP_INSPECTION: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -362,6 +453,19 @@ const LEAD_A_HORSE_TO_WATER: EventDefinition = {
       count: 1,
       isEligible: (tribute) =>
         isHighBrains(tribute) && (hasStatus(tribute, "alert") || hasStatus(tribute, "hidden")),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target-one", "target-two"],
     },
     {
@@ -416,6 +520,19 @@ const UNATTENDED_BAGGAGE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -456,6 +573,19 @@ const RETURN_TO_SENDER: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -502,6 +632,19 @@ const FALSE_CONFIDENCE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: MELEE_WEAPON_IDS,
       itemAccess: "owned",
       requiredItemRequireUsable: false,
@@ -557,6 +700,19 @@ const LOAD_BEARING_TRIBUTE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -602,6 +758,19 @@ const DELAYED_REACTION: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: ["poison-vial"],
       itemAccess: "owned",
       opposesRoleIds: ["target"],
@@ -659,6 +828,19 @@ const DOSE_MAKES_THE_POISON: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isHighBrains(tribute) && hasStatus(tribute, "poisoned"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -685,6 +867,19 @@ const EFFICIENT_SHELTER: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ round, participantsByRole }) {
@@ -714,6 +909,19 @@ const ALARM_SYSTEM: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -825,6 +1033,19 @@ const USEFUL_IDIOT: EventDefinition = {
       count: 1,
       isEligible: (tribute, { state }) =>
         isHighBrains(tribute) && getActiveTruceOfSize(state, tribute.id, 2) !== null,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -953,6 +1174,19 @@ const FAKE_WEAKNESS: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: MELEE_WEAPON_IDS,
       itemAccess: "owned",
       requiredItemRequireUsable: false,
@@ -1001,6 +1235,19 @@ const OVERTHINKING: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brains === 5,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -1031,6 +1278,19 @@ const PERFECT_PLAN: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brains === 5,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -1063,6 +1323,19 @@ const OCCUPATIONAL_HAZARD: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemTags: ["weapon"],
       itemAccess: "owned",
       requiredItemRequireUsable: false,
@@ -1097,6 +1370,19 @@ const SEEMS_SUSPICIOUS: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isHighBrains(tribute) && hasStatus(tribute, "hungry"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -1124,6 +1410,19 @@ const TOO_CLEAN: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isHighBrains(tribute) && hasStatus(tribute, "thirsty"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -1151,6 +1450,19 @@ const I_CAN_FIX_IT: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brains === 5,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemTags: ["weapon"],
       itemAccess: "owned",
       requiredItemRequireUsable: false,
@@ -1190,6 +1502,19 @@ const TRAP_ENTHUSIAST: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -1222,6 +1547,19 @@ const JUST_ONE_MORE_ADJUSTMENT: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -1252,6 +1590,19 @@ const REST_IS_INEFFICIENT: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -1284,6 +1635,19 @@ const TOO_CLEVER_BY_HALF: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -1291,6 +1655,19 @@ const TOO_CLEVER_BY_HALF: EventDefinition = {
       count: 1,
       targeting: "hostile",
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "target",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["actor"],
     },
   ],
@@ -1329,6 +1706,19 @@ const PREDICTABLY_UNPREDICTABLE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brains === 5,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -1336,6 +1726,19 @@ const PREDICTABLY_UNPREDICTABLE: EventDefinition = {
       count: 1,
       targeting: "hostile",
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "target",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["actor"],
     },
   ],

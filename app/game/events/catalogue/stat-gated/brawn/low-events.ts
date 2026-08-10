@@ -45,6 +45,19 @@ function createOpposingLowBrawnRoles(
       id: "actor",
       count: 1,
       isEligible: isLowBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -133,6 +146,19 @@ const STICK_SHELTER: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ round, random, participantsByRole }) {
@@ -167,6 +193,19 @@ const HOLD_ON: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -201,6 +240,19 @@ const EXCALIBUR: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: MELEE_WEAPON_IDS,
       requiredItemRequireUsable: false,
       itemAccess: "owned",
@@ -233,6 +285,19 @@ const TURTLING: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowBrawn(tribute) && tribute.inventory.length >= 3,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -261,6 +326,19 @@ const CHILDPROOFED_MEDKIT_BRAWN: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: ["med-kit"],
       itemAccess: "owned",
     },
@@ -296,6 +374,19 @@ function createLetsBeHonestEvent(period: "day" | "night"): EventDefinition {
         id: "actor",
         count: 1,
         isEligible: isLowBrawn,
+        auditEligibility: {
+          coverage: "complete",
+          prerequisites: [
+            {
+              kind: "stat",
+              roleId: "actor",
+              stat: "brawn",
+              comparison: "lte",
+              threshold: 2,
+              valueSource: "base",
+            },
+          ],
+        },
         opposesRoleIds: ["target"],
       },
       {
@@ -367,6 +458,19 @@ const FAILED_INTIMIDATION: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -416,12 +520,38 @@ const LOOKING_OUT_FOR_THE_LITTLE_GUY: EventDefinition = {
       count: 1,
       isEligible: (tribute, { state }) =>
         isLowBrawn(tribute) && !getActiveTruceForTribute(state, tribute.id),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "target",
       count: 1,
       isEligible: (tribute, { state }) =>
         isHighBrawn(tribute) && !getActiveTruceForTribute(state, tribute.id),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "target",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -460,6 +590,19 @@ function createTruceMemberRoles(size: TruceEventSize): readonly ParticipantRoleD
       count: 1,
       isEligible: (tribute, { state }) =>
         isLowBrawn(tribute) && getActiveTruceOfSize(state, tribute.id, size) !== null,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "members",
@@ -635,6 +778,19 @@ const STUCK_IN_THE_MUCK: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -669,6 +825,19 @@ const FORAGING_WHILE_WEAK: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowBrawn(tribute) && hasStatus(tribute, "hungry"),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {

@@ -77,6 +77,19 @@ const RAINING_SUPPLIES: EventDefinition = {
       id: "tribute",
       count: 1,
       isEligible: canReceiveStandardCornucopiaHaul,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -116,6 +129,19 @@ const TRIP_TO_VICTORY: EventDefinition = {
       id: "tribute",
       count: 1,
       isEligible: canReceiveStandardCornucopiaHaul,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -157,6 +183,19 @@ const BUTTERFINGERS_FORTUNATE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -206,6 +245,19 @@ const PERFECTLY_TIMED_SNEEZE_FORTUNATE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -261,6 +313,19 @@ const CRATE_ESCAPE: EventDefinition = {
       id: "tribute",
       count: 1,
       isEligible: canReceiveStandardCornucopiaHaul,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -300,6 +365,19 @@ const FRIENDLY_FIRE_FRIENDLIER: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target", "bystander"],
     },
     {
@@ -369,6 +447,19 @@ const FALLING_INVENTORY: EventDefinition = {
         isMaximumLuck(tribute) &&
         hasUsableCornucopiaPackItem(tribute) &&
         hasUsableCornucopiaContestedDirectWeapon(tribute),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "luck",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -408,6 +499,27 @@ const ACCIDENTAL_BODYGUARD: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isHighLuck(tribute) && tribute.snapshot.stats.brawn <= 3,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 3,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -415,12 +527,38 @@ const ACCIDENTAL_BODYGUARD: EventDefinition = {
       count: 1,
       targeting: "hostile",
       isEligible: (tribute) => tribute.snapshot.stats.brawn <= 3,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "target",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 3,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["actor", "bystander"],
     },
     {
       id: "bystander",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brawn >= 4,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "bystander",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
   ],
@@ -460,6 +598,19 @@ const SHOELACE_ASSASSIN: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -507,6 +658,19 @@ const DRAMATIC_GETAWAY_SUCCESSFUL: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {

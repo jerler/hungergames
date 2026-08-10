@@ -20,6 +20,29 @@ const CRINGE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowBrawn(tribute) || isLowLuck(tribute),
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat-any",
+            roleId: "actor",
+            alternatives: [
+              {
+                stat: "brawn",
+                comparison: "lte",
+                threshold: 2,
+                valueSource: "base",
+              },
+              {
+                stat: "luck",
+                comparison: "lte",
+                threshold: 2,
+                valueSource: "base",
+              },
+            ],
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -49,6 +72,27 @@ const WEAK_PEOPLE_NEED_FATALITIES_TOO: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowBrawn(tribute) && isLowBrains(tribute),
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -96,6 +140,29 @@ const KOWABUNGA: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isLowBrawn(tribute) || isLowLuck(tribute),
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat-any",
+            roleId: "actor",
+            alternatives: [
+              {
+                stat: "brawn",
+                comparison: "lte",
+                threshold: 2,
+                valueSource: "base",
+              },
+              {
+                stat: "luck",
+                comparison: "lte",
+                threshold: 2,
+                valueSource: "base",
+              },
+            ],
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {

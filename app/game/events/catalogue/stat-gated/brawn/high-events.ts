@@ -53,6 +53,19 @@ function createOpposingHighBrawnRoles(
       id: "actor",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -82,6 +95,19 @@ function createHighBrawnTruceMemberRoles(
       count: 1,
       isEligible: (tribute, { state }) =>
         isHighBrawn(tribute) && getActiveTruceOfSize(state, tribute.id, size) !== null,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "members",
@@ -127,6 +153,19 @@ const SACK_OF_POTATOES: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -134,6 +173,19 @@ const SACK_OF_POTATOES: EventDefinition = {
       count: 1,
       targeting: "hostile",
       isEligible: isLowBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "target",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["actor"],
     },
   ],
@@ -189,6 +241,19 @@ const UPROOTED: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -224,6 +289,19 @@ const PUMP_ACTION: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brawn === 5,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -251,6 +329,19 @@ const PORTABLE_COVER: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -298,6 +389,19 @@ const BUILT_STRONG_ASSEMBLED_POORLY: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: MELEE_WEAPON_IDS,
       requiredItemRequireUsable: false,
       itemAccess: "owned",
@@ -338,6 +442,27 @@ const ANYTHING_FOR_THE_GAINS: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isHighBrawn(tribute) && isLowBrains(tribute),
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -369,6 +494,19 @@ const FIREWOOD: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brawn === 5,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ round, participantsByRole }) {
@@ -399,6 +537,19 @@ const FORT_KICKASS: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ round, participantsByRole }) {
@@ -524,6 +675,19 @@ const HUMAN_SHIELD: EventDefinition = {
       count: 1,
       isEligible: (tribute, { state }) =>
         isHighBrawn(tribute) && getActiveTruceForTribute(state, tribute.id) !== null,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "target",
@@ -721,6 +885,19 @@ const WHAT_GOES_UP_MUST_COME_DOWN: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -754,6 +931,19 @@ const TITANS: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brawn === 5,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -761,6 +951,19 @@ const TITANS: EventDefinition = {
       count: 1,
       targeting: "hostile",
       isEligible: (tribute) => tribute.snapshot.stats.brawn === 5,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "target",
+            stat: "brawn",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["actor"],
     },
   ],
@@ -815,12 +1018,38 @@ const GENTLE_GIANT: EventDefinition = {
       count: 1,
       isEligible: (tribute, { state }) =>
         isHighBrawn(tribute) && !getActiveTruceForTribute(state, tribute.id),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "target",
       count: 1,
       isEligible: (tribute, { state }) =>
         isLowBrawn(tribute) && !getActiveTruceForTribute(state, tribute.id),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "target",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -861,6 +1090,19 @@ const BEAR_HUG: EventDefinition = {
       count: 1,
       isEligible: (tribute, { state }) =>
         isHighBrawn(tribute) && getActiveTruceForTribute(state, tribute.id) !== null,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "target",
@@ -937,6 +1179,19 @@ const STRONG_SWIMMER: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -964,6 +1219,19 @@ const HEAVY_SLEEPER: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -971,6 +1239,19 @@ const HEAVY_SLEEPER: EventDefinition = {
       count: 1,
       targeting: "hostile",
       isEligible: (tribute) => tribute.snapshot.stats.brawn <= 3,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "target",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 3,
+            valueSource: "base",
+          },
+        ],
+      },
       optionalItemTags: ["weapon"],
       optionalItemAccess: "owned",
       opposesRoleIds: ["actor"],
@@ -1016,6 +1297,19 @@ const THE_BIGGER_THEY_ARE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -1048,6 +1342,19 @@ const STRUCTURAL_MISUNDERSTANDING: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {

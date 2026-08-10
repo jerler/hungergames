@@ -29,6 +29,16 @@ import {
   type EventSelectionFunnelReport,
 } from "~/game/simulation/event-selection-funnel-report";
 import {
+  collectRosterStrategyEvidence,
+  createBloodbathStrategyByGameTsv,
+  createBloodbathStrategyByStatTsv,
+  createFocusedStatGateTsv,
+  createRosterStatsByGameTsv,
+  createRosterStrategyEvidenceMarkdown,
+  createStatGatedSelectionTsv,
+  type RosterStrategyEvidenceReport,
+} from "~/game/simulation/roster-strategy-evidence";
+import {
   simulateGameBatch,
   type SimulationBatchDefinition,
   type SimulationRun,
@@ -305,9 +315,11 @@ interface FrequencyReportData {
     outcomeGrouping: string;
     catalogueCoverage: string;
     selectionFunnel: string;
+    rosterStrategyEvidence: string;
   };
   distributionMetrics: EventDistributionMetrics;
   selectionFunnel: EventSelectionFunnelReport;
+  rosterStrategyEvidence: RosterStrategyEvidenceReport;
   catalogueCoverage: readonly CatalogueCoverageMetric[];
   definitions: readonly DefinitionFrequencyMetric[];
   events: readonly EventFrequencyMetric[];
@@ -1743,6 +1755,7 @@ function createMarkdownReport(data: FrequencyReportData): string {
     "- Rare outcomes need enough total selections before their percentages are meaningful.",
     "",
     ...createEventSelectionFunnelMarkdown(data.selectionFunnel),
+    ...createRosterStrategyEvidenceMarkdown(data.rosterStrategyEvidence),
   ];
 
   for (const gameSize of EVENT_DISTRIBUTION_GAME_SIZE_IDS) {
@@ -2194,6 +2207,7 @@ try {
   const runs = simulateGameBatch(batchDefinitions);
   const distributionMetrics = collectEventDistributionMetrics(runs);
   const selectionFunnel = createEventSelectionFunnelReport(runs);
+  const rosterStrategyEvidence = collectRosterStrategyEvidence(runs);
 
   if (!selectionFunnel.reconciliation.passed) {
     throw new Error(
@@ -2246,9 +2260,12 @@ try {
         "Validates definitions exported by active catalogue families and their expected pools. It does not discover dormant source definitions that are not exported through those families.",
       selectionFunnel:
         "Records deterministic definition-level rows for every concrete selector opportunity, then aggregates state feasibility, reservation-aware opportunity feasibility, planner admission, weighted-pool exposure, draws, rejected resolutions, accepted selections, route-normalized exposure, and reconciliation against aggregate diagnostics and event history.",
+      rosterStrategyEvidence:
+        "Counts initial shuffled DEFAULT_TRIBUTES stats, deterministically replays Day 1 Cornucopia-versus-Flee assignments with the production strategy function and round seed, records selected participant stat values against typed Phase 1B thresholds, and separates roster availability and strategy assignment from hard feasibility, weighted-pool exposure, and selection for the two focused Cornucopia definitions.",
     },
     distributionMetrics,
     selectionFunnel,
+    rosterStrategyEvidence,
     catalogueCoverage,
     definitions,
     events,
@@ -2270,6 +2287,26 @@ try {
     outputDirectory,
     "event-frequency-selection-funnel-summary.tsv",
   );
+  const rosterStatsByGameTsvPath = resolve(
+    outputDirectory,
+    "event-frequency-roster-stats-by-game.tsv",
+  );
+  const bloodbathStrategyByGameTsvPath = resolve(
+    outputDirectory,
+    "event-frequency-bloodbath-strategy-by-game.tsv",
+  );
+  const bloodbathStrategyByStatTsvPath = resolve(
+    outputDirectory,
+    "event-frequency-bloodbath-strategy-by-stat.tsv",
+  );
+  const statGatedSelectionsTsvPath = resolve(
+    outputDirectory,
+    "event-frequency-stat-gated-selections.tsv",
+  );
+  const focusedStatGatesTsvPath = resolve(
+    outputDirectory,
+    "event-frequency-focused-stat-gates.tsv",
+  );
 
   await Promise.all([
     writeFile(markdownPath, createMarkdownReport(data), "utf8"),
@@ -2286,6 +2323,23 @@ try {
       createEventSelectionFunnelSummaryTsv(selectionFunnel),
       "utf8",
     ),
+    writeFile(rosterStatsByGameTsvPath, createRosterStatsByGameTsv(rosterStrategyEvidence), "utf8"),
+    writeFile(
+      bloodbathStrategyByGameTsvPath,
+      createBloodbathStrategyByGameTsv(rosterStrategyEvidence),
+      "utf8",
+    ),
+    writeFile(
+      bloodbathStrategyByStatTsvPath,
+      createBloodbathStrategyByStatTsv(rosterStrategyEvidence),
+      "utf8",
+    ),
+    writeFile(
+      statGatedSelectionsTsvPath,
+      createStatGatedSelectionTsv(rosterStrategyEvidence),
+      "utf8",
+    ),
+    writeFile(focusedStatGatesTsvPath, createFocusedStatGateTsv(rosterStrategyEvidence), "utf8"),
   ]);
 
   const generatedPaths = [
@@ -2299,6 +2353,11 @@ try {
     perGameOutcomeTsvPath,
     selectionFunnelTsvPath,
     selectionFunnelSummaryTsvPath,
+    rosterStatsByGameTsvPath,
+    bloodbathStrategyByGameTsvPath,
+    bloodbathStrategyByStatTsvPath,
+    statGatedSelectionsTsvPath,
+    focusedStatGatesTsvPath,
   ];
   const checksumManifest = {
     schemaVersion: provenance.schemaVersion,
@@ -2340,6 +2399,11 @@ try {
   console.log(`Per-game outcome TSV written to ${perGameOutcomeTsvPath}`);
   console.log(`Selection-funnel TSV written to ${selectionFunnelTsvPath}`);
   console.log(`Selection-funnel summary TSV written to ${selectionFunnelSummaryTsvPath}`);
+  console.log(`Roster-stat TSV written to ${rosterStatsByGameTsvPath}`);
+  console.log(`Bloodbath strategy-by-game TSV written to ${bloodbathStrategyByGameTsvPath}`);
+  console.log(`Bloodbath strategy-by-stat TSV written to ${bloodbathStrategyByStatTsvPath}`);
+  console.log(`Stat-gated selection TSV written to ${statGatedSelectionsTsvPath}`);
+  console.log(`Focused stat-gate TSV written to ${focusedStatGatesTsvPath}`);
   console.log(
     `Simulated ${configuration.halfGames} Half Games and ${configuration.fullGames} Full Games.`,
   );

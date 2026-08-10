@@ -10,6 +10,7 @@ import {
   isItemRequirement,
 } from "../requirements/item-requirements";
 import type { AuthoredRequirement, ItemRequirement } from "../requirements/requirement-schema";
+import { compileAuthoredRoleAuditEligibility } from "../requirements/compile-audit-eligibility";
 import type { AuthoredRoleSpecification } from "./role-schema";
 
 function addUniqueRoleId(roleIds: string[], roleId: string): void {
@@ -110,6 +111,11 @@ export function compileAuthoredRoles(
     const itemRequirement = getItemRequirementForRole(role.id, requirements);
 
     const opposedRoleIds = oppositionMap.get(role.id) ?? [];
+    const auditEligibility = compileAuthoredRoleAuditEligibility({
+      roleId: role.id,
+      requirements,
+      hasCustomEligibility: role.isEligible !== undefined,
+    });
 
     return {
       id: role.id,
@@ -152,6 +158,12 @@ export function compileAuthoredRoles(
         : {}),
 
       ...compileItemRequirement(itemRequirement),
+
+      ...(auditEligibility
+        ? {
+            auditEligibility,
+          }
+        : {}),
 
       ...(role.isEligible || roleRequirements.length > 0
         ? {

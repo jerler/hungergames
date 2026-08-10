@@ -50,6 +50,19 @@ const LOW_BRAWN_DRAGGING_LOOT: EventDefinition = {
       id: "tribute",
       count: 1,
       isEligible: isLowBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ random, participantsByRole }) {
@@ -83,6 +96,27 @@ const SMARTER_NOT_HARDER: EventDefinition = {
       count: 1,
       isEligible: (tribute) =>
         isLowBrawn(tribute) && isHighBrains(tribute) && hasUsableCornucopiaPackItem(tribute),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -124,6 +158,19 @@ const HIGH_BRAWN_FIRST: EventDefinition = {
         isHighBrawn(tribute) &&
         hasUsableCornucopiaPackItem(tribute) &&
         hasUsableCornucopiaContestedDirectWeapon(tribute),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -165,6 +212,19 @@ const HIGH_BRAWN_MORE_THAN_YOUR_SHARE: EventDefinition = {
         tribute.snapshot.stats.brawn === 5 &&
         hasUsableCornucopiaPackItem(tribute) &&
         hasUsableCornucopiaContestedDirectWeapon(tribute),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "brawn",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -207,6 +267,19 @@ const HIGH_BRAWN_BAG_OF_CHIPS: EventDefinition = {
       id: "tribute",
       count: 1,
       isEligible: (tribute) => isHighBrawn(tribute) && hasUsableCornucopiaPackItem(tribute),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -240,6 +313,19 @@ const HIGH_BRAWN_EMERGENCY_EXIT: EventDefinition = {
       id: "tribute",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -267,11 +353,37 @@ const SHOOTING_FISH_IN_A_BARREL: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "target",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brawn >= 3,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "target",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 3,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -312,6 +424,19 @@ const HIGH_BRAWN_HUMAN_BULLDOZER: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -319,6 +444,19 @@ const HIGH_BRAWN_HUMAN_BULLDOZER: EventDefinition = {
       count: 1,
       targeting: "hostile",
       isEligible: (tribute) => tribute.snapshot.stats.brawn <= 3,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "target",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 3,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["actor"],
     },
   ],
@@ -358,6 +496,19 @@ const HIGH_BRAWN_PERFECT_WEAPON: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -410,6 +561,19 @@ const HIGH_BRAWN_YOINK: EventDefinition = {
         isHighBrawn(tribute) &&
         hasUsableCornucopiaPackItem(tribute) &&
         hasUsableCornucopiaContestedDirectWeapon(tribute),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -417,6 +581,19 @@ const HIGH_BRAWN_YOINK: EventDefinition = {
       count: 1,
       targeting: "hostile",
       isEligible: isLowBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "target",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["actor"],
     },
   ],
@@ -461,6 +638,19 @@ const LOW_BRAINS_OOH_SHINY: EventDefinition = {
       id: "tribute",
       count: 1,
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -494,6 +684,19 @@ const LOW_BRAINS_POINTY_END: EventDefinition = {
       count: 1,
       isEligible: (tribute) =>
         tribute.snapshot.stats.brains === 1 && hasUsableCornucopiaContestedDirectWeapon(tribute),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "brains",
+            comparison: "eq",
+            threshold: 1,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -530,6 +733,19 @@ const LOW_BRAINS_JUST_ONE_MORE_THING: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -575,6 +791,19 @@ const LOW_BRAINS_NOT_A_BOX: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => tribute.snapshot.stats.brains === 1,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "eq",
+            threshold: 1,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -616,6 +845,19 @@ const LOW_BRAINS_FOLLOW_THAT_TRIBUTE: EventDefinition = {
       count: 1,
       isEligible: (tribute, { state }) =>
         isLowBrains(tribute) && !getActiveTruceForTribute(state, tribute.id),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "target",
@@ -661,6 +903,19 @@ const RUN_FASTER: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowBrawn,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "target",
@@ -714,12 +969,38 @@ const HIGH_BRAWN_GENTLE_GIANT_FLEE: EventDefinition = {
       count: 1,
       isEligible: (tribute, { state }) =>
         isHighBrawn(tribute) && !getActiveTruceForTribute(state, tribute.id),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brawn",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "target",
       count: 1,
       isEligible: (tribute, { state }) =>
         isLowBrawn(tribute) && !getActiveTruceForTribute(state, tribute.id),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "target",
+            stat: "brawn",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -764,6 +1045,19 @@ const HIGH_BRAINS_SHOPPING_LIST: EventDefinition = {
         isHighBrains(tribute) &&
         hasUsableCornucopiaPackItem(tribute) &&
         hasUsableCornucopiaContestedDirectWeapon(tribute),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -806,6 +1100,19 @@ const HIGH_BRAINS_PRIORITIES: EventDefinition = {
       id: "tribute",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -842,6 +1149,19 @@ const HIGH_BRAINS_LET_THEM_FIGHT: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "target",
@@ -889,6 +1209,19 @@ const HIGH_BRAINS_THINKING_OUTSIDE_THE_BOX: EventDefinition = {
       count: 1,
       isEligible: (tribute) =>
         isHighBrains(tribute) && hasUsableCornucopiaContestedDirectWeapon(tribute),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -931,6 +1264,19 @@ const HIGH_BRAINS_INVENTORY_MANAGEMENT: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: (tribute) => isHighBrains(tribute) && hasUsableCornucopiaPackItem(tribute),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -998,6 +1344,19 @@ const HIGH_BRAINS_CALCULATED_LOSS: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -1038,6 +1397,19 @@ const HIGH_BRAINS_NOT_MY_PROBLEM: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighBrains,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "target",
@@ -1098,12 +1470,38 @@ const HIGH_BRAINS_MUTUAL_INTEREST: EventDefinition = {
       count: 1,
       isEligible: (tribute, { state }) =>
         isHighBrains(tribute) && !getActiveTruceForTribute(state, tribute.id),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
     {
       id: "target",
       count: 1,
       isEligible: (tribute, { state }) =>
         isHighBrains(tribute) && !getActiveTruceForTribute(state, tribute.id),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "target",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, participantsByRole }) {
@@ -1145,6 +1543,19 @@ const HIGH_BRAINS_READ_THE_ROOM: EventDefinition = {
       id: "tribute",
       count: 1,
       isEligible: (tribute) => isHighBrains(tribute) && hasUsableCornucopiaPackItem(tribute),
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "brains",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -1179,6 +1590,19 @@ const LOW_LUCK_GRAB_AND_GO: EventDefinition = {
       id: "tribute",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "tribute",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -1208,6 +1632,19 @@ const LOW_LUCK_LOOSE_STRAP: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -1257,6 +1694,19 @@ const LOW_LUCK_BUTTERFINGERS: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -1311,6 +1761,19 @@ const LOW_LUCK_PERFECTLY_TIMED_SNEEZE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -1356,6 +1819,19 @@ const LOW_LUCK_ALMOST_IMPRESSIVE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -1390,6 +1866,19 @@ const LOW_LUCK_LACE_TO_MEET_YOU: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ eventId, round, random, participantsByRole }) {
@@ -1425,6 +1914,19 @@ const LOW_LUCK_BRANCH_MANAGER: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -1470,6 +1972,19 @@ const LOW_LUCK_DRAMATIC_GETAWAY: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isLowLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "lte",
+            threshold: 2,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -1516,6 +2031,19 @@ function createHighBrainsDecisionParalysis(id: string): EventDefinition {
         id: "actor",
         count: 1,
         isEligible: isHighBrains,
+        auditEligibility: {
+          coverage: "complete",
+          prerequisites: [
+            {
+              kind: "stat",
+              roleId: "actor",
+              stat: "brains",
+              comparison: "gte",
+              threshold: 4,
+              valueSource: "base",
+            },
+          ],
+        },
       },
     ],
     resolve({ random, participantsByRole }) {

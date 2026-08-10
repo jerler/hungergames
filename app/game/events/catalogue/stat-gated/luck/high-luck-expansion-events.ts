@@ -98,6 +98,19 @@ const CAMOUFLUKE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -151,6 +164,19 @@ const PERSONAL_RAIN_CLOUD_USEFUL: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuckAndThirsty,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -178,6 +204,19 @@ const STUCK_IN_THE_MUD_FORTUNATE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -231,6 +270,19 @@ const BIRD_STRIKE_SPECIAL_DELIVERY: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuckAndHungry,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -259,6 +311,19 @@ const STEP_ON_A_WASP_NEST_REDIRECT: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -305,6 +370,19 @@ const TRACKER_JACKED: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isMaximumLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -358,6 +436,19 @@ const FORAGING_DIGNITY_RESTORED: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuckAndHungry,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -394,6 +485,19 @@ const FISHING_DIGNITY_RESTORED: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuckAndHungry,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -430,6 +534,19 @@ const BERRY_FORTUNATE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuckAndHungry,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -466,6 +583,19 @@ const LAST_SIP_FIRST_TRY: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuckAndThirsty,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -494,6 +624,19 @@ const SLIPPERY_WHEN_ARMED_FORTUNATE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isMaximumLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: MELEE_WEAPON_IDS,
       itemAccess: "owned",
       opposesRoleIds: ["target"],
@@ -544,6 +687,19 @@ const BOW_TO_CHANCE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isMaximumLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: BOW_WEAPON_IDS,
       itemAccess: "owned",
       opposesRoleIds: ["target"],
@@ -605,6 +761,19 @@ const SPEAR_FISHING_ACTUAL_SUCCESS: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuckAndHungry,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: SPEAR_FISHING_WEAPON_IDS,
       itemAccess: "owned",
     },
@@ -640,6 +809,19 @@ const EXCALIBUR_FORTUNATE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: MELEE_WEAPON_IDS,
       itemAccess: "owned",
       opposesRoleIds: ["target"],
@@ -690,6 +872,19 @@ const WARNING_SHOT_FORTUNATE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isMaximumLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "eq",
+            threshold: 5,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: RANGED_WEAPON_IDS,
       itemAccess: "owned",
       opposesRoleIds: ["target"],
@@ -739,6 +934,19 @@ const THE_SAFEST_TRIP: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -785,6 +993,19 @@ const PINECONE_ALARM: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {
@@ -824,6 +1045,19 @@ const DESIGNATED_CARRIER_FORTUNATE: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuckTruceCarrier,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
     },
   ],
   resolve({ participantsByRole }) {
@@ -853,6 +1087,19 @@ const TERRIBLE_THROW_EXCELLENT_RESULT: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       requiredItemDefinitionIds: BOW_WEAPON_IDS,
       itemAccess: "owned",
       opposesRoleIds: ["target"],
@@ -901,6 +1148,19 @@ const RIGHT_PLACE_WRONG_TIME_FOR_TARGET: EventDefinition = {
       id: "actor",
       count: 1,
       isEligible: isHighLuck,
+      auditEligibility: {
+        coverage: "complete",
+        prerequisites: [
+          {
+            kind: "stat",
+            roleId: "actor",
+            stat: "luck",
+            comparison: "gte",
+            threshold: 4,
+            valueSource: "base",
+          },
+        ],
+      },
       opposesRoleIds: ["target"],
     },
     {

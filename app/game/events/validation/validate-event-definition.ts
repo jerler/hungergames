@@ -314,6 +314,68 @@ function validateAuditStatCondition(
   }
 }
 
+function validateAuditStatusCondition(
+  eventId: string,
+  condition: {
+    statusId: string;
+    present: boolean;
+    minimumSeverity?: number;
+    maximumSeverity?: number;
+  },
+): void {
+  if (!String(condition.statusId).trim()) {
+    throw new Error(`Event "${eventId}" has an empty audit status prerequisite.`);
+  }
+
+  if (typeof condition.present !== "boolean") {
+    throw new Error(`Event "${eventId}" has invalid audit status presence metadata.`);
+  }
+
+  for (const [label, severity] of [
+    ["minimum", condition.minimumSeverity],
+    ["maximum", condition.maximumSeverity],
+  ] as const) {
+    if (severity !== undefined && (!Number.isInteger(severity) || severity < 1)) {
+      throw new Error(
+        `Event "${eventId}" has invalid audit status ${label} severity ` + `"${String(severity)}".`,
+      );
+    }
+  }
+
+  if (
+    !condition.present &&
+    (condition.minimumSeverity !== undefined || condition.maximumSeverity !== undefined)
+  ) {
+    throw new Error(
+      `Event "${eventId}" cannot declare audit status severity bounds when presence is false.`,
+    );
+  }
+
+  if (
+    condition.minimumSeverity !== undefined &&
+    condition.maximumSeverity !== undefined &&
+    condition.minimumSeverity > condition.maximumSeverity
+  ) {
+    throw new Error(
+      `Event "${eventId}" audit status minimum severity exceeds its maximum severity.`,
+    );
+  }
+}
+
+function validateAuditMinimumMatchingCount(
+  eventId: string,
+  minimumMatchingCount: number | undefined,
+): void {
+  if (
+    minimumMatchingCount !== undefined &&
+    (!Number.isInteger(minimumMatchingCount) || minimumMatchingCount < 1)
+  ) {
+    throw new Error(
+      `Event "${eventId}" audit status minimum matching count must be a positive integer.`,
+    );
+  }
+}
+
 function validateAuditPrerequisite(
   eventId: string,
   prerequisite: EventAuditPrerequisite,
@@ -358,13 +420,28 @@ function validateAuditPrerequisite(
       return;
 
     case "status":
-      if (!String(prerequisite.statusId).trim()) {
-        throw new Error(`Event "${eventId}" has an empty audit status prerequisite.`);
+      validateAuditStatusCondition(eventId, prerequisite);
+      validateAuditMinimumMatchingCount(eventId, prerequisite.minimumMatchingCount);
+      return;
+
+    case "status-any":
+      if (prerequisite.alternatives.length < 2) {
+        throw new Error(
+          `Event "${eventId}" audit status-any prerequisite requires at least two alternatives.`,
+        );
       }
 
-      if (typeof prerequisite.present !== "boolean") {
-        throw new Error(`Event "${eventId}" has invalid audit status presence metadata.`);
+      validateUniqueValues(
+        eventId,
+        `audit status alternatives for role "${prerequisite.roleId}"`,
+        prerequisite.alternatives.map((alternative) => JSON.stringify(alternative)),
+      );
+
+      for (const alternative of prerequisite.alternatives) {
+        validateAuditStatusCondition(eventId, alternative);
       }
+
+      validateAuditMinimumMatchingCount(eventId, prerequisite.minimumMatchingCount);
       return;
 
     case "deprivation":

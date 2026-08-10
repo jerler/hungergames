@@ -154,6 +154,17 @@ const ROMANTIC_PROTECTION_EVENT: EventDefinition = {
 
   periods: ["day", "night"],
   baseWeight: 2.5,
+  auditEligibility: {
+    coverage: "opaque",
+    prerequisites: [
+      {
+        kind: "truce",
+        roleId: "protector",
+        truceKind: "romantic",
+        exactSize: 2,
+      },
+    ],
+  },
 
   roles: [
     {
@@ -284,6 +295,17 @@ export const POISONOUS_BERRIES_JOINT_VICTORY_EVENT: EventDefinition = {
    * not used to determine the finale.
    */
   baseWeight: 1,
+  auditEligibility: {
+    coverage: "opaque",
+    prerequisites: [
+      {
+        kind: "truce",
+        roleId: "partners",
+        truceKind: "romantic",
+        exactSize: 2,
+      },
+    ],
+  },
 
   roles: [
     {

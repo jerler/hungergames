@@ -201,6 +201,17 @@ function createBetrayalEvent(groupSize: TruceGroupSize, groupSizeWeight: number)
       specificityScore: 4,
       specificityReasons: ["truce-requirement", "item-requirement"],
     },
+    auditEligibility: {
+      coverage: "opaque",
+      prerequisites: [
+        {
+          kind: "truce",
+          roleId: "betrayer",
+          truceKind: "standard",
+          exactSize: groupSize,
+        },
+      ],
+    },
 
     roles: [
       {
@@ -440,6 +451,17 @@ const PROTECTS_TRUCE_PARTNER_EVENT: EventDefinition = {
   periods: ["day", "night"],
 
   baseWeight: 2,
+  auditEligibility: {
+    coverage: "opaque",
+    prerequisites: [
+      {
+        kind: "truce",
+        roleId: "protector",
+        truceKind: "standard",
+        minimumSize: 2,
+      },
+    ],
+  },
 
   roles: [
     {

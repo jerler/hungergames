@@ -29,6 +29,18 @@ import {
   type EventSelectionFunnelReport,
 } from "~/game/simulation/event-selection-funnel-report";
 import {
+  collectPrerequisiteLifecycleEvidence,
+  createItemLifecycleByGameTsv,
+  createItemPrerequisiteAvailabilityTsv,
+  createPrerequisiteLifecycleEvidenceMarkdown,
+  createStatusLifecycleByGameTsv,
+  createStatusPreparationRemovalTsv,
+  createStatusPrerequisiteAvailabilityTsv,
+  createTruceLifecycleTsv,
+  createTrucePrerequisiteAvailabilityTsv,
+  type PrerequisiteLifecycleEvidenceReport,
+} from "~/game/simulation/prerequisite-lifecycle-evidence";
+import {
   collectRosterStrategyEvidence,
   createBloodbathStrategyByGameTsv,
   createBloodbathStrategyByStatTsv,
@@ -316,10 +328,12 @@ interface FrequencyReportData {
     catalogueCoverage: string;
     selectionFunnel: string;
     rosterStrategyEvidence: string;
+    prerequisiteLifecycleEvidence: string;
   };
   distributionMetrics: EventDistributionMetrics;
   selectionFunnel: EventSelectionFunnelReport;
   rosterStrategyEvidence: RosterStrategyEvidenceReport;
+  prerequisiteLifecycleEvidence: PrerequisiteLifecycleEvidenceReport;
   catalogueCoverage: readonly CatalogueCoverageMetric[];
   definitions: readonly DefinitionFrequencyMetric[];
   events: readonly EventFrequencyMetric[];
@@ -1756,6 +1770,7 @@ function createMarkdownReport(data: FrequencyReportData): string {
     "",
     ...createEventSelectionFunnelMarkdown(data.selectionFunnel),
     ...createRosterStrategyEvidenceMarkdown(data.rosterStrategyEvidence),
+    ...createPrerequisiteLifecycleEvidenceMarkdown(data.prerequisiteLifecycleEvidence),
   ];
 
   for (const gameSize of EVENT_DISTRIBUTION_GAME_SIZE_IDS) {
@@ -2208,6 +2223,7 @@ try {
   const distributionMetrics = collectEventDistributionMetrics(runs);
   const selectionFunnel = createEventSelectionFunnelReport(runs);
   const rosterStrategyEvidence = collectRosterStrategyEvidence(runs);
+  const prerequisiteLifecycleEvidence = collectPrerequisiteLifecycleEvidence(runs);
 
   if (!selectionFunnel.reconciliation.passed) {
     throw new Error(
@@ -2215,6 +2231,14 @@ try {
         selectionFunnel.reconciliation.failures.join("\n"),
     );
   }
+
+  if (!prerequisiteLifecycleEvidence.reconciliation.passed) {
+    throw new Error(
+      "Phase 3 prerequisite lifecycle reconciliation failed:\n" +
+        prerequisiteLifecycleEvidence.reconciliation.failures.join("\n"),
+    );
+  }
+
   const metricsByKey = new Map<string, MutableEventMetric>();
   const poolSelectionsByKey = new Map<string, number>();
   const perGameEvents: PerGameEventMetric[] = [];
@@ -2262,10 +2286,13 @@ try {
         "Records deterministic definition-level rows for every concrete selector opportunity, then aggregates state feasibility, reservation-aware opportunity feasibility, planner admission, weighted-pool exposure, draws, rejected resolutions, accepted selections, route-normalized exposure, and reconciliation against aggregate diagnostics and event history.",
       rosterStrategyEvidence:
         "Counts initial shuffled DEFAULT_TRIBUTES stats, deterministically replays Day 1 Cornucopia-versus-Flee assignments with the production strategy function and round seed, records selected participant stat values against typed Phase 1B thresholds, and separates roster availability and strategy assignment from hard feasibility, weighted-pool exposure, and selection for the two focused Cornucopia definitions.",
+      prerequisiteLifecycleEvidence:
+        "Reconstructs the selector-visible state after automatic round preparation; reconciles item acquisitions and transactions, status transitions, and truce lifecycles against event history and game state; and measures exact typed item, status, and truce prerequisite availability independently from full definition feasibility.",
     },
     distributionMetrics,
     selectionFunnel,
     rosterStrategyEvidence,
+    prerequisiteLifecycleEvidence,
     catalogueCoverage,
     definitions,
     events,
@@ -2307,6 +2334,31 @@ try {
     outputDirectory,
     "event-frequency-focused-stat-gates.tsv",
   );
+  const itemLifecycleByGameTsvPath = resolve(
+    outputDirectory,
+    "event-frequency-item-lifecycle-by-game.tsv",
+  );
+  const itemPrerequisiteAvailabilityTsvPath = resolve(
+    outputDirectory,
+    "event-frequency-item-prerequisite-availability.tsv",
+  );
+  const statusLifecycleByGameTsvPath = resolve(
+    outputDirectory,
+    "event-frequency-status-lifecycle-by-game.tsv",
+  );
+  const statusPrerequisiteAvailabilityTsvPath = resolve(
+    outputDirectory,
+    "event-frequency-status-prerequisite-availability.tsv",
+  );
+  const statusPreparationRemovalTsvPath = resolve(
+    outputDirectory,
+    "event-frequency-status-preparation-removals.tsv",
+  );
+  const truceLifecycleTsvPath = resolve(outputDirectory, "event-frequency-truce-lifecycle.tsv");
+  const trucePrerequisiteAvailabilityTsvPath = resolve(
+    outputDirectory,
+    "event-frequency-truce-prerequisite-availability.tsv",
+  );
 
   await Promise.all([
     writeFile(markdownPath, createMarkdownReport(data), "utf8"),
@@ -2340,6 +2392,41 @@ try {
       "utf8",
     ),
     writeFile(focusedStatGatesTsvPath, createFocusedStatGateTsv(rosterStrategyEvidence), "utf8"),
+    writeFile(
+      itemLifecycleByGameTsvPath,
+      createItemLifecycleByGameTsv(prerequisiteLifecycleEvidence),
+      "utf8",
+    ),
+    writeFile(
+      itemPrerequisiteAvailabilityTsvPath,
+      createItemPrerequisiteAvailabilityTsv(prerequisiteLifecycleEvidence),
+      "utf8",
+    ),
+    writeFile(
+      statusLifecycleByGameTsvPath,
+      createStatusLifecycleByGameTsv(prerequisiteLifecycleEvidence),
+      "utf8",
+    ),
+    writeFile(
+      statusPrerequisiteAvailabilityTsvPath,
+      createStatusPrerequisiteAvailabilityTsv(prerequisiteLifecycleEvidence),
+      "utf8",
+    ),
+    writeFile(
+      statusPreparationRemovalTsvPath,
+      createStatusPreparationRemovalTsv(prerequisiteLifecycleEvidence),
+      "utf8",
+    ),
+    writeFile(
+      truceLifecycleTsvPath,
+      createTruceLifecycleTsv(prerequisiteLifecycleEvidence),
+      "utf8",
+    ),
+    writeFile(
+      trucePrerequisiteAvailabilityTsvPath,
+      createTrucePrerequisiteAvailabilityTsv(prerequisiteLifecycleEvidence),
+      "utf8",
+    ),
   ]);
 
   const generatedPaths = [
@@ -2358,6 +2445,13 @@ try {
     bloodbathStrategyByStatTsvPath,
     statGatedSelectionsTsvPath,
     focusedStatGatesTsvPath,
+    itemLifecycleByGameTsvPath,
+    itemPrerequisiteAvailabilityTsvPath,
+    statusLifecycleByGameTsvPath,
+    statusPrerequisiteAvailabilityTsvPath,
+    statusPreparationRemovalTsvPath,
+    truceLifecycleTsvPath,
+    trucePrerequisiteAvailabilityTsvPath,
   ];
   const checksumManifest = {
     schemaVersion: provenance.schemaVersion,
@@ -2404,6 +2498,13 @@ try {
   console.log(`Bloodbath strategy-by-stat TSV written to ${bloodbathStrategyByStatTsvPath}`);
   console.log(`Stat-gated selection TSV written to ${statGatedSelectionsTsvPath}`);
   console.log(`Focused stat-gate TSV written to ${focusedStatGatesTsvPath}`);
+  console.log(`Item lifecycle TSV written to ${itemLifecycleByGameTsvPath}`);
+  console.log(`Item prerequisite TSV written to ${itemPrerequisiteAvailabilityTsvPath}`);
+  console.log(`Status lifecycle TSV written to ${statusLifecycleByGameTsvPath}`);
+  console.log(`Status prerequisite TSV written to ${statusPrerequisiteAvailabilityTsvPath}`);
+  console.log(`Status preparation-removal TSV written to ${statusPreparationRemovalTsvPath}`);
+  console.log(`Truce lifecycle TSV written to ${truceLifecycleTsvPath}`);
+  console.log(`Truce prerequisite TSV written to ${trucePrerequisiteAvailabilityTsvPath}`);
   console.log(
     `Simulated ${configuration.halfGames} Half Games and ${configuration.fullGames} Full Games.`,
   );

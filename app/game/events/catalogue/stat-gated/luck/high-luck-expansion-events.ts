@@ -168,6 +168,12 @@ const PERSONAL_RAIN_CLOUD_USEFUL: EventDefinition = {
         coverage: "opaque",
         prerequisites: [
           {
+            kind: "status",
+            roleId: "actor",
+            statusId: "thirsty",
+            present: true,
+          },
+          {
             kind: "stat",
             roleId: "actor",
             stat: "luck",
@@ -273,6 +279,12 @@ const BIRD_STRIKE_SPECIAL_DELIVERY: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",
@@ -440,6 +452,12 @@ const FORAGING_DIGNITY_RESTORED: EventDefinition = {
         coverage: "opaque",
         prerequisites: [
           {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
+          {
             kind: "stat",
             roleId: "actor",
             stat: "luck",
@@ -488,6 +506,12 @@ const FISHING_DIGNITY_RESTORED: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",
@@ -538,6 +562,12 @@ const BERRY_FORTUNATE: EventDefinition = {
         coverage: "opaque",
         prerequisites: [
           {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
+          {
             kind: "stat",
             roleId: "actor",
             stat: "luck",
@@ -586,6 +616,12 @@ const LAST_SIP_FIRST_TRY: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "thirsty",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",
@@ -764,6 +800,12 @@ const SPEAR_FISHING_ACTUAL_SUCCESS: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",
@@ -1055,6 +1097,11 @@ const DESIGNATED_CARRIER_FORTUNATE: EventDefinition = {
             comparison: "gte",
             threshold: 4,
             valueSource: "base",
+          },
+          {
+            kind: "truce",
+            roleId: "actor",
+            minimumSize: 2,
           },
         ],
       },

@@ -601,6 +601,12 @@ function createTruceMemberRoles(size: TruceEventSize): readonly ParticipantRoleD
             threshold: 2,
             valueSource: "base",
           },
+          {
+            kind: "truce",
+            roleId: "actor",
+            truceKind: "standard",
+            exactSize: size,
+          },
         ],
       },
     },
@@ -828,6 +834,12 @@ const FORAGING_WHILE_WEAK: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",

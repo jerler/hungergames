@@ -106,6 +106,12 @@ function createHighBrawnTruceMemberRoles(
             threshold: 4,
             valueSource: "base",
           },
+          {
+            kind: "truce",
+            roleId: "actor",
+            truceKind: "standard",
+            exactSize: size,
+          },
         ],
       },
     },

@@ -198,6 +198,12 @@ const STUCK_IN_THE_MUD: EventDefinition = {
         coverage: "opaque",
         prerequisites: [
           {
+            kind: "status",
+            roleId: "actor",
+            statusId: "thirsty",
+            present: true,
+          },
+          {
             kind: "stat",
             roleId: "actor",
             stat: "luck",
@@ -250,6 +256,12 @@ const WATER_LANDING: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "thirsty",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",
@@ -484,6 +496,12 @@ const RABBIT_HOLE: EventDefinition = {
         coverage: "opaque",
         prerequisites: [
           {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
+          {
             kind: "stat",
             roleId: "actor",
             stat: "luck",
@@ -527,6 +545,12 @@ const FORAGING_DIGNITY: EventDefinition = {
         coverage: "opaque",
         prerequisites: [
           {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
+          {
             kind: "stat",
             roleId: "actor",
             stat: "luck",
@@ -566,6 +590,12 @@ const FORAGING_DIGNITY_AGAIN: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",
@@ -608,6 +638,12 @@ const BERRY_UNFORTUNATE: EventDefinition = {
         coverage: "opaque",
         prerequisites: [
           {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
+          {
             kind: "stat",
             roleId: "actor",
             stat: "luck",
@@ -647,6 +683,12 @@ const LAST_SIP: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "thirsty",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",

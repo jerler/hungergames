@@ -85,6 +85,18 @@ export interface EventAuditStatCondition {
   valueSource?: EventAuditStatValueSource;
 }
 
+export interface EventAuditStatusCondition {
+  statusId: StatusEffectId;
+  present: boolean;
+
+  /**
+   * Optional severity bounds for callbacks that require more than mere
+   * presence. Omitted bounds mean any present severity is sufficient.
+   */
+  minimumSeverity?: number;
+  maximumSeverity?: number;
+}
+
 export type EventAuditItemAccess = "accessible" | "owned";
 
 export type EventAuditPrerequisite =
@@ -97,11 +109,21 @@ export type EventAuditPrerequisite =
       roleId: string;
       alternatives: readonly EventAuditStatCondition[];
     }
-  | {
+  | ({
       kind: "status";
       roleId: string;
-      statusId: StatusEffectId;
-      present: boolean;
+
+      /**
+       * Defaults to the role count. Set to a smaller value for group-level
+       * existential prerequisites such as "at least one truce member is hungry".
+       */
+      minimumMatchingCount?: number;
+    } & EventAuditStatusCondition)
+  | {
+      kind: "status-any";
+      roleId: string;
+      alternatives: readonly EventAuditStatusCondition[];
+      minimumMatchingCount?: number;
     }
   | {
       kind: "deprivation";

@@ -114,6 +114,12 @@ function createHighBrainsTruceMemberRoles(
             threshold: 4,
             valueSource: "base",
           },
+          {
+            kind: "truce",
+            roleId: "actor",
+            truceKind: "standard",
+            exactSize: size,
+          },
         ],
       },
     },
@@ -165,6 +171,12 @@ const SICK_BUT_SMART: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "poisoned",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",
@@ -223,6 +235,12 @@ const FIELD_GUIDE: EventDefinition = {
         coverage: "opaque",
         prerequisites: [
           {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
+          {
             kind: "stat",
             roleId: "actor",
             stat: "brains",
@@ -271,6 +289,12 @@ const CLEAN_ENOUGH: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "thirsty",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",
@@ -456,6 +480,20 @@ const LEAD_A_HORSE_TO_WATER: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status-any",
+            roleId: "actor",
+            alternatives: [
+              {
+                statusId: "alert",
+                present: true,
+              },
+              {
+                statusId: "hidden",
+                present: true,
+              },
+            ],
+          },
           {
             kind: "stat",
             roleId: "actor",
@@ -831,6 +869,12 @@ const DOSE_MAKES_THE_POISON: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "poisoned",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",
@@ -1374,6 +1418,12 @@ const SEEMS_SUSPICIOUS: EventDefinition = {
         coverage: "opaque",
         prerequisites: [
           {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
+          {
             kind: "stat",
             roleId: "actor",
             stat: "brains",
@@ -1413,6 +1463,12 @@ const TOO_CLEAN: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "thirsty",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",

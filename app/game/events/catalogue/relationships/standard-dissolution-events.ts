@@ -36,6 +36,17 @@ function createAmicableSeparationEvent(size: TruceGroupSize, sizeWeight: number)
     tags: ["survival", "truce", "cooperative", "item"],
     periods: ["day", "night"],
     baseWeight: AMICABLE_SEPARATION_TOTAL_WEIGHT * (sizeWeight / 100),
+    auditEligibility: {
+      coverage: "opaque",
+      prerequisites: [
+        {
+          kind: "truce",
+          roleId: "members",
+          truceKind: "standard",
+          exactSize: size,
+        },
+      ],
+    },
     roles: [
       {
         id: "members",

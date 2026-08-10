@@ -100,6 +100,12 @@ function createLowBrainsTruceMemberRoles(
             threshold: 2,
             valueSource: "base",
           },
+          {
+            kind: "truce",
+            roleId: "actor",
+            truceKind: "standard",
+            exactSize: size,
+          },
         ],
       },
       opposesRoleIds,
@@ -326,6 +332,12 @@ const NATURES_SNACK_BOWL: EventDefinition = {
         coverage: "opaque",
         prerequisites: [
           {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
+          {
             kind: "stat",
             roleId: "actor",
             stat: "brains",
@@ -379,6 +391,12 @@ const PREMIUM_WATER: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "thirsty",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",
@@ -741,6 +759,12 @@ const FISHING_GENIUS: EventDefinition = {
       auditEligibility: {
         coverage: "opaque",
         prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
           {
             kind: "stat",
             roleId: "actor",

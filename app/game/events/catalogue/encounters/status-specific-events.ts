@@ -276,6 +276,17 @@ function sameStandardTruceRole(id: string, size: TruceSize): ParticipantRoleDefi
   return {
     id,
     count: size,
+    auditEligibility: {
+      coverage: "opaque",
+      prerequisites: [
+        {
+          kind: "truce",
+          roleId: id,
+          truceKind: "standard",
+          exactSize: size,
+        },
+      ],
+    },
     isEligible: (tribute, { state, participantsByRole }) => {
       const selected = participantsByRole[id] ?? [];
 
@@ -328,6 +339,18 @@ const EMERGENCY_BARK_BUFFET: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+            minimumSeverity: 2,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "hungry", 2),
       getWeight: (tribute) => getStatusSeverity(tribute, "hungry"),
     },
@@ -393,12 +416,34 @@ const MEAL_WORTH_FOLLOWING: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "hungry"),
       getWeight: (tribute) => getStatusSeverity(tribute, "hungry"),
     },
     {
       id: "target",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "target",
+            statusId: "hungry",
+            present: false,
+          },
+        ],
+      },
       targeting: "hostile",
       opposesRoleIds: ["actor"],
       isEligible: (tribute, { state, participantsByRole }) => {
@@ -480,12 +525,34 @@ const LAST_EDIBLE_THING: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "hungry",
+            present: true,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "hungry"),
       getWeight: (tribute) => getStatusSeverity(tribute, "hungry"),
     },
     {
       id: "target",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "target",
+            statusId: "hungry",
+            present: true,
+          },
+        ],
+      },
       opposesRoleIds: ["actor"],
       isEligible: (tribute, { state, participantsByRole }) => {
         const actor = participantsByRole.actor?.[0];
@@ -613,6 +680,18 @@ const LAST_EDIBLE_THING: EventDefinition = {
 function createRationingEvent(size: TruceSize): EventDefinition {
   return {
     id: `status-rationing-becomes-personal-${size}`,
+    auditEligibility: {
+      coverage: "opaque",
+      prerequisites: [
+        {
+          kind: "status",
+          roleId: "members",
+          statusId: "hungry",
+          present: true,
+          minimumMatchingCount: 1,
+        },
+      ],
+    },
     category: "survival",
     periods: ["day", "night"],
     baseWeight: 4 / size,
@@ -690,6 +769,18 @@ const MUDDY_MIRACLE: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "thirsty",
+            present: true,
+            minimumSeverity: 2,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "thirsty", 2),
       getWeight: (tribute) => getStatusSeverity(tribute, "thirsty"),
     },
@@ -731,6 +822,17 @@ const SOMEONE_ELSE_FOUND_WATER_FIRST: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "thirsty",
+            present: true,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "thirsty"),
       getWeight: (tribute) => getStatusSeverity(tribute, "thirsty"),
     },
@@ -861,6 +963,17 @@ const THREE_STRAWS_NO_CUP: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "thirsty",
+            present: true,
+          },
+        ],
+      },
       isEligible: (tribute, { state }) =>
         isUntruced(state, tribute) && hasStatus(tribute, "thirsty"),
       getWeight: (tribute) => getStatusSeverity(tribute, "thirsty"),
@@ -912,6 +1025,18 @@ const COLLAPSE_AT_WATERLINE: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "thirsty",
+            present: true,
+            minimumSeverity: 2,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "thirsty", 2),
       getWeight: (tribute) => getStatusSeverity(tribute, "thirsty"),
     },
@@ -1036,6 +1161,18 @@ const MICROSLEEP_AT_WORST_TIME: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "exhausted",
+            present: true,
+            minimumSeverity: 2,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "exhausted", 2),
       getWeight: (tribute) => getStatusSeverity(tribute, "exhausted"),
     },
@@ -1102,6 +1239,18 @@ const SLEEPWALKING_THROUGH_ARENA: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "exhausted",
+            present: true,
+            minimumSeverity: 2,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "exhausted", 2),
       getWeight: (tribute) => getStatusSeverity(tribute, "exhausted"),
     },
@@ -1136,6 +1285,23 @@ function createWatchEndsEarlyEvent(size: TruceSize): EventDefinition {
       {
         id: "actor",
         count: 1,
+        auditEligibility: {
+          coverage: "opaque",
+          prerequisites: [
+            {
+              kind: "status",
+              roleId: "actor",
+              statusId: "exhausted",
+              present: true,
+            },
+            {
+              kind: "truce",
+              roleId: "actor",
+              truceKind: "standard",
+              exactSize: size,
+            },
+          ],
+        },
         isEligible: (tribute, { state }) =>
           hasStatus(tribute, "exhausted") &&
           getStandardTruceOfSize(state, tribute.id, size) !== null,
@@ -1248,6 +1414,17 @@ const CAFFEINE_ARBITRATION: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "exhausted",
+            present: true,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "exhausted"),
       getWeight: (tribute) => getStatusSeverity(tribute, "exhausted"),
     },
@@ -1304,6 +1481,17 @@ const WORCESTERSHIRE: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "disoriented",
+            present: true,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "disoriented"),
       getWeight: (tribute) => getStatusSeverity(tribute, "disoriented"),
     },
@@ -1329,6 +1517,17 @@ const FOLLOWING_OWN_FOOTPRINTS: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "disoriented",
+            present: true,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "disoriented"),
       getWeight: (tribute) => getStatusSeverity(tribute, "disoriented"),
     },
@@ -1376,6 +1575,18 @@ const REFLECTION_ATTACKS_FIRST: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "disoriented",
+            present: true,
+            minimumSeverity: 2,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "disoriented", 2),
       getWeight: (tribute) => getStatusSeverity(tribute, "disoriented"),
     },
@@ -1434,6 +1645,17 @@ function hallucinatoryRoles(): readonly ParticipantRoleDefinition[] {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "disoriented",
+            present: true,
+          },
+        ],
+      },
       isEligible: (tribute, { state }) =>
         isUntruced(state, tribute) && hasStatus(tribute, "disoriented"),
       getWeight: (tribute) => getStatusSeverity(tribute, "disoriented"),
@@ -1580,6 +1802,17 @@ const ANTIDOTE_PRICE: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "poisoned",
+            present: true,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "poisoned"),
       getWeight: (tribute) => getStatusSeverity(tribute, "poisoned"),
     },
@@ -1646,12 +1879,34 @@ const POISONED_MERCY_KILLING: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "poisoned",
+            present: true,
+          },
+        ],
+      },
       isEligible: (tribute) => hasStatus(tribute, "poisoned"),
       getWeight: (tribute) => getStatusSeverity(tribute, "poisoned"),
     },
     {
       id: "target",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "target",
+            statusId: "poisoned",
+            present: false,
+          },
+        ],
+      },
       targeting: "hostile",
       opposesRoleIds: ["actor"],
       isEligible: (tribute, { state, participantsByRole }) => {
@@ -1698,6 +1953,22 @@ const POISONED_BREAKS_TRUCE: EventDefinition = {
     {
       id: "actor",
       count: 1,
+      auditEligibility: {
+        coverage: "opaque",
+        prerequisites: [
+          {
+            kind: "status",
+            roleId: "actor",
+            statusId: "poisoned",
+            present: true,
+          },
+          {
+            kind: "truce",
+            roleId: "actor",
+            minimumSize: 2,
+          },
+        ],
+      },
       isEligible: (tribute, { state }) =>
         hasStatus(tribute, "poisoned") && getActiveTruceForTribute(state, tribute.id) !== null,
       getWeight: (tribute) => getStatusSeverity(tribute, "poisoned"),
